@@ -206,8 +206,8 @@ def home():
         links.append(('<a href="/issued">Issued PDFs</a>', "Browse generated PDFs"))
     if (session.get("roles") or {}).get("admin"):
         links.append(('<a href="/users">User Management</a>', "Create, edit, reset, deactivate"))
-    links.append(('<a href="/my-certificates">My Certificates</a>', "Learner portal"))
-    links.append(('<a href="/logout">Logout</a>', "End session"))
+    links.append(('<a href="my-certificates">My Certificates</a>', "Learner portal"))
+    links.append(('<a href="logout">Logout</a>', "End session"))
 
     html = [
         f"<h2>Welcome</h2>",
@@ -565,7 +565,7 @@ def my_certificates():
     if is_staff(): return redirect("/issued")
     uid = session.get("uid"); links = sorted(user_allowed_files(uid))
     out = ["<h2>My Certificates</h2><ul>"] + [f'<li><a href="{url_for("files", subpath=r)}" target="_blank">{r}</a></li>' for r in links]
-    out.append("</ul><p><a href='/'>Back</a> | <a href='/logout'>Logout</a></p>")
+    out.append("</ul><p><a href='../'>Back</a> | <a href='../logout'>Logout</a></p>")
     return Response("\n".join(out), mimetype="text/html")
 
 # ---------- User Management ----------
