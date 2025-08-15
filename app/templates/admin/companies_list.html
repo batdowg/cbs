@@ -1,33 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Companies</h2>
-<p><a href="{{ url_for('companies_new_form') }}">Create new</a></p>
-{% if show_archived %}
-  <p><a href="{{ url_for('companies_list') }}">Hide archived</a></p>
-{% else %}
-  <p><a href="{{ url_for('companies_list', show_archived=1) }}">Show archived</a></p>
-{% endif %}
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Name</th><th>Status</th><th>Actions</th></tr>
-  {% for id, name, active in rows %}
+  <tr><th>Name</th></tr>
+  {% for id, name in rows %}
   <tr>
     <td>{{ name }}</td>
-    <td>{{ 'active' if active else 'archived' }}</td>
-    <td>
-      <a href="{{ url_for('companies_edit_form', comp_id=id) }}">Edit</a>
-      {% if active %}
-      <form method="post" action="{{ url_for('companies_archive', comp_id=id) }}" style="display:inline">
-        <button type="submit">Archive</button>
-      </form>
-      {% else %}
-      <form method="post" action="{{ url_for('companies_unarchive', comp_id=id) }}" style="display:inline">
-        <button type="submit">Unarchive</button>
-      </form>
-      {% endif %}
-    </td>
   </tr>
   {% else %}
-  <tr><td colspan="3">No companies</td></tr>
+  <tr><td>No companies</td></tr>
   {% endfor %}
 </table>
 <p><a href="/">Back</a></p>

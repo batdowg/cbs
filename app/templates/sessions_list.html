@@ -15,20 +15,20 @@
   <tr>
     <th>Session ID</th>
     <th>Company</th>
-    <th>Workshop</th>
+    <th>Workshop Code</th>
+    <th>Workshop Name</th>
     <th>Start</th>
     <th>End</th>
-    <th>Client Manager</th>
     <th>Created</th>
   </tr>
-  {% for id, sid, company, workshop, start, end, manager, created in rows %}
+  {% for sid, company, workshop_short, workshop_full, start, end, created in rows %}
   <tr>
     <td>{{ sid }}</td>
     <td>{{ company }}</td>
-    <td>{{ workshop }}</td>
+    <td>{{ workshop_short }}</td>
+    <td>{{ workshop_full }}</td>
     <td>{{ start }}</td>
     <td>{{ end }}</td>
-    <td>{{ manager }}</td>
     <td>{{ created }}</td>
   </tr>
   {% else %}
