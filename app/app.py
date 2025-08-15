@@ -2,7 +2,7 @@ import csv, io, os, re, zipfile, json, smtplib, ssl
 from datetime import datetime
 from email.message import EmailMessage
 from functools import wraps
-from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort
+from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort, render_template
 import psycopg2
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
@@ -204,6 +204,7 @@ def home():
         links.append(('<a href="/importer">Import CSV</a>', "Upload CSV to issue certificates"))
         links.append(('<a href="/cert-form">Create Certificates</a>', "One page form for multiple learners"))
         links.append(('<a href="/issued">Issued PDFs</a>', "Browse generated PDFs"))
+        links.append(('<a href="/admin/workshop-types">Workshop Types</a>', "Manage workshop types"))
     if (session.get("roles") or {}).get("admin"):
         links.append(('<a href="/users">User Management</a>', "Create, edit, reset, deactivate"))
     base = request.path.rstrip('/') + '/'
@@ -759,6 +760,104 @@ def users_delete(user_id):
         else:
             cur.execute("delete from user_account where user_account_id=%s",(user_id,))
     return redirect("/users")
+
+# ---------- workshop types ----------
+
+@app.get("/admin/workshop-types")
+@roles_required_any("admin","staff")
+def workshop_types_list():
+    show_archived = request.args.get("show_archived") == "1"
+    with conn() as cx, cx.cursor() as cur:
+        sql = "select id, short_name, full_name, active from workshop_type"
+        if not show_archived:
+            sql += " where active=true"
+        sql += " order by short_name"
+        cur.execute(sql)
+        rows = cur.fetchall()
+    return render_template("admin/workshop_types_list.html", rows=rows, show_archived=show_archived)
+
+
+@app.get("/admin/workshop-types/new")
+@roles_required_any("admin","staff")
+def workshop_types_new_form():
+    return render_template("admin/workshop_types_form.html", form={}, errors={})
+
+
+@app.post("/admin/workshop-types/new")
+@roles_required_any("admin","staff")
+def workshop_types_new():
+    short = (request.form.get("short_name") or "").strip().upper()
+    full = (request.form.get("full_name") or "").strip()
+    errors = {}
+    if not re.fullmatch(r"[A-Z0-9]{2,8}", short):
+        errors["short_name"] = "Use 2-8 uppercase letters or digits."
+    with conn() as cx, cx.cursor() as cur:
+        if not errors:
+            cur.execute("select 1 from workshop_type where short_name=%s", (short,))
+            if cur.fetchone():
+                errors["short_name"] = "Short name must be unique."
+        if errors:
+            return render_template(
+                "admin/workshop_types_form.html",
+                form={"short_name": short, "full_name": full},
+                errors=errors,
+            )
+        cur.execute(
+            "insert into workshop_type (short_name, full_name, active) values (%s, %s, true)",
+            (short, full),
+        )
+    return redirect("/admin/workshop-types")
+
+
+@app.get("/admin/workshop-types/<int:wt_id>/edit")
+@roles_required_any("admin","staff")
+def workshop_types_edit_form(wt_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("select short_name, full_name from workshop_type where id=%s", (wt_id,))
+        row = cur.fetchone()
+        if not row:
+            return abort(404)
+    form = {"id": wt_id, "short_name": row[0], "full_name": row[1]}
+    return render_template("admin/workshop_types_form.html", form=form, errors={})
+
+
+@app.post("/admin/workshop-types/<int:wt_id>/edit")
+@roles_required_any("admin","staff")
+def workshop_types_edit(wt_id):
+    short = (request.form.get("short_name") or "").strip().upper()
+    full = (request.form.get("full_name") or "").strip()
+    errors = {}
+    if not re.fullmatch(r"[A-Z0-9]{2,8}", short):
+        errors["short_name"] = "Use 2-8 uppercase letters or digits."
+    with conn() as cx, cx.cursor() as cur:
+        if not errors:
+            cur.execute("select 1 from workshop_type where short_name=%s and id<>%s", (short, wt_id))
+            if cur.fetchone():
+                errors["short_name"] = "Short name must be unique."
+        if errors:
+            form = {"id": wt_id, "short_name": short, "full_name": full}
+            return render_template("admin/workshop_types_form.html", form=form, errors=errors)
+        cur.execute(
+            "update workshop_type set short_name=%s, full_name=%s where id=%s",
+            (short, full, wt_id),
+        )
+    return redirect("/admin/workshop-types")
+
+
+@app.post("/admin/workshop-types/<int:wt_id>/archive")
+@roles_required_any("admin","staff")
+def workshop_types_archive(wt_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("update workshop_type set active=false where id=%s", (wt_id,))
+    return redirect("/admin/workshop-types")
+
+
+@app.post("/admin/workshop-types/<int:wt_id>/unarchive")
+@roles_required_any("admin","staff")
+def workshop_types_unarchive(wt_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("update workshop_type set active=true where id=%s", (wt_id,))
+    return redirect("/admin/workshop-types?show_archived=1")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
