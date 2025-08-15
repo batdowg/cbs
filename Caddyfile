@@ -1,0 +1,18 @@
+:80 {
+    encode zstd gzip
+
+    # Send /importer to the Flask app on port 8000
+    handle_path /importer* {
+        reverse_proxy app:8000
+    }
+
+    # Optional: let you browse issued PDFs
+    handle_path /issued/* {
+        root * /srv
+        file_server browse
+    }
+
+    # Everything else served from /srv
+    root * /srv
+    file_server
+}

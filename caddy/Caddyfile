@@ -1,0 +1,4 @@
+cbs.ktapps.net {
+  encode zstd gzip
+  reverse_proxy app:8000
+}

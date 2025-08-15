@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Certs and Badges</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="{{ url_for('static', filename='css/landing.css') }}" rel="stylesheet">
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <h1>Certs and Badges</h1>
+      <p class="sub">Landing page after login</p>
+    </header>
+
+    <section class="primary">
+      <form method="get" action="/sessions/new"><button>Create session</button></form>
+      <form method="get" action="/imports/participants"><button>Import participants</button></form>
+      <form method="get" action="/attendance/confirm"><button>Confirm attendance</button></form>
+      <form method="get" action="/credentials/issue"><button>Issue certificates and badges</button></form>
+    </section>
+
+    <section class="grid">
+      <section class="col col-wide">
+        <section class="card">
+          <h2>Work queue</h2>
+          <p class="help">Items that need action based on the Level 1 flow</p>
+          <div class="tiles">
+            {% for t in work_tiles %}
+            <div class="tile">
+              <div class="tile-title">{{ t.title }}</div>
+              {% if t.count is not none %}<div class="tile-count">{{ t.count }}</div>{% endif %}
+              {% if t.value %}<div class="tile-value">{{ t.value }}</div>{% endif %}
+              <form method="get" action="{{ t.href }}"><button>{{ t.action }}</button></form>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Upcoming sessions</h2>
+          <p class="help">Next 14 days</p>
+          <div class="list">
+            {% for s in sessions %}
+            <div class="row">
+              <div>{{ s.date }}</div>
+              <div class="grow">{{ s.title }}</div>
+              <div>{{ s.client }}</div>
+              <div>{{ s.facilitator }}</div>
+            </div>
+            {% else %}
+            <div class="row"><div>No sessions</div></div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Data imports</h2>
+          <p class="help">SFC file uploads and sync status</p>
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-title">Last import</div>
+              <div class="tile-value">{{ last_import }}</div>
+              <form method="get" action="/imports/log"><button>View log</button></form>
+            </div>
+            <div class="tile">
+              <div class="tile-title">Items with errors</div>
+              <div class="tile-count">{{ import_errors }}</div>
+              <form method="get" action="/imports/errors"><button>Fix</button></form>
+            </div>
+          </div>
+          <form class="upload" method="post" action="/imports/participants" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv">
+            <button type="submit">Upload SFC participant file</button>
+          </form>
+        </section>
+      </section>
+
+      <section class="col">
+        <section class="card">
+          <h2>Quick search</h2>
+          <label class="help">Search by name, email, session, or credential</label>
+          <form method="get" action="/search">
+            <input name="q" placeholder="Start typing">
+            <div class="examples">Examples: Jane Smith; jane@client.com; S-1234; KT-DA-001</div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Credentials</h2>
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-title">Requests awaiting validation</div>
+              <div class="tile-count">{{ creds_pending_validation }}</div>
+              <form method="get" action="/credentials/validate"><button>Validate</button></form>
+            </div>
+            <div class="tile">
+              <div class="tile-title">Ready to send</div>
+              <div class="tile-count">{{ creds_ready }}</div>
+              <form method="get" action="/credentials/send"><button>Send</button></form>
+            </div>
+            <div class="tile">
+              <div class="tile-title">Sent this week</div>
+              <div class="tile-count">{{ creds_sent_week }}</div>
+              <form method="get" action="/credentials/sent"><button>View</button></form>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Recent activity</h2>
+          <ul class="list-plain">
+            {% for a in activity %}
+              <li>{{ a }}</li>
+            {% else %}
+              <li>No recent activity</li>
+            {% endfor %}
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>System notices</h2>
+          <ul class="list-plain">
+            {% for n in notices %}
+              <li>{{ n }}</li>
+            {% else %}
+              <li>No notices</li>
+            {% endfor %}
+          </ul>
+        </section>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

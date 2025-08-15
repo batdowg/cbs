@@ -1,0 +1,5 @@
+services:
+  app:
+    ports:
+      - "5000:5000"
+    command: gunicorn -c gunicorn.conf.py app:app
