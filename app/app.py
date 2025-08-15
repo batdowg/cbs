@@ -1,8 +1,10 @@
 import csv, io, os, re, zipfile, json, smtplib, ssl
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from email.message import EmailMessage
 from functools import wraps
 from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort, render_template, flash
+import itsdangerous
+from uuid import UUID
 import psycopg2
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
@@ -161,6 +163,52 @@ def normalize_company_name(name: str) -> str:
     name = re.sub(r"\s+", " ", (name or "").strip())
     name = re.sub(r"[^A-Za-z0-9]+", "", name)
     return name.upper()
+
+
+def build_client_edit_token(session_uid: UUID, email: str, expires_at: datetime) -> str:
+    s = itsdangerous.URLSafeSerializer(app.secret_key, salt="client-edit")
+    payload = {
+        "s": str(session_uid),
+        "e": (email or "").lower(),
+        "x": int(expires_at.timestamp()),
+    }
+    return s.dumps(payload)
+
+
+def verify_client_edit_token(token: str) -> dict | None:
+    if not token:
+        return None
+    s = itsdangerous.URLSafeSerializer(app.secret_key, salt="client-edit")
+    try:
+        data = s.loads(token)
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    if datetime.utcnow().timestamp() <= data.get("x", 0):
+        return data
+    return None
+
+
+def require_client_edit_token(session_uid, token):
+    payload = verify_client_edit_token(token)
+    if not payload or payload.get("s") != str(session_uid):
+        abort(403)
+    sess = get_session(session_uid)
+    if not sess:
+        abort(404)
+    email = (sess.get("client_manager_email") or "").lower()
+    if payload.get("e") != email:
+        abort(403)
+    now = datetime.utcnow()
+    token_exp = datetime.utcfromtimestamp(payload.get("x", 0))
+    end_dt = sess.get("end_date")
+    if not isinstance(end_dt, datetime):
+        end_dt = datetime.combine(end_dt, datetime.min.time())
+    session_exp = end_dt + timedelta(days=30)
+    if now > min(token_exp, session_exp):
+        abort(403)
+    return sess
 
 def autoshrink_name(width_pts, text):
     try:
@@ -552,6 +600,14 @@ def render_session_detail_page(session_uid, learner_form=None, learner_errors=No
         abort(404)
     learners = list_session_learners(session_uid)
     shipping = shipping_form if shipping_form is not None else get_session_shipping(session_uid)
+    client_edit_url = None
+    if sess.get("client_manager_email"):
+        end_dt = sess.get("end_date")
+        if not isinstance(end_dt, datetime):
+            end_dt = datetime.combine(end_dt, datetime.min.time())
+        expires_at = end_dt + timedelta(days=30)
+        token = build_client_edit_token(sess["session_uid"], sess["client_manager_email"], expires_at)
+        client_edit_url = f"https://cbs.ktapps.net/sessions/{sess['session_uid']}/manage?t={token}"
     return render_template(
         "sessions_detail.html",
         sess=sess,
@@ -560,6 +616,27 @@ def render_session_detail_page(session_uid, learner_form=None, learner_errors=No
         learner_errors=learner_errors or {},
         shipping_form=shipping,
         shipping_errors=shipping_errors or {},
+        tab=tab,
+        client_edit_url=client_edit_url,
+    )
+
+
+def render_session_manage_page(session_uid, token, learner_form=None, learner_errors=None,
+                               shipping_form=None, shipping_errors=None, tab=None):
+    sess = get_session(session_uid)
+    if not sess:
+        abort(404)
+    learners = list_session_learners(session_uid)
+    shipping = shipping_form if shipping_form is not None else get_session_shipping(session_uid)
+    return render_template(
+        "sessions_manage.html",
+        sess=sess,
+        learners=learners,
+        learner_form=learner_form or {},
+        learner_errors=learner_errors or {},
+        shipping_form=shipping,
+        shipping_errors=shipping_errors or {},
+        token=token,
         tab=tab,
     )
 
@@ -570,9 +647,19 @@ def sessions_detail(session_uid):
     return render_session_detail_page(session_uid)
 
 
+@app.get("/sessions/<uuid:session_uid>/manage")
+def sessions_manage(session_uid):
+    token = request.args.get("t", "")
+    require_client_edit_token(session_uid, token)
+    return render_session_manage_page(session_uid, token)
+
+
 @app.post("/sessions/<uuid:session_uid>/learners/add")
-@staff_required
 def sessions_learners_add(session_uid):
+    token = request.form.get("t") or request.args.get("t") or ""
+    staff = is_staff()
+    if not staff:
+        require_client_edit_token(session_uid, token)
     name = (request.form.get("name") or "").strip()
     email = (request.form.get("email") or "").strip().lower()
     form = {"name": name, "email": email}
@@ -582,7 +669,9 @@ def sessions_learners_add(session_uid):
     if not email:
         errors["email"] = "Required"
     if errors:
-        return render_session_detail_page(session_uid, learner_form=form, learner_errors=errors, tab="learners")
+        if staff:
+            return render_session_detail_page(session_uid, learner_form=form, learner_errors=errors, tab="learners")
+        return render_session_manage_page(session_uid, token, learner_form=form, learner_errors=errors, tab="learners")
     with conn() as cx, cx.cursor() as cur:
         try:
             cur.execute(
@@ -594,12 +683,17 @@ def sessions_learners_add(session_uid):
         except psycopg2.errors.UniqueViolation:
             cx.rollback()
             flash("Already added")
-    return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+    if staff:
+        return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#learners")
 
 
 @app.post("/sessions/<uuid:session_uid>/learners/<uuid:learner_uid>/delete")
-@staff_required
 def sessions_learners_delete(session_uid, learner_uid):
+    token = request.form.get("t") or request.args.get("t") or ""
+    staff = is_staff()
+    if not staff:
+        require_client_edit_token(session_uid, token)
     with conn() as cx, cx.cursor() as cur:
         cur.execute(
             "delete from session_learner where session_uid=%s and learner_uid=%s",
@@ -607,18 +701,26 @@ def sessions_learners_delete(session_uid, learner_uid):
         )
         cx.commit()
     flash("Removed")
-    return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+    if staff:
+        return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#learners")
 
 
 @app.get("/sessions/<uuid:session_uid>/shipping")
-@staff_required
 def sessions_shipping_get(session_uid):
-    return render_session_detail_page(session_uid, tab="shipping")
+    token = request.args.get("t") or ""
+    if is_staff():
+        return render_session_detail_page(session_uid, tab="shipping")
+    require_client_edit_token(session_uid, token)
+    return render_session_manage_page(session_uid, token, tab="shipping")
 
 
 @app.post("/sessions/<uuid:session_uid>/shipping")
-@staff_required
 def sessions_shipping_post(session_uid):
+    token = request.form.get("t") or request.args.get("t") or ""
+    staff = is_staff()
+    if not staff:
+        require_client_edit_token(session_uid, token)
     fields = [
         "recipient",
         "address1",
@@ -637,7 +739,9 @@ def sessions_shipping_post(session_uid):
     if not form["address1"]:
         errors["address1"] = "Required"
     if errors:
-        return render_session_detail_page(session_uid, shipping_form=form, shipping_errors=errors, tab="shipping")
+        if staff:
+            return render_session_detail_page(session_uid, shipping_form=form, shipping_errors=errors, tab="shipping")
+        return render_session_manage_page(session_uid, token, shipping_form=form, shipping_errors=errors, tab="shipping")
     with conn() as cx, cx.cursor() as cur:
         cur.execute(
             """
@@ -670,7 +774,9 @@ def sessions_shipping_post(session_uid):
         )
         cx.commit()
     flash("Saved")
-    return redirect(url_for("sessions_shipping_get", session_uid=session_uid) + "#shipping")
+    if staff:
+        return redirect(url_for("sessions_shipping_get", session_uid=session_uid) + "#shipping")
+    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#shipping")
 
 
 @app.post("/sessions/<uuid:session_uid>/client-manager")
