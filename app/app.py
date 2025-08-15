@@ -2,7 +2,7 @@ import csv, io, os, re, zipfile, json, smtplib, ssl
 from datetime import datetime
 from email.message import EmailMessage
 from functools import wraps
-from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort, render_template
+from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort, render_template, flash
 import psycopg2
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
@@ -325,106 +325,133 @@ def issue_credential(cur, registration_id, disp_name, typ, badge_code):
                        values (%s,'certificate',now(),%s) returning credential_id""", (registration_id,disp_name))
     return cur.fetchone()[0]
 
-# ---------- Sessions: list ----------
+# ---------- Sessions ----------
 @app.get("/sessions")
-@roles_required_any("admin","crm","delivery")
+@roles_required_any("admin","staff","delivery","crm")
 def sessions_list():
-    q = (request.args.get("q") or "").strip().lower()
-    rows = []
     with conn() as cx, cx.cursor() as cur:
-        sql = """select session_uid, session_id, coalesce(title,''), 
-                        to_char(start_date,'YYYY-MM-DD'),
-                        to_char(end_date,'YYYY-MM-DD'),
-                        coalesce(delivery_type,''), coalesce(session_language,''), status
-                 from session"""
-        params = []
-        if q:
-            sql += " where lower(session_id) like %s or lower(title) like %s"
-            like = f"%{q}%"; params += [like, like]
-        sql += " order by start_date desc nulls last, session_id asc limit 200"
-        cur.execute(sql, params)
+        cur.execute("""
+            select s.id, s.session_id, c.name, w.short_name,
+                   to_char(s.start_date,'YYYY-MM-DD'),
+                   to_char(s.end_date,'YYYY-MM-DD'),
+                   coalesce(s.client_manager_name,''),
+                   to_char(s.created_at,'YYYY-MM-DD')
+            from session s
+            join company c on s.company_id=c.id
+            join workshop_type w on s.workshop_type_id=w.id
+            order by s.created_at desc
+        """)
         rows = cur.fetchall()
-    out = ["""
-      <h2>Sessions</h2>
-      <form method="get" action="/sessions" style="margin-bottom:10px">
-        <input type="text" name="q" value="{q}" placeholder="search session id or title" size="30">
-        <button type="submit">Search</button>
-        <a href="/sessions" style="margin-left:6px">Clear</a>
-        <a href="/sessions/new" style="margin-left:12px">+ New session</a>
-        <a href="/" style="margin-left:12px">Home</a>
-      </form>
-      <table border="1" cellpadding="6" cellspacing="0">
-        <tr><th>Session ID</th><th>Title</th><th>Start</th><th>End</th><th>Delivery</th><th>Lang</th><th>Status</th></tr>
-    """.format(q=q)]
-    for uid,sid,title,sd,ed,dt,lang,st in rows:
-        out.append(f"<tr><td>{sid}</td><td>{title}</td><td>{sd or ''}</td><td>{ed or ''}</td><td>{dt}</td><td>{lang}</td><td>{st}</td></tr>")
-    out.append("</table><p><a href='/'>Back</a></p>")
-    return Response("\n".join(out), mimetype="text/html")
+    return render_template("sessions_list.html", rows=rows)
 
-# ---------- Sessions: create ----------
 @app.get("/sessions/new")
-@roles_required_any("admin","crm","delivery")
+@roles_required_any("admin","staff","delivery","crm")
 def sessions_new_form():
     with conn() as cx, cx.cursor() as cur:
         cur.execute("select id, name from company where active=true order by name")
-        companies = cur.fetchall()
-    opts = "".join([f"<option value='{cid}'>{name}</option>" for cid, name in companies])
-    return Response(f"""
-      <h2>New session</h2>
-      <form method=\"post\" action=\"/sessions/new\">
-        <p><label>Company <select name=\"company_id\" required>{opts}</select></label></p>
-        <p><label>Session ID <input type=\"text\" name=\"session_id\" required></label></p>
-        <p><label>Workshop name <input type=\"text\" name=\"workshop_name\" required></label></p>
-        <p>
-          <label>Start date <input type=\"date\" name=\"start_date\" required></label>
-          <label style=\"margin-left:12px\">End date <input type=\"date\" name=\"end_date\" required></label>
-        </p>
-        <p>
-          <label>Timezone <input type=\"text\" name=\"timezone\" value=\"UTC\" required></label>
-          <label style=\"margin-left:12px\">Delivery type
-            <select name=\"delivery_type\">
-              <option value=\"face_to_face\">face_to_face</option>
-              <option value=\"virtual\">virtual</option>
-              <option value=\"hybrid\">hybrid</option>
-              <option value=\"online\">online</option>
-            </select>
-          </label>
-          <label style=\"margin-left:12px\">Language <input type=\"text\" name=\"session_language\" value=\"en\" required></label>
-        </p>
-        <p><button type=\"submit\">Create</button> <a href=\"/sessions\">Cancel</a></p>
-      </form>
-    """, mimetype="text/html")
+        companies = [(str(cid), name) for cid, name in cur.fetchall()]
+        cur.execute("select id, short_name from workshop_type where active=true order by short_name")
+        workshops = [(str(wid), short) for wid, short in cur.fetchall()]
+    return render_template("sessions_form.html", companies=companies, workshops=workshops, form={}, errors={})
 
 @app.post("/sessions/new")
-@roles_required_any("admin","crm","delivery")
+@roles_required_any("admin","staff","delivery","crm")
 def sessions_new_post():
-    sid = (request.form.get("session_id") or "").strip()
-    wname = (request.form.get("workshop_name") or "").strip()
-    sd = (request.form.get("start_date") or "").strip()
-    ed = (request.form.get("end_date") or "").strip()
-    tz = (request.form.get("timezone") or "UTC").strip()
-    dtype = (request.form.get("delivery_type") or "face_to_face").strip()
-    lang = (request.form.get("session_language") or "en").strip()
-    if not sid or not wname or not sd or not ed:
-        return Response("<p>Missing required fields</p><p><a href=\"/sessions/new\">Back</a></p>", mimetype="text/html", status=400)
-    try:
-        sd_dt = datetime.fromisoformat(sd)
-        ed_dt = datetime.fromisoformat(ed)
-    except:
-        return Response("<p>Dates must be YYYY-MM-DD</p><p><a href=\"/sessions/new\">Back</a></p>", mimetype="text/html", status=400)
-    code = re.sub(r"[^A-Za-z0-9]+","_", wname).upper()
+    form = {
+        "company_id": (request.form.get("company_id") or "").strip(),
+        "workshop_type_id": (request.form.get("workshop_type_id") or "").strip(),
+        "start_date": (request.form.get("start_date") or "").strip(),
+        "end_date": (request.form.get("end_date") or "").strip(),
+        "client_manager_name": (request.form.get("client_manager_name") or "").strip(),
+        "client_manager_email": (request.form.get("client_manager_email") or "").strip().lower(),
+    }
+    errors = {}
     with conn() as cx, cx.cursor() as cur:
-        client_id = ensure_defaults(cx)
-        cur.execute("select 1 from session where session_id=%s", (sid,))
-        if cur.fetchone():
-            return Response("<p>Session ID already exists</p><p><a href=\"/sessions/new\">Back</a></p>", mimetype="text/html", status=400)
-        wsid = upsert_workshop(cur, code, wname)
-        cur.execute("""
-            insert into session(client_id,session_id,workshop_type_id,title,start_date,end_date,timezone,delivery_type,session_language,status)
-            values (%s,%s,%s,%s,%s,%s,%s,%s,%s,'scheduled')
-        """, (client_id, sid, wsid, wname, sd_dt, ed_dt, tz, dtype, lang))
+        company_row = None
+        try:
+            cid = int(form["company_id"])
+            cur.execute("select name, normalized_name from company where id=%s and active=true", (cid,))
+            company_row = cur.fetchone()
+            if not company_row:
+                errors["company_id"] = "Invalid company"
+        except (ValueError, TypeError):
+            errors["company_id"] = "Invalid company"
+
+        workshop_row = None
+        try:
+            wid = int(form["workshop_type_id"])
+            cur.execute("select short_name from workshop_type where id=%s and active=true", (wid,))
+            workshop_row = cur.fetchone()
+            if not workshop_row:
+                errors["workshop_type_id"] = "Invalid workshop type"
+        except (ValueError, TypeError):
+            errors["workshop_type_id"] = "Invalid workshop type"
+
+        sd_dt = ed_dt = None
+        if not form["start_date"]:
+            errors["start_date"] = "Required"
+        else:
+            try:
+                sd_dt = datetime.fromisoformat(form["start_date"]).date()
+            except Exception:
+                errors["start_date"] = "Invalid date"
+        if not form["end_date"]:
+            errors["end_date"] = "Required"
+        else:
+            try:
+                ed_dt = datetime.fromisoformat(form["end_date"]).date()
+            except Exception:
+                errors["end_date"] = "Invalid date"
+        if sd_dt and ed_dt and sd_dt > ed_dt:
+            errors["start_date"] = "Must be before or equal to end"
+            errors["end_date"] = "Must be after or equal to start"
+
+        if not form["client_manager_name"]:
+            errors["client_manager_name"] = "Required"
+        if not form["client_manager_email"]:
+            errors["client_manager_email"] = "Required"
+
+        if errors:
+            cur.execute("select id, name from company where active=true order by name")
+            companies = [(str(cid), name) for cid, name in cur.fetchall()]
+            cur.execute("select id, short_name from workshop_type where active=true order by short_name")
+            workshops = [(str(wid), short) for wid, short in cur.fetchall()]
+            return render_template("sessions_form.html", companies=companies, workshops=workshops, form=form, errors=errors), 400
+
+        normalized_company = company_row[1] or normalize_company_name(company_row[0])
+        base = normalized_company[:5].ljust(5, "X")
+        date_part = ed_dt.strftime("%Y%m%d")
+        base_sid = f"{base}-{workshop_row[0]}-{date_part}"
+        sid = base_sid
+        suffix = ord("A")
+        while True:
+            cur.execute("select 1 from session where session_id=%s", (sid,))
+            if not cur.fetchone():
+                break
+            sid = f"{base_sid}-{chr(suffix)}"
+            suffix += 1
+
+        cur.execute(
+            """insert into session
+                   (session_id, company_id, workshop_type_id, start_date, end_date,
+                    client_manager_name, client_manager_email, created_by_user_id)
+               values (%s,%s,%s,%s,%s,%s,%s,%s)
+               returning id, session_id""", (
+                sid,
+                cid,
+                wid,
+                sd_dt,
+                ed_dt,
+                form["client_manager_name"],
+                form["client_manager_email"],
+                int(session.get("uid")) if session.get("uid") else None,
+            )
+        )
+        new_id, new_sid = cur.fetchone()
         cx.commit()
-    return redirect("/sessions")
+    flash(f"Created session {new_sid}")
+    return redirect(url_for("sessions_list"))
+
 
 # ---------- importer ----------
 @app.get("/importer")

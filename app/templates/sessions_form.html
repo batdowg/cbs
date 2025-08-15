@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>New Session</h2>
+<form method="post" action="{{ url_for('sessions_new_post') }}">
+  <p>
+    <label>Company
+      <select name="company_id">
+        <option value="">-- select --</option>
+        {% for cid, name in companies %}
+        <option value="{{ cid }}" {% if form.company_id == cid %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if errors.company_id %}<div class="error">{{ errors.company_id }}</div>{% endif %}
+  </p>
+  <p>
+    <label>Workshop Type
+      <select name="workshop_type_id">
+        <option value="">-- select --</option>
+        {% for wid, short in workshops %}
+        <option value="{{ wid }}" {% if form.workshop_type_id == wid %}selected{% endif %}>{{ short }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if errors.workshop_type_id %}<div class="error">{{ errors.workshop_type_id }}</div>{% endif %}
+  </p>
+  <p>
+    <label>Start date <input type="date" name="start_date" value="{{ form.start_date }}"></label>
+    {% if errors.start_date %}<div class="error">{{ errors.start_date }}</div>{% endif %}
+  </p>
+  <p>
+    <label>End date <input type="date" name="end_date" value="{{ form.end_date }}"></label>
+    {% if errors.end_date %}<div class="error">{{ errors.end_date }}</div>{% endif %}
+  </p>
+  <p>
+    <label>Client Manager Name <input type="text" name="client_manager_name" value="{{ form.client_manager_name }}"></label>
+    {% if errors.client_manager_name %}<div class="error">{{ errors.client_manager_name }}</div>{% endif %}
+  </p>
+  <p>
+    <label>Client Manager Email <input type="email" name="client_manager_email" value="{{ form.client_manager_email }}"></label>
+    {% if errors.client_manager_email %}<div class="error">{{ errors.client_manager_email }}</div>{% endif %}
+  </p>
+  <p><button type="submit">Submit</button> <a href="{{ url_for('sessions_list') }}">Cancel</a></p>
+</form>
+{% endblock %}
+
