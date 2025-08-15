@@ -38,11 +38,8 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
     <p><label>Email <input type="email" name="email" value="{{ sess.client_manager_email or '' }}"></label></p>
     <p><button type="submit">Save</button></p>
   </form>
-  {% if client_edit_url %}
-  <p>
-    <input type="text" id="client-edit-link" value="{{ client_edit_url }}" readonly style="width:100%">
-    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('client-edit-link').value)">Copy client edit link</button>
-  </p>
+  {% if sess.client_manager_email %}
+  <p>Client manager account: <a href="{{ url_for('users_page') }}?q={{ sess.client_manager_email }}">{{ sess.client_manager_email }}</a> (has access)</p>
   {% endif %}
 </div>
 <div id="learners">

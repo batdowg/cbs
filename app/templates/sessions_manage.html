@@ -22,7 +22,6 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
 <div id="learners">
   <h3>Learners</h3>
   <form method="post" action="{{ url_for('sessions_learners_add', session_uid=sess.session_uid) }}">
-    <input type="hidden" name="t" value="{{ token }}">
     <p>
       <label>Name <input type="text" name="name" value="{{ learner_form.name or '' }}"></label>
       {% if learner_errors.name %}<span style="color:red">{{ learner_errors.name }}</span>{% endif %}
@@ -42,7 +41,6 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
       <td>{{ l.email }}</td>
       <td>
         <form method="post" action="{{ url_for('sessions_learners_delete', session_uid=sess.session_uid, learner_uid=l.learner_uid) }}" style="display:inline" onsubmit="return confirm('Remove learner?')">
-          <input type="hidden" name="t" value="{{ token }}">
           <button type="submit">Delete</button>
         </form>
       </td>
@@ -56,7 +54,6 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
 <div id="shipping">
   <h3>Shipping</h3>
   <form method="post" action="{{ url_for('sessions_shipping_post', session_uid=sess.session_uid) }}">
-    <input type="hidden" name="t" value="{{ token }}">
     <p>
       <label>Recipient <input type="text" name="recipient" value="{{ shipping_form.recipient or '' }}"></label>
       {% if shipping_errors.recipient %}<span style="color:red">{{ shipping_errors.recipient }}</span>{% endif %}
