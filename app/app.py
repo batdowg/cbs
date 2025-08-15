@@ -50,6 +50,12 @@ def ensure_defaults(cx):
 # ---------- helpers ----------
 def sanitize(s): return re.sub(r"[^A-Za-z0-9_\-\.]", "_", s or "")
 
+
+def normalize_company_name(name: str) -> str:
+    name = re.sub(r"\s+", " ", (name or "").strip())
+    name = re.sub(r"[^A-Za-z0-9]+", "", name)
+    return name.upper()
+
 def autoshrink_name(width_pts, text):
     try:
         pdfmetrics.registerFont(TTFont("DejaVuSans-Italic","DejaVuSans-Oblique.ttf"))
@@ -205,6 +211,7 @@ def home():
         links.append(('<a href="/cert-form">Create Certificates</a>', "One page form for multiple learners"))
         links.append(('<a href="/issued">Issued PDFs</a>', "Browse generated PDFs"))
         links.append(('<a href="/admin/workshop-types">Workshop Types</a>', "Manage workshop types"))
+        links.append(('<a href="/admin/companies">Companies</a>', "Manage companies"))
     if (session.get("roles") or {}).get("admin"):
         links.append(('<a href="/users">User Management</a>', "Create, edit, reset, deactivate"))
     base = request.path.rstrip('/') + '/'
@@ -358,28 +365,33 @@ def sessions_list():
 @app.get("/sessions/new")
 @roles_required_any("admin","crm","delivery")
 def sessions_new_form():
-    return Response("""
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("select id, name from company where active=true order by name")
+        companies = cur.fetchall()
+    opts = "".join([f"<option value='{cid}'>{name}</option>" for cid, name in companies])
+    return Response(f"""
       <h2>New session</h2>
-      <form method="post" action="/sessions/new">
-        <p><label>Session ID <input type="text" name="session_id" required></label></p>
-        <p><label>Workshop name <input type="text" name="workshop_name" required></label></p>
+      <form method=\"post\" action=\"/sessions/new\">
+        <p><label>Company <select name=\"company_id\" required>{opts}</select></label></p>
+        <p><label>Session ID <input type=\"text\" name=\"session_id\" required></label></p>
+        <p><label>Workshop name <input type=\"text\" name=\"workshop_name\" required></label></p>
         <p>
-          <label>Start date <input type="date" name="start_date" required></label>
-          <label style="margin-left:12px">End date <input type="date" name="end_date" required></label>
+          <label>Start date <input type=\"date\" name=\"start_date\" required></label>
+          <label style=\"margin-left:12px\">End date <input type=\"date\" name=\"end_date\" required></label>
         </p>
         <p>
-          <label>Timezone <input type="text" name="timezone" value="UTC" required></label>
-          <label style="margin-left:12px">Delivery type
-            <select name="delivery_type">
-              <option value="face_to_face">face_to_face</option>
-              <option value="virtual">virtual</option>
-              <option value="hybrid">hybrid</option>
-              <option value="online">online</option>
+          <label>Timezone <input type=\"text\" name=\"timezone\" value=\"UTC\" required></label>
+          <label style=\"margin-left:12px\">Delivery type
+            <select name=\"delivery_type\">
+              <option value=\"face_to_face\">face_to_face</option>
+              <option value=\"virtual\">virtual</option>
+              <option value=\"hybrid\">hybrid</option>
+              <option value=\"online\">online</option>
             </select>
           </label>
-          <label style="margin-left:12px">Language <input type="text" name="session_language" value="en" required></label>
+          <label style=\"margin-left:12px\">Language <input type=\"text\" name=\"session_language\" value=\"en\" required></label>
         </p>
-        <p><button type="submit">Create</button> <a href="/sessions">Cancel</a></p>
+        <p><button type=\"submit\">Create</button> <a href=\"/sessions\">Cancel</a></p>
       </form>
     """, mimetype="text/html")
 
@@ -760,6 +772,100 @@ def users_delete(user_id):
         else:
             cur.execute("delete from user_account where user_account_id=%s",(user_id,))
     return redirect("/users")
+
+# ---------- companies ----------
+
+@app.get("/admin/companies")
+@roles_required_any("admin","staff")
+def companies_list():
+    show_archived = request.args.get("show_archived") == "1"
+    with conn() as cx, cx.cursor() as cur:
+        sql = "select id, name, active from company"
+        if not show_archived:
+            sql += " where active=true"
+        sql += " order by name"
+        cur.execute(sql)
+        rows = cur.fetchall()
+    return render_template("admin/companies_list.html", rows=rows, show_archived=show_archived)
+
+
+@app.get("/admin/companies/new")
+@roles_required_any("admin","staff")
+def companies_new_form():
+    return render_template("admin/companies_form.html", form={}, errors={})
+
+
+@app.post("/admin/companies/new")
+@roles_required_any("admin","staff")
+def companies_new():
+    name = (request.form.get("name") or "").strip()
+    norm = normalize_company_name(name)
+    errors = {}
+    if not name:
+        errors["name"] = "Name is required."
+    with conn() as cx, cx.cursor() as cur:
+        if not errors:
+            cur.execute("select 1 from company where lower(name)=lower(%s)", (name,))
+            if cur.fetchone():
+                errors["name"] = "Name must be unique."
+        if errors:
+            return render_template("admin/companies_form.html", form={"name": name}, errors=errors)
+        cur.execute(
+            "insert into company (name, normalized_name, active) values (%s, %s, true)",
+            (name, norm),
+        )
+    return redirect("/admin/companies")
+
+
+@app.get("/admin/companies/<int:comp_id>/edit")
+@roles_required_any("admin","staff")
+def companies_edit_form(comp_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("select name from company where id=%s", (comp_id,))
+        row = cur.fetchone()
+        if not row:
+            return abort(404)
+    form = {"id": comp_id, "name": row[0]}
+    return render_template("admin/companies_form.html", form=form, errors={})
+
+
+@app.post("/admin/companies/<int:comp_id>/edit")
+@roles_required_any("admin","staff")
+def companies_edit(comp_id):
+    name = (request.form.get("name") or "").strip()
+    norm = normalize_company_name(name)
+    errors = {}
+    if not name:
+        errors["name"] = "Name is required."
+    with conn() as cx, cx.cursor() as cur:
+        if not errors:
+            cur.execute("select 1 from company where lower(name)=lower(%s) and id<>%s", (name, comp_id))
+            if cur.fetchone():
+                errors["name"] = "Name must be unique."
+        if errors:
+            form = {"id": comp_id, "name": name}
+            return render_template("admin/companies_form.html", form=form, errors=errors)
+        cur.execute(
+            "update company set name=%s, normalized_name=%s where id=%s",
+            (name, norm, comp_id),
+        )
+    return redirect("/admin/companies")
+
+
+@app.post("/admin/companies/<int:comp_id>/archive")
+@roles_required_any("admin","staff")
+def companies_archive(comp_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("update company set active=false where id=%s", (comp_id,))
+    return redirect("/admin/companies")
+
+
+@app.post("/admin/companies/<int:comp_id>/unarchive")
+@roles_required_any("admin","staff")
+def companies_unarchive(comp_id):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("update company set active=true where id=%s", (comp_id,))
+    return redirect("/admin/companies?show_archived=1")
 
 # ---------- workshop types ----------
 

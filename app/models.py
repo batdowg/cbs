@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Optional
+import re
 
 from sqlalchemy import (
     Boolean,
@@ -47,14 +48,26 @@ class Company(Base, TimestampMixin):
     __tablename__ = "company"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     normalized_name = Column(String, nullable=False)
     active = Column(Boolean, nullable=False, server_default=func.true())
+
+    __table_args__ = (
+        Index("ux_company_name_lower", func.lower(name), unique=True),
+    )
 
     sessions = relationship("Session", back_populates="company")
 
     def __repr__(self) -> str:
         return f"<Company id={self.id} name={self.name!r}>"
+
+    @validates("name")
+    def _normalize_name(self, key: str, value: str) -> str:
+        value = (value or "").strip()
+        collapsed = re.sub(r"\s+", " ", value)
+        norm = re.sub(r"[^A-Za-z0-9]+", "", collapsed).upper()
+        self.normalized_name = norm
+        return value
 
 
 class Session(Base, TimestampMixin):
