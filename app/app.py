@@ -244,7 +244,11 @@ def user_allowed_files(user_id):
         """, (user_id,))
         for sess_id, disp_name in cur.fetchall():
             sid = sanitize(sess_id); dn = sanitize(disp_name)
-            allowed.add(f"issued/{sid}/{sid}_{dn}.pdf")
+            rel = f"issued/{sid}/{sid}_{dn}.pdf"
+            # Only include links for files that actually exist to avoid 404s
+            full = os.path.join(SITE_OUT_DIR, sid, f"{sid}_{dn}.pdf")
+            if os.path.exists(full):
+                allowed.add(rel)
     return allowed
 
 @app.get("/files/<path:subpath>")
@@ -563,12 +567,25 @@ def cert_form_post():
 @app.get("/my-certificates")
 @login_required
 def my_certificates():
-    if is_staff(): return redirect("/issued")
     uid = session.get("uid"); links = sorted(user_allowed_files(uid))
     out = ["<h2>My Certificates</h2><ul>"] + [f'<li><a href="{url_for("files", subpath=r)}" target="_blank">{r}</a></li>' for r in links]
     base = request.path.rsplit('/', 1)[0].rstrip('/') + '/'
     out.append(f"</ul><p><a href='{base}'>Back</a> | <a href='{base}logout'>Logout</a></p>")
     return Response("\n".join(out), mimetype="text/html")
+
+@app.get("/issued")
+@staff_required
+def issued_index():
+    items = []
+    for root, _, files in os.walk(SITE_OUT_DIR):
+        for fn in files:
+            if fn.lower().endswith('.pdf'):
+                rel = os.path.relpath(os.path.join(root, fn), "/srv")
+                items.append(f"<li><a href='/files/{rel}' target='_blank'>{rel}</a></li>")
+    items.sort()
+    base = request.path.rsplit('/', 1)[0].rstrip('/') + '/'
+    body = "<h2>Issued PDFs</h2><ul>" + "\n".join(items) + f"</ul><p><a href='{base}'>Back</a></p>"
+    return Response(body, mimetype="text/html")
 
 # ---------- User Management ----------
 def role_cols(): return ["is_kt_admin","is_kt_crm","is_kt_delivery","is_kt_contractor","is_kt_staff"]
