@@ -3,22 +3,22 @@
 <h2>New Session</h2>
 <form method="post" action="{{ url_for('sessions_new_post') }}">
   <p>
-    <label>Company
-      <select name="company_id">
+    <label>Client
+      <select name="client_id">
         <option value="">-- select --</option>
-        {% for cid, name in companies %}
-        <option value="{{ cid }}" {% if form.company_id == cid %}selected{% endif %}>{{ name }}</option>
+        {% for cid, name in clients %}
+        <option value="{{ cid }}" {% if form.client_id == cid %}selected{% endif %}>{{ name }}</option>
         {% endfor %}
       </select>
     </label>
-    {% if errors.company_id %}<div class="error">{{ errors.company_id }}</div>{% endif %}
+    {% if errors.client_id %}<div class="error">{{ errors.client_id }}</div>{% endif %}
   </p>
   <p>
     <label>Workshop Type
       <select name="workshop_type_id">
         <option value="">-- select --</option>
-        {% for wid, short in workshops %}
-        <option value="{{ wid }}" {% if form.workshop_type_id == wid %}selected{% endif %}>{{ short }}</option>
+        {% for wid, code in workshops %}
+        <option value="{{ wid }}" {% if form.workshop_type_id == wid %}selected{% endif %}>{{ code }}</option>
         {% endfor %}
       </select>
     </label>

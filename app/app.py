@@ -47,6 +47,36 @@ def ensure_defaults(cx):
         cur.execute("insert into client(name, data_region, status) values (%s,'US_CA','active') returning client_id", ("Default Client",))
         return cur.fetchone()[0]
 
+# ---------- db helpers ----------
+
+def list_workshop_types():
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "select workshop_type_id as id, code, name, active from workshop_type where active = true order by code"
+        )
+        return cur.fetchall()
+
+
+def list_clients():
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute("select client_id as id, name from client order by name")
+        return cur.fetchall()
+
+
+def list_sessions():
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            """
+            select s.session_id, c.name as company, wt.code as workshop_short,
+                   wt.name as workshop_full, s.start_date, s.end_date, s.created_at
+            from session s
+            left join client c on s.client_id=c.client_id
+            left join workshop_type wt on s.workshop_type_id=wt.workshop_type_id
+            order by s.created_at desc
+            """
+        )
+        return cur.fetchall()
+
 # ---------- helpers ----------
 def sanitize(s): return re.sub(r"[^A-Za-z0-9_\-\.]", "_", s or "")
 
@@ -329,36 +359,21 @@ def issue_credential(cur, registration_id, disp_name, typ, badge_code):
 @app.get("/sessions")
 @roles_required_any("admin","staff","delivery","crm")
 def sessions_list():
-    with conn() as cx, cx.cursor() as cur:
-        cur.execute("""
-            select s.id, s.session_id, c.name, w.short_name,
-                   to_char(s.start_date,'YYYY-MM-DD'),
-                   to_char(s.end_date,'YYYY-MM-DD'),
-                   coalesce(s.client_manager_name,''),
-                   to_char(s.created_at,'YYYY-MM-DD')
-            from session s
-            join company c on s.company_id=c.id
-            join workshop_type w on s.workshop_type_id=w.id
-            order by s.created_at desc
-        """)
-        rows = cur.fetchall()
+    rows = list_sessions()
     return render_template("sessions_list.html", rows=rows)
 
 @app.get("/sessions/new")
 @roles_required_any("admin","staff","delivery","crm")
 def sessions_new_form():
-    with conn() as cx, cx.cursor() as cur:
-        cur.execute("select id, name from company where active=true order by name")
-        companies = [(str(cid), name) for cid, name in cur.fetchall()]
-        cur.execute("select id, short_name from workshop_type where active=true order by short_name")
-        workshops = [(str(wid), short) for wid, short in cur.fetchall()]
-    return render_template("sessions_form.html", companies=companies, workshops=workshops, form={}, errors={})
+    clients = [(str(cid), name) for cid, name in list_clients()]
+    workshops = [(str(wid), code) for wid, code, _, _ in list_workshop_types()]
+    return render_template("sessions_form.html", clients=clients, workshops=workshops, form={}, errors={})
 
 @app.post("/sessions/new")
 @roles_required_any("admin","staff","delivery","crm")
 def sessions_new_post():
     form = {
-        "company_id": (request.form.get("company_id") or "").strip(),
+        "client_id": (request.form.get("client_id") or "").strip(),
         "workshop_type_id": (request.form.get("workshop_type_id") or "").strip(),
         "start_date": (request.form.get("start_date") or "").strip(),
         "end_date": (request.form.get("end_date") or "").strip(),
@@ -367,24 +382,27 @@ def sessions_new_post():
     }
     errors = {}
     with conn() as cx, cx.cursor() as cur:
-        company_row = None
-        try:
-            cid = int(form["company_id"])
-            cur.execute("select name, normalized_name from company where id=%s and active=true", (cid,))
-            company_row = cur.fetchone()
-            if not company_row:
-                errors["company_id"] = "Invalid company"
-        except (ValueError, TypeError):
-            errors["company_id"] = "Invalid company"
+        client_row = None
+        cid = form["client_id"]
+        if cid:
+            cur.execute("select name from client where client_id=%s", (cid,))
+            client_row = cur.fetchone()
+            if not client_row:
+                errors["client_id"] = "Invalid client"
+        else:
+            errors["client_id"] = "Invalid client"
 
         workshop_row = None
-        try:
-            wid = int(form["workshop_type_id"])
-            cur.execute("select short_name from workshop_type where id=%s and active=true", (wid,))
+        wid = form["workshop_type_id"]
+        if wid:
+            cur.execute(
+                "select code from workshop_type where workshop_type_id=%s and active=true",
+                (wid,),
+            )
             workshop_row = cur.fetchone()
             if not workshop_row:
                 errors["workshop_type_id"] = "Invalid workshop type"
-        except (ValueError, TypeError):
+        else:
             errors["workshop_type_id"] = "Invalid workshop type"
 
         sd_dt = ed_dt = None
@@ -412,14 +430,12 @@ def sessions_new_post():
             errors["client_manager_email"] = "Required"
 
         if errors:
-            cur.execute("select id, name from company where active=true order by name")
-            companies = [(str(cid), name) for cid, name in cur.fetchall()]
-            cur.execute("select id, short_name from workshop_type where active=true order by short_name")
-            workshops = [(str(wid), short) for wid, short in cur.fetchall()]
-            return render_template("sessions_form.html", companies=companies, workshops=workshops, form=form, errors=errors), 400
+            clients = [(str(cid), name) for cid, name in list_clients()]
+            workshops = [(str(wid), code) for wid, code, _, _ in list_workshop_types()]
+            return render_template("sessions_form.html", clients=clients, workshops=workshops, form=form, errors=errors), 400
 
-        normalized_company = company_row[1] or normalize_company_name(company_row[0])
-        base = normalized_company[:5].ljust(5, "X")
+        normalized_client = normalize_company_name(client_row[0])
+        base = normalized_client[:5].ljust(5, "X")
         date_part = ed_dt.strftime("%Y%m%d")
         base_sid = f"{base}-{workshop_row[0]}-{date_part}"
         sid = base_sid
@@ -433,7 +449,7 @@ def sessions_new_post():
 
         cur.execute(
             """insert into session
-                   (session_id, company_id, workshop_type_id, start_date, end_date,
+                   (session_id, client_id, workshop_type_id, start_date, end_date,
                     client_manager_name, client_manager_email, created_by_user_id)
                values (%s,%s,%s,%s,%s,%s,%s,%s)
                returning id, session_id""", (
@@ -805,109 +821,16 @@ def users_delete(user_id):
 @app.get("/admin/companies")
 @roles_required_any("admin","staff")
 def companies_list():
-    show_archived = request.args.get("show_archived") == "1"
-    with conn() as cx, cx.cursor() as cur:
-        sql = "select id, name, active from company"
-        if not show_archived:
-            sql += " where active=true"
-        sql += " order by name"
-        cur.execute(sql)
-        rows = cur.fetchall()
-    return render_template("admin/companies_list.html", rows=rows, show_archived=show_archived)
-
-
-@app.get("/admin/companies/new")
-@roles_required_any("admin","staff")
-def companies_new_form():
-    return render_template("admin/companies_form.html", form={}, errors={})
-
-
-@app.post("/admin/companies/new")
-@roles_required_any("admin","staff")
-def companies_new():
-    name = (request.form.get("name") or "").strip()
-    norm = normalize_company_name(name)
-    errors = {}
-    if not name:
-        errors["name"] = "Name is required."
-    with conn() as cx, cx.cursor() as cur:
-        if not errors:
-            cur.execute("select 1 from company where lower(name)=lower(%s)", (name,))
-            if cur.fetchone():
-                errors["name"] = "Name must be unique."
-        if errors:
-            return render_template("admin/companies_form.html", form={"name": name}, errors=errors)
-        cur.execute(
-            "insert into company (name, normalized_name, active) values (%s, %s, true)",
-            (name, norm),
-        )
-    return redirect("/admin/companies")
-
-
-@app.get("/admin/companies/<int:comp_id>/edit")
-@roles_required_any("admin","staff")
-def companies_edit_form(comp_id):
-    with conn() as cx, cx.cursor() as cur:
-        cur.execute("select name from company where id=%s", (comp_id,))
-        row = cur.fetchone()
-        if not row:
-            return abort(404)
-    form = {"id": comp_id, "name": row[0]}
-    return render_template("admin/companies_form.html", form=form, errors={})
-
-
-@app.post("/admin/companies/<int:comp_id>/edit")
-@roles_required_any("admin","staff")
-def companies_edit(comp_id):
-    name = (request.form.get("name") or "").strip()
-    norm = normalize_company_name(name)
-    errors = {}
-    if not name:
-        errors["name"] = "Name is required."
-    with conn() as cx, cx.cursor() as cur:
-        if not errors:
-            cur.execute("select 1 from company where lower(name)=lower(%s) and id<>%s", (name, comp_id))
-            if cur.fetchone():
-                errors["name"] = "Name must be unique."
-        if errors:
-            form = {"id": comp_id, "name": name}
-            return render_template("admin/companies_form.html", form=form, errors=errors)
-        cur.execute(
-            "update company set name=%s, normalized_name=%s where id=%s",
-            (name, norm, comp_id),
-        )
-    return redirect("/admin/companies")
-
-
-@app.post("/admin/companies/<int:comp_id>/archive")
-@roles_required_any("admin","staff")
-def companies_archive(comp_id):
-    with conn() as cx, cx.cursor() as cur:
-        cur.execute("update company set active=false where id=%s", (comp_id,))
-    return redirect("/admin/companies")
-
-
-@app.post("/admin/companies/<int:comp_id>/unarchive")
-@roles_required_any("admin","staff")
-def companies_unarchive(comp_id):
-    with conn() as cx, cx.cursor() as cur:
-        cur.execute("update company set active=true where id=%s", (comp_id,))
-    return redirect("/admin/companies?show_archived=1")
+    rows = list_clients()
+    return render_template("admin/companies_list.html", rows=rows)
 
 # ---------- workshop types ----------
 
 @app.get("/admin/workshop-types")
 @roles_required_any("admin","staff")
 def workshop_types_list():
-    show_archived = request.args.get("show_archived") == "1"
-    with conn() as cx, cx.cursor() as cur:
-        sql = "select id, short_name, full_name, active from workshop_type"
-        if not show_archived:
-            sql += " where active=true"
-        sql += " order by short_name"
-        cur.execute(sql)
-        rows = cur.fetchall()
-    return render_template("admin/workshop_types_list.html", rows=rows, show_archived=show_archived)
+    rows = list_workshop_types()
+    return render_template("admin/workshop_types_list.html", rows=rows)
 
 
 @app.get("/admin/workshop-types/new")
@@ -919,78 +842,78 @@ def workshop_types_new_form():
 @app.post("/admin/workshop-types/new")
 @roles_required_any("admin","staff")
 def workshop_types_new():
-    short = (request.form.get("short_name") or "").strip().upper()
-    full = (request.form.get("full_name") or "").strip()
+    code = (request.form.get("code") or "").strip().upper()
+    name = (request.form.get("name") or "").strip()
     errors = {}
-    if not re.fullmatch(r"[A-Z0-9]{2,8}", short):
-        errors["short_name"] = "Use 2-8 uppercase letters or digits."
+    if not re.fullmatch(r"[A-Z0-9]{2,8}", code):
+        errors["code"] = "Use 2-8 uppercase letters or digits."
     with conn() as cx, cx.cursor() as cur:
         if not errors:
-            cur.execute("select 1 from workshop_type where short_name=%s", (short,))
+            cur.execute("select 1 from workshop_type where code=%s", (code,))
             if cur.fetchone():
-                errors["short_name"] = "Short name must be unique."
+                errors["code"] = "Code must be unique."
         if errors:
             return render_template(
                 "admin/workshop_types_form.html",
-                form={"short_name": short, "full_name": full},
+                form={"code": code, "name": name},
                 errors=errors,
             )
         cur.execute(
-            "insert into workshop_type (short_name, full_name, active) values (%s, %s, true)",
-            (short, full),
+            "insert into workshop_type (code, name, active) values (%s, %s, true)",
+            (code, name),
         )
     return redirect("/admin/workshop-types")
 
 
-@app.get("/admin/workshop-types/<int:wt_id>/edit")
+@app.get("/admin/workshop-types/<wt_id>/edit")
 @roles_required_any("admin","staff")
 def workshop_types_edit_form(wt_id):
     with conn() as cx, cx.cursor() as cur:
-        cur.execute("select short_name, full_name from workshop_type where id=%s", (wt_id,))
+        cur.execute("select code, name from workshop_type where workshop_type_id=%s", (wt_id,))
         row = cur.fetchone()
         if not row:
             return abort(404)
-    form = {"id": wt_id, "short_name": row[0], "full_name": row[1]}
+    form = {"id": wt_id, "code": row[0], "name": row[1]}
     return render_template("admin/workshop_types_form.html", form=form, errors={})
 
 
-@app.post("/admin/workshop-types/<int:wt_id>/edit")
+@app.post("/admin/workshop-types/<wt_id>/edit")
 @roles_required_any("admin","staff")
 def workshop_types_edit(wt_id):
-    short = (request.form.get("short_name") or "").strip().upper()
-    full = (request.form.get("full_name") or "").strip()
+    code = (request.form.get("code") or "").strip().upper()
+    name = (request.form.get("name") or "").strip()
     errors = {}
-    if not re.fullmatch(r"[A-Z0-9]{2,8}", short):
-        errors["short_name"] = "Use 2-8 uppercase letters or digits."
+    if not re.fullmatch(r"[A-Z0-9]{2,8}", code):
+        errors["code"] = "Use 2-8 uppercase letters or digits."
     with conn() as cx, cx.cursor() as cur:
         if not errors:
-            cur.execute("select 1 from workshop_type where short_name=%s and id<>%s", (short, wt_id))
+            cur.execute("select 1 from workshop_type where code=%s and workshop_type_id<>%s", (code, wt_id))
             if cur.fetchone():
-                errors["short_name"] = "Short name must be unique."
+                errors["code"] = "Code must be unique."
         if errors:
-            form = {"id": wt_id, "short_name": short, "full_name": full}
+            form = {"id": wt_id, "code": code, "name": name}
             return render_template("admin/workshop_types_form.html", form=form, errors=errors)
         cur.execute(
-            "update workshop_type set short_name=%s, full_name=%s where id=%s",
-            (short, full, wt_id),
+            "update workshop_type set code=%s, name=%s where workshop_type_id=%s",
+            (code, name, wt_id),
         )
     return redirect("/admin/workshop-types")
 
 
-@app.post("/admin/workshop-types/<int:wt_id>/archive")
+@app.post("/admin/workshop-types/<wt_id>/archive")
 @roles_required_any("admin","staff")
 def workshop_types_archive(wt_id):
     with conn() as cx, cx.cursor() as cur:
-        cur.execute("update workshop_type set active=false where id=%s", (wt_id,))
+        cur.execute("update workshop_type set active=false where workshop_type_id=%s", (wt_id,))
     return redirect("/admin/workshop-types")
 
 
-@app.post("/admin/workshop-types/<int:wt_id>/unarchive")
+@app.post("/admin/workshop-types/<wt_id>/unarchive")
 @roles_required_any("admin","staff")
 def workshop_types_unarchive(wt_id):
     with conn() as cx, cx.cursor() as cur:
-        cur.execute("update workshop_type set active=true where id=%s", (wt_id,))
-    return redirect("/admin/workshop-types?show_archived=1")
+        cur.execute("update workshop_type set active=true where workshop_type_id=%s", (wt_id,))
+    return redirect("/admin/workshop-types")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
