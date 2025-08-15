@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, date
 from email.message import EmailMessage
 from functools import wraps
 from flask import Flask, request, send_file, send_from_directory, Response, url_for, session, redirect, abort, render_template, flash
-import itsdangerous
 from uuid import UUID
 import psycopg2
 from PyPDF2 import PdfReader, PdfWriter
@@ -165,50 +164,46 @@ def normalize_company_name(name: str) -> str:
     return name.upper()
 
 
-def build_client_edit_token(session_uid: UUID, email: str, expires_at: datetime) -> str:
-    s = itsdangerous.URLSafeSerializer(app.secret_key, salt="client-edit")
-    payload = {
-        "s": str(session_uid),
-        "e": (email or "").lower(),
-        "x": int(expires_at.timestamp()),
-    }
-    return s.dumps(payload)
+def _session_access_exists(session_uid, user_id):
+    if not user_id:
+        return False
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "select 1 from session_access where session_uid=%s and user_account_id=%s",
+            (str(session_uid), user_id),
+        )
+        return cur.fetchone() is not None
 
 
-def verify_client_edit_token(token: str) -> dict | None:
-    if not token:
-        return None
-    s = itsdangerous.URLSafeSerializer(app.secret_key, salt="client-edit")
-    try:
-        data = s.loads(token)
-    except Exception:
-        return None
-    if not isinstance(data, dict):
-        return None
-    if datetime.utcnow().timestamp() <= data.get("x", 0):
-        return data
-    return None
-
-
-def require_client_edit_token(session_uid, token):
-    payload = verify_client_edit_token(token)
-    if not payload or payload.get("s") != str(session_uid):
-        abort(403)
-    sess = get_session(session_uid)
-    if not sess:
-        abort(404)
-    email = (sess.get("client_manager_email") or "").lower()
-    if payload.get("e") != email:
-        abort(403)
-    now = datetime.utcnow()
-    token_exp = datetime.utcfromtimestamp(payload.get("x", 0))
-    end_dt = sess.get("end_date")
-    if not isinstance(end_dt, datetime):
-        end_dt = datetime.combine(end_dt, datetime.min.time())
-    session_exp = end_dt + timedelta(days=30)
-    if now > min(token_exp, session_exp):
-        abort(403)
-    return sess
+def _ensure_client_manager_account(cur, session_uid, name, email):
+    email = (email or "").strip().lower()
+    if not email:
+        return
+    display = name or email
+    cur.execute("select user_account_id from user_account where lower(email)=%s", (email,))
+    row = cur.fetchone()
+    if row:
+        user_id = row[0]
+    else:
+        pw_hash = generate_password_hash(os.urandom(16).hex())
+        cur.execute(
+            """
+            insert into user_account (client_id, email, auth_type, first_name, last_name, certificate_display_name,
+                                      password_hash, status, is_kt_admin, is_kt_crm, is_kt_delivery, is_kt_contractor, is_kt_staff)
+            values (NULL, %s, 'native', %s, '', %s, %s, 'active', false, false, false, false, false)
+            returning user_account_id
+            """,
+            (email, display, display, pw_hash),
+        )
+        user_id = cur.fetchone()[0]
+    cur.execute(
+        """
+        insert into session_access (session_uid, user_account_id)
+        values (%s, %s)
+        on conflict (session_uid, user_account_id) do nothing
+        """,
+        (str(session_uid), user_id),
+    )
 
 def autoshrink_name(width_pts, text):
     try:
@@ -576,7 +571,7 @@ def sessions_new_post():
                    (session_id, client_id, workshop_type_id, start_date, end_date,
                     client_manager_name, client_manager_email, created_by_user_id)
                values (%s,%s,%s,%s,%s,%s,%s,%s)
-               returning id, session_id""", (
+               returning session_uid, session_id""", (
                 sid,
                 cid,
                 wid,
@@ -587,7 +582,8 @@ def sessions_new_post():
                 int(session.get("uid")) if session.get("uid") else None,
             )
         )
-        new_id, new_sid = cur.fetchone()
+        new_uid, new_sid = cur.fetchone()
+        _ensure_client_manager_account(cur, new_uid, form["client_manager_name"], form["client_manager_email"])
         cx.commit()
     flash(f"Created session {new_sid}")
     return redirect(url_for("sessions_list"))
@@ -600,14 +596,6 @@ def render_session_detail_page(session_uid, learner_form=None, learner_errors=No
         abort(404)
     learners = list_session_learners(session_uid)
     shipping = shipping_form if shipping_form is not None else get_session_shipping(session_uid)
-    client_edit_url = None
-    if sess.get("client_manager_email"):
-        end_dt = sess.get("end_date")
-        if not isinstance(end_dt, datetime):
-            end_dt = datetime.combine(end_dt, datetime.min.time())
-        expires_at = end_dt + timedelta(days=30)
-        token = build_client_edit_token(sess["session_uid"], sess["client_manager_email"], expires_at)
-        client_edit_url = f"https://cbs.ktapps.net/sessions/{sess['session_uid']}/manage?t={token}"
     return render_template(
         "sessions_detail.html",
         sess=sess,
@@ -617,11 +605,10 @@ def render_session_detail_page(session_uid, learner_form=None, learner_errors=No
         shipping_form=shipping,
         shipping_errors=shipping_errors or {},
         tab=tab,
-        client_edit_url=client_edit_url,
     )
 
 
-def render_session_manage_page(session_uid, token, learner_form=None, learner_errors=None,
+def render_session_manage_page(session_uid, learner_form=None, learner_errors=None,
                                shipping_form=None, shipping_errors=None, tab=None):
     sess = get_session(session_uid)
     if not sess:
@@ -636,7 +623,6 @@ def render_session_manage_page(session_uid, token, learner_form=None, learner_er
         learner_errors=learner_errors or {},
         shipping_form=shipping,
         shipping_errors=shipping_errors or {},
-        token=token,
         tab=tab,
     )
 
@@ -648,18 +634,19 @@ def sessions_detail(session_uid):
 
 
 @app.get("/sessions/<uuid:session_uid>/manage")
+@login_required
 def sessions_manage(session_uid):
-    token = request.args.get("t", "")
-    require_client_edit_token(session_uid, token)
-    return render_session_manage_page(session_uid, token)
+    if not (is_staff() or _session_access_exists(session_uid, session.get("uid"))):
+        return abort(403)
+    return render_session_manage_page(session_uid)
 
 
 @app.post("/sessions/<uuid:session_uid>/learners/add")
+@login_required
 def sessions_learners_add(session_uid):
-    token = request.form.get("t") or request.args.get("t") or ""
     staff = is_staff()
-    if not staff:
-        require_client_edit_token(session_uid, token)
+    if not (staff or _session_access_exists(session_uid, session.get("uid"))):
+        return abort(403)
     name = (request.form.get("name") or "").strip()
     email = (request.form.get("email") or "").strip().lower()
     form = {"name": name, "email": email}
@@ -671,7 +658,7 @@ def sessions_learners_add(session_uid):
     if errors:
         if staff:
             return render_session_detail_page(session_uid, learner_form=form, learner_errors=errors, tab="learners")
-        return render_session_manage_page(session_uid, token, learner_form=form, learner_errors=errors, tab="learners")
+        return render_session_manage_page(session_uid, learner_form=form, learner_errors=errors, tab="learners")
     with conn() as cx, cx.cursor() as cur:
         try:
             cur.execute(
@@ -685,15 +672,15 @@ def sessions_learners_add(session_uid):
             flash("Already added")
     if staff:
         return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
-    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#learners")
+    return redirect(url_for("sessions_manage", session_uid=session_uid) + "#learners")
 
 
 @app.post("/sessions/<uuid:session_uid>/learners/<uuid:learner_uid>/delete")
+@login_required
 def sessions_learners_delete(session_uid, learner_uid):
-    token = request.form.get("t") or request.args.get("t") or ""
     staff = is_staff()
-    if not staff:
-        require_client_edit_token(session_uid, token)
+    if not (staff or _session_access_exists(session_uid, session.get("uid"))):
+        return abort(403)
     with conn() as cx, cx.cursor() as cur:
         cur.execute(
             "delete from session_learner where session_uid=%s and learner_uid=%s",
@@ -703,24 +690,25 @@ def sessions_learners_delete(session_uid, learner_uid):
     flash("Removed")
     if staff:
         return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
-    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#learners")
+    return redirect(url_for("sessions_manage", session_uid=session_uid) + "#learners")
 
 
 @app.get("/sessions/<uuid:session_uid>/shipping")
+@login_required
 def sessions_shipping_get(session_uid):
-    token = request.args.get("t") or ""
     if is_staff():
         return render_session_detail_page(session_uid, tab="shipping")
-    require_client_edit_token(session_uid, token)
-    return render_session_manage_page(session_uid, token, tab="shipping")
+    if not _session_access_exists(session_uid, session.get("uid")):
+        return abort(403)
+    return render_session_manage_page(session_uid, tab="shipping")
 
 
 @app.post("/sessions/<uuid:session_uid>/shipping")
+@login_required
 def sessions_shipping_post(session_uid):
-    token = request.form.get("t") or request.args.get("t") or ""
     staff = is_staff()
-    if not staff:
-        require_client_edit_token(session_uid, token)
+    if not (staff or _session_access_exists(session_uid, session.get("uid"))):
+        return abort(403)
     fields = [
         "recipient",
         "address1",
@@ -741,7 +729,7 @@ def sessions_shipping_post(session_uid):
     if errors:
         if staff:
             return render_session_detail_page(session_uid, shipping_form=form, shipping_errors=errors, tab="shipping")
-        return render_session_manage_page(session_uid, token, shipping_form=form, shipping_errors=errors, tab="shipping")
+        return render_session_manage_page(session_uid, shipping_form=form, shipping_errors=errors, tab="shipping")
     with conn() as cx, cx.cursor() as cur:
         cur.execute(
             """
@@ -776,7 +764,7 @@ def sessions_shipping_post(session_uid):
     flash("Saved")
     if staff:
         return redirect(url_for("sessions_shipping_get", session_uid=session_uid) + "#shipping")
-    return redirect(url_for("sessions_manage", session_uid=session_uid, t=token) + "#shipping")
+    return redirect(url_for("sessions_manage", session_uid=session_uid) + "#shipping")
 
 
 @app.post("/sessions/<uuid:session_uid>/client-manager")
@@ -792,6 +780,7 @@ def sessions_client_manager_post(session_uid):
             "update session set client_manager_name=%s, client_manager_email=%s where session_uid=%s",
             (name, email, str(session_uid)),
         )
+        _ensure_client_manager_account(cur, session_uid, name, email)
         cx.commit()
     flash("Saved")
     return redirect(url_for("sessions_detail", session_uid=session_uid))
