@@ -16,38 +16,13 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
 </script>
 {% endif %}
 <ul>
-  <li><a href="#overview">Overview</a></li>
-  <li><a href="#client-manager">Client Manager</a></li>
   <li><a href="#learners">Learners</a></li>
   <li><a href="#shipping">Shipping</a></li>
 </ul>
-<div id="overview">
-  <h3>Overview</h3>
-  <table border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Company</th><td>{{ sess.company_name }}</td></tr>
-    <tr><th>Workshop</th><td>{{ sess.workshop_code }} - {{ sess.workshop_name }}</td></tr>
-    <tr><th>Start</th><td>{{ sess.start_date }}</td></tr>
-    <tr><th>End</th><td>{{ sess.end_date }}</td></tr>
-    <tr><th>Status</th><td>{{ sess.status }}</td></tr>
-  </table>
-</div>
-<div id="client-manager">
-  <h3>Client Manager</h3>
-  <form method="post" action="{{ url_for('sessions_client_manager_post', session_uid=sess.session_uid) }}">
-    <p><label>Name <input type="text" name="name" value="{{ sess.client_manager_name or '' }}" required></label></p>
-    <p><label>Email <input type="email" name="email" value="{{ sess.client_manager_email or '' }}"></label></p>
-    <p><button type="submit">Save</button></p>
-  </form>
-  {% if client_edit_url %}
-  <p>
-    <input type="text" id="client-edit-link" value="{{ client_edit_url }}" readonly style="width:100%">
-    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('client-edit-link').value)">Copy client edit link</button>
-  </p>
-  {% endif %}
-</div>
 <div id="learners">
   <h3>Learners</h3>
   <form method="post" action="{{ url_for('sessions_learners_add', session_uid=sess.session_uid) }}">
+    <input type="hidden" name="t" value="{{ token }}">
     <p>
       <label>Name <input type="text" name="name" value="{{ learner_form.name or '' }}"></label>
       {% if learner_errors.name %}<span style="color:red">{{ learner_errors.name }}</span>{% endif %}
@@ -67,6 +42,7 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
       <td>{{ l.email }}</td>
       <td>
         <form method="post" action="{{ url_for('sessions_learners_delete', session_uid=sess.session_uid, learner_uid=l.learner_uid) }}" style="display:inline" onsubmit="return confirm('Remove learner?')">
+          <input type="hidden" name="t" value="{{ token }}">
           <button type="submit">Delete</button>
         </form>
       </td>
@@ -80,6 +56,7 @@ window.onload = function(){ location.hash = '{{ tab }}'; };
 <div id="shipping">
   <h3>Shipping</h3>
   <form method="post" action="{{ url_for('sessions_shipping_post', session_uid=sess.session_uid) }}">
+    <input type="hidden" name="t" value="{{ token }}">
     <p>
       <label>Recipient <input type="text" name="recipient" value="{{ shipping_form.recipient or '' }}"></label>
       {% if shipping_errors.recipient %}<span style="color:red">{{ shipping_errors.recipient }}</span>{% endif %}
