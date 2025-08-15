@@ -67,7 +67,7 @@ def list_sessions():
     with conn() as cx, cx.cursor() as cur:
         cur.execute(
             """
-            select s.session_id, c.name as company, wt.code as workshop_short,
+            select s.session_uid, s.session_id, c.name as company, wt.code as workshop_short,
                    wt.name as workshop_full, s.start_date, s.end_date, s.created_at
             from session s
             left join client c on s.client_id=c.client_id
@@ -76,6 +76,37 @@ def list_sessions():
             """
         )
         return cur.fetchall()
+
+
+def get_session(session_uid):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            """
+            select s.session_uid, s.session_id, c.name as company_name, wt.code as workshop_code,
+                   wt.name as workshop_name, s.start_date, s.end_date, s.status,
+                   s.client_manager_name, s.client_manager_email
+            from session s
+            left join client c on s.client_id=c.client_id
+            left join workshop_type wt on s.workshop_type_id=wt.workshop_type_id
+            where s.session_uid=%s
+            """,
+            (str(session_uid),),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    return {
+        "session_uid": row[0],
+        "session_id": row[1],
+        "company_name": row[2],
+        "workshop_code": row[3],
+        "workshop_name": row[4],
+        "start_date": row[5],
+        "end_date": row[6],
+        "status": row[7],
+        "client_manager_name": row[8],
+        "client_manager_email": row[9],
+    }
 
 # ---------- helpers ----------
 def sanitize(s): return re.sub(r"[^A-Za-z0-9_\-\.]", "_", s or "")
@@ -467,6 +498,33 @@ def sessions_new_post():
         cx.commit()
     flash(f"Created session {new_sid}")
     return redirect(url_for("sessions_list"))
+
+
+@app.get("/sessions/<uuid:session_uid>")
+@staff_required
+def sessions_detail(session_uid):
+    sess = get_session(session_uid)
+    if not sess:
+        abort(404)
+    return render_template("sessions_detail.html", sess=sess)
+
+
+@app.post("/sessions/<uuid:session_uid>/client-manager")
+@staff_required
+def sessions_client_manager_post(session_uid):
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    if not name:
+        flash("Name required")
+        return redirect(url_for("sessions_detail", session_uid=session_uid))
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "update session set client_manager_name=%s, client_manager_email=%s where session_uid=%s",
+            (name, email, str(session_uid)),
+        )
+        cx.commit()
+    flash("Saved")
+    return redirect(url_for("sessions_detail", session_uid=session_uid))
 
 
 # ---------- importer ----------

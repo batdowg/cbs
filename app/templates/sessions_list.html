@@ -21,9 +21,9 @@
     <th>End</th>
     <th>Created</th>
   </tr>
-  {% for sid, company, workshop_short, workshop_full, start, end, created in rows %}
+  {% for uid, sid, company, workshop_short, workshop_full, start, end, created in rows %}
   <tr>
-    <td>{{ sid }}</td>
+    <td><a href="{{ url_for('sessions_detail', session_uid=uid) }}">{{ sid }}</a></td>
     <td>{{ company }}</td>
     <td>{{ workshop_short }}</td>
     <td>{{ workshop_full }}</td>
