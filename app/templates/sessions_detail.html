@@ -10,6 +10,11 @@
   </ul>
   {% endif %}
 {% endwith %}
+{% if tab %}
+<script>
+window.onload = function(){ location.hash = '{{ tab }}'; };
+</script>
+{% endif %}
 <ul>
   <li><a href="#overview">Overview</a></li>
   <li><a href="#client-manager">Client Manager</a></li>
@@ -31,6 +36,59 @@
   <form method="post" action="{{ url_for('sessions_client_manager_post', session_uid=sess.session_uid) }}">
     <p><label>Name <input type="text" name="name" value="{{ sess.client_manager_name or '' }}" required></label></p>
     <p><label>Email <input type="email" name="email" value="{{ sess.client_manager_email or '' }}"></label></p>
+    <p><button type="submit">Save</button></p>
+  </form>
+</div>
+<div id="learners">
+  <h3>Learners</h3>
+  <form method="post" action="{{ url_for('sessions_learners_add', session_uid=sess.session_uid) }}">
+    <p>
+      <label>Name <input type="text" name="name" value="{{ learner_form.name or '' }}"></label>
+      {% if learner_errors.name %}<span style="color:red">{{ learner_errors.name }}</span>{% endif %}
+    </p>
+    <p>
+      <label>Email <input type="email" name="email" value="{{ learner_form.email or '' }}"></label>
+      {% if learner_errors.email %}<span style="color:red">{{ learner_errors.email }}</span>{% endif %}
+    </p>
+    <p><button type="submit">Add</button></p>
+  </form>
+  {% if learners %}
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr><th>Name</th><th>Email</th><th></th></tr>
+    {% for l in learners %}
+    <tr>
+      <td>{{ l.name }}</td>
+      <td>{{ l.email }}</td>
+      <td>
+        <form method="post" action="{{ url_for('sessions_learners_delete', session_uid=sess.session_uid, learner_uid=l.learner_uid) }}" style="display:inline" onsubmit="return confirm('Remove learner?')">
+          <button type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No learners yet.</p>
+  {% endif %}
+</div>
+<div id="shipping">
+  <h3>Shipping</h3>
+  <form method="post" action="{{ url_for('sessions_shipping_post', session_uid=sess.session_uid) }}">
+    <p>
+      <label>Recipient <input type="text" name="recipient" value="{{ shipping_form.recipient or '' }}"></label>
+      {% if shipping_errors.recipient %}<span style="color:red">{{ shipping_errors.recipient }}</span>{% endif %}
+    </p>
+    <p>
+      <label>Address 1 <input type="text" name="address1" value="{{ shipping_form.address1 or '' }}"></label>
+      {% if shipping_errors.address1 %}<span style="color:red">{{ shipping_errors.address1 }}</span>{% endif %}
+    </p>
+    <p><label>Address 2 <input type="text" name="address2" value="{{ shipping_form.address2 or '' }}"></label></p>
+    <p><label>City <input type="text" name="city" value="{{ shipping_form.city or '' }}"></label></p>
+    <p><label>State <input type="text" name="state" value="{{ shipping_form.state or '' }}"></label></p>
+    <p><label>Postal Code <input type="text" name="postal_code" value="{{ shipping_form.postal_code or '' }}"></label></p>
+    <p><label>Country <input type="text" name="country" value="{{ shipping_form.country or '' }}"></label></p>
+    <p><label>Phone <input type="text" name="phone" value="{{ shipping_form.phone or '' }}"></label></p>
+    <p><label>Notes <textarea name="notes">{{ shipping_form.notes or '' }}</textarea></label></p>
     <p><button type="submit">Save</button></p>
   </form>
 </div>

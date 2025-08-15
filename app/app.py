@@ -108,6 +108,51 @@ def get_session(session_uid):
         "client_manager_email": row[9],
     }
 
+def list_session_learners(session_uid):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "select learner_uid, name, email from session_learner where session_uid=%s order by created_at",
+            (str(session_uid),),
+        )
+        rows = cur.fetchall()
+    return [
+        {"learner_uid": r[0], "name": r[1], "email": r[2]}
+        for r in rows
+    ]
+
+
+def get_session_shipping(session_uid):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "select recipient, address1, address2, city, state, postal_code, country, phone, notes "
+            "from session_shipping where session_uid=%s",
+            (str(session_uid),),
+        )
+        row = cur.fetchone()
+    if not row:
+        return {
+            "recipient": "",
+            "address1": "",
+            "address2": "",
+            "city": "",
+            "state": "",
+            "postal_code": "",
+            "country": "",
+            "phone": "",
+            "notes": "",
+        }
+    return {
+        "recipient": row[0],
+        "address1": row[1],
+        "address2": row[2],
+        "city": row[3],
+        "state": row[4],
+        "postal_code": row[5],
+        "country": row[6],
+        "phone": row[7],
+        "notes": row[8],
+    }
+
 # ---------- helpers ----------
 def sanitize(s): return re.sub(r"[^A-Za-z0-9_\-\.]", "_", s or "")
 
@@ -500,13 +545,132 @@ def sessions_new_post():
     return redirect(url_for("sessions_list"))
 
 
-@app.get("/sessions/<uuid:session_uid>")
-@staff_required
-def sessions_detail(session_uid):
+def render_session_detail_page(session_uid, learner_form=None, learner_errors=None,
+                               shipping_form=None, shipping_errors=None, tab=None):
     sess = get_session(session_uid)
     if not sess:
         abort(404)
-    return render_template("sessions_detail.html", sess=sess)
+    learners = list_session_learners(session_uid)
+    shipping = shipping_form if shipping_form is not None else get_session_shipping(session_uid)
+    return render_template(
+        "sessions_detail.html",
+        sess=sess,
+        learners=learners,
+        learner_form=learner_form or {},
+        learner_errors=learner_errors or {},
+        shipping_form=shipping,
+        shipping_errors=shipping_errors or {},
+        tab=tab,
+    )
+
+
+@app.get("/sessions/<uuid:session_uid>")
+@staff_required
+def sessions_detail(session_uid):
+    return render_session_detail_page(session_uid)
+
+
+@app.post("/sessions/<uuid:session_uid>/learners/add")
+@staff_required
+def sessions_learners_add(session_uid):
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    form = {"name": name, "email": email}
+    errors = {}
+    if not name:
+        errors["name"] = "Required"
+    if not email:
+        errors["email"] = "Required"
+    if errors:
+        return render_session_detail_page(session_uid, learner_form=form, learner_errors=errors, tab="learners")
+    with conn() as cx, cx.cursor() as cur:
+        try:
+            cur.execute(
+                "insert into session_learner (session_uid, name, email) values (%s,%s,%s)",
+                (str(session_uid), name, email),
+            )
+            cx.commit()
+            flash("Added")
+        except psycopg2.errors.UniqueViolation:
+            cx.rollback()
+            flash("Already added")
+    return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+
+
+@app.post("/sessions/<uuid:session_uid>/learners/<uuid:learner_uid>/delete")
+@staff_required
+def sessions_learners_delete(session_uid, learner_uid):
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            "delete from session_learner where session_uid=%s and learner_uid=%s",
+            (str(session_uid), str(learner_uid)),
+        )
+        cx.commit()
+    flash("Removed")
+    return redirect(url_for("sessions_detail", session_uid=session_uid) + "#learners")
+
+
+@app.get("/sessions/<uuid:session_uid>/shipping")
+@staff_required
+def sessions_shipping_get(session_uid):
+    return render_session_detail_page(session_uid, tab="shipping")
+
+
+@app.post("/sessions/<uuid:session_uid>/shipping")
+@staff_required
+def sessions_shipping_post(session_uid):
+    fields = [
+        "recipient",
+        "address1",
+        "address2",
+        "city",
+        "state",
+        "postal_code",
+        "country",
+        "phone",
+        "notes",
+    ]
+    form = {f: (request.form.get(f) or "").strip() for f in fields}
+    errors = {}
+    if not form["recipient"]:
+        errors["recipient"] = "Required"
+    if not form["address1"]:
+        errors["address1"] = "Required"
+    if errors:
+        return render_session_detail_page(session_uid, shipping_form=form, shipping_errors=errors, tab="shipping")
+    with conn() as cx, cx.cursor() as cur:
+        cur.execute(
+            """
+            insert into session_shipping (session_uid, recipient, address1, address2, city, state, postal_code, country, phone, notes, updated_at)
+            values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now())
+            on conflict (session_uid) do update set
+                recipient=excluded.recipient,
+                address1=excluded.address1,
+                address2=excluded.address2,
+                city=excluded.city,
+                state=excluded.state,
+                postal_code=excluded.postal_code,
+                country=excluded.country,
+                phone=excluded.phone,
+                notes=excluded.notes,
+                updated_at=now()
+            """,
+            (
+                str(session_uid),
+                form["recipient"],
+                form["address1"],
+                form["address2"],
+                form["city"],
+                form["state"],
+                form["postal_code"],
+                form["country"],
+                form["phone"],
+                form["notes"],
+            ),
+        )
+        cx.commit()
+    flash("Saved")
+    return redirect(url_for("sessions_shipping_get", session_uid=session_uid) + "#shipping")
 
 
 @app.post("/sessions/<uuid:session_uid>/client-manager")
