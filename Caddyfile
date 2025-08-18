@@ -1,0 +1,12 @@
+cbs.ktapps.net {
+    encode zstd gzip
+    root * /srv
+    handle_path /static/* {
+        file_server
+    }
+    @health path /healthz
+    reverse_proxy @health app:8000
+    handle {
+        reverse_proxy app:8000
+    }
+}

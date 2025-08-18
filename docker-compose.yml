@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    container_name: cbs-app-1
+    environment:
+      - PORT=8000
+      - SECRET_KEY=${SECRET_KEY:-dev}
+    expose:
+      - "8000"
+  caddy:
+    image: caddy:2
+    container_name: cbs-caddy-1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - ./site:/srv
+    depends_on:
+      - app
+  db:
+    image: postgres:16
+    container_name: cbs-db-1
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=${DB_USER:-cbs}
+      - POSTGRES_DB=${DB_NAME:-cbs}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+  caddy_data:
