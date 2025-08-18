@@ -5,6 +5,11 @@ services:
     environment:
       - PORT=8000
       - SECRET_KEY=${SECRET_KEY:-dev}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_USER=${DB_USER:-cbs}
+      - DB_NAME=${DB_NAME:-cbs}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - FIRST_ADMIN_EMAIL=${FIRST_ADMIN_EMAIL:-cackermann@kepner-tregoe.com}
     expose:
       - "8000"
   caddy:
