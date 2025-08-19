@@ -49,6 +49,7 @@ except ModuleNotFoundError:  # pragma: no cover - simple fallback
         return check_password_hash(hashed, password)
 
 
+
 db = SQLAlchemy()
 
 
