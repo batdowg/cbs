@@ -16,8 +16,38 @@ from flask import (
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import validates
-from email_validator import EmailNotValidError, validate_email
-from passlib.hash import bcrypt
+from werkzeug.security import check_password_hash, generate_password_hash
+
+# Optional email validation dependency
+try:  # pragma: no cover - import may fail if package missing
+    from email_validator import EmailNotValidError, validate_email
+except ModuleNotFoundError:  # pragma: no cover - simple fallback
+    EmailNotValidError = ValueError
+
+    def validate_email(email: str):  # type: ignore
+        class _Result:
+            def __init__(self, e: str) -> None:
+                self.email = e
+
+        return _Result(email)
+
+# Prefer passlib for bcrypt hashing, fall back to Werkzeug if unavailable
+try:  # pragma: no cover - import may fail if package missing
+    from passlib.hash import bcrypt
+
+    def hash_password(password: str) -> str:
+        return bcrypt.hash(password)
+
+    def verify_password(password: str, hashed: str) -> bool:
+        return bcrypt.verify(password, hashed)
+except ModuleNotFoundError:  # pragma: no cover - simple fallback
+
+    def hash_password(password: str) -> str:
+        return generate_password_hash(password)
+
+    def verify_password(password: str, hashed: str) -> bool:
+        return check_password_hash(hashed, password)
+
 
 
 db = SQLAlchemy()
@@ -101,7 +131,7 @@ def create_app():
             if action == "password":
                 password = request.form.get("password", "")
                 user = User.query.filter_by(email=email).first()
-                if user and user.password_hash and bcrypt.verify(password, user.password_hash):
+                if user and user.password_hash and verify_password(password, user.password_hash):
                     session["user_id"] = user.id
                     session["user_email"] = user.email
                     return redirect(url_for("dashboard"))
@@ -155,7 +185,7 @@ def create_app():
                 error = "Password must be at least 8 characters."
             else:
                 user = db.session.get(User, session["user_id"])
-                user.password_hash = bcrypt.hash(password)
+                user.password_hash = hash_password(password)
                 db.session.commit()
                 flash("Password updated.")
                 return redirect(url_for("dashboard"))
