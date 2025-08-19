@@ -86,6 +86,13 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 7.4 Feature flags (later): enable surveys, enable Salesforce sync, etc.  
 7.5 Menu management (later): simple ordering and visibility per role
 
+## 7.x SMTP persistence and test-send
+7.1 Settings model [DONE]
+7.2 Mail settings form save/reload [DONE]
+7.3 Emailer env fallback and safe stub [DONE]
+7.4 Test send route and log proof [DONE]
+Note: Settings row is singleton id=1 with env fallback on first load
+
 ## 8. Salesforce Integration (later phase)
 8.1 Import Sessions from Salesforce export initially (CSV)  
 8.2 API integration to pull Sessions and Participants  
