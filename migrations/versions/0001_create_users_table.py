@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column("is_kt_delivery", sa.Boolean(), nullable=True),
         sa.Column("is_kt_contractor", sa.Boolean(), nullable=True),
         sa.Column("is_kt_staff", sa.Boolean(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()")),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now()),
     )
     op.create_index("ix_users_email", "users", ["email"], unique=True)
 
