@@ -1,4 +1,5 @@
 from functools import wraps
+import os
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
@@ -45,7 +46,15 @@ def mail_settings():
         flash('Saved')
         return redirect(url_for('settings.mail_settings'))
     values = {cat: emailer.get_from_for(cat) for cat in categories}
-    return render_template('settings/mail.html', values=values)
+    env_keys = [
+        'SMTP_HOST',
+        'SMTP_PORT',
+        'SMTP_USER',
+        'SMTP_FROM_DEFAULT',
+        'SMTP_FROM_NAME',
+    ]
+    smtp_env = {k: os.getenv(k) or '(not set)' for k in env_keys}
+    return render_template('settings/mail.html', values=values, smtp_env=smtp_env)
 
 
 @bp.post('/mail/test')

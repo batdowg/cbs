@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '0003_create_app_settings_table'
-down_revision = '0002_add_password_hash'
+down_revision = '0002'
 branch_labels = None
 depends_on = None
 
