@@ -128,3 +128,12 @@ Environment variables (reference only, do not hardcode secrets in repo):
 13.3 Data models: `CBS Data tables.xlsx`  
 13.4 Branding asset: `KT-KepnerTregoe-CMYK-wtag (trans).png`  
 13.5 Site map and access: `Site Map and access.xlsx`
+
+
+## Latest update done by codex 08/19/2025 11:24 EST
+Added an app_settings table and seeded default From addresses for prework, certificates, and client setup mail categories
+Introduced a reusable emailer module that resolves From addresses from settings or environment variables and logs mock sends with [MAIL-OUT] when SMTP details are missing
+Implemented an admin-only Settings blueprint with UI for editing mail From addresses and triggering test sends
+Created a shared navigation template that shows a Settings link only to application admins
+Documented required SMTP environment variables and default authentication details in the README
+Updated project context to mark mail settings scaffolding as complete and note [MAIL-OUT] behavior when SMTP is absent
