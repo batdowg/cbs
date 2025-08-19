@@ -83,11 +83,7 @@ def create_app():
 
     @app.get("/healthz")
     def healthz():  # pragma: no cover - simple healthcheck
-        count = 0
-        inspector = db.inspect(db.engine)
-        if inspector.has_table(User.__tablename__):
-            count = db.session.query(User).count()
-        return jsonify(ok=True, users=count)
+        return "OK", 200
 
     @app.get("/")
     def index():  # pragma: no cover - trivial route
@@ -218,7 +214,13 @@ def create_app():
     @admin_required
     def admin_test_mail():
         from . import emailer
-        result = emailer.send_mail(session.get("user_email"), "CBS test mail", "This is a CBS test.")
+
+        current_user = db.session.get(User, session.get("user_id"))
+        result = emailer.send(
+            current_user.email,
+            "CBS test mail",
+            "This is a test from CBS",
+        )
         return jsonify(result)
 
     from .routes.settings_mail import bp as settings_mail_bp
