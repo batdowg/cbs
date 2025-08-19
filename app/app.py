@@ -209,11 +209,23 @@ def create_app():
 
 
 class AppSetting(db.Model):
-    __tablename__ = 'app_settings'
+    __tablename__ = "app_settings"
 
     key = db.Column(db.String(120), primary_key=True)
     value = db.Column(db.Text, nullable=False)
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+
+def get_setting(key: str, default=None):
+    s = db.session.get(AppSetting, key)
+    return s.value if s else default
+
+
+def set_setting(key: str, value: str) -> None:
+    existing = db.session.get(AppSetting, key)
+    if existing:
+        existing.value = value
+    else:
+        db.session.add(AppSetting(key=key, value=value))
 
 
 class User(db.Model):

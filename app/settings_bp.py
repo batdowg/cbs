@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from .app import db, AppSetting, User
+from .app import db, User, get_setting, set_setting
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
@@ -30,15 +30,6 @@ def index():
 @bp.route('/mail', methods=['GET', 'POST'])
 @require_app_admin
 def mail_settings():
-    categories = ['prework', 'certificates', 'clientsetup']
-
-    def get_setting(key: str, default: str = "") -> str:
-        try:
-            setting = db.session.get(AppSetting, key)
-            return setting.value if setting else default
-        except Exception:
-            return default
-
     if request.method == 'POST':
         port = request.form.get('smtp_port', '')
         if not port.isdigit():
@@ -49,28 +40,34 @@ def mail_settings():
             'mail.smtp.user': request.form.get('smtp_user', ''),
             'mail.from.default': request.form.get('from_default', ''),
             'mail.from.name': request.form.get('from_name', ''),
+            'mail.from.prework': request.form.get('from_prework', ''),
+            'mail.from.certificates': request.form.get('from_certificates', ''),
+            'mail.from.clientsetup': request.form.get('from_clientsetup', ''),
         }
-        for cat in categories:
-            entries[f'mail.from.{cat}'] = request.form.get(cat, '')
         for key, val in entries.items():
-            setting = db.session.get(AppSetting, key)
-            if setting:
-                setting.value = val
-            else:
-                db.session.add(AppSetting(key=key, value=val))
+            set_setting(key, val)
         db.session.commit()
         flash('Saved')
         return redirect(url_for('settings.mail_settings'))
 
+    host = get_setting('mail.smtp.host', 'smtp.office365.com')
+    port = get_setting('mail.smtp.port', '587')
+    user = get_setting('mail.smtp.user', '')
+    from_default = get_setting('mail.from.default', 'certificates@kepner-tregoe.com')
+    from_name = get_setting('mail.from.name', '')
+    prework = get_setting('mail.from.prework', from_default)
+    certs = get_setting('mail.from.certificates', from_default)
+    clientsetup = get_setting('mail.from.clientsetup', from_default)
     values = {
-        'smtp_host': get_setting('mail.smtp.host', 'smtp.office365.com'),
-        'smtp_port': get_setting('mail.smtp.port', '587'),
-        'smtp_user': get_setting('mail.smtp.user', ''),
-        'from_default': get_setting('mail.from.default', 'certificates@kepner-tregoe.com'),
-        'from_name': get_setting('mail.from.name', ''),
+        'smtp_host': host,
+        'smtp_port': port,
+        'smtp_user': user,
+        'from_default': from_default,
+        'from_name': from_name,
+        'from_prework': prework,
+        'from_certificates': certs,
+        'from_clientsetup': clientsetup,
     }
-    for cat in categories:
-        values[cat] = get_setting(f'mail.from.{cat}', values['from_default'])
     return render_template('settings/mail.html', values=values)
 
 
@@ -83,8 +80,8 @@ def mail_test():
     result = emailer.send_mail(
         to_email, 'CBS test mail', 'This is a CBS test.', category=category
     )
-    if result.get('sent'):
-        flash('Test email sent')
+    if result.get('error'):
+        flash(result['error'])
     else:
-        flash(result.get('error', 'Logged email to stdout'))
+        flash('Test mail queued' if result.get('sent') else 'Test mail mock')
     return redirect(url_for('settings.mail_settings'))
