@@ -135,34 +135,39 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 10.4 Pagination on lists (sessions, users)  
 10.5 Timezone handling for sessions
 
-## 11. Data and Security Rules
-11.1 One account per email across the entire system; enforce lower(email) unique in DB and app logic  
-11.2 Roles (boolean flags on user):  
+## 11. Database Completion
+11.1 All remaining tables from Excel added via migration [DONE]
+11.2 Idempotent guards and FK relationships documented [DONE]
+11.3 Next: wire Session Details to shipping/materials where needed
+
+## 12. Data and Security Rules
+12.1 One account per email across the entire system; enforce lower(email) unique in DB and app logic  
+12.2 Roles (boolean flags on user):  
  • Application Admin: can change Settings (section 7), manage users and roles  
  • Admin (information admin): manage sessions, participants, certificates; cannot change core Settings  
  • CRM, Delivery, Contractor, Staff as needed for access scopes  
  • Participant: access only to their own certificates  
-11.3 Staff‑only pages: `/importer`, `/cert-form`, `/issued`, `/users`  
-11.4 Learner page: `/my-certificates` shows only their own PDFs  
-11.5 Secrets policy: never commit secrets; use environment variables and GitHub secrets  
-11.6 Certificate completion date uses session end date
+12.3 Staff‑only pages: `/importer`, `/cert-form`, `/issued`, `/users`  
+12.4 Learner page: `/my-certificates` shows only their own PDFs  
+12.5 Secrets policy: never commit secrets; use environment variables and GitHub secrets  
+12.6 Certificate completion date uses session end date
 
-## 12. Current State Snapshot
-12.1 App, DB, Caddy running via Docker Compose on VPS  
-12.2 Domain: https://cbs.ktapps.net  
-12.3 Health check: `/healthz`  
-12.4 Migrations configured and working  
-12.5 Magic link login working  
-12.6 Password login working (bcrypt)  
-12.7 Admin user present: `cackermann@kepner-tregoe.com` (password set manually on VPS)  
-12.8 SMTP not yet configured in app; auth account is `ktbooks@kepner-tregoe.com` and From defaults to `certificates@kepner-tregoe.com` once wired
+## 13. Current State Snapshot
+13.1 App, DB, Caddy running via Docker Compose on VPS  
+13.2 Domain: https://cbs.ktapps.net  
+13.3 Health check: `/healthz`  
+13.4 Migrations configured and working  
+13.5 Magic link login working  
+13.6 Password login working (bcrypt)  
+13.7 Admin user present: `cackermann@kepner-tregoe.com` (password set manually on VPS)  
+13.8 SMTP not yet configured in app; auth account is `ktbooks@kepner-tregoe.com` and From defaults to `certificates@kepner-tregoe.com` once wired
 
-## 13. Reference Files in repo or project
-13.1 Process flow: `CBS Level1 Flow.pdf`  
-13.2 Import template: `SFC Participant Import Template.csv`  
-13.3 Data models: `CBS Data tables.xlsx`  
-13.4 Branding asset: `KT-KepnerTregoe-CMYK-wtag (trans).png`  
-13.5 Site map and access: `Site Map and access.xlsx`
+## 14. Reference Files in repo or project
+14.1 Process flow: `CBS Level1 Flow.pdf`  
+14.2 Import template: `SFC Participant Import Template.csv`  
+14.3 Data models: `CBS Data tables.xlsx`  
+14.4 Branding asset: `KT-KepnerTregoe-CMYK-wtag (trans).png`  
+14.5 Site map and access: `Site Map and access.xlsx`
 
 
 ## Latest update done by codex 08/19/2025 11:24 EST
