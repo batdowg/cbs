@@ -1,5 +1,4 @@
 from functools import wraps
-import os
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
@@ -31,12 +30,23 @@ def index():
 @bp.route('/mail', methods=['GET', 'POST'])
 @require_app_admin
 def mail_settings():
-    from . import emailer
     categories = ['prework', 'certificates', 'clientsetup']
+
+    def get_setting(key: str, default: str = "") -> str:
+        setting = db.session.get(AppSetting, key)
+        return setting.value if setting else default
+
     if request.method == 'POST':
+        entries = {
+            'mail.smtp.host': request.form.get('smtp_host', ''),
+            'mail.smtp.port': request.form.get('smtp_port', ''),
+            'mail.smtp.user': request.form.get('smtp_user', ''),
+            'mail.from.default': request.form.get('from_default', ''),
+            'mail.from.name': request.form.get('from_name', ''),
+        }
         for cat in categories:
-            key = f'mail.from.{cat}'
-            val = request.form.get(cat, '')
+            entries[f'mail.from.{cat}'] = request.form.get(cat, '')
+        for key, val in entries.items():
             setting = db.session.get(AppSetting, key)
             if setting:
                 setting.value = val
@@ -45,16 +55,17 @@ def mail_settings():
         db.session.commit()
         flash('Saved')
         return redirect(url_for('settings.mail_settings'))
-    values = {cat: emailer.get_from_for(cat) for cat in categories}
-    env_keys = [
-        'SMTP_HOST',
-        'SMTP_PORT',
-        'SMTP_USER',
-        'SMTP_FROM_DEFAULT',
-        'SMTP_FROM_NAME',
-    ]
-    smtp_env = {k: os.getenv(k) or '(not set)' for k in env_keys}
-    return render_template('settings/mail.html', values=values, smtp_env=smtp_env)
+
+    values = {
+        'smtp_host': get_setting('mail.smtp.host', 'smtp.office365.com'),
+        'smtp_port': get_setting('mail.smtp.port', '587'),
+        'smtp_user': get_setting('mail.smtp.user', 'ktbooks@kepner-tregoe.com'),
+        'from_default': get_setting('mail.from.default', 'certificates@kepner-tregoe.com'),
+        'from_name': get_setting('mail.from.name', ''),
+    }
+    for cat in categories:
+        values[cat] = get_setting(f'mail.from.{cat}', values['from_default'])
+    return render_template('settings/mail.html', values=values)
 
 
 @bp.post('/mail/test')

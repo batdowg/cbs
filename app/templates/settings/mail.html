@@ -7,6 +7,16 @@
 {% endwith %}
 {% include 'nav.html' %}
 <form method="post">
+  <label>SMTP Host</label>
+  <input type="text" name="smtp_host" value="{{ values.smtp_host }}">
+  <label>SMTP Port</label>
+  <input type="number" name="smtp_port" value="{{ values.smtp_port }}">
+  <label>SMTP Auth User</label>
+  <input type="email" name="smtp_user" value="{{ values.smtp_user }}">
+  <label>Default From</label>
+  <input type="email" name="from_default" value="{{ values.from_default }}">
+  <label>From Name</label>
+  <input type="text" name="from_name" value="{{ values.from_name }}">
   <label>Prework From</label>
   <input type="email" name="prework" value="{{ values.prework }}">
   <label>Certificates From</label>
@@ -15,14 +25,6 @@
   <input type="email" name="clientsetup" value="{{ values.clientsetup }}">
   <button type="submit">Save</button>
 </form>
-<h2>SMTP Environment</h2>
-<ul>
-  <li>SMTP_HOST: {{ smtp_env.SMTP_HOST }}</li>
-  <li>SMTP_PORT: {{ smtp_env.SMTP_PORT }}</li>
-  <li>SMTP_USER: {{ smtp_env.SMTP_USER }}</li>
-  <li>SMTP_FROM_DEFAULT: {{ smtp_env.SMTP_FROM_DEFAULT }}</li>
-  <li>SMTP_FROM_NAME: {{ smtp_env.SMTP_FROM_NAME }}</li>
-</ul>
 <h2>Test Send</h2>
 <form method="post" action="{{ url_for('settings.mail_test') }}">
   <input type="email" name="test_email" placeholder="Recipient email">
