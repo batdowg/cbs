@@ -1,9 +1,14 @@
 import logging
 import os
 import smtplib
+import sys
 from email.message import EmailMessage
 
 logger = logging.getLogger("cbs.mailer")
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def send(to_addr: str, subject: str, body: str):
@@ -17,14 +22,13 @@ def send(to_addr: str, subject: str, body: str):
     mode = "real"
     if not host or not port or not from_addr:
         mode = "stub"
-        logger.info(
-            f"[MAIL-OUT] to={to_addr} subject=\"{subject}\" host={host} mode=stub"
-        )
-        return {"ok": False, "detail": "stub: missing config"}
 
     logger.info(
-        f"[MAIL-OUT] to={to_addr} subject=\"{subject}\" host={host} mode=real"
+        f"[MAIL-OUT] mode={mode} to={to_addr} subject=\"{subject}\" host={host}"
     )
+
+    if mode == "stub":
+        return {"ok": False, "detail": "stub: missing config"}
 
     try:
         with smtplib.SMTP(host, int(port)) as server:

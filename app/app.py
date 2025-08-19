@@ -1,3 +1,4 @@
+import logging
 import os
 import smtplib
 from email.message import EmailMessage
@@ -214,12 +215,16 @@ def create_app():
     @admin_required
     def admin_test_mail():
         from . import emailer
+        mailer_logger = logging.getLogger("cbs.mailer")
 
         current_user = db.session.get(User, session.get("user_id"))
         result = emailer.send(
             current_user.email,
             "CBS test mail",
             "This is a test from CBS",
+        )
+        mailer_logger.info(
+            f"[MAIL-OUT] route_result={result['ok']}/{result['detail']}"
         )
         return jsonify(result)
 

@@ -91,6 +91,8 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 7.2 Mail settings form save/reload [DONE]
 7.3 Emailer env fallback and safe stub [DONE]
 7.4 Test send route and log proof [DONE]
+    • Mailer logs [MAIL-OUT] lines to stdout and test route logs its result.
+    • Example: `docker compose logs app | grep '\[MAIL-OUT\]'`
 Note: Settings row is singleton id=1 with env fallback on first load
 
 ## 8. Salesforce Integration (later phase)
@@ -163,6 +165,8 @@ Context items 2.1–2.3 and 7.2 noted as UI + backend working; real SMTP depends
 Fixed seed migration to upsert SMTP defaults using a bound connection
 Added helpers to read and write app_settings with safe upserts
 Mail Settings page saves without 500s and emailer pulls SMTP/From values from settings with env fallback
+## Latest update done by codex 09/30/2025
+Mailer logs [MAIL-OUT] lines to stdout and /admin/test-mail logs route results for easier debugging
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK
