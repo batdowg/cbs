@@ -109,3 +109,80 @@ class Certificate(db.Model):
     workshop_date = db.Column(db.Date)
     pdf_path = db.Column(db.String(255))
     issued_at = db.Column(db.DateTime, server_default=db.func.now())
+
+
+class MaterialType(db.Model):
+    __tablename__ = "material_types"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+
+class Material(db.Model):
+    __tablename__ = "materials"
+    id = db.Column(db.Integer, primary_key=True)
+    material_type_id = db.Column(
+        db.Integer, db.ForeignKey("material_types.id", ondelete="SET NULL")
+    )
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+
+
+class SessionShipping(db.Model):
+    __tablename__ = "session_shipping"
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    contact_name = db.Column(db.String(255))
+    contact_phone = db.Column(db.String(50))
+    contact_email = db.Column(db.String(255))
+    address_line1 = db.Column(db.String(255))
+    address_line2 = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    postal_code = db.Column(db.String(50))
+    country = db.Column(db.String(100))
+    courier = db.Column(db.String(255))
+    tracking = db.Column(db.String(255))
+    ship_date = db.Column(db.Date)
+    special_instructions = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+
+class SessionShippingItem(db.Model):
+    __tablename__ = "session_shipping_items"
+    id = db.Column(db.Integer, primary_key=True)
+    session_shipping_id = db.Column(
+        db.Integer, db.ForeignKey("session_shipping.id", ondelete="CASCADE")
+    )
+    material_id = db.Column(
+        db.Integer, db.ForeignKey("materials.id", ondelete="SET NULL")
+    )
+    quantity = db.Column(db.Integer, default=0)
+    notes = db.Column(db.Text)
+
+
+class Badge(db.Model):
+    __tablename__ = "badges"
+    id = db.Column(db.Integer, primary_key=True)
+    participant_id = db.Column(
+        db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
+    )
+    name = db.Column(db.String(255), nullable=False)
+    issued_at = db.Column(db.DateTime, server_default=db.func.now())
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="SET NULL"), nullable=True
+    )
+    participant_id = db.Column(
+        db.Integer, db.ForeignKey("participants.id", ondelete="SET NULL"), nullable=True
+    )
+    action = db.Column(db.String(255), nullable=False)
+    details = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
