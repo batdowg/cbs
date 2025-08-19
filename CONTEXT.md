@@ -115,6 +115,11 @@ Navigation Freeze v1 locks the sidebar links and Mail Settings placement. SMTP p
 9.4 Health check endpoint `/healthz` returns JSON ok and counts  
 9.5 Ops cheatsheet kept in README for routine commands
 
+## 9.x Core Schema
+9.1 Core schema created via migration for Sessions, Participants, SessionParticipant, Certificates [DONE]
+9.2 Idempotent guards used so upgrades are safe [DONE]
+9.3 Next: expand remaining tables from Excel in subsequent migrations after validation [DONE]
+
 ## 9.x Certificates
 9.1 DB tables for Participant, SessionParticipant, Certificate [DONE]
 9.2 Session details page with CSV import and participant edit [DONE]
