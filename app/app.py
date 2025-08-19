@@ -71,6 +71,14 @@ def create_app():
 
     db.init_app(app)
 
+    @app.context_processor
+    def inject_user():
+        user = None
+        user_id = session.get('user_id')
+        if user_id:
+            user = db.session.get(User, user_id)
+        return {'current_user': user}
+
     serializer = URLSafeTimedSerializer(app.secret_key)
 
     @app.get("/healthz")
@@ -191,10 +199,21 @@ def create_app():
                 return redirect(url_for("dashboard"))
         return render_template("password.html", error=error)
 
+    from .settings_bp import bp as settings_bp
+    app.register_blueprint(settings_bp)
+
     with app.app_context():
         seed_initial_user()
 
     return app
+
+
+class AppSetting(db.Model):
+    __tablename__ = 'app_settings'
+
+    key = db.Column(db.String(120), primary_key=True)
+    value = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
 
 class User(db.Model):
