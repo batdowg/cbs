@@ -53,17 +53,26 @@ class Session(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
+    location = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 
 class Participant(db.Model):
     __tablename__ = "participants"
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(255))
-    cert_name_override = db.Column(db.String(255))
+    organization = db.Column(db.String(255))
+    job_title = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index("ix_participants_email_lower", db.func.lower(email), unique=True),
+    )
 
     @validates("email")
     def lower_email(self, key, value):  # pragma: no cover - simple normalizer
@@ -89,23 +98,14 @@ class Certificate(db.Model):
     __tablename__ = "certificates"
 
     id = db.Column(db.Integer, primary_key=True)
+    participant_id = db.Column(
+        db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
+    )
     session_id = db.Column(
         db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
     )
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
-    participant_email = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(255))
-    cert_name = db.Column(db.String(255))
+    certificate_name = db.Column(db.String(255))
     workshop_name = db.Column(db.String(255))
-    completion_date = db.Column(db.Date)
-    file_path = db.Column(db.String(255))
-    file_hash = db.Column(db.String(64))
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "session_id", "participant_email", name="uix_cert_session_email"
-        ),
-    )
+    workshop_date = db.Column(db.Date)
+    pdf_path = db.Column(db.String(255))
+    issued_at = db.Column(db.DateTime, server_default=db.func.now())
