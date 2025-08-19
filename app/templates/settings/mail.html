@@ -1,0 +1,27 @@
+<!doctype html>
+<title>Mail Settings</title>
+{% with messages = get_flashed_messages() %}
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+{% endwith %}
+{% include 'nav.html' %}
+<form method="post">
+  <label>Prework From</label>
+  <input type="email" name="prework" value="{{ values.prework }}">
+  <label>Certificates From</label>
+  <input type="email" name="certificates" value="{{ values.certificates }}">
+  <label>Client Setup From</label>
+  <input type="email" name="clientsetup" value="{{ values.clientsetup }}">
+  <button type="submit">Save</button>
+</form>
+<h2>Test Send</h2>
+<form method="post" action="{{ url_for('settings.mail_test') }}">
+  <input type="email" name="test_email" placeholder="Recipient email">
+  <select name="test_category">
+    <option value="prework">prework</option>
+    <option value="certificates">certificates</option>
+    <option value="clientsetup">clientsetup</option>
+  </select>
+  <button type="submit">Send Test</button>
+</form>

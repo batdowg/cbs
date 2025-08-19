@@ -21,17 +21,19 @@
 
 ## 2. Email and Notifications
 2.1 Wire SMTP using Microsoft 365 auth account (authenticate as `ktbooks@kepner-tregoe.com`)  
-2.2 Outbound From address mapping in Settings:  
+2.2 Outbound From address mapping in Settings: [UI + scaffold DONE]  
  • Prework emails From = configurable (default `certificates@kepner-tregoe.com`)  
  • Certificates and badges emails From = configurable (default `certificates@kepner-tregoe.com`)  
  • Client session setup emails From = configurable (default `certificates@kepner-tregoe.com`)  
-2.3 If SMTP env is missing, do not fail; log the composed message with a `[MAIL-OUT]` prefix  
+2.3 If SMTP env is missing, do not fail; log the composed message with a `[MAIL-OUT]` prefix [DONE]  
 2.4 Message templates stored in DB with simple placeholders (name, session, date)  
 2.5 Test mail endpoint in Settings to send a one‑off test to an address  
 2.6 Delivery logging table (to, subject, status, error text)
 
 Environment variables (reference only, do not hardcode secrets in repo):  
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` (auth account), `SMTP_PASS` (secret), `SMTP_FROM_DEFAULT`, `SMTP_FROM_NAME`
+
+Note: If SMTP env vars are missing, composed mails are logged with a [MAIL-OUT] prefix
 
 ## 3. Session Management (with client self‑service)
 3.1 Create Session form (staff only): title, code, start date, end date, timezone, location, delivery type, facilitator(s)  
@@ -73,7 +75,7 @@ Environment variables (reference only, do not hardcode secrets in repo):
 
 ## 7. Settings (Application Admin only)
 7.1 Settings landing page visible only to Application Admin (see Roles in section 11)  
-7.2 Mail Settings page:  
+7.2 Mail Settings page: [UI + scaffold DONE]  
  • Display and edit From address mapping per category (prework, certs and badges, client session setup)  
  • Read SMTP host, port, auth user from environment; allow test send only  
  • Never display or store SMTP password in DB; it is provided via environment/secret  
