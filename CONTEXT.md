@@ -33,7 +33,7 @@
 Environment variables (reference only, do not hardcode secrets in repo):  
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` (auth account), `SMTP_PASS` (secret), `SMTP_FROM_DEFAULT`, `SMTP_FROM_NAME`
 
-Note: If SMTP env vars are missing, composed mails are logged with a [MAIL-OUT] prefix
+Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
 3.1 Create Session form (staff only): title, code, start date, end date, timezone, location, delivery type, facilitator(s)  
