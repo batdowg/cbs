@@ -6,7 +6,7 @@ Create Date: 2024-06-03 00:00:01.000000
 """
 
 from alembic import op
-import sqlalchemy as sa
+
 
 
 revision = "0002"
@@ -16,11 +16,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "users",
-        sa.Column("password_hash", sa.String(length=255), nullable=True),
-    )
+    if op.get_bind().dialect.name == "sqlite":
+        op.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)")
+    else:
+        op.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)"
+        )
 
 
 def downgrade() -> None:
-    op.drop_column("users", "password_hash")
+    if op.get_bind().dialect.name == "sqlite":
+        op.execute("ALTER TABLE users DROP COLUMN password_hash")
+    else:
+        op.execute("ALTER TABLE users DROP COLUMN IF EXISTS password_hash")

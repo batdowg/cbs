@@ -24,10 +24,11 @@ def send_mail(to_email: str, subject: str, text_body: str, category: str = "cert
     host = _get_setting("mail.smtp.host") or os.environ.get(
         "SMTP_HOST", "smtp.office365.com"
     )
-    port = int(
-        _get_setting("mail.smtp.port")
-        or os.environ.get("SMTP_PORT", 587)
-    )
+    port_val = _get_setting("mail.smtp.port") or os.environ.get("SMTP_PORT", "587")
+    try:
+        port = int(port_val)
+    except (TypeError, ValueError):
+        port = 587
     user = _get_setting("mail.smtp.user") or os.environ.get("SMTP_USER")
     from_default = _get_setting("mail.from.default") or os.environ.get(
         "SMTP_FROM_DEFAULT", "certificates@kepner-tregoe.com"
@@ -47,9 +48,12 @@ def send_mail(to_email: str, subject: str, text_body: str, category: str = "cert
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(text_body)
-    with smtplib.SMTP(host, int(port)) as s:
-        s.starttls()
-        s.login(user, pwd)
-        s.send_message(msg)
-    return {"sent": True}
+    try:
+        with smtplib.SMTP(host, int(port)) as s:
+            s.starttls()
+            s.login(user, pwd)
+            s.send_message(msg)
+        return {"sent": True}
+    except smtplib.SMTPException as e:
+        return {"sent": False, "error": str(e)}
 
