@@ -168,3 +168,6 @@ Mail Settings page saves without 500s and emailer pulls SMTP/From values from se
 - /healthz returns 200 OK
 - Unauthenticated curl showed no headers, likely redirect to login
 - Next step: confirm HTTP status with verbose curl and follow redirects; verify admin-only access with a logged-in request
+- Logged in admin received JSON {"ok": false, "detail": "stub: missing config"} from GET /admin/test-mail
+- Sample log: [MAIL-OUT] to=foo@example.com subject="CBS test mail" host=None mode=stub
+- 7.4 [DONE]
