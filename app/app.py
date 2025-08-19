@@ -65,17 +65,18 @@ class User(db.Model):
 
 
 def seed_initial_user() -> None:
+    """Seed an initial admin user if the users table is empty."""
     inspector = db.inspect(db.engine)
     if not inspector.has_table(User.__tablename__):
+        return
+
+    # Only seed when no users exist yet
+    if db.session.query(User).count() > 0:
         return
 
     first_admin_email = os.getenv(
         "FIRST_ADMIN_EMAIL", "cackermann@kepner-tregoe.com"
     ).lower()
-    exists = db.session.query(User).filter_by(email=first_admin_email).first()
-    if exists:
-        return
-
     admin = User(
         email=first_admin_email,
         name=first_admin_email,
