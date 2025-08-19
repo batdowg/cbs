@@ -1,4 +1,10 @@
 <!doctype html>
 <title>Dashboard</title>
+{% with messages = get_flashed_messages() %}
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+{% endwith %}
 <p>Welcome, {{ email }}</p>
+<a href="{{ url_for('settings_password') }}">Set password</a>
 <a href="{{ url_for('logout') }}">Logout</a>

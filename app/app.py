@@ -5,6 +5,7 @@ from functools import wraps
 
 from flask import (
     Flask,
+    flash,
     jsonify,
     redirect,
     render_template,
@@ -15,6 +16,8 @@ from flask import (
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import validates
+from email_validator import EmailNotValidError, validate_email
+from passlib.hash import bcrypt
 
 
 db = SQLAlchemy()
@@ -86,15 +89,35 @@ def create_app():
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
+        error = None
         if request.method == "POST":
-            email = request.form.get("email", "").lower()
-            user = User.query.filter_by(email=email).first()
-            if user:
-                token = serializer.dumps(email, salt="magic-link")
-                link = url_for("magic", token=token, _external=True)
-                send_magic_link(email, link)
+            email_input = request.form.get("email", "")
+            action = request.form.get("action")
+            try:
+                email = validate_email(email_input).email.lower()
+            except EmailNotValidError:
+                email = ""
+
+            if action == "password":
+                password = request.form.get("password", "")
+                user = User.query.filter_by(email=email).first()
+                if user and user.password_hash and bcrypt.verify(password, user.password_hash):
+                    session["user_id"] = user.id
+                    session["user_email"] = user.email
+                    return redirect(url_for("dashboard"))
+                error = "Invalid credentials"
+                return render_template("login.html", error=error)
+
+            # default to magic link
+            if email:
+                user = User.query.filter_by(email=email).first()
+                if user:
+                    token = serializer.dumps(email, salt="magic-link")
+                    link = url_for("magic", token=token, _external=True)
+                    send_magic_link(email, link)
             return render_template("login.html", sent=True)
-        return render_template("login.html")
+
+        return render_template("login.html", error=error)
 
     @app.get("/magic")
     def magic():
@@ -122,6 +145,22 @@ def create_app():
     def dashboard():
         return render_template("dashboard.html", email=session.get("user_email"))
 
+    @app.route("/settings/password", methods=["GET", "POST"])
+    @login_required
+    def settings_password():
+        error = None
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            if len(password) < 8:
+                error = "Password must be at least 8 characters."
+            else:
+                user = db.session.get(User, session["user_id"])
+                user.password_hash = bcrypt.hash(password)
+                db.session.commit()
+                flash("Password updated.")
+                return redirect(url_for("dashboard"))
+        return render_template("password.html", error=error)
+
     with app.app_context():
         seed_initial_user()
 
@@ -140,6 +179,7 @@ class User(db.Model):
     is_kt_contractor = db.Column(db.Boolean, default=False)
     is_kt_staff = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    password_hash = db.Column(db.String(255))
 
     @validates("email")
     def lower_email(self, key, value):  # pragma: no cover - simple normalizer
