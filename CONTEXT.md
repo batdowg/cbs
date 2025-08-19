@@ -152,3 +152,7 @@ Made users.password_hash migration idempotent using IF NOT EXISTS/IF EXISTS
 Hardened Mail Settings with safe defaults, port validation, and test send feedback
 Emailer attempts real SMTP send with DB/env config and logs mock sends when incomplete
 Context items 2.1–2.3 and 7.2 noted as UI + backend working; real SMTP depends on env on VPS
+## Latest update done by codex 09/21/2025
+Fixed seed migration to upsert SMTP defaults using a bound connection
+Added helpers to read and write app_settings with safe upserts
+Mail Settings page saves without 500s and emailer pulls SMTP/From values from settings with env fallback
