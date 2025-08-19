@@ -125,6 +125,20 @@ def create_app():
 
         return wrapper
 
+    def admin_required(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user_id = session.get("user_id")
+            if not user_id:
+                return redirect(url_for("login"))
+            user = db.session.get(User, user_id)
+            if not user or not user.is_kt_admin:
+                return redirect(url_for("dashboard"))
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+
     @app.route("/login", methods=["GET", "POST"])
     def login():
         error = None
@@ -199,8 +213,16 @@ def create_app():
                 return redirect(url_for("dashboard"))
         return render_template("password.html", error=error)
 
-    from .settings_bp import bp as settings_bp
-    app.register_blueprint(settings_bp)
+
+    @app.get("/admin/test-mail")
+    @admin_required
+    def admin_test_mail():
+        from . import emailer
+        result = emailer.send_mail(session.get("user_email"), "CBS test mail", "This is a CBS test.")
+        return jsonify(result)
+
+    from .routes.settings_mail import bp as settings_mail_bp
+    app.register_blueprint(settings_mail_bp)
 
     with app.app_context():
         seed_initial_user()

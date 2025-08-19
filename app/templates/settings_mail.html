@@ -1,0 +1,24 @@
+<!doctype html>
+<title>Mail Settings</title>
+{% with messages = get_flashed_messages() %}
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+{% endwith %}
+{% include 'nav.html' %}
+<h2>SMTP Settings</h2>
+<form method="post">
+  <label>SMTP Host</label>
+  <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}">
+  <label>SMTP Port</label>
+  <input type="number" name="smtp_port" value="{{ settings.smtp_port or '' }}">
+  <label>SMTP Auth User</label>
+  <input type="email" name="smtp_user" value="{{ settings.smtp_user or '' }}">
+  <label>Default From</label>
+  <input type="email" name="smtp_from_default" value="{{ settings.smtp_from_default or '' }}">
+  <label>From Name</label>
+  <input type="text" name="smtp_from_name" value="{{ settings.smtp_from_name or '' }}">
+  <label><input type="checkbox" name="use_tls" {% if settings.use_tls %}checked{% endif %}> Use TLS</label>
+  <label><input type="checkbox" name="use_ssl" {% if settings.use_ssl %}checked{% endif %}> Use SSL</label>
+  <button type="submit">Save</button>
+</form>

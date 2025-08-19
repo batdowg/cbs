@@ -2,7 +2,7 @@
   <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <a href="{{ url_for('settings_password') }}">Set password</a>
   {% if current_user and current_user.is_kt_admin %}
-  <a href="{{ url_for('settings.index') }}">App Settings</a>
+  <a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a>
   {% endif %}
   <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
