@@ -95,6 +95,14 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Example: `docker compose logs app | grep '\[MAIL-OUT\]'`
 Note: Settings row is singleton id=1 with env fallback on first load
 
+7.5 smtp_pass_enc stored with SECRET_KEY-derived obfuscation [DONE]
+7.6 emailer real send with [MAIL-OUT] proof [DONE]
+7.7 "/" home + sidebar [DONE]
+7.8 Mail Settings top-level; Navigation Freeze v1 [DONE]
+
+Navigation Freeze v1 locks the sidebar links and Mail Settings placement. SMTP passwords are obfuscated using a SECRET_KEY-derived XOR with base64, and the mailer still falls back to environment variables when settings are incomplete. Sample real send log:
+`[MAIL-OUT] mode=real to=test@example.com subject="Test" host=smtp.example.com result=sent`
+
 ## 8. Salesforce Integration (later phase)
 8.1 Import Sessions from Salesforce export initially (CSV)  
 8.2 API integration to pull Sessions and Participants  

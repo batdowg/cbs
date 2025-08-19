@@ -88,7 +88,9 @@ def create_app():
 
     @app.get("/")
     def index():  # pragma: no cover - trivial route
-        return "CBS minimal stack is running. Visit /healthz for JSON.", 200
+        if session.get("user_id"):
+            return render_template("home.html")
+        return redirect(url_for("login"))
 
     def send_magic_link(email: str, link: str) -> None:
         smtp_vars = [
@@ -227,6 +229,41 @@ def create_app():
             f"[MAIL-OUT] route_result={result['ok']}/{result['detail']}"
         )
         return jsonify(result)
+
+    @app.get("/admin/mail-whoami")
+    @admin_required
+    def admin_mail_whoami():
+        from .models import Settings
+
+        settings = Settings.get()
+        host = settings.smtp_host if settings and settings.smtp_host else os.getenv("SMTP_HOST")
+        port = settings.smtp_port if settings and settings.smtp_port else os.getenv("SMTP_PORT")
+        user = settings.smtp_user if settings and settings.smtp_user else os.getenv("SMTP_USER")
+        from_default = (
+            settings.smtp_from_default if settings and settings.smtp_from_default else os.getenv("SMTP_FROM_DEFAULT")
+        )
+        from_name = (
+            settings.smtp_from_name if settings and settings.smtp_from_name else os.getenv("SMTP_FROM_NAME")
+        )
+        mode = "real" if host and port and from_default else "stub"
+
+        def mask(u: str | None):
+            if not u:
+                return None
+            if len(u) <= 4:
+                return "***"
+            return u[:2] + "***" + u[-2:]
+
+        return jsonify(
+            {
+                "host": host,
+                "port": port,
+                "user": mask(user),
+                "from_default": from_default,
+                "from_name": from_name,
+                "mode": mode,
+            }
+        )
 
     from .routes.settings_mail import bp as settings_mail_bp
     app.register_blueprint(settings_mail_bp)

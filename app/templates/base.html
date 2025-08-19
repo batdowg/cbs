@@ -1,0 +1,16 @@
+<!doctype html>
+<title>{% block title %}CBS{% endblock %}</title>
+<body>
+<div class="sidebar">
+  {% include 'nav.html' %}
+</div>
+<div class="content">
+  {% block content %}{% endblock %}
+</div>
+<style>
+  body { margin:0; font-family:sans-serif; }
+  .sidebar { position:fixed; top:0; bottom:0; left:0; width:200px; background:#f0f0f0; padding:1rem; }
+  .content { margin-left:200px; padding:1rem; }
+  .sidebar a { display:block; margin:0.5rem 0; text-decoration:none; }
+</style>
+</body>

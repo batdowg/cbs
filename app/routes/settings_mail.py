@@ -1,5 +1,5 @@
-from functools import wraps
 import os
+from functools import wraps
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
@@ -46,6 +46,9 @@ def settings():
         settings.smtp_user = request.form.get("smtp_user", "")
         settings.smtp_from_default = request.form.get("smtp_from_default", "")
         settings.smtp_from_name = request.form.get("smtp_from_name", "")
+        pwd = request.form.get("smtp_pass", "")
+        if pwd:
+            settings.set_smtp_pass(pwd)
         settings.use_tls = bool(request.form.get("use_tls"))
         settings.use_ssl = bool(request.form.get("use_ssl"))
         db.session.merge(settings)
