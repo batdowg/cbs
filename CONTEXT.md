@@ -163,3 +163,8 @@ Context items 2.1–2.3 and 7.2 noted as UI + backend working; real SMTP depends
 Fixed seed migration to upsert SMTP defaults using a bound connection
 Added helpers to read and write app_settings with safe upserts
 Mail Settings page saves without 500s and emailer pulls SMTP/From values from settings with env fallback
+## Diagnostics 2025-08-19
+- Route exists: admin_test_mail GET /admin/test-mail
+- /healthz returns 200 OK
+- Unauthenticated curl showed no headers, likely redirect to login
+- Next step: confirm HTTP status with verbose curl and follow redirects; verify admin-only access with a logged-in request
