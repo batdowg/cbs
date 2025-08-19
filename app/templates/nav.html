@@ -1,8 +1,8 @@
 <nav>
   <!-- Navigation Freeze v1 -->
   <a href="{{ url_for('index') }}">Home</a>
-  <a href="/sessions">Sessions</a>
-  <a href="/certificates">Certificates</a>
+  <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
+  <a href="{{ url_for('learner.my_certs') }}">Certificates</a>
   <a href="/users">Users</a>
   {% if current_user and current_user.is_kt_admin %}
   <a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a>

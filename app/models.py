@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from flask import current_app
+from sqlalchemy.orm import validates
 
 from .app import db
 
@@ -45,3 +46,66 @@ class Settings(db.Model):
             return data.decode()
         except Exception:
             return None
+
+
+class Session(db.Model):
+    __tablename__ = "sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255))
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+
+
+class Participant(db.Model):
+    __tablename__ = "participants"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    full_name = db.Column(db.String(255))
+    cert_name_override = db.Column(db.String(255))
+
+    @validates("email")
+    def lower_email(self, key, value):  # pragma: no cover - simple normalizer
+        return value.lower()
+
+
+class SessionParticipant(db.Model):
+    __tablename__ = "session_participants"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
+    )
+    participant_id = db.Column(
+        db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
+    )
+    __table_args__ = (
+        db.UniqueConstraint("session_id", "participant_id", name="uix_session_participant"),
+    )
+
+
+class Certificate(db.Model):
+    __tablename__ = "certificates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    participant_email = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(255))
+    cert_name = db.Column(db.String(255))
+    workshop_name = db.Column(db.String(255))
+    completion_date = db.Column(db.Date)
+    file_path = db.Column(db.String(255))
+    file_hash = db.Column(db.String(64))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "session_id", "participant_email", name="uix_cert_session_email"
+        ),
+    )

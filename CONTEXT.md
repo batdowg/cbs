@@ -115,6 +115,14 @@ Navigation Freeze v1 locks the sidebar links and Mail Settings placement. SMTP p
 9.4 Health check endpoint `/healthz` returns JSON ok and counts  
 9.5 Ops cheatsheet kept in README for routine commands
 
+## 9.x Certificates
+9.1 DB tables for Participant, SessionParticipant, Certificate [DONE]
+9.2 Session details page with CSV import and participant edit [DONE]
+9.3 Bulk generate PDFs per session using template and layout rules [DONE]
+9.4 ZIP export for a session [DONE]
+9.5 Learner page lists own certificates [DONE]
+Notes: name/workshop/date placement per layout rules; uses session end date as completion; autoshrink name; unique(session_id, participant_email)
+
 ## 10. Non‑functional
 10.1 Simple logs for mail sends, imports, certificate generation  
 10.2 Error pages for 404 and 500 with support link  
