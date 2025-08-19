@@ -1,74 +1,90 @@
 import os
 
 from flask import Flask, jsonify
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine, func
-from sqlalchemy.orm import declarative_base, sessionmaker, validates
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from sqlalchemy.orm import validates
 
 
-app = Flask(__name__)
+db = SQLAlchemy()
+migrate = Migrate()
 
 
-DB_USER = os.getenv("DB_USER", "cbs")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-DB_HOST = os.getenv("DB_HOST", "db")
-DB_NAME = os.getenv("DB_NAME", "cbs")
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}",
-)
+def create_app():
+    app = Flask(__name__)
 
-engine = create_engine(DATABASE_URL, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
+    DB_USER = os.getenv("DB_USER", "cbs")
+    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+    DB_HOST = os.getenv("DB_HOST", "db")
+    DB_NAME = os.getenv("DB_NAME", "cbs")
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}",
+    )
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    @app.get("/healthz")
+    def healthz():  # pragma: no cover - simple healthcheck
+        count = 0
+        inspector = db.inspect(db.engine)
+        if inspector.has_table(User.__tablename__):
+            count = db.session.query(User).count()
+        return jsonify(ok=True, users=count)
+
+    @app.get("/")
+    def index():  # pragma: no cover - trivial route
+        return "CBS minimal stack is running. Visit /healthz for JSON.", 200
+
+    with app.app_context():
+        seed_initial_user()
+
+    return app
 
 
-class User(Base):
+class User(db.Model):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True, nullable=False, index=True)
-    name = Column(String)
-    is_kt_admin = Column(Boolean, default=False)
-    is_kt_crm = Column(Boolean, default=False)
-    is_kt_delivery = Column(Boolean, default=False)
-    is_kt_contractor = Column(Boolean, default=False)
-    is_kt_staff = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String, unique=True, nullable=False, index=True)
+    name = db.Column(db.String)
+    is_kt_admin = db.Column(db.Boolean, default=False)
+    is_kt_crm = db.Column(db.Boolean, default=False)
+    is_kt_delivery = db.Column(db.Boolean, default=False)
+    is_kt_contractor = db.Column(db.Boolean, default=False)
+    is_kt_staff = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     @validates("email")
     def lower_email(self, key, value):  # pragma: no cover - simple normalizer
         return value.lower()
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+def seed_initial_user() -> None:
+    inspector = db.inspect(db.engine)
+    if not inspector.has_table(User.__tablename__):
+        return
+
     first_admin_email = os.getenv(
         "FIRST_ADMIN_EMAIL", "cackermann@kepner-tregoe.com"
     ).lower()
-    with SessionLocal() as session:
-        exists = session.query(User).filter_by(email=first_admin_email).first()
-        if not exists:
-            admin = User(
-                email=first_admin_email,
-                name=first_admin_email,
-                is_kt_admin=True,
-                is_kt_staff=True,
-            )
-            session.add(admin)
-            session.commit()
+    exists = db.session.query(User).filter_by(email=first_admin_email).first()
+    if exists:
+        return
+
+    admin = User(
+        email=first_admin_email,
+        name=first_admin_email,
+        is_kt_admin=True,
+        is_kt_staff=True,
+    )
+    db.session.add(admin)
+    db.session.commit()
 
 
-init_db()
-
-
-@app.get("/healthz")
-def healthz():
-    with SessionLocal() as session:
-        count = session.query(User).count()
-    return jsonify(ok=True, users=count)
-
-
-@app.get("/")
-def index():
-    return "CBS minimal stack is running. Visit /healthz for JSON.", 200
+app = create_app()
 
