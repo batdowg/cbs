@@ -266,7 +266,31 @@ def create_app():
         )
 
     from .routes.settings_mail import bp as settings_mail_bp
+    from .routes.sessions import bp as sessions_bp
+    from .routes.learner import bp as learner_bp
+
     app.register_blueprint(settings_mail_bp)
+    app.register_blueprint(sessions_bp)
+    app.register_blueprint(learner_bp)
+
+    @app.get("/verify/<int:cert_id>")
+    def verify(cert_id: int):
+        from .models import Certificate
+
+        cert = db.session.get(Certificate, cert_id)
+        if not cert:
+            return jsonify({"ok": False}), 404
+        masked = (cert.cert_name[0] + "***") if cert.cert_name else "***"
+        return jsonify(
+            {
+                "ok": True,
+                "workshop_name": cert.workshop_name,
+                "completion_date": cert.completion_date.isoformat()
+                if cert.completion_date
+                else None,
+                "participant": masked,
+            }
+        )
 
     with app.app_context():
         seed_initial_user()
