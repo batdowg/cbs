@@ -33,13 +33,19 @@ def mail_settings():
     categories = ['prework', 'certificates', 'clientsetup']
 
     def get_setting(key: str, default: str = "") -> str:
-        setting = db.session.get(AppSetting, key)
-        return setting.value if setting else default
+        try:
+            setting = db.session.get(AppSetting, key)
+            return setting.value if setting else default
+        except Exception:
+            return default
 
     if request.method == 'POST':
+        port = request.form.get('smtp_port', '')
+        if not port.isdigit():
+            port = '587'
         entries = {
             'mail.smtp.host': request.form.get('smtp_host', ''),
-            'mail.smtp.port': request.form.get('smtp_port', ''),
+            'mail.smtp.port': port,
             'mail.smtp.user': request.form.get('smtp_user', ''),
             'mail.from.default': request.form.get('from_default', ''),
             'mail.from.name': request.form.get('from_name', ''),
@@ -59,7 +65,7 @@ def mail_settings():
     values = {
         'smtp_host': get_setting('mail.smtp.host', 'smtp.office365.com'),
         'smtp_port': get_setting('mail.smtp.port', '587'),
-        'smtp_user': get_setting('mail.smtp.user', 'ktbooks@kepner-tregoe.com'),
+        'smtp_user': get_setting('mail.smtp.user', ''),
         'from_default': get_setting('mail.from.default', 'certificates@kepner-tregoe.com'),
         'from_name': get_setting('mail.from.name', ''),
     }
@@ -73,10 +79,12 @@ def mail_settings():
 def mail_test():
     from . import emailer
     to_email = request.form.get('test_email', '')
-    category = request.form.get('test_category', 'certificates')
-    result = emailer.send_mail(to_email, 'Test Email', 'This is a test message', category=category)
+    category = request.form.get('test_category') or 'certificates'
+    result = emailer.send_mail(
+        to_email, 'CBS test mail', 'This is a CBS test.', category=category
+    )
     if result.get('sent'):
-        flash('Email sent')
+        flash('Test email sent')
     else:
-        flash('Logged email to stdout')
+        flash(result.get('error', 'Logged email to stdout'))
     return redirect(url_for('settings.mail_settings'))

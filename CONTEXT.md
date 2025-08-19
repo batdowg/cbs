@@ -20,14 +20,14 @@
 1.7 Basic audit log for logins and role changes
 
 ## 2. Email and Notifications
-2.1 Wire SMTP using Microsoft 365 auth account (authenticate as `ktbooks@kepner-tregoe.com`) [DONE]
-2.2 Outbound From address mapping in Settings [DONE]
+2.1 Wire SMTP using Microsoft 365 auth account (authenticate as `ktbooks@kepner-tregoe.com`) [UI + backend working; real SMTP depends on env on VPS.]
+2.2 Outbound From address mapping in Settings [UI + backend working; real SMTP depends on env on VPS.]
  • Prework emails From = configurable (default `certificates@kepner-tregoe.com`)
  • Certificates and badges emails From = configurable (default `certificates@kepner-tregoe.com`)
  • Client session setup emails From = configurable (default `certificates@kepner-tregoe.com`)
  • SMTP settings (host, port, auth user, default From, From Name) editable and stored in DB (except password)
  • Emailer uses DB overrides with environment fallback
-2.3 If SMTP config is incomplete, log the composed message with a `[MAIL-OUT]` prefix [DONE]
+2.3 If SMTP config is incomplete, log the composed message with a `[MAIL-OUT]` prefix [UI + backend working; real SMTP depends on env on VPS.]
 2.4 Message templates stored in DB with simple placeholders (name, session, date)  
 2.5 Test mail endpoint in Settings to send a one‑off test to an address  
 2.6 Delivery logging table (to, subject, status, error text)
@@ -77,7 +77,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 
 ## 7. Settings (Application Admin only)
 7.1 Settings landing page visible only to Application Admin (see Roles in section 11)  
-7.2 Mail Settings page: [DONE]
+7.2 Mail Settings page: [UI + backend working; real SMTP depends on env on VPS.]
  • Display and edit SMTP host, port, auth user, default From, From Name
  • Edit From address mapping per category (prework, certs and badges, client session setup)
  • SMTP settings stored in DB except password; emailer uses DB with env fallback
@@ -147,3 +147,8 @@ SMTP host, port, auth user, default From, and From Name are editable and stored 
 Emailer reads SMTP config from DB with environment fallback and logs [MAIL-OUT] when incomplete
 Mail Settings page updated with editable SMTP fields and category overrides, plus test send
 Navigation link labeled “App Settings” and context items 2.1–2.3 and 7.2 marked done
+## Latest update done by codex 09/15/2025
+Made users.password_hash migration idempotent using IF NOT EXISTS/IF EXISTS
+Hardened Mail Settings with safe defaults, port validation, and test send feedback
+Emailer attempts real SMTP send with DB/env config and logs mock sends when incomplete
+Context items 2.1–2.3 and 7.2 noted as UI + backend working; real SMTP depends on env on VPS
