@@ -141,6 +141,7 @@ Navigation Freeze v1 locks the sidebar links and Mail Settings placement. SMTP p
 9.3 GitHub Actions deploy workflow: push to main triggers VPS pull and compose rebuild  
 9.4 Health check endpoint `/healthz` returns JSON ok and counts  
 9.5 Ops cheatsheet kept in README for routine commands
+9.6 Initial admin seeding gated by users table presence and `FLASK_SKIP_SEED` [DONE]
 
 ## 9.x Core Schema
 9.1 Core schema created via migration for Sessions, Participants, SessionParticipant, Certificates [DONE]
@@ -165,7 +166,8 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 ## 11. Database Completion
 11.1 All remaining tables from Excel added via migration [DONE]
 11.2 Idempotent guards and FK relationships documented [DONE]
-11.3 Next: wire Session Details to shipping/materials where needed
+11.3 Users table and Users admin UI implemented [DONE]
+11.4 Next: wire Session Details to shipping/materials where needed
 
 ## 12. Data and Security Rules
 12.1 One account per email across the entire system; enforce lower(email) unique in DB and app logic  
@@ -174,10 +176,11 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
  • Admin (information admin): manage sessions, participants, certificates; cannot change core Settings  
  • CRM, Delivery, Contractor, Staff as needed for access scopes  
  • Participant: access only to their own certificates  
-12.3 Staff‑only pages: `/importer`, `/cert-form`, `/issued`, `/users`  
-12.4 Learner page: `/my-certificates` shows only their own PDFs  
-12.5 Secrets policy: never commit secrets; use environment variables and GitHub secrets  
+12.3 Staff‑only pages: `/importer`, `/cert-form`, `/issued`, `/users`
+12.4 Learner page: `/my-certificates` shows only their own PDFs
+12.5 Secrets policy: never commit secrets; use environment variables and GitHub secrets
 12.6 Certificate completion date uses session end date
+12.7 Users admin UI live with audit logging [DONE]
 
 ## 13. Current State Snapshot
 13.1 App, DB, Caddy running via Docker Compose on VPS  
@@ -186,8 +189,9 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 13.4 Migrations configured and working  
 13.5 Magic link login working  
 13.6 Password login working (bcrypt)  
-13.7 Admin user present: `cackermann@kepner-tregoe.com` (password set manually on VPS)  
+13.7 Admin user present: `cackermann@kepner-tregoe.com` (password set manually on VPS)
 13.8 SMTP not yet configured in app; auth account is `ktbooks@kepner-tregoe.com` and From defaults to `certificates@kepner-tregoe.com` once wired
+13.9 Users admin UI live; additional users/roles can be created
 
 ## 14. Reference Files in repo or project
 14.1 Process flow: `CBS Level1 Flow.pdf`  
@@ -224,6 +228,9 @@ Mailer logs [MAIL-OUT] lines to stdout and /admin/test-mail logs route results f
 Introduced a dedicated User model with role flags and bcrypt helpers
 Added admin-only Users management pages with create/edit and audit logging
 Implemented app_admin_required RBAC decorator and guarded navigation link
+## Latest update done by codex 10/20/2025
+Gated initial admin seeding behind users table presence and `FLASK_SKIP_SEED`
+Marked Users table and Users admin UI as complete in context
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK

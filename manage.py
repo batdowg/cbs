@@ -3,9 +3,16 @@ from flask_migrate import Migrate
 from flask.cli import FlaskGroup
 
 
-app = create_app()
-migrate = Migrate(app, db)
-cli = FlaskGroup(create_app=create_app)
+migrate = Migrate()
+
+
+def create_cbs_app():
+    app = create_app()
+    migrate.init_app(app, db)
+    return app
+
+
+cli = FlaskGroup(create_app=create_cbs_app)
 
 
 if __name__ == "__main__":
