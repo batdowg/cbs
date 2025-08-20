@@ -34,9 +34,11 @@ def staff_required(fn):
             return redirect(url_for("login"))
         user = db.session.get(User, user_id)
         if not user or not (
-            user.is_kt_admin
-            or user.is_kt_crm
+            user.is_app_admin
+            or user.is_admin
+            or user.is_kcrm
             or user.is_kt_delivery
+            or user.is_kt_contractor
             or user.is_kt_staff
         ):
             abort(403)

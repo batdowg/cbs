@@ -45,9 +45,11 @@ def download_certificate(cert_id: int):
     user_id = flask_session.get("user_id")
     user = db.session.get(User, user_id)
     if cert.user_id != user_id and not (
-        user.is_kt_admin
-        or user.is_kt_crm
+        user.is_app_admin
+        or user.is_admin
+        or user.is_kcrm
         or user.is_kt_delivery
+        or user.is_kt_contractor
         or user.is_kt_staff
     ):
         abort(403)
