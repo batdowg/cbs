@@ -142,6 +142,7 @@ Navigation Freeze v1 locks the sidebar links and Mail Settings placement. SMTP p
 9.4 Health check endpoint `/healthz` returns JSON ok and counts  
 9.5 Ops cheatsheet kept in README for routine commands
 9.6 Initial admin seeding gated by users table presence and `FLASK_SKIP_SEED` [DONE]
+9.7 WSGI module `app.app` exports top-level `app`; seeding remains guarded [DONE]
 
 ## 9.x Core Schema
 9.1 Core schema created via migration for Sessions, Participants, SessionParticipant, Certificates [DONE]
@@ -167,7 +168,8 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 11.1 All remaining tables from Excel added via migration [DONE]
 11.2 Idempotent guards and FK relationships documented [DONE]
 11.3 Users table and Users admin UI implemented [DONE]
-11.4 Next: wire Session Details to shipping/materials where needed
+11.4 Users migration fixed for Postgres using inspector checks; enforces unique lower(email) index [DONE]
+11.5 Next: wire Session Details to shipping/materials where needed
 
 ## 12. Data and Security Rules
 12.1 One account per email across the entire system; enforce lower(email) unique in DB and app logic  

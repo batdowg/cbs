@@ -1,6 +1,7 @@
 """ensure users table with roles and lower email unique"""
 
 from alembic import op
+import sqlalchemy as sa
 
 
 revision = "0011_user_roles_and_unique_email"
@@ -10,59 +11,58 @@ depends_on = None
 
 
 def upgrade():
-    op.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            email VARCHAR(255) NOT NULL,
-            password_hash VARCHAR(255),
-            full_name VARCHAR(255),
-            is_app_admin BOOLEAN DEFAULT FALSE,
-            is_admin BOOLEAN DEFAULT FALSE,
-            is_kcrm BOOLEAN DEFAULT FALSE,
-            is_kt_delivery BOOLEAN DEFAULT FALSE,
-            is_kt_contractor BOOLEAN DEFAULT FALSE,
-            is_kt_staff BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+
+    if "users" not in insp.get_table_names():
+        op.create_table(
+            "users",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("email", sa.String(255), nullable=False),
+            sa.Column("password_hash", sa.String(255)),
+            sa.Column("full_name", sa.String(255)),
+            sa.Column("is_app_admin", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("is_admin", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("is_kcrm", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("is_kt_delivery", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("is_kt_contractor", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("is_kt_staff", sa.Boolean, server_default=sa.text("false"), nullable=False),
+            sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
         )
-        """
-    )
-    op.execute(
-        "ALTER TABLE users RENAME COLUMN IF EXISTS name TO full_name"
-    )
-    op.execute(
-        "ALTER TABLE users RENAME COLUMN IF EXISTS is_kt_admin TO is_admin"
-    )
-    op.execute(
-        "ALTER TABLE users RENAME COLUMN IF EXISTS is_kt_crm TO is_kcrm"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255)"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_app_admin BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_kcrm BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_kt_delivery BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_kt_contractor BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_kt_staff BOOLEAN DEFAULT FALSE"
-    )
-    op.execute(
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-    )
+    else:
+        cols = {c["name"] for c in insp.get_columns("users")}
+
+        if "name" in cols and "full_name" not in cols:
+            op.alter_column("users", "name", new_column_name="full_name")
+            cols.remove("name")
+            cols.add("full_name")
+        elif "full_name" not in cols:
+            op.add_column("users", sa.Column("full_name", sa.String(255)))
+
+        if "password_hash" not in cols:
+            op.add_column("users", sa.Column("password_hash", sa.String(255)))
+
+        role_flags = [
+            "is_app_admin",
+            "is_admin",
+            "is_kcrm",
+            "is_kt_delivery",
+            "is_kt_contractor",
+            "is_kt_staff",
+        ]
+        for flag in role_flags:
+            if flag not in cols:
+                op.add_column(
+                    "users",
+                    sa.Column(flag, sa.Boolean, server_default=sa.text("false"), nullable=False),
+                )
+
+        if "created_at" not in cols:
+            op.add_column(
+                "users",
+                sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+            )
+
     op.execute("DROP INDEX IF EXISTS ix_users_email")
     op.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email_lower ON users (lower(email))"
@@ -70,6 +70,5 @@ def upgrade():
 
 
 def downgrade():
-    op.execute("DROP INDEX IF EXISTS ix_users_email_lower")
-    op.execute("DROP TABLE IF EXISTS users")
+    pass
 
