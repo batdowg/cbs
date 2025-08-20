@@ -264,7 +264,8 @@ def create_app():
         )
 
     with app.app_context():
-        seed_initial_user()
+        if not os.getenv("FLASK_SKIP_SEED"):
+            seed_initial_user_safely()
 
     return app
 
@@ -289,29 +290,37 @@ def set_setting(key: str, value: str) -> None:
         db.session.add(AppSetting(key=key, value=value))
 
 
-def seed_initial_user() -> None:
-    """Seed an initial admin user if the users table is empty."""
-    inspector = db.inspect(db.engine)
-    if not inspector.has_table(User.__tablename__):
-        return
+def seed_initial_user_safely() -> None:
+    """Seed an initial admin user if the users table is empty and valid."""
+    from sqlalchemy import inspect
 
-    # Only seed when no users exist yet
-    if db.session.query(User).count() > 0:
-        return
+    try:
+        insp = inspect(db.engine)
+        if "users" not in insp.get_table_names():
+            return
 
-    first_admin_email = os.getenv(
-        "FIRST_ADMIN_EMAIL", "cackermann@kepner-tregoe.com"
-    ).lower()
-    admin = User(
-        email=first_admin_email,
-        full_name=first_admin_email,
-        is_app_admin=True,
-        is_admin=True,
-        is_kt_staff=True,
-    )
-    db.session.add(admin)
-    db.session.commit()
+        cols = {c["name"] for c in insp.get_columns("users")}
+        required = {"id", "email", "password_hash", "is_app_admin"}
+        if not required.issubset(cols):
+            return
+
+        if db.session.query(User).count() > 0:
+            return
+
+        first_admin_email = os.getenv(
+            "FIRST_ADMIN_EMAIL", "cackermann@kepner-tregoe.com"
+        ).lower()
+        admin = User(
+            email=first_admin_email,
+            full_name=first_admin_email,
+            is_app_admin=True,
+            is_admin=True,
+            is_kt_staff=True,
+        )
+        db.session.add(admin)
+        db.session.commit()
+    except Exception:
+        logging.exception("seed_initial_user_safely failed")
 
 
-app = create_app()
 
