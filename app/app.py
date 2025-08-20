@@ -268,10 +268,12 @@ def create_app():
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.learner import bp as learner_bp
+    from .routes.certificates import bp as certificates_bp
 
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(learner_bp)
+    app.register_blueprint(certificates_bp)
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):

@@ -1,16 +1,44 @@
 <!doctype html>
-<title>{% block title %}CBS{% endblock %}</title>
+<html>
+<head>
+  <title>{% block title %}CBS{% endblock %}</title>
+  <style>
+    body {
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      display:flex;
+      min-height:100vh;
+    }
+    .sidebar {
+      width:220px;
+      background:#f0f0f0;
+      padding:1rem;
+      flex-shrink:0;
+    }
+    .sidebar .logo {
+      max-width:100%;
+      margin-bottom:1rem;
+      display:block;
+    }
+    .sidebar a {
+      display:block;
+      margin:0.5rem 0;
+      text-decoration:none;
+      color:#4B2E83;
+    }
+    .content {
+      flex:1;
+      padding:1rem;
+    }
+  </style>
+</head>
 <body>
-<div class="sidebar">
-  {% include 'nav.html' %}
-</div>
-<div class="content">
-  {% block content %}{% endblock %}
-</div>
-<style>
-  body { margin:0; font-family:sans-serif; }
-  .sidebar { position:fixed; top:0; bottom:0; left:0; width:200px; background:#f0f0f0; padding:1rem; }
-  .content { margin-left:200px; padding:1rem; }
-  .sidebar a { display:block; margin:0.5rem 0; text-decoration:none; }
-</style>
+  <aside class="sidebar">
+    <img src="/static/kt-logo.png" alt="KT Logo" class="logo">
+    {% include 'nav.html' %}
+  </aside>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
 </body>
+</html>
