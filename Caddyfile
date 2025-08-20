@@ -4,6 +4,9 @@ cbs.ktapps.net {
     handle_path /static/* {
         file_server
     }
+    handle_path /certificates/* {
+        file_server
+    }
     @health path /healthz
     reverse_proxy @health app:8000
     handle {
