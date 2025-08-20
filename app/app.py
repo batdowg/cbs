@@ -323,4 +323,7 @@ def seed_initial_user_safely() -> None:
         logging.exception("seed_initial_user_safely failed")
 
 
+app = create_app()
+
+
 
