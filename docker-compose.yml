@@ -12,6 +12,8 @@ services:
       - FIRST_ADMIN_EMAIL=${FIRST_ADMIN_EMAIL:-cackermann@kepner-tregoe.com}
     expose:
       - "8000"
+    volumes:
+      - ./site:/srv
   caddy:
     image: caddy:2
     container_name: cbs-caddy-1
