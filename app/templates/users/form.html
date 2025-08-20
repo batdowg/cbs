@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New User' if not user else 'Edit User' }}{% endblock %}
+{% block content %}
+<h1>{{ 'New User' if not user else 'Edit User' }}</h1>
+<form method="post">
+  {% if not user %}
+  <div><label>Email <input type="email" name="email" required></label></div>
+  {% else %}
+  <div><label>Email <input type="email" name="email" value="{{ user.email }}" readonly></label></div>
+  {% endif %}
+  <div><label>Full Name <input type="text" name="full_name" value="{{ user.full_name if user else '' }}"></label></div>
+  <div><label>New Password <input type="password" name="password"></label></div>
+  <div>
+    <label><input type="checkbox" name="is_app_admin" {% if user and user.is_app_admin %}checked{% endif %}> Application Admin</label><br>
+    <label><input type="checkbox" name="is_admin" {% if user and user.is_admin %}checked{% endif %}> Admin</label><br>
+    <label><input type="checkbox" name="is_kcrm" {% if user and user.is_kcrm %}checked{% endif %}> KCRM</label><br>
+    <label><input type="checkbox" name="is_kt_delivery" {% if user and user.is_kt_delivery %}checked{% endif %}> KT Delivery</label><br>
+    <label><input type="checkbox" name="is_kt_contractor" {% if user and user.is_kt_contractor %}checked{% endif %}> KT Contractor</label><br>
+    <label><input type="checkbox" name="is_kt_staff" {% if user and user.is_kt_staff %}checked{% endif %}> KT Staff</label><br>
+  </div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
+

@@ -16,8 +16,6 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy.orm import validates
-from werkzeug.security import check_password_hash, generate_password_hash
 
 # Optional email validation dependency
 try:  # pragma: no cover - import may fail if package missing
@@ -32,26 +30,10 @@ except ModuleNotFoundError:  # pragma: no cover - simple fallback
 
         return _Result(email)
 
-# Prefer passlib for bcrypt hashing, fall back to Werkzeug if unavailable
-try:  # pragma: no cover - import may fail if package missing
-    from passlib.hash import bcrypt
-
-    def hash_password(password: str) -> str:
-        return bcrypt.hash(password)
-
-    def verify_password(password: str, hashed: str) -> bool:
-        return bcrypt.verify(password, hashed)
-except ModuleNotFoundError:  # pragma: no cover - simple fallback
-
-    def hash_password(password: str) -> str:
-        return generate_password_hash(password)
-
-    def verify_password(password: str, hashed: str) -> bool:
-        return check_password_hash(hashed, password)
-
-
-
 db = SQLAlchemy()
+
+from .models import User
+from .utils.rbac import app_admin_required
 
 
 def create_app():
@@ -124,20 +106,6 @@ def create_app():
 
         return wrapper
 
-    def admin_required(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            user_id = session.get("user_id")
-            if not user_id:
-                return redirect(url_for("login"))
-            user = db.session.get(User, user_id)
-            if not user or not user.is_kt_admin:
-                return redirect(url_for("dashboard"))
-            return fn(*args, **kwargs)
-
-        return wrapper
-
-
     @app.route("/login", methods=["GET", "POST"])
     def login():
         error = None
@@ -152,7 +120,7 @@ def create_app():
             if action == "password":
                 password = request.form.get("password", "")
                 user = User.query.filter_by(email=email).first()
-                if user and user.password_hash and verify_password(password, user.password_hash):
+                if user and user.check_password(password):
                     session["user_id"] = user.id
                     session["user_email"] = user.email
                     return redirect(url_for("dashboard"))
@@ -206,7 +174,7 @@ def create_app():
                 error = "Password must be at least 8 characters."
             else:
                 user = db.session.get(User, session["user_id"])
-                user.password_hash = hash_password(password)
+                user.set_password(password)
                 db.session.commit()
                 flash("Password updated.")
                 return redirect(url_for("dashboard"))
@@ -214,12 +182,11 @@ def create_app():
 
 
     @app.get("/admin/test-mail")
-    @admin_required
-    def admin_test_mail():
+    @app_admin_required
+    def admin_test_mail(current_user):
         from . import emailer
         mailer_logger = logging.getLogger("cbs.mailer")
 
-        current_user = db.session.get(User, session.get("user_id"))
         result = emailer.send(
             current_user.email,
             "CBS test mail",
@@ -231,8 +198,8 @@ def create_app():
         return jsonify(result)
 
     @app.get("/admin/mail-whoami")
-    @admin_required
-    def admin_mail_whoami():
+    @app_admin_required
+    def admin_mail_whoami(current_user):
         from .models import Settings
 
         settings = Settings.get()
@@ -269,11 +236,13 @@ def create_app():
     from .routes.sessions import bp as sessions_bp
     from .routes.learner import bp as learner_bp
     from .routes.certificates import bp as certificates_bp
+    from .routes.users import bp as users_bp
 
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(learner_bp)
     app.register_blueprint(certificates_bp)
+    app.register_blueprint(users_bp)
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):
@@ -320,25 +289,6 @@ def set_setting(key: str, value: str) -> None:
         db.session.add(AppSetting(key=key, value=value))
 
 
-class User(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String, unique=True, nullable=False, index=True)
-    name = db.Column(db.String)
-    is_kt_admin = db.Column(db.Boolean, default=False)
-    is_kt_crm = db.Column(db.Boolean, default=False)
-    is_kt_delivery = db.Column(db.Boolean, default=False)
-    is_kt_contractor = db.Column(db.Boolean, default=False)
-    is_kt_staff = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    password_hash = db.Column(db.String(255))
-
-    @validates("email")
-    def lower_email(self, key, value):  # pragma: no cover - simple normalizer
-        return value.lower()
-
-
 def seed_initial_user() -> None:
     """Seed an initial admin user if the users table is empty."""
     inspector = db.inspect(db.engine)
@@ -354,8 +304,9 @@ def seed_initial_user() -> None:
     ).lower()
     admin = User(
         email=first_admin_email,
-        name=first_admin_email,
-        is_kt_admin=True,
+        full_name=first_admin_email,
+        is_app_admin=True,
+        is_admin=True,
         is_kt_staff=True,
     )
     db.session.add(admin)

@@ -42,7 +42,7 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
 1.2 Password login with bcrypt hashing [DONE]  
 1.3 Logout route and session clear [DONE]  
 1.4 Password reset flow (request, email token, reset form)  
-1.5 Role based access control (RBAC) middleware for routes  
+1.5 Role based access control (RBAC) middleware for routes [DONE]
 1.6 Session persistence and timeout configuration  
 1.7 Basic audit log for logins and role changes
 
@@ -220,6 +220,10 @@ Added helpers to read and write app_settings with safe upserts
 Mail Settings page saves without 500s and emailer pulls SMTP/From values from settings with env fallback
 ## Latest update done by codex 09/30/2025
 Mailer logs [MAIL-OUT] lines to stdout and /admin/test-mail logs route results for easier debugging
+## Latest update done by codex 10/10/2025
+Introduced a dedicated User model with role flags and bcrypt helpers
+Added admin-only Users management pages with create/edit and audit logging
+Implemented app_admin_required RBAC decorator and guarded navigation link
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK

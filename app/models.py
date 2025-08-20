@@ -6,6 +6,55 @@ from sqlalchemy.orm import validates
 
 from .app import db
 
+# Prefer passlib for bcrypt hashing, fall back to Werkzeug if unavailable
+try:  # pragma: no cover - import may fail if package missing
+    from passlib.hash import bcrypt
+
+    def _hash_password(password: str) -> str:
+        return bcrypt.hash(password)
+
+    def _check_password(password: str, hashed: str) -> bool:
+        return bcrypt.verify(password, hashed)
+except ModuleNotFoundError:  # pragma: no cover - simple fallback
+    from werkzeug.security import generate_password_hash, check_password_hash
+
+    def _hash_password(password: str) -> str:
+        return generate_password_hash(password)
+
+    def _check_password(password: str, hashed: str) -> bool:
+        return check_password_hash(hashed, password)
+
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255))
+    full_name = db.Column(db.String(255))
+    is_app_admin = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    is_kcrm = db.Column(db.Boolean, default=False)
+    is_kt_delivery = db.Column(db.Boolean, default=False)
+    is_kt_contractor = db.Column(db.Boolean, default=False)
+    is_kt_staff = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index("ix_users_email_lower", db.func.lower(email), unique=True),
+    )
+
+    @validates("email")
+    def lower_email(self, key, value):  # pragma: no cover - simple normalizer
+        return value.lower()
+
+    def set_password(self, plain: str) -> None:
+        self.password_hash = _hash_password(plain)
+
+    def check_password(self, plain: str) -> bool:
+        if not self.password_hash:
+            return False
+        return _check_password(plain, self.password_hash)
+
 
 class Settings(db.Model):
     __tablename__ = "settings"

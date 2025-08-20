@@ -2,17 +2,21 @@
   <!-- Navigation Freeze v1 -->
   <a href="{{ url_for('index') }}">Home</a>
   {% if current_user and (
-    current_user.is_kt_admin or
-    current_user.is_kt_crm or
+    current_user.is_app_admin or
+    current_user.is_admin or
+    current_user.is_kcrm or
     current_user.is_kt_delivery or
+    current_user.is_kt_contractor or
     current_user.is_kt_staff
   ) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   <a href="{{ url_for('certificates.index') }}">Certificates</a>
-  <a href="/users">Users</a>
+  {% if current_user.is_app_admin %}
+  <a href="{{ url_for('users.list_users') }}">Users</a>
+  {% endif %}
   {% endif %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
-  {% if current_user and current_user.is_kt_admin %}
+  {% if current_user and current_user.is_app_admin %}
   <a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a>
   {% endif %}
   <a href="{{ url_for('logout') }}">Logout</a>

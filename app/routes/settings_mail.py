@@ -1,31 +1,18 @@
 import os
 from functools import wraps
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from ..app import db, User
+from ..app import db
 from ..models import Settings
+from ..utils.rbac import app_admin_required
 
 bp = Blueprint("settings_mail", __name__, url_prefix="/admin")
 
 
-def require_admin(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        user_id = session.get("user_id")
-        if not user_id:
-            return redirect(url_for("login"))
-        user = db.session.get(User, user_id)
-        if not user or not user.is_kt_admin:
-            return redirect(url_for("dashboard"))
-        return fn(*args, **kwargs)
-
-    return wrapper
-
-
 @bp.route("/settings/mail", methods=["GET", "POST"])
-@require_admin
-def settings():
+@app_admin_required
+def settings(current_user):
     settings = Settings.get()
     if not settings:
         settings = Settings(
