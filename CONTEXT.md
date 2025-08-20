@@ -1,5 +1,32 @@
 # CONTEXT.md — CBS Project Context and Master Plan
 
+## Project Context
+
+The Certs and Badges System (CBS) is a standalone web application built to manage training workshops, participants, and the issuing of certificates and badges. It replaces or supplements Salesforce CRM (SFC) for these functions, providing a dedicated learner and facilitator database and certificate management platform.
+
+### Purpose
+* Centralize sessions, participants, and certificate data in a single system.
+* Automate certificate generation and delivery using Kepner-Tregoe branded templates.
+* Provide a secure participant portal where learners can view and download their own certificates.
+* Support staff workflows for session setup, participant import, materials and shipping management, and certificate issuing.
+* Ensure data integrity with one account per email, consistent RBAC enforcement, and auditability.
+
+### Scope
+* **Sessions**: Staff can create and manage sessions, including fields like title, dates, facilitators, delivery type, and location.
+* **Participants**: Add manually or import from Salesforce CSV; ensure lowercased unique emails; manage attendance and completion dates.
+* **Certificates**: Generated per participant or in bulk, stored under `/srv/certificates/<year>/<session>/<email>.pdf`, linked to participant portal. Layout rules follow KT branding exactly, using the session end date as completion date.
+* **Materials & Shipping**: Staff can track shipping contact details, address, courier, tracking, ship date, and materials list.
+* **Prework**: Support distribution of prework emails with configurable “From” address and templates.
+* **Surveys**: Provide survey instructions to learners post-session and allow completion tracking (feature-flagged, enabled later).
+* **Portal**: Learners log in to see only their own certificates; staff have access to importer, cert-form, issued, users, and certificates pages.
+* **Integration**: Salesforce sync planned (initial CSV import/export, later API push/pull).
+
+### Why it matters
+* Streamlines end-to-end workshop delivery (from session setup → prework → materials/shipping → workshop delivery → certificates/surveys).
+* Reduces manual effort in certificate production, shipping coordination, and distribution.
+* Provides learners and clients reliable, professional access to credentials and post-session feedback.
+* Creates a scalable foundation for KT-branded training delivery, with options for surveys, branding controls, and Salesforce integration in later phases.
+
 ## 0. Instructions for Codex
 0.1 Always read this file first.  
 0.2 Do not redo items marked [DONE].  
