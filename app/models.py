@@ -102,11 +102,13 @@ class Session(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
+    code = db.Column(db.String(50))
     description = db.Column(db.Text)
     client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     location = db.Column(db.String(255))
+    timezone = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 
@@ -138,6 +140,7 @@ class SessionParticipant(db.Model):
     participant_id = db.Column(
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
+    completion_date = db.Column(db.Date)
     __table_args__ = (
         db.UniqueConstraint("session_id", "participant_id", name="uix_session_participant"),
     )
@@ -158,6 +161,13 @@ class Certificate(db.Model):
     workshop_date = db.Column(db.Date)
     pdf_path = db.Column(db.String(255))
     issued_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.UniqueConstraint(
+            "session_id",
+            "participant_id",
+            name="uix_certificate_session_participant",
+        ),
+    )
 
 
 class MaterialType(db.Model):

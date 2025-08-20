@@ -1,14 +1,7 @@
 <nav>
   <!-- Navigation Freeze v1 -->
   <a href="{{ url_for('index') }}">Home</a>
-  {% if current_user and (
-    current_user.is_app_admin or
-    current_user.is_admin or
-    current_user.is_kcrm or
-    current_user.is_kt_delivery or
-    current_user.is_kt_contractor or
-    current_user.is_kt_staff
-  ) %}
+  {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   <a href="{{ url_for('certificates.index') }}">Certificates</a>
   {% if current_user.is_app_admin %}

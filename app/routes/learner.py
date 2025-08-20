@@ -12,8 +12,10 @@ from flask import (
     url_for,
 )
 
+import os
+
 from ..app import db, User
-from ..models import Certificate
+from ..models import Certificate, Participant
 
 bp = Blueprint("learner", __name__)
 
@@ -32,7 +34,14 @@ def login_required(fn):
 @login_required
 def my_certs():
     user_id = flask_session.get("user_id")
-    certs = db.session.query(Certificate).filter_by(user_id=user_id).all()
+    user = db.session.get(User, user_id)
+    email = (user.email or "").lower()
+    certs = (
+        db.session.query(Certificate)
+        .join(Participant, Certificate.participant_id == Participant.id)
+        .filter(db.func.lower(Participant.email) == email)
+        .all()
+    )
     return render_template("my_certificates.html", certs=certs)
 
 
@@ -44,13 +53,12 @@ def download_certificate(cert_id: int):
         abort(404)
     user_id = flask_session.get("user_id")
     user = db.session.get(User, user_id)
-    if cert.user_id != user_id and not (
-        user.is_app_admin
-        or user.is_admin
-        or user.is_kcrm
-        or user.is_kt_delivery
-        or user.is_kt_contractor
-        or user.is_kt_staff
-    ):
+    participant = db.session.get(Participant, cert.participant_id)
+    email = (user.email or "").lower()
+    if participant and participant.email.lower() == email:
+        allowed = True
+    else:
+        allowed = bool(user.is_app_admin or user.is_admin)
+    if not allowed:
         abort(403)
-    return send_file(cert.file_path, as_attachment=True)
+    return send_file(os.path.join("/srv", cert.pdf_path), as_attachment=True)
