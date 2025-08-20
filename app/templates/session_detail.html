@@ -2,28 +2,30 @@
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
 <h1>{{ session.title }}</h1>
-<p>Start: {{ session.start_date }} End: {{ session.end_date }}</p>
-<form action="{{ url_for('sessions.import_participants', session_id=session.id) }}" method="post" enctype="multipart/form-data">
-  <input type="file" name="csv">
-  <button type="submit">Upload CSV</button>
+<p>Code: {{ session.code }}<br>Start: {{ session.start_date }} End: {{ session.end_date }}</p>
+<h2>Participants</h2>
+<form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
+  <input type="email" name="email" placeholder="Email" required>
+  <input type="text" name="full_name" placeholder="Full name">
+  <button type="submit">Add Participant</button>
 </form>
-<form action="{{ url_for('sessions.save_participants', session_id=session.id) }}" method="post">
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Email</th><th>Full Name</th><th>Cert Name</th></tr>
-  {% for p in participants %}
+  <tr><th>Full Name</th><th>Email</th><th>Completion Date</th><th>Actions</th></tr>
+  {% for row in participants %}
   <tr>
-    <td>{{ p.email }}</td>
-    <td>{{ p.full_name }}</td>
-    <td><input type="text" name="cert_name_{{ p.id }}" value="{{ p.cert_name_override or '' }}"></td>
+    <td>{{ row.participant.full_name }}</td>
+    <td>{{ row.participant.email }}</td>
+    <td>
+      <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
+        <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
+        <button type="submit" name="action" value="save">Save</button>
+        <button type="submit" name="action" value="generate">Generate</button>
+      </form>
+    </td>
   </tr>
   {% endfor %}
 </table>
-<button type="submit">Save</button>
-</form>
-<form action="{{ url_for('sessions.generate_certs', session_id=session.id) }}" method="post">
+<form action="{{ url_for('sessions.generate_bulk', session_id=session.id) }}" method="post">
   <button type="submit">Generate Certificates</button>
 </form>
-{% if certs_exist %}
-<p><a href="{{ url_for('sessions.certs_zip', session_id=session.id) }}">Download ZIP</a></p>
-{% endif %}
 {% endblock %}

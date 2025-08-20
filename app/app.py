@@ -251,13 +251,13 @@ def create_app():
         cert = db.session.get(Certificate, cert_id)
         if not cert:
             return jsonify({"ok": False}), 404
-        masked = (cert.cert_name[0] + "***") if cert.cert_name else "***"
+        masked = (cert.certificate_name[0] + "***") if cert.certificate_name else "***"
         return jsonify(
             {
                 "ok": True,
                 "workshop_name": cert.workshop_name,
-                "completion_date": cert.completion_date.isoformat()
-                if cert.completion_date
+                "completion_date": cert.workshop_date.isoformat()
+                if cert.workshop_date
                 else None,
                 "participant": masked,
             }

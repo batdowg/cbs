@@ -2,6 +2,7 @@
 {% block title %}Sessions{% endblock %}
 {% block content %}
 <h1>Sessions</h1>
+<p><a href="{{ url_for('sessions.new_session') }}">New Session</a></p>
 <ul>
   {% for s in sessions %}
     <li><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a></li>

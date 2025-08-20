@@ -4,7 +4,7 @@
 <h1>My Certificates</h1>
 <ul>
 {% for c in certs %}
-  <li><a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.completion_date }}</a></li>
+  <li><a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

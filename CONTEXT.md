@@ -65,13 +65,13 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, code, start date, end date, timezone, location, delivery type, facilitator(s)  
+3.1 Create Session form (staff only): title, code, start date, end date, timezone, location, delivery type, facilitator(s) [DONE]
 3.2 Materials and shipping block on the Session:  
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
-3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date  
+3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date [DONE]
 3.4 Status fields: planned, ready to ship, shipped, delivered, completed  
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact  
 3.6 Session list and filters: upcoming, past, by facilitator, by client
@@ -84,9 +84,10 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 4.5 Bulk import validation and error report (downloadable CSV)
 
 ## 5. Certificates
-5.1 Generate certificate PDFs using template and layout rules  
-5.2 Store PDFs on disk under `/srv/certificates/<year>/<session>/<email>.pdf`  
-5.3 Link PDF path to participant record and show on Participant portal  
+5.1 Generate certificate PDFs using template and layout rules [DONE]
+5.2 Store PDFs on disk under `/srv/certificates/<year>/<session>/<email>.pdf` [DONE]
+5.3 Link PDF path to participant record and show on Participant portal [DONE]
+ • Output path pattern and Generate Certificates buttons are staff-only
 5.4 Resend certificate email action (uses Certificates From address)  
 5.5 Unique certificate ID and simple validation endpoint  
 5.6 Layout rules to follow exactly:  
