@@ -33,7 +33,11 @@ def generate_certificate(participant: Participant, session: Session) -> str:
         .filter_by(session_id=session.id, participant_id=participant.id)
         .one_or_none()
     )
-    workshop = (cert.workshop_name if cert and cert.workshop_name else session.title) or ""
+    workshop = (
+        session.workshop_type.name
+        if session.workshop_type
+        else session.title
+    ) or ""
     completion = session.end_date or date.today()
 
     template_path = os.path.join(

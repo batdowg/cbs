@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}{% endblock %}
+{% block content %}
+<h1>{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}</h1>
+<form method="post">
+  {% if not wt %}
+  <div><label>Code <input type="text" name="code" required></label></div>
+  {% else %}
+  <div><label>Code <input type="text" name="code" value="{{ wt.code }}" readonly></label></div>
+  {% endif %}
+  <div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
+  <div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
+  <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

@@ -4,6 +4,7 @@
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   <a href="{{ url_for('certificates.index') }}">Certificates</a>
+  <a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a>
   {% if current_user.is_app_admin %}
   <a href="{{ url_for('users.list_users') }}">Users</a>
   {% endif %}

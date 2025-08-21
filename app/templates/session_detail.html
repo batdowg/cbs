@@ -2,7 +2,23 @@
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
 <h1>{{ session.title }}</h1>
-<p>Code: {{ session.code }}<br>Start: {{ session.start_date }} End: {{ session.end_date }}</p>
+<p>
+Code: {{ session.code }}<br>
+Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
+Start: {{ session.start_date }} End: {{ session.end_date }}<br>
+Daily: {{ session.daily_start_time }} - {{ session.daily_end_time }}<br>
+Timezone: {{ session.timezone }}<br>
+Location: {{ session.location }}<br>
+Delivery Type: {{ session.delivery_type }}<br>
+Language: {{ session.language }}<br>
+Capacity: {{ session.capacity }}<br>
+Status: {{ session.status }}<br>
+Sponsor: {{ session.sponsor }}<br>
+Notes: {{ session.notes }}<br>
+Simulation Outline: {{ session.simulation_outline }}<br>
+Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}
+</p>
+<p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
 <h2>Participants</h2>
 <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
   <input type="email" name="email" placeholder="Email" required>

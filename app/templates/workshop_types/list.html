@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Workshop Types{% endblock %}
+{% block content %}
+<h1>Workshop Types</h1>
+<p><a href="{{ url_for('workshop_types.new_type') }}">New Workshop Type</a></p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Code</th><th>Name</th><th>Status</th><th>Description</th><th></th></tr>
+  {% for wt in types %}
+  <tr>
+    <td>{{ wt.code }}</td>
+    <td>{{ wt.name }}</td>
+    <td>{{ wt.status }}</td>
+    <td>{{ wt.description }}</td>
+    <td><a href="{{ url_for('workshop_types.edit_type', type_id=wt.id) }}">Edit</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

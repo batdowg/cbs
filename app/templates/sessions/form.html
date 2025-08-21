@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New Session' if not session else 'Edit Session' }}{% endblock %}
+{% block content %}
+<h1>{{ 'New Session' if not session else 'Edit Session' }}</h1>
+<form method="post">
+  <div><label>Title <input type="text" name="title" value="{{ session.title if session else '' }}"></label></div>
+  <div><label>Workshop Type
+    <select name="workshop_type_id" required>
+      <option value="">--Select--</option>
+      {% for wt in workshop_types %}
+      <option value="{{ wt.id }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }} — {{ wt.name }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Code <input type="text" name="code" value="{{ session.code if session else '' }}" readonly></label></div>
+  <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date }}"></label></div>
+  <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date }}"></label></div>
+  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ session.daily_start_time }}"></label></div>
+  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ session.daily_end_time }}"></label></div>
+  <div><label>Timezone <input type="text" name="timezone" value="{{ session.timezone }}"></label></div>
+  <div><label>Location <input type="text" name="location" value="{{ session.location }}"></label></div>
+  <div><label>Delivery Type <input type="text" name="delivery_type" value="{{ session.delivery_type }}"></label></div>
+  <div><label>Language <input type="text" name="language" value="{{ session.language }}"></label></div>
+  <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity }}"></label></div>
+  <div><label>Status <input type="text" name="status" value="{{ session.status }}"></label></div>
+  <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
+  <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
+  <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
+  <div>Facilitators:<br>
+    {% for u in facilitators %}
+    <label><input type="checkbox" name="facilitators" value="{{ u.id }}" {% if session and u in session.facilitators %}checked{% endif %}> {{ u.full_name or u.email }}</label><br>
+    {% endfor %}
+  </div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

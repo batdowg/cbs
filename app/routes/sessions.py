@@ -14,7 +14,7 @@ from flask import (
 )
 
 from ..app import db, User
-from ..models import Participant, Session, SessionParticipant
+from ..models import Participant, Session, SessionParticipant, WorkshopType, AuditLog
 from ..utils.certificates import generate_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
@@ -44,19 +44,100 @@ def list_sessions(current_user):
 @bp.route("/new", methods=["GET", "POST"])
 @staff_required
 def new_session(current_user):
+    workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
+    facilitators = User.query.filter_by(is_kt_delivery=True).all()
     if request.method == "POST":
+        wt_id = request.form.get("workshop_type_id")
+        if not wt_id:
+            flash("Workshop Type required", "error")
+            return redirect(url_for("sessions.new_session"))
+        wt = db.session.get(WorkshopType, int(wt_id))
         sess = Session(
             title=request.form.get("title"),
-            code=request.form.get("code"),
             start_date=request.form.get("start_date") or None,
             end_date=request.form.get("end_date") or None,
+            daily_start_time=request.form.get("daily_start_time") or None,
+            daily_end_time=request.form.get("daily_end_time") or None,
             timezone=request.form.get("timezone") or None,
             location=request.form.get("location") or None,
+            delivery_type=request.form.get("delivery_type") or None,
+            language=request.form.get("language") or None,
+            capacity=request.form.get("capacity") or None,
+            status=request.form.get("status") or None,
+            sponsor=request.form.get("sponsor") or None,
+            notes=request.form.get("notes") or None,
+            simulation_outline=request.form.get("simulation_outline") or None,
         )
+        sess.workshop_type = wt
+        fac_ids = request.form.getlist("facilitators")
+        if fac_ids:
+            sess.facilitators = User.query.filter(User.id.in_(fac_ids)).all()
         db.session.add(sess)
+        db.session.flush()
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=sess.id,
+                action="session_create",
+                details=f"session_id={sess.id}",
+            )
+        )
         db.session.commit()
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
-    return render_template("session_new.html")
+    return render_template(
+        "sessions/form.html",
+        session=None,
+        workshop_types=workshop_types,
+        facilitators=facilitators,
+    )
+
+
+@bp.route("/<int:session_id>/edit", methods=["GET", "POST"])
+@staff_required
+def edit_session(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
+    facilitators = User.query.filter_by(is_kt_delivery=True).all()
+    if request.method == "POST":
+        wt_id = request.form.get("workshop_type_id")
+        if wt_id:
+            sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
+        sess.title = request.form.get("title")
+        sess.start_date = request.form.get("start_date") or None
+        sess.end_date = request.form.get("end_date") or None
+        sess.daily_start_time = request.form.get("daily_start_time") or None
+        sess.daily_end_time = request.form.get("daily_end_time") or None
+        sess.timezone = request.form.get("timezone") or None
+        sess.location = request.form.get("location") or None
+        sess.delivery_type = request.form.get("delivery_type") or None
+        sess.language = request.form.get("language") or None
+        sess.capacity = request.form.get("capacity") or None
+        sess.status = request.form.get("status") or None
+        sess.sponsor = request.form.get("sponsor") or None
+        sess.notes = request.form.get("notes") or None
+        sess.simulation_outline = request.form.get("simulation_outline") or None
+        fac_ids = request.form.getlist("facilitators")
+        sess.facilitators = (
+            User.query.filter(User.id.in_(fac_ids)).all() if fac_ids else []
+        )
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=sess.id,
+                action="session_update",
+                details=f"session_id={sess.id}",
+            )
+        )
+        db.session.commit()
+        return redirect(url_for("sessions.session_detail", session_id=sess.id))
+    return render_template(
+        "sessions/form.html",
+        session=sess,
+        workshop_types=workshop_types,
+        facilitators=facilitators,
+    )
 
 
 @bp.get("/<int:session_id>")
