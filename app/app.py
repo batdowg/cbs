@@ -33,7 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - simple fallback
 
 db = SQLAlchemy()
 
-from .models import User, ParticipantAccount
+from .models import User, ParticipantAccount, Session
 from .utils.rbac import app_admin_required
 
 
@@ -58,10 +58,19 @@ def create_app():
     @app.context_processor
     def inject_user():
         user = None
-        user_id = session.get('user_id')
+        is_csa = False
+        user_id = session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
-        return {'current_user': user}
+        account_id = session.get("participant_account_id")
+        if account_id:
+            is_csa = (
+                db.session.query(Session.id)
+                .filter(Session.csa_account_id == account_id)
+                .first()
+                is not None
+            )
+        return {"current_user": user, "is_csa": is_csa}
 
     serializer = URLSafeTimedSerializer(app.secret_key)
 
@@ -260,6 +269,7 @@ def create_app():
 
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.sessions import bp as sessions_bp
+    from .routes.my_sessions import bp as my_sessions_bp
     from .routes.workshop_types import bp as workshop_types_bp
     from .routes.learner import bp as learner_bp
     from .routes.certificates import bp as certificates_bp
@@ -268,6 +278,7 @@ def create_app():
 
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
+    app.register_blueprint(my_sessions_bp)
     app.register_blueprint(workshop_types_bp)
     app.register_blueprint(learner_bp)
     app.register_blueprint(certificates_bp)

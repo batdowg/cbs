@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}My Sessions{% endblock %}
+{% block content %}
+<h1>My Sessions</h1>
+{% if sessions %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th>Title</th>
+    <th>Workshop Type</th>
+    <th>Dates</th>
+    <th>Client</th>
+    <th>Region</th>
+    <th>Delivery Type</th>
+    <th>Status</th>
+    <th>Actions</th>
+  </tr>
+  {% for s in sessions %}
+  <tr>
+    <td>{{ s.title }}</td>
+    <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
+    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time }}-{{ s.daily_end_time }}</td>
+    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
+    <td>{{ s.region }}</td>
+    <td>{{ s.delivery_type }}</td>
+    <td>{{ s.status }}</td>
+    <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No sessions found.</p>
+{% endif %}
+{% if not show_all %}
+<p><a href="{{ url_for('my_sessions.list_my_sessions', all=1) }}">Show all</a></p>
+{% else %}
+<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Hide closed/cancelled</a></p>
+{% endif %}
+{% endblock %}

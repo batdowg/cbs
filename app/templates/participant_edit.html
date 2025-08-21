@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Edit Participant</h1>
 <form method="post">
+  <div><label>Email <input type="email" value="{{ participant.email }}" readonly></label></div>
   <div><label>Full name <input type="text" name="full_name" value="{{ participant.full_name }}"></label></div>
   <div><label>Title <input type="text" name="title" value="{{ participant.title }}"></label></div>
   <button type="submit">Save</button>

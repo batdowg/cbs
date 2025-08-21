@@ -34,6 +34,7 @@ from ..utils.provisioning import (
     deactivate_orphan_accounts_for_session,
     provision_participant_accounts_for_session,
 )
+from ..utils.rbac import csa_allowed_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -51,27 +52,6 @@ def staff_required(fn):
         if not user or not (user.is_app_admin or user.is_admin):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
-
-    return wrapper
-
-
-def csa_allowed_for_session(fn):
-    @wraps(fn)
-    def wrapper(session_id: int, *args, **kwargs):
-        sess = db.session.get(Session, session_id)
-        if not sess:
-            abort(404)
-        if sess.delivered:
-            abort(403)
-        user_id = flask_session.get("user_id")
-        if user_id:
-            user = db.session.get(User, user_id)
-            if user and (user.is_app_admin or user.is_admin):
-                return fn(session_id, *args, **kwargs, current_user=user)
-        account_id = flask_session.get("participant_account_id")
-        if account_id and sess.csa_account_id == account_id:
-            return fn(session_id, *args, **kwargs, current_user=None)
-        abort(403)
 
     return wrapper
 
@@ -324,27 +304,8 @@ def edit_session(session_id: int, current_user):
 
 
 @bp.get("/<int:session_id>")
-def session_detail(session_id: int):
-    sess = db.session.get(Session, session_id)
-    if not sess:
-        abort(404)
-    user_id = flask_session.get("user_id")
-    account_id = flask_session.get("participant_account_id")
-    csa_view = False
-    current_user = None
-    if user_id:
-        user = db.session.get(User, user_id)
-        if user and (user.is_app_admin or user.is_admin):
-            current_user = user
-        else:
-            abort(403)
-    elif account_id:
-        if sess.csa_account_id == account_id and not sess.delivered:
-            csa_view = True
-        else:
-            abort(403)
-    else:
-        return redirect(url_for("login"))
+@csa_allowed_for_session(allow_delivered_view=True)
+def session_detail(session_id: int, sess, current_user, csa_view):
     links = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id)
@@ -407,10 +368,7 @@ def remove_csa(session_id: int, current_user):
 
 @bp.post("/<int:session_id>/participants/add")
 @csa_allowed_for_session
-def add_participant(session_id: int, current_user):
-    sess = db.session.get(Session, session_id)
-    if not sess:
-        abort(404)
+def add_participant(session_id: int, sess, current_user, csa_view):
     email = (request.form.get("email") or "").strip().lower()
     full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
@@ -447,8 +405,8 @@ def add_participant(session_id: int, current_user):
 
 
 @bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
-@staff_required
-def edit_participant(session_id: int, participant_id: int, current_user):
+@csa_allowed_for_session
+def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -471,7 +429,7 @@ def edit_participant(session_id: int, participant_id: int, current_user):
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
 @csa_allowed_for_session
-def remove_participant(session_id: int, participant_id: int, current_user):
+def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -498,11 +456,8 @@ def sample_csv(session_id: int, current_user):
 
 
 @bp.post("/<int:session_id>/participants/import-csv")
-@staff_required
-def import_csv(session_id: int, current_user):
-    sess = db.session.get(Session, session_id)
-    if not sess:
-        abort(404)
+@csa_allowed_for_session
+def import_csv(session_id: int, sess, current_user, csa_view):
     file = request.files.get("file")
     if not file or not file.filename.endswith(".csv"):
         flash("CSV file required", "error")
