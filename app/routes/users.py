@@ -10,7 +10,7 @@ from flask import (
 
 from ..app import db, User
 from ..models import AuditLog
-from ..utils.rbac import app_admin_required
+from ..utils.rbac import admin_required
 
 
 bp = Blueprint("users", __name__, url_prefix="/users")
@@ -34,20 +34,21 @@ def _roles_str(user: User) -> str:
 
 
 @bp.get("/")
-@app_admin_required
+@admin_required
 def list_users(current_user):
     users = User.query.order_by(User.created_at.desc()).all()
     return render_template("users/list.html", users=users)
 
 
 @bp.post("/bulk-update")
-@app_admin_required
+@admin_required
 def bulk_update(current_user):
     users = User.query.order_by(User.id).all()
     updated = 0
     for user in users:
         orig = _roles_str(user)
-        user.is_app_admin = bool(request.form.get(f"is_app_admin_{user.id}"))
+        if current_user.is_app_admin:
+            user.is_app_admin = bool(request.form.get(f"is_app_admin_{user.id}"))
         user.is_admin = bool(request.form.get(f"is_admin_{user.id}"))
         user.is_kcrm = bool(request.form.get(f"is_kcrm_{user.id}"))
         user.is_kt_delivery = bool(request.form.get(f"is_kt_delivery_{user.id}"))
@@ -68,13 +69,13 @@ def bulk_update(current_user):
 
 
 @bp.get("/new")
-@app_admin_required
+@admin_required
 def new_user(current_user):
     return render_template("users/form.html", user=None)
 
 
 @bp.post("/new")
-@app_admin_required
+@admin_required
 def create_user(current_user):
     email = (request.form.get("email") or "").lower()
     if not email:
@@ -86,7 +87,7 @@ def create_user(current_user):
     user = User(
         email=email,
         full_name=request.form.get("full_name"),
-        is_app_admin=bool(request.form.get("is_app_admin")),
+        is_app_admin=bool(request.form.get("is_app_admin")) if current_user.is_app_admin else False,
         is_admin=bool(request.form.get("is_admin")),
         is_kcrm=bool(request.form.get("is_kcrm")),
         is_kt_delivery=bool(request.form.get("is_kt_delivery")),
@@ -111,7 +112,7 @@ def create_user(current_user):
 
 
 @bp.get("/<int:user_id>/edit")
-@app_admin_required
+@admin_required
 def edit_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
@@ -120,13 +121,14 @@ def edit_user(user_id: int, current_user):
 
 
 @bp.post("/<int:user_id>/edit")
-@app_admin_required
+@admin_required
 def update_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
         abort(404)
     user.full_name = request.form.get("full_name")
-    user.is_app_admin = bool(request.form.get("is_app_admin"))
+    if current_user.is_app_admin:
+        user.is_app_admin = bool(request.form.get("is_app_admin"))
     user.is_admin = bool(request.form.get("is_admin"))
     user.is_kcrm = bool(request.form.get("is_kcrm"))
     user.is_kt_delivery = bool(request.form.get("is_kt_delivery"))

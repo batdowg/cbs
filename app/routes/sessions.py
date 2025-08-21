@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from functools import wraps
+from datetime import date
 
 from flask import (
     Blueprint,
@@ -76,18 +77,26 @@ def new_session(current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         if language not in allowed:
             language = "English"
+        end_date_str = request.form.get("end_date")
+        end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
         confirmed_ready = bool(request.form.get("confirmed_ready"))
         delivered = bool(request.form.get("delivered"))
+        if delivered and end_date_val and end_date_val > date.today():
+            flash("Cannot mark Delivered before End Date. Adjust End Date.", "error")
+            delivered = False
+        if delivered and not confirmed_ready:
+            flash("Delivered requires Confirmed-Ready; forcing on.", "info")
+            confirmed_ready = True
         status = request.form.get("status") or "New"
         if confirmed_ready:
             status = "Confirmed"
         elif status not in BASIC_STATUSES:
-            flash("Invalid status without Confirmed-Ready", "error")
+            flash("Status reset to New because Confirmed-Ready is off.", "error")
             status = "New"
         sess = Session(
             title=request.form.get("title"),
             start_date=request.form.get("start_date") or None,
-            end_date=request.form.get("end_date") or None,
+            end_date=end_date_val,
             daily_start_time=request.form.get("daily_start_time") or None,
             daily_end_time=request.form.get("daily_end_time") or None,
             timezone=request.form.get("timezone") or None,
@@ -127,8 +136,11 @@ def new_session(current_user):
         db.session.commit()
         if sess.confirmed_ready:
             summary = provision_participant_accounts_for_session(sess.id)
+            total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {created} new, {reactivated} reactivated, {already_active} already active, skipped {skipped_staff} staff".format(**summary),
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                    total=total, **summary
+                ),
                 "success",
             )
             db.session.add(
@@ -170,10 +182,12 @@ def edit_session(session_id: int, current_user):
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
         old_confirmed = sess.confirmed_ready
+        old_delivered = sess.delivered
         old_status = sess.status or "New"
         sess.title = request.form.get("title")
         sess.start_date = request.form.get("start_date") or None
-        sess.end_date = request.form.get("end_date") or None
+        end_date_str = request.form.get("end_date")
+        sess.end_date = date.fromisoformat(end_date_str) if end_date_str else None
         sess.daily_start_time = request.form.get("daily_start_time") or None
         sess.daily_end_time = request.form.get("daily_end_time") or None
         sess.timezone = request.form.get("timezone") or None
@@ -186,16 +200,23 @@ def edit_session(session_id: int, current_user):
         sess.capacity = request.form.get("capacity") or None
         confirmed_ready = bool(request.form.get("confirmed_ready"))
         delivered = bool(request.form.get("delivered"))
+        if not old_delivered and delivered and sess.end_date and sess.end_date > date.today():
+            flash("Cannot mark Delivered before End Date. Adjust End Date.", "error")
+            delivered = False
+        if delivered and not confirmed_ready:
+            flash("Delivered requires Confirmed-Ready; forcing on.", "info")
+            confirmed_ready = True
         status = request.form.get("status") or old_status
-        if confirmed_ready:
+        if not confirmed_ready:
+            if status not in BASIC_STATUSES:
+                flash("Status reset to New because Confirmed-Ready is off.", "error")
+                status = old_status if old_status in BASIC_STATUSES else "New"
+        else:
             if not old_confirmed:
                 status = "Confirmed"
             elif status not in ADVANCED_STATUSES:
+                flash("Status reset to Confirmed because Confirmed-Ready is on.", "error")
                 status = old_status if old_status in ADVANCED_STATUSES else "Confirmed"
-        else:
-            if status not in BASIC_STATUSES:
-                flash("Invalid status without Confirmed-Ready", "error")
-                status = old_status if old_status in BASIC_STATUSES else "New"
         sess.confirmed_ready = confirmed_ready
         sess.status = status
         sess.delivered = delivered
@@ -223,8 +244,11 @@ def edit_session(session_id: int, current_user):
         db.session.commit()
         if confirmed_ready and not old_confirmed:
             summary = provision_participant_accounts_for_session(sess.id)
+            total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {created} new, {reactivated} reactivated, {already_active} already active, skipped {skipped_staff} staff".format(**summary),
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                    total=total, **summary
+                ),
                 "success",
             )
             db.session.add(
@@ -442,7 +466,7 @@ def generate_single(session_id: int, participant_id: int, current_user):
     if not sess:
         abort(404)
     if not sess.delivered:
-        flash("Certificates are gated until Delivered is checked", "error")
+        flash("Delivered required before generating certificates", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     link = (
         db.session.query(SessionParticipant)
@@ -471,7 +495,7 @@ def generate_bulk(session_id: int, current_user):
     if not sess:
         abort(404)
     if not sess.delivered:
-        flash("Certificates are gated until Delivered is checked", "error")
+        flash("Delivered required before generating certificates", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     count, _ = generate_for_session(session_id)
     flash(f"Generated {count} certificates", "success")

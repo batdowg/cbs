@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Users{% endblock %}
 {% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
 <h1>Users</h1>
 <p><a href="{{ url_for('users.new_user') }}">New User</a></p>
 <form method="post" action="{{ url_for('users.bulk_update') }}">
@@ -18,7 +21,7 @@
   <tr>
     <td>{{ u.email }}</td>
     <td>{{ u.full_name }}</td>
-    <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %}></td>
+    <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
     <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>

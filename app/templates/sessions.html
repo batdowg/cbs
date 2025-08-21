@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Sessions{% endblock %}
 {% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
 <h1>Sessions</h1>
 <p><a href="{{ url_for('sessions.new_session') }}">New Session</a></p>
 <table border="1" cellpadding="4" cellspacing="0">

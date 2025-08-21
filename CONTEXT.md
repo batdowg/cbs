@@ -76,7 +76,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
-3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. When Confirmed-Ready switches on, participant accounts are auto-provisioned (default password "KTRocks!"), session status is set to `Confirmed`, and a summary of created/reactivated/skipped/already-active accounts is flashed. Status options: if Confirmed-Ready is off → allow only `New`, `On Hold`, `Cancelled`; if on → allow `Confirmed`, `Delivered`, `Closed`, `Cancelled`. A Delivered checkbox gates certificate generation until checked. Cancelling or placing on hold deactivates accounts with no other active sessions.
+3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. When Confirmed-Ready switches on, participant accounts are auto-provisioned (default password "KTRocks!"), session status is forced to `Confirmed`, and a summary of created/reactivated/skipped/already-active accounts is flashed. Status options: if Confirmed-Ready is off → allow only `New`, `On Hold`, `Cancelled`; if on → allow `Confirmed`, `Delivered`, `Closed`, `Cancelled`. Delivered cannot be set before End Date and forces Confirmed-Ready on, locking it from being unchecked. A Delivered checkbox gates certificate generation until checked. Cancelling or placing on hold deactivates accounts with no other active sessions.
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
 
@@ -193,6 +193,7 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 12.7 Users admin UI live with audit logging [DONE]
 12.8 Participant accounts are deactivated when all their sessions are Cancelled, Closed, or On Hold; provisioning another confirmed session reactivates them.
 12.9 Users admin table includes inline role checkboxes (SysAdmin, Administrator, CRM, KT Facilitator, Contractor) with bulk save.
+12.10 Administrators can access Users admin but only SysAdmin can toggle the SysAdmin role.
 
 ## 13. Current State Snapshot
 13.1 App, DB, Caddy running via Docker Compose on VPS  
@@ -262,3 +263,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Logged in admin received JSON {"ok": false, "detail": "stub: missing config"} from GET /admin/test-mail
 - Sample log: [MAIL-OUT] to=foo@example.com subject="CBS test mail" host=None mode=stub
 - 7.4 [DONE]
+
+## Latest update done by codex 08/21/2025
+- Administrators can manage users except the SysAdmin flag, which only SysAdmin may change.
+- Delivered cannot be set before session End Date and forces Confirmed-Ready on.
+- Saving with Confirmed-Ready on runs provisioning, sets status to Confirmed, and flashes provisioning counts.
+- Certificate generation remains blocked until a session is marked Delivered.
