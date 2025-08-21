@@ -67,6 +67,36 @@ class User(db.Model):
         return _check_password(plain, self.password_hash)
 
 
+class ParticipantAccount(db.Model):
+    __tablename__ = "participant_accounts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    last_login = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index(
+            "ix_participant_accounts_email_lower",
+            db.func.lower(email),
+            unique=True,
+        ),
+    )
+
+    @validates("email")
+    def lower_email(self, key, value):  # pragma: no cover - simple normalizer
+        return value.lower()
+
+    def set_password(self, plain: str) -> None:
+        self.password_hash = _hash_password(plain)
+
+    def check_password(self, plain: str) -> bool:
+        if not self.password_hash:
+            return False
+        return _check_password(plain, self.password_hash)
+
+
 class Settings(db.Model):
     __tablename__ = "settings"
     id = db.Column(db.Integer, primary_key=True, default=1)
@@ -136,15 +166,24 @@ class Session(db.Model):
     client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    daily_start_time = db.Column(db.Time)
-    daily_end_time = db.Column(db.Time)
+    daily_start_time = db.Column(
+        db.Time, server_default="08:00:00"
+    )
+    daily_end_time = db.Column(
+        db.Time, server_default="17:00:00"
+    )
     timezone = db.Column(db.String(64))
     location = db.Column(db.String(255))
     delivery_type = db.Column(db.String(32))
     region = db.Column(db.String(8))
     language = db.Column(db.String(16))
     capacity = db.Column(db.Integer)
-    status = db.Column(db.String(16))
+    status = db.Column(
+        db.String(16), nullable=False, default="New", server_default="New"
+    )
+    confirmed_ready = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
     simulation_outline = db.Column(db.Text)
@@ -181,6 +220,10 @@ class Participant(db.Model):
     organization = db.Column(db.String(255))
     job_title = db.Column(db.String(255))
     title = db.Column(db.String(255))
+    account_id = db.Column(
+        db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
+    )
+    account = db.relationship("ParticipantAccount")
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("ix_participants_email_lower", db.func.lower(email), unique=True),

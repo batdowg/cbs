@@ -27,8 +27,15 @@ from ..models import (
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session
+from ..utils.provisioning import (
+    deactivate_orphan_accounts_for_session,
+    provision_participant_accounts_for_session,
+)
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
+
+STATUS_CHOICES = ["New", "Confirmed", "On Hold", "Delivered", "Closed", "Cancelled"]
+ADVANCED_STATUSES = {"Confirmed", "Delivered", "Closed", "Cancelled"}
 
 
 def staff_required(fn):
@@ -69,6 +76,11 @@ def new_session(current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         if language not in allowed:
             language = "English"
+        confirmed_ready = bool(request.form.get("confirmed_ready"))
+        status = request.form.get("status") or "New"
+        if not confirmed_ready and status in ADVANCED_STATUSES:
+            flash("Cannot set advanced status without Confirmed-Ready", "error")
+            status = "New"
         sess = Session(
             title=request.form.get("title"),
             start_date=request.form.get("start_date") or None,
@@ -81,7 +93,8 @@ def new_session(current_user):
             region=request.form.get("region") or None,
             language=language,
             capacity=request.form.get("capacity") or None,
-            status=request.form.get("status") or None,
+            status=status,
+            confirmed_ready=confirmed_ready,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
@@ -108,6 +121,19 @@ def new_session(current_user):
             )
         )
         db.session.commit()
+        if sess.confirmed_ready:
+            summary = provision_participant_accounts_for_session(sess.id)
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    session_id=sess.id,
+                    action="provision",
+                    details=(
+                        f"created={summary['created']} skipped={summary['skipped_staff']} reactivated={summary['reactivated']}"
+                    ),
+                )
+            )
+            db.session.commit()
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
@@ -115,6 +141,7 @@ def new_session(current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         LANG_CHOICES=LANG_CHOICES,
+        STATUS_CHOICES=STATUS_CHOICES,
     )
 
 
@@ -132,6 +159,8 @@ def edit_session(session_id: int, current_user):
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
+        old_confirmed = sess.confirmed_ready
+        old_status = sess.status or "New"
         sess.title = request.form.get("title")
         sess.start_date = request.form.get("start_date") or None
         sess.end_date = request.form.get("end_date") or None
@@ -145,7 +174,13 @@ def edit_session(session_id: int, current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
-        sess.status = request.form.get("status") or None
+        confirmed_ready = bool(request.form.get("confirmed_ready"))
+        status = request.form.get("status") or old_status
+        if not confirmed_ready and status in ADVANCED_STATUSES:
+            flash("Cannot set advanced status without Confirmed-Ready", "error")
+            status = old_status if old_status in ["New", "On Hold"] else "New"
+        sess.confirmed_ready = confirmed_ready
+        sess.status = status
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
@@ -168,6 +203,31 @@ def edit_session(session_id: int, current_user):
             )
         )
         db.session.commit()
+        if confirmed_ready and not old_confirmed:
+            summary = provision_participant_accounts_for_session(sess.id)
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    session_id=sess.id,
+                    action="provision",
+                    details=(
+                        f"created={summary['created']} skipped={summary['skipped_staff']} reactivated={summary['reactivated']}"
+                    ),
+                )
+            )
+            db.session.commit()
+        if sess.status in ["Cancelled", "On Hold"]:
+            deactivated = deactivate_orphan_accounts_for_session(sess.id)
+            if deactivated:
+                db.session.add(
+                    AuditLog(
+                        user_id=current_user.id,
+                        session_id=sess.id,
+                        action="deactivate",
+                        details=f"count={deactivated}",
+                    )
+                )
+                db.session.commit()
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
@@ -175,6 +235,7 @@ def edit_session(session_id: int, current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         LANG_CHOICES=LANG_CHOICES,
+        STATUS_CHOICES=STATUS_CHOICES,
     )
 
 

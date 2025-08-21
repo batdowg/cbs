@@ -3,6 +3,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 from functools import wraps
+from datetime import datetime
 
 from flask import (
     Flask,
@@ -32,7 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - simple fallback
 
 db = SQLAlchemy()
 
-from .models import User
+from .models import User, ParticipantAccount
 from .utils.rbac import app_admin_required
 
 
@@ -72,6 +73,8 @@ def create_app():
     def index():  # pragma: no cover - trivial route
         if session.get("user_id"):
             return render_template("home.html")
+        if session.get("participant_account_id"):
+            return redirect(url_for("learner.my_certs"))
         return redirect(url_for("login"))
 
     def send_magic_link(email: str, link: str) -> None:
@@ -124,13 +127,29 @@ def create_app():
                     session["user_id"] = user.id
                     session["user_email"] = user.email
                     return redirect(url_for("dashboard"))
+                account = ParticipantAccount.query.filter_by(email=email).first()
+                if (
+                    account
+                    and account.is_active
+                    and account.check_password(password)
+                ):
+                    session["participant_account_id"] = account.id
+                    session["user_email"] = account.email
+                    account.last_login = datetime.utcnow()
+                    db.session.commit()
+                    return redirect(url_for("learner.my_certs"))
                 error = "Invalid credentials"
                 return render_template("login.html", error=error)
 
             # default to magic link
             if email:
                 user = User.query.filter_by(email=email).first()
-                if user:
+                if not user:
+                    account = ParticipantAccount.query.filter_by(email=email).first()
+                else:
+                    account = None
+                target = user or account
+                if target:
                     token = serializer.dumps(email, salt="magic-link")
                     link = url_for("magic", token=token, _external=True)
                     send_magic_link(email, link)
@@ -148,11 +167,18 @@ def create_app():
         except (BadSignature, SignatureExpired):
             return redirect(url_for("login"))
         user = User.query.filter_by(email=email).first()
-        if not user:
-            return redirect(url_for("login"))
-        session["user_id"] = user.id
-        session["user_email"] = user.email
-        return redirect(url_for("dashboard"))
+        if user:
+            session["user_id"] = user.id
+            session["user_email"] = user.email
+            return redirect(url_for("dashboard"))
+        account = ParticipantAccount.query.filter_by(email=email).first()
+        if account and account.is_active:
+            session["participant_account_id"] = account.id
+            session["user_email"] = account.email
+            account.last_login = datetime.utcnow()
+            db.session.commit()
+            return redirect(url_for("learner.my_certs"))
+        return redirect(url_for("login"))
 
     @app.get("/logout")
     def logout():

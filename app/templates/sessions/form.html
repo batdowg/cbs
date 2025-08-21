@@ -14,8 +14,8 @@
   </label></div>
   <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date }}"></label></div>
   <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date }}"></label></div>
-  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ session.daily_start_time }}"></label></div>
-  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ session.daily_end_time }}"></label></div>
+  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ session.daily_start_time if session else '08:00' }}"></label></div>
+  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ session.daily_end_time if session else '17:00' }}"></label></div>
   <div><label>Timezone <input type="text" name="timezone" value="{{ session.timezone }}"></label></div>
   <div><label>Location <input type="text" name="location" value="{{ session.location }}"></label></div>
   <div><label>Delivery Type
@@ -42,7 +42,14 @@
     </select>
   </label></div>
   <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity }}"></label></div>
-  <div><label>Status <input type="text" name="status" value="{{ session.status }}"></label></div>
+  <div><label>Status
+    <select name="status">
+      {% for opt in STATUS_CHOICES %}
+      <option value="{{ opt }}" {% if (session and session.status==opt) or (not session and opt=='New') %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Confirmed-Ready <input type="checkbox" name="confirmed_ready" value="y" {% if session and session.confirmed_ready %}checked{% endif %}></label></div>
   <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
   <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
   <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
@@ -85,6 +92,22 @@
     var select = container.querySelector('select').cloneNode(true);
     select.value='';
     container.appendChild(select);
+    refreshFacOptions();
   });
+  function refreshFacOptions(){
+    var lead = document.querySelector('select[name="lead_facilitator_id"]').value;
+    document.querySelectorAll('#additional-facilitators select').forEach(function(sel){
+      sel.querySelectorAll('option').forEach(function(opt){
+        if(opt.value === lead){
+          opt.style.display='none';
+          if(sel.value === lead){ sel.value=''; }
+        } else {
+          opt.style.display='';
+        }
+      });
+    });
+  }
+  document.querySelector('select[name="lead_facilitator_id"]').addEventListener('change', refreshFacOptions);
+  refreshFacOptions();
 </script>
 {% endblock %}

@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+from typing import Dict
+
+from sqlalchemy import func
+
+from ..app import db, User
+from ..models import (
+    Participant,
+    ParticipantAccount,
+    SessionParticipant,
+    Session,
+)
+
+
+def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int]:
+    created = skipped_staff = reactivated = 0
+    links = SessionParticipant.query.filter_by(session_id=session_id).all()
+    for link in links:
+        participant = db.session.get(Participant, link.participant_id)
+        if not participant:
+            continue
+        email = (participant.email or "").lower()
+        if not email:
+            continue
+        # skip if staff user exists
+        user = User.query.filter(func.lower(User.email) == email).first()
+        if user:
+            skipped_staff += 1
+            continue
+        account = ParticipantAccount.query.filter(
+            func.lower(ParticipantAccount.email) == email
+        ).first()
+        if not account:
+            account = ParticipantAccount(email=email, is_active=True)
+            db.session.add(account)
+            created += 1
+        else:
+            if not account.is_active:
+                account.is_active = True
+                reactivated += 1
+        if participant.account_id != account.id:
+            participant.account_id = account.id
+    db.session.commit()
+    return {
+        "created": created,
+        "skipped_staff": skipped_staff,
+        "reactivated": reactivated,
+    }
+
+
+def deactivate_orphan_accounts_for_session(session_id: int) -> int:
+    deactivated = 0
+    links = SessionParticipant.query.filter_by(session_id=session_id).all()
+    for link in links:
+        participant = db.session.get(Participant, link.participant_id)
+        if not participant or not participant.account_id:
+            continue
+        account = db.session.get(ParticipantAccount, participant.account_id)
+        if not account or not account.is_active:
+            continue
+        active_links = (
+            db.session.query(SessionParticipant)
+            .join(Session, SessionParticipant.session_id == Session.id)
+            .filter(
+                SessionParticipant.participant_id == participant.id,
+                Session.status.notin_(["Cancelled", "Closed", "On Hold"]),
+            )
+            .count()
+        )
+        if active_links == 0:
+            account.is_active = False
+            deactivated += 1
+    db.session.commit()
+    return deactivated

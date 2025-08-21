@@ -15,7 +15,7 @@ from flask import (
 import os
 
 from ..app import db, User
-from ..models import Certificate, Participant
+from ..models import Certificate, Participant, ParticipantAccount
 
 bp = Blueprint("learner", __name__)
 
@@ -23,7 +23,7 @@ bp = Blueprint("learner", __name__)
 def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        if "user_id" not in flask_session:
+        if "user_id" not in flask_session and "participant_account_id" not in flask_session:
             return redirect(url_for("login"))
         return fn(*args, **kwargs)
 
@@ -33,9 +33,14 @@ def login_required(fn):
 @bp.get("/my-certificates")
 @login_required
 def my_certs():
-    user_id = flask_session.get("user_id")
-    user = db.session.get(User, user_id)
-    email = (user.email or "").lower()
+    if flask_session.get("user_id"):
+        user = db.session.get(User, flask_session.get("user_id"))
+        email = (user.email or "").lower()
+    else:
+        account = db.session.get(
+            ParticipantAccount, flask_session.get("participant_account_id")
+        )
+        email = (account.email or "").lower() if account else ""
     certs = (
         db.session.query(Certificate)
         .join(Participant, Certificate.participant_id == Participant.id)
@@ -52,13 +57,21 @@ def download_certificate(cert_id: int):
     if not cert:
         abort(404)
     user_id = flask_session.get("user_id")
-    user = db.session.get(User, user_id)
     participant = db.session.get(Participant, cert.participant_id)
-    email = (user.email or "").lower()
+    if user_id:
+        user = db.session.get(User, user_id)
+        email = (user.email or "").lower()
+        staff = bool(user.is_app_admin or user.is_admin)
+    else:
+        account = db.session.get(
+            ParticipantAccount, flask_session.get("participant_account_id")
+        )
+        email = (account.email or "").lower() if account else ""
+        staff = False
     if participant and participant.email.lower() == email:
         allowed = True
     else:
-        allowed = bool(user.is_app_admin or user.is_admin)
+        allowed = staff
     if not allowed:
         abort(403)
     return send_file(os.path.join("/srv", cert.pdf_path), as_attachment=True)
