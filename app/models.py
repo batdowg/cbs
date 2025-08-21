@@ -6,6 +6,17 @@ from sqlalchemy.orm import validates
 
 from .app import db
 
+# Language choices stored as human labels for now
+LANG_CHOICES = [
+    ("Chinese", "zh"),
+    ("Dutch", "nl"),
+    ("English", "en"),
+    ("French", "fr"),
+    ("German", "de"),
+    ("Japanese", "ja"),
+    ("Spanish", "es"),
+]
+
 # Prefer passlib for bcrypt hashing, fall back to Werkzeug if unavailable
 try:  # pragma: no cover - import may fail if package missing
     from passlib.hash import bcrypt
@@ -131,7 +142,7 @@ class Session(db.Model):
     location = db.Column(db.String(255))
     delivery_type = db.Column(db.String(32))
     region = db.Column(db.String(8))
-    language = db.Column(db.String(8))
+    language = db.Column(db.String(16))
     capacity = db.Column(db.Integer)
     status = db.Column(db.String(16))
     sponsor = db.Column(db.String(255))
@@ -142,7 +153,12 @@ class Session(db.Model):
     )
     workshop_type = db.relationship("WorkshopType")
     created_at = db.Column(db.DateTime, server_default=db.func.now())
-
+    lead_facilitator_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL")
+    )
+    lead_facilitator = db.relationship(
+        "User", foreign_keys=[lead_facilitator_id], backref="lead_sessions"
+    )
     facilitators = db.relationship(
         "User",
         secondary="session_facilitators",
@@ -164,6 +180,7 @@ class Participant(db.Model):
     full_name = db.Column(db.String(255))
     organization = db.Column(db.String(255))
     job_title = db.Column(db.String(255))
+    title = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("ix_participants_email_lower", db.func.lower(email), unique=True),
@@ -221,6 +238,7 @@ class SessionFacilitator(db.Model):
         db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
     )
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 
 class MaterialType(db.Model):

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import csv
+import io
 from functools import wraps
 
 from flask import (
     Blueprint,
+    Response,
     abort,
     flash,
     redirect,
@@ -14,8 +17,15 @@ from flask import (
 )
 
 from ..app import db, User
-from ..models import Participant, Session, SessionParticipant, WorkshopType, AuditLog
-from sqlalchemy import or_
+from ..models import (
+    LANG_CHOICES,
+    Participant,
+    Session,
+    SessionParticipant,
+    WorkshopType,
+    AuditLog,
+)
+from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
@@ -55,6 +65,10 @@ def new_session(current_user):
             flash("Workshop Type required", "error")
             return redirect(url_for("sessions.new_session"))
         wt = db.session.get(WorkshopType, int(wt_id))
+        language = request.form.get("language") or "English"
+        allowed = [lbl for lbl, _ in LANG_CHOICES]
+        if language not in allowed:
+            language = "English"
         sess = Session(
             title=request.form.get("title"),
             start_date=request.form.get("start_date") or None,
@@ -65,7 +79,7 @@ def new_session(current_user):
             location=request.form.get("location") or None,
             delivery_type=request.form.get("delivery_type") or None,
             region=request.form.get("region") or None,
-            language=request.form.get("language") or None,
+            language=language,
             capacity=request.form.get("capacity") or None,
             status=request.form.get("status") or None,
             sponsor=request.form.get("sponsor") or None,
@@ -73,9 +87,16 @@ def new_session(current_user):
             simulation_outline=request.form.get("simulation_outline") or None,
         )
         sess.workshop_type = wt
-        fac_ids = request.form.getlist("facilitators")
-        if fac_ids:
-            sess.facilitators = User.query.filter(User.id.in_(fac_ids)).all()
+        lead_id = request.form.get("lead_facilitator_id")
+        if lead_id:
+            sess.lead_facilitator_id = int(lead_id)
+        add_ids = [
+            int(fid)
+            for fid in request.form.getlist("additional_facilitators")
+            if fid and fid != lead_id
+        ]
+        if add_ids:
+            sess.facilitators = User.query.filter(User.id.in_(add_ids)).all()
         db.session.add(sess)
         db.session.flush()
         db.session.add(
@@ -93,6 +114,7 @@ def new_session(current_user):
         session=None,
         workshop_types=workshop_types,
         facilitators=facilitators,
+        LANG_CHOICES=LANG_CHOICES,
     )
 
 
@@ -119,15 +141,23 @@ def edit_session(session_id: int, current_user):
         sess.location = request.form.get("location") or None
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
-        sess.language = request.form.get("language") or None
+        language = request.form.get("language") or "English"
+        allowed = [lbl for lbl, _ in LANG_CHOICES]
+        sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
         sess.status = request.form.get("status") or None
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
-        fac_ids = request.form.getlist("facilitators")
+        lead_id = request.form.get("lead_facilitator_id")
+        sess.lead_facilitator_id = int(lead_id) if lead_id else None
+        add_ids = [
+            int(fid)
+            for fid in request.form.getlist("additional_facilitators")
+            if fid and fid != lead_id
+        ]
         sess.facilitators = (
-            User.query.filter(User.id.in_(fac_ids)).all() if fac_ids else []
+            User.query.filter(User.id.in_(add_ids)).all() if add_ids else []
         )
         db.session.add(
             AuditLog(
@@ -144,6 +174,7 @@ def edit_session(session_id: int, current_user):
         session=sess,
         workshop_types=workshop_types,
         facilitators=facilitators,
+        LANG_CHOICES=LANG_CHOICES,
     )
 
 
@@ -164,7 +195,10 @@ def session_detail(session_id: int, current_user):
         participant = db.session.get(Participant, link.participant_id)
         if participant:
             participants.append({"participant": participant, "link": link})
-    return render_template("session_detail.html", session=sess, participants=participants)
+    import_errors = flask_session.pop("import_errors", None)
+    return render_template(
+        "session_detail.html", session=sess, participants=participants, import_errors=import_errors
+    )
 
 
 @bp.post("/<int:session_id>/participants/add")
@@ -175,6 +209,7 @@ def add_participant(session_id: int, current_user):
         abort(404)
     email = (request.form.get("email") or "").strip().lower()
     full_name = (request.form.get("full_name") or "").strip()
+    title = (request.form.get("title") or "").strip()
     if not email:
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -184,11 +219,13 @@ def add_participant(session_id: int, current_user):
         .one_or_none()
     )
     if not participant:
-        participant = Participant(email=email, full_name=full_name)
+        participant = Participant(email=email, full_name=full_name, title=title)
         db.session.add(participant)
         db.session.flush()
     else:
         participant.full_name = participant.full_name or full_name
+        if title:
+            participant.title = participant.title or title
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant.id)
@@ -202,6 +239,113 @@ def add_participant(session_id: int, current_user):
         )
         db.session.add(link)
     db.session.commit()
+    return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
+@staff_required
+def edit_participant(session_id: int, participant_id: int, current_user):
+    link = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=session_id, participant_id=participant_id)
+        .one_or_none()
+    )
+    if not link:
+        abort(404)
+    participant = db.session.get(Participant, participant_id)
+    if request.method == "POST":
+        full_name = (request.form.get("full_name") or "").strip()
+        title = (request.form.get("title") or "").strip()
+        participant.full_name = full_name or None
+        participant.title = title or None
+        db.session.commit()
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return render_template(
+        "participant_edit.html", session_id=session_id, participant=participant
+    )
+
+
+@bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
+@staff_required
+def remove_participant(session_id: int, participant_id: int, current_user):
+    link = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=session_id, participant_id=participant_id)
+        .one_or_none()
+    )
+    if link:
+        db.session.delete(link)
+        db.session.commit()
+        flash("Participant removed", "success")
+    return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.get("/<int:session_id>/participants/sample-csv")
+@staff_required
+def sample_csv(session_id: int, current_user):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["FullName", "Email", "Title"])
+    writer.writerow(["Jane Doe", "jane@example.com", "Manager"])
+    writer.writerow(["John Smith", "john@example.com", "Director"])
+    resp = Response(output.getvalue(), mimetype="text/csv")
+    resp.headers["Content-Disposition"] = "attachment; filename=sample.csv"
+    return resp
+
+
+@bp.post("/<int:session_id>/participants/import-csv")
+@staff_required
+def import_csv(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    file = request.files.get("file")
+    if not file or not file.filename.endswith(".csv"):
+        flash("CSV file required", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    text = file.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    imported = 0
+    errors: list[str] = []
+    for idx, row in enumerate(reader, start=2):
+        full_name = (row.get("FullName") or "").strip()
+        email = (row.get("Email") or "").strip().lower()
+        title = (row.get("Title") or "").strip()
+        if not email or "@" not in email:
+            errors.append(f"Row {idx}: invalid email '{email}'")
+            continue
+        participant = (
+            db.session.query(Participant)
+            .filter(func.lower(Participant.email) == email)
+            .one_or_none()
+        )
+        if not participant:
+            participant = Participant(
+                email=email, full_name=full_name or None, title=title or None
+            )
+            db.session.add(participant)
+            db.session.flush()
+        else:
+            if full_name:
+                participant.full_name = full_name
+            if title:
+                participant.title = title
+        link = (
+            db.session.query(SessionParticipant)
+            .filter_by(session_id=session_id, participant_id=participant.id)
+            .one_or_none()
+        )
+        if not link:
+            link = SessionParticipant(
+                session_id=session_id,
+                participant_id=participant.id,
+                completion_date=sess.end_date,
+            )
+            db.session.add(link)
+        imported += 1
+    db.session.commit()
+    flask_session["import_errors"] = errors
+    flash(f"Imported {imported}, skipped {len(errors)}", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 
