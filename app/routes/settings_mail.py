@@ -6,6 +6,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from ..app import db
 from ..models import Settings
 from ..utils.rbac import app_admin_required
+from ..emailer import send
 
 bp = Blueprint("settings_mail", __name__)
 
@@ -43,3 +44,14 @@ def settings(current_user):
         flash("Saved")
         return redirect(url_for("settings_mail.settings"))
     return render_template("settings_mail.html", settings=settings)
+
+
+@bp.post("/mail-settings/test")
+@app_admin_required
+def test_send(current_user):
+    res = send(current_user.email, "CBS test email", "This is a test email.")
+    if res.get("ok"):
+        flash("Test email sent", "success")
+    else:
+        flash(f"Error: {res.get('detail')}", "error")
+    return redirect(url_for("settings_mail.settings"))

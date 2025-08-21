@@ -21,6 +21,8 @@ from ..app import db, User
 from ..models import (
     LANG_CHOICES,
     Participant,
+    ParticipantAccount,
+    Client,
     Session,
     SessionParticipant,
     WorkshopType,
@@ -53,6 +55,27 @@ def staff_required(fn):
     return wrapper
 
 
+def csa_allowed_for_session(fn):
+    @wraps(fn)
+    def wrapper(session_id: int, *args, **kwargs):
+        sess = db.session.get(Session, session_id)
+        if not sess:
+            abort(404)
+        if sess.delivered:
+            abort(403)
+        user_id = flask_session.get("user_id")
+        if user_id:
+            user = db.session.get(User, user_id)
+            if user and (user.is_app_admin or user.is_admin):
+                return fn(session_id, *args, **kwargs, current_user=user)
+        account_id = flask_session.get("participant_account_id")
+        if account_id and sess.csa_account_id == account_id:
+            return fn(session_id, *args, **kwargs, current_user=None)
+        abort(403)
+
+    return wrapper
+
+
 @bp.get("")
 @staff_required
 def list_sessions(current_user):
@@ -67,6 +90,7 @@ def new_session(current_user):
     facilitators = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
     ).all()
+    clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
         if not wt_id:
@@ -93,6 +117,7 @@ def new_session(current_user):
         elif status not in BASIC_STATUSES:
             flash("Status reset to New because Confirmed-Ready is off.", "error")
             status = "New"
+        cid = request.form.get("client_id")
         sess = Session(
             title=request.form.get("title"),
             start_date=request.form.get("start_date") or None,
@@ -111,6 +136,7 @@ def new_session(current_user):
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
+            client_id=int(cid) if cid else None,
         )
         sess.workshop_type = wt
         lead_id = request.form.get("lead_facilitator_id")
@@ -164,6 +190,7 @@ def new_session(current_user):
         session=None,
         workshop_types=workshop_types,
         facilitators=facilitators,
+        clients=clients,
         LANG_CHOICES=LANG_CHOICES,
         STATUS_CHOICES=BASIC_STATUSES,
     )
@@ -179,6 +206,7 @@ def edit_session(session_id: int, current_user):
     facilitators = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
     ).all()
+    clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
@@ -225,6 +253,8 @@ def edit_session(session_id: int, current_user):
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
+        cid = request.form.get("client_id")
+        sess.client_id = int(cid) if cid else None
         lead_id = request.form.get("lead_facilitator_id")
         sess.lead_facilitator_id = int(lead_id) if lead_id else None
         add_ids = [
@@ -289,15 +319,32 @@ def edit_session(session_id: int, current_user):
         facilitators=facilitators,
         LANG_CHOICES=LANG_CHOICES,
         STATUS_CHOICES=status_choices,
+        clients=clients,
     )
 
 
 @bp.get("/<int:session_id>")
-@staff_required
-def session_detail(session_id: int, current_user):
+def session_detail(session_id: int):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    user_id = flask_session.get("user_id")
+    account_id = flask_session.get("participant_account_id")
+    csa_view = False
+    current_user = None
+    if user_id:
+        user = db.session.get(User, user_id)
+        if user and (user.is_app_admin or user.is_admin):
+            current_user = user
+        else:
+            abort(403)
+    elif account_id:
+        if sess.csa_account_id == account_id and not sess.delivered:
+            csa_view = True
+        else:
+            abort(403)
+    else:
+        return redirect(url_for("login"))
     links = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id)
@@ -311,12 +358,55 @@ def session_detail(session_id: int, current_user):
             participants.append({"participant": participant, "link": link})
     import_errors = flask_session.pop("import_errors", None)
     return render_template(
-        "session_detail.html", session=sess, participants=participants, import_errors=import_errors
+        "session_detail.html",
+        session=sess,
+        participants=participants,
+        import_errors=import_errors,
+        csa_view=csa_view,
+        current_user=current_user,
     )
 
 
-@bp.post("/<int:session_id>/participants/add")
+@bp.post("/<int:session_id>/assign-csa")
 @staff_required
+def assign_csa(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    email = (request.form.get("email") or "").strip().lower()
+    if not email:
+        flash("Email required", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    account = (
+        db.session.query(ParticipantAccount)
+        .filter(func.lower(ParticipantAccount.email) == email)
+        .one_or_none()
+    )
+    if not account:
+        account = ParticipantAccount(email=email, is_active=True)
+        account.set_password("KTRocks!")
+        db.session.add(account)
+        db.session.flush()
+    sess.csa_account_id = account.id
+    db.session.commit()
+    flash("CSA assigned", "success")
+    return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.post("/<int:session_id>/remove-csa")
+@staff_required
+def remove_csa(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    sess.csa_account_id = None
+    db.session.commit()
+    flash("CSA removed", "success")
+    return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.post("/<int:session_id>/participants/add")
+@csa_allowed_for_session
 def add_participant(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
@@ -380,7 +470,7 @@ def edit_participant(session_id: int, participant_id: int, current_user):
 
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
-@staff_required
+@csa_allowed_for_session
 def remove_participant(session_id: int, participant_id: int, current_user):
     link = (
         db.session.query(SessionParticipant)
