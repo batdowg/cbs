@@ -15,12 +15,8 @@
       padding:1rem;
       flex-shrink:0;
     }
-    .sidebar .logo {
-      max-width:100%;
-      margin-bottom:1rem;
-      display:block;
-    }
-    .sidebar a {
+    .sidebar a,
+    .sidebar .nav-link {
       display:block;
       margin:0.5rem 0;
       text-decoration:none;
@@ -30,11 +26,12 @@
       flex:1;
       padding:1rem;
     }
+    .flashes li.error { color:#b00020; font-weight:700; }
+    .flashes li.success { color:#155724; font-weight:600; }
   </style>
 </head>
 <body>
   <aside class="sidebar">
-    <img src="/static/kt-logo.png" alt="KT Logo" class="logo">
     {% include 'nav.html' %}
   </aside>
   <main class="content">

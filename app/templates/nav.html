@@ -1,10 +1,14 @@
 <nav>
   <!-- Navigation Freeze v1 -->
+  <a href="/"><img src="{{ url_for('static', filename='KTlogo1.png') }}" alt="KT Logo" style="max-height:48px;"></a>
   <a href="{{ url_for('index') }}">Home</a>
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
-  <details>
-    <summary>Settings</summary>
+  {% endif %}
+  <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
+  {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
+  <details class="settings">
+    <summary class="nav-link">Settings</summary>
     <ul>
       {% if current_user.is_app_admin or current_user.is_admin %}
       <li><a href="{{ url_for('users.list_users') }}">Users</a></li>
@@ -21,6 +25,5 @@
     </ul>
   </details>
   {% endif %}
-  <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
   <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
