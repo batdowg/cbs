@@ -34,8 +34,8 @@ from ..utils.provisioning import (
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
-STATUS_CHOICES = ["New", "Confirmed", "On Hold", "Delivered", "Closed", "Cancelled"]
-ADVANCED_STATUSES = {"Confirmed", "Delivered", "Closed", "Cancelled"}
+BASIC_STATUSES = ["New", "On Hold", "Cancelled"]
+ADVANCED_STATUSES = ["Confirmed", "Delivered", "Closed", "Cancelled"]
 
 
 def staff_required(fn):
@@ -77,9 +77,12 @@ def new_session(current_user):
         if language not in allowed:
             language = "English"
         confirmed_ready = bool(request.form.get("confirmed_ready"))
+        delivered = bool(request.form.get("delivered"))
         status = request.form.get("status") or "New"
-        if not confirmed_ready and status in ADVANCED_STATUSES:
-            flash("Cannot set advanced status without Confirmed-Ready", "error")
+        if confirmed_ready:
+            status = "Confirmed"
+        elif status not in BASIC_STATUSES:
+            flash("Invalid status without Confirmed-Ready", "error")
             status = "New"
         sess = Session(
             title=request.form.get("title"),
@@ -95,6 +98,7 @@ def new_session(current_user):
             capacity=request.form.get("capacity") or None,
             status=status,
             confirmed_ready=confirmed_ready,
+            delivered=delivered,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
@@ -123,13 +127,19 @@ def new_session(current_user):
         db.session.commit()
         if sess.confirmed_ready:
             summary = provision_participant_accounts_for_session(sess.id)
+            flash(
+                "Provisioned {created} new, {reactivated} reactivated, {already_active} already active, skipped {skipped_staff} staff".format(**summary),
+                "success",
+            )
             db.session.add(
                 AuditLog(
                     user_id=current_user.id,
                     session_id=sess.id,
                     action="provision",
                     details=(
-                        f"created={summary['created']} skipped={summary['skipped_staff']} reactivated={summary['reactivated']}"
+                        "created={created} skipped={skipped_staff} reactivated={reactivated} already_active={already_active}".format(
+                            **summary
+                        )
                     ),
                 )
             )
@@ -141,7 +151,7 @@ def new_session(current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         LANG_CHOICES=LANG_CHOICES,
-        STATUS_CHOICES=STATUS_CHOICES,
+        STATUS_CHOICES=BASIC_STATUSES,
     )
 
 
@@ -175,12 +185,20 @@ def edit_session(session_id: int, current_user):
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
         confirmed_ready = bool(request.form.get("confirmed_ready"))
+        delivered = bool(request.form.get("delivered"))
         status = request.form.get("status") or old_status
-        if not confirmed_ready and status in ADVANCED_STATUSES:
-            flash("Cannot set advanced status without Confirmed-Ready", "error")
-            status = old_status if old_status in ["New", "On Hold"] else "New"
+        if confirmed_ready:
+            if not old_confirmed:
+                status = "Confirmed"
+            elif status not in ADVANCED_STATUSES:
+                status = old_status if old_status in ADVANCED_STATUSES else "Confirmed"
+        else:
+            if status not in BASIC_STATUSES:
+                flash("Invalid status without Confirmed-Ready", "error")
+                status = old_status if old_status in BASIC_STATUSES else "New"
         sess.confirmed_ready = confirmed_ready
         sess.status = status
+        sess.delivered = delivered
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
@@ -205,13 +223,19 @@ def edit_session(session_id: int, current_user):
         db.session.commit()
         if confirmed_ready and not old_confirmed:
             summary = provision_participant_accounts_for_session(sess.id)
+            flash(
+                "Provisioned {created} new, {reactivated} reactivated, {already_active} already active, skipped {skipped_staff} staff".format(**summary),
+                "success",
+            )
             db.session.add(
                 AuditLog(
                     user_id=current_user.id,
                     session_id=sess.id,
                     action="provision",
                     details=(
-                        f"created={summary['created']} skipped={summary['skipped_staff']} reactivated={summary['reactivated']}"
+                        "created={created} skipped={skipped_staff} reactivated={reactivated} already_active={already_active}".format(
+                            **summary
+                        )
                     ),
                 )
             )
@@ -229,13 +253,14 @@ def edit_session(session_id: int, current_user):
                 )
                 db.session.commit()
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
+    status_choices = ADVANCED_STATUSES if sess.confirmed_ready else BASIC_STATUSES
     return render_template(
         "sessions/form.html",
         session=sess,
         workshop_types=workshop_types,
         facilitators=facilitators,
         LANG_CHOICES=LANG_CHOICES,
-        STATUS_CHOICES=STATUS_CHOICES,
+        STATUS_CHOICES=status_choices,
     )
 
 
@@ -413,6 +438,12 @@ def import_csv(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/<int:participant_id>/generate")
 @staff_required
 def generate_single(session_id: int, participant_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    if not sess.delivered:
+        flash("Certificates are gated until Delivered is checked", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -436,6 +467,12 @@ def generate_single(session_id: int, participant_id: int, current_user):
 @bp.post("/<int:session_id>/generate")
 @staff_required
 def generate_bulk(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    if not sess.delivered:
+        flash("Certificates are gated until Delivered is checked", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     count, _ = generate_for_session(session_id)
     flash(f"Generated {count} certificates", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))

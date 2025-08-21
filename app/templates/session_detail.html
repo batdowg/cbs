@@ -12,10 +12,11 @@ Location: {{ session.location }}<br>
 Delivery Type: {{ session.delivery_type }}<br>
 Region: {{ session.region }}<br>
 Language: {{ session.language }}<br>
-Capacity: {{ session.capacity }}<br>
-Status: {{ session.status }}<br>
-Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
-Sponsor: {{ session.sponsor }}<br>
+  Capacity: {{ session.capacity }}<br>
+  Status: {{ session.status }}<br>
+  Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}<br>
+  Sponsor: {{ session.sponsor }}<br>
 Notes: {{ session.notes }}<br>
 Simulation Outline: {{ session.simulation_outline }}<br>
 Lead Facilitator: {% if session.lead_facilitator %}{{ session.lead_facilitator.full_name or session.lead_facilitator.email }}{% endif %}<br>
@@ -55,7 +56,9 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
       <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
         <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
         <button type="submit" name="action" value="save">Save</button>
+        {% if session.delivered %}
         <button type="submit" name="action" value="generate">Generate</button>
+        {% endif %}
       </form>
     </td>
     <td>
@@ -67,7 +70,11 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
   </tr>
   {% endfor %}
 </table>
+{% if session.delivered %}
 <form action="{{ url_for('sessions.generate_bulk', session_id=session.id) }}" method="post">
   <button type="submit">Generate Certificates</button>
 </form>
+{% else %}
+<p>Certificates cannot be generated until session is marked Delivered.</p>
+{% endif %}
 {% endblock %}

@@ -14,7 +14,7 @@ from ..models import (
 
 
 def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int]:
-    created = skipped_staff = reactivated = 0
+    created = skipped_staff = reactivated = already_active = 0
     links = SessionParticipant.query.filter_by(session_id=session_id).all()
     for link in links:
         participant = db.session.get(Participant, link.participant_id)
@@ -33,12 +33,15 @@ def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int
         ).first()
         if not account:
             account = ParticipantAccount(email=email, is_active=True)
+            account.set_password("KTRocks!")
             db.session.add(account)
             created += 1
         else:
             if not account.is_active:
                 account.is_active = True
                 reactivated += 1
+            else:
+                already_active += 1
         if participant.account_id != account.id:
             participant.account_id = account.id
     db.session.commit()
@@ -46,6 +49,7 @@ def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int
         "created": created,
         "skipped_staff": skipped_staff,
         "reactivated": reactivated,
+        "already_active": already_active,
     }
 
 
