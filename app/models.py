@@ -120,7 +120,7 @@ class Session(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
-    code = db.Column(db.String(50))
+    code = db.Column(db.String(64))
     description = db.Column(db.Text)
     client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
@@ -130,6 +130,7 @@ class Session(db.Model):
     timezone = db.Column(db.String(64))
     location = db.Column(db.String(255))
     delivery_type = db.Column(db.String(32))
+    region = db.Column(db.String(8))
     language = db.Column(db.String(8))
     capacity = db.Column(db.Integer)
     status = db.Column(db.String(16))

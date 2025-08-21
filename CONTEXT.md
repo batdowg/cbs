@@ -65,7 +65,7 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown by Code), date-only start/end, daily start/end times, timezone, location, delivery type, language, capacity, status, sponsor, notes, simulation outline, facilitators (multi-select from KT Delivery staff); session.code derives from selected Workshop Type
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language, capacity, status, sponsor, notes, simulation outline, facilitators (multi-select from KT Delivery or Contractor users); session.code derives from selected Workshop Type
 3.2 Materials and shipping block on the Session:  
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
@@ -95,7 +95,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Name Y from bottom 145 mm, Times-Italic, autoshrink 48→32 pt, centered.
     • Workshop Y 102 mm, start 56 pt and shrink to 40 pt if needed, centered.
     • Date Y 83 mm, format “d Month YYYY”, centered using session end date.
-    • Workshop text uses Workshop Type Name when available.
+    • Workshop text always uses Workshop Type Name.
 
 ## 6. UI and Navigation
 6.1 Left‑hand menu, persistent across pages, role aware  
@@ -237,6 +237,11 @@ Implemented app_admin_required RBAC decorator and guarded navigation link
 ## Latest update done by codex 10/20/2025
 Gated initial admin seeding behind users table presence and `FLASK_SKIP_SEED`
 Marked Users table and Users admin UI as complete in context
+## Latest update done by codex 10/30/2025
+Added region field and delivery type/region dropdowns to Session forms
+Workshop Type dropdown now shows Code only; session.code derives automatically
+Facilitators selectable from Delivery or Contractor users and saved via session_facilitators
+Documented Session field changes and WorkshopType Name usage for certificates
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK
