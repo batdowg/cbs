@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Session' if not session else 'Edit Session' }}{% endblock %}
 {% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
 <h1>{{ 'New Session' if not session else 'Edit Session' }}</h1>
 <form method="post">
   <div><label>Title <input type="text" name="title" value="{{ session.title if session else '' }}"></label></div>
@@ -88,6 +91,33 @@
   <button type="submit">Save</button>
 </form>
 <script>
+  var delivered = document.querySelector('input[name="delivered"]');
+  var confirmed = document.querySelector('input[name="confirmed_ready"]');
+  function syncDelivered(){
+    if(delivered.checked){
+      confirmed.checked = true;
+      confirmed.disabled = true;
+    } else {
+      confirmed.disabled = false;
+    }
+  }
+  delivered.addEventListener('change', function(){
+    if(delivered.checked){
+      if(!confirm('Mark this session Delivered? Certificates become available.')){
+        delivered.checked = false;
+        syncDelivered();
+        return;
+      }
+    }
+    syncDelivered();
+  });
+  document.querySelector('form').addEventListener('submit', function(){
+    if(delivered.checked){
+      confirmed.disabled = false;
+      confirmed.checked = true;
+    }
+  });
+  syncDelivered();
   document.getElementById('add-fac').addEventListener('click', function(){
     var container = document.getElementById('additional-facilitators');
     var select = container.querySelector('select').cloneNode(true);
