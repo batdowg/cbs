@@ -90,11 +90,11 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
  • Output path pattern and Generate Certificates buttons are staff-only
 5.4 Resend certificate email action (uses Certificates From address)  
 5.5 Unique certificate ID and simple validation endpoint  
-5.6 Layout rules to follow exactly:  
- • Name Y from bottom 145 mm, italic, autoshrink 48 pt down to 32 pt, centered  
- • Workshop Y 102 mm, larger font, centered  
- • Date Y 83 mm, format “d Month YYYY”, centered  
- • Use session end date as completion date
+5.6 Layout rules to follow exactly:
+    • Text overlays on `app/assets/certificate_template.pdf`.
+    • Name Y from bottom 145 mm, Times-Italic, autoshrink 48→32 pt, centered.
+    • Workshop Y 102 mm, start 56 pt and shrink to 40 pt if needed, centered.
+    • Date Y 83 mm, format “d Month YYYY”, centered using session end date.
 
 ## 6. UI and Navigation
 6.1 Left‑hand menu, persistent across pages, role aware  
