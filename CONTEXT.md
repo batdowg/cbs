@@ -269,3 +269,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Delivered cannot be set before session End Date and forces Confirmed-Ready on.
 - Saving with Confirmed-Ready on runs provisioning, sets status to Confirmed, and flashes provisioning counts.
 - Certificate generation remains blocked until a session is marked Delivered.
+
+## Latest update done by codex 11/25/2025
+- Sign-in now lands on Home and "/dashboard" redirects to "/".
+- Left nav adds a Settings accordion for SysAdmin or Administrator with Users, Workshop Types, Clients, and Mail Settings (SysAdmin only); placeholder Certificates link removed.
+- Users list includes a Role Matrix modal.
+- Delivered cannot be set before End Date. Saving with Delivered forces Confirmed-Ready on and locks it.

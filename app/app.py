@@ -126,7 +126,7 @@ def create_app():
                 if user and user.check_password(password):
                     session["user_id"] = user.id
                     session["user_email"] = user.email
-                    return redirect(url_for("dashboard"))
+                    return redirect(url_for("index"))
                 account = ParticipantAccount.query.filter_by(email=email).first()
                 if (
                     account
@@ -170,7 +170,7 @@ def create_app():
         if user:
             session["user_id"] = user.id
             session["user_email"] = user.email
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("index"))
         account = ParticipantAccount.query.filter_by(email=email).first()
         if account and account.is_active:
             session["participant_account_id"] = account.id
@@ -188,7 +188,7 @@ def create_app():
     @app.get("/dashboard")
     @login_required
     def dashboard():
-        return render_template("dashboard.html", email=session.get("user_email"))
+        return redirect(url_for("index"))
 
     @app.route("/settings/password", methods=["GET", "POST"])
     @login_required
@@ -203,7 +203,7 @@ def create_app():
                 user.set_password(password)
                 db.session.commit()
                 flash("Password updated.")
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("index"))
         return render_template("password.html", error=error)
 
 

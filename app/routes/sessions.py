@@ -82,7 +82,7 @@ def new_session(current_user):
         confirmed_ready = bool(request.form.get("confirmed_ready"))
         delivered = bool(request.form.get("delivered"))
         if delivered and end_date_val and end_date_val > date.today():
-            flash("Cannot mark Delivered before End Date. Adjust End Date.", "error")
+            flash("Cannot mark Delivered before End Date. Adjust End Date first.", "error")
             delivered = False
         if delivered and not confirmed_ready:
             flash("Delivered requires Confirmed-Ready; forcing on.", "info")
@@ -156,6 +156,8 @@ def new_session(current_user):
                 )
             )
             db.session.commit()
+        if sess.delivered:
+            flash("Session marked Delivered", "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
@@ -201,7 +203,7 @@ def edit_session(session_id: int, current_user):
         confirmed_ready = bool(request.form.get("confirmed_ready"))
         delivered = bool(request.form.get("delivered"))
         if not old_delivered and delivered and sess.end_date and sess.end_date > date.today():
-            flash("Cannot mark Delivered before End Date. Adjust End Date.", "error")
+            flash("Cannot mark Delivered before End Date. Adjust End Date first.", "error")
             delivered = False
         if delivered and not confirmed_ready:
             flash("Delivered requires Confirmed-Ready; forcing on.", "info")
@@ -264,6 +266,8 @@ def edit_session(session_id: int, current_user):
                 )
             )
             db.session.commit()
+        if delivered and not old_delivered:
+            flash("Session marked Delivered", "success")
         if sess.status in ["Cancelled", "On Hold"]:
             deactivated = deactivate_orphan_accounts_for_session(sess.id)
             if deactivated:
