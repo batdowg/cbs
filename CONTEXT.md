@@ -45,6 +45,10 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
 1.5 Role based access control (RBAC) middleware for routes [DONE]
 1.6 Session persistence and timeout configuration  
 1.7 Basic audit log for logins and role changes
+1.8 Two login surfaces:
+    • **Users** (staff) managed in Users admin.
+    • **ParticipantAccount** (learners) auto-provisioned via sessions; not shown in Users admin.
+    One email across system; provisioning skips any email that already exists in Users.
 
 ## 2. Email and Notifications
 2.1 Wire SMTP using Microsoft 365 auth account (authenticate as `ktbooks@kepner-tregoe.com`) [UI + backend working; real SMTP depends on env on VPS.]
@@ -65,15 +69,15 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type
-3.2 Materials and shipping block on the Session:  
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00–17:00; lead facilitator removed from additional facilitator options.
+3.2 Materials and shipping block on the Session:
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
-3.4 Status fields: planned, ready to ship, shipped, delivered, completed  
-3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact  
+3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. Participant accounts are provisioned when Confirmed-Ready switches on. Advanced statuses allowed only after ready; cancelling or placing on hold deactivates accounts with no other active sessions.
+3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
 
 ## 4. Participant Management
@@ -187,6 +191,7 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 12.6 Secrets policy: never commit secrets; use environment variables and GitHub secrets
 12.7 Certificate completion date uses session end date
 12.7 Users admin UI live with audit logging [DONE]
+12.8 Participant accounts are deactivated when all their sessions are Cancelled, Closed, or On Hold; provisioning another confirmed session reactivates them.
 
 ## 13. Current State Snapshot
 13.1 App, DB, Caddy running via Docker Compose on VPS  
