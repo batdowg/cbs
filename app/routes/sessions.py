@@ -15,6 +15,7 @@ from flask import (
 
 from ..app import db, User
 from ..models import Participant, Session, SessionParticipant, WorkshopType, AuditLog
+from sqlalchemy import or_
 from ..utils.certificates import generate_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
@@ -45,7 +46,9 @@ def list_sessions(current_user):
 @staff_required
 def new_session(current_user):
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
-    facilitators = User.query.filter_by(is_kt_delivery=True).all()
+    facilitators = User.query.filter(
+        or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
+    ).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
         if not wt_id:
@@ -61,6 +64,7 @@ def new_session(current_user):
             timezone=request.form.get("timezone") or None,
             location=request.form.get("location") or None,
             delivery_type=request.form.get("delivery_type") or None,
+            region=request.form.get("region") or None,
             language=request.form.get("language") or None,
             capacity=request.form.get("capacity") or None,
             status=request.form.get("status") or None,
@@ -99,7 +103,9 @@ def edit_session(session_id: int, current_user):
     if not sess:
         abort(404)
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
-    facilitators = User.query.filter_by(is_kt_delivery=True).all()
+    facilitators = User.query.filter(
+        or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
+    ).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
@@ -112,6 +118,7 @@ def edit_session(session_id: int, current_user):
         sess.timezone = request.form.get("timezone") or None
         sess.location = request.form.get("location") or None
         sess.delivery_type = request.form.get("delivery_type") or None
+        sess.region = request.form.get("region") or None
         sess.language = request.form.get("language") or None
         sess.capacity = request.form.get("capacity") or None
         sess.status = request.form.get("status") or None
