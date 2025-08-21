@@ -17,26 +17,50 @@ Status: {{ session.status }}<br>
 Sponsor: {{ session.sponsor }}<br>
 Notes: {{ session.notes }}<br>
 Simulation Outline: {{ session.simulation_outline }}<br>
-Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}
+Lead Facilitator: {% if session.lead_facilitator %}{{ session.lead_facilitator.full_name or session.lead_facilitator.email }}{% endif %}<br>
+Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}
 </p>
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
 <h2>Participants</h2>
 <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
-  <input type="email" name="email" placeholder="Email" required>
   <input type="text" name="full_name" placeholder="Full name">
+  <input type="email" name="email" placeholder="Email" required>
+  <input type="text" name="title" placeholder="Title">
   <button type="submit">Add Participant</button>
 </form>
+<form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
+  <input type="file" name="file" accept=".csv">
+  <button type="submit">Import CSV</button>
+  <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+</form>
+{% if import_errors %}
+<div>
+  <p>Skipped lines:</p>
+  <ul>
+    {% for err in import_errors %}
+    <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Full Name</th><th>Email</th><th>Completion Date</th><th>Actions</th></tr>
+  <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Actions</th></tr>
   {% for row in participants %}
   <tr>
     <td>{{ row.participant.full_name }}</td>
     <td>{{ row.participant.email }}</td>
+    <td>{{ row.participant.title }}</td>
     <td>
       <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
         <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
         <button type="submit" name="action" value="save">Save</button>
         <button type="submit" name="action" value="generate">Generate</button>
+      </form>
+    </td>
+    <td>
+      <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
+      <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
+        <button type="submit">Remove</button>
       </form>
     </td>
   </tr>

@@ -34,17 +34,57 @@
       {% endfor %}
     </select>
   </label></div>
-  <div><label>Language <input type="text" name="language" value="{{ session.language }}"></label></div>
+  <div><label>Language
+    <select name="language">
+      {% for label, code in LANG_CHOICES %}
+      <option value="{{ label }}" {% if (session and session.language==label) or (not session and label=='English') %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity }}"></label></div>
   <div><label>Status <input type="text" name="status" value="{{ session.status }}"></label></div>
   <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
   <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
   <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
-  <div>Facilitators:<br>
-    {% for u in facilitators %}
-    <label><input type="checkbox" name="facilitators" value="{{ u.id }}" {% if session and u in session.facilitators %}checked{% endif %}> {{ u.full_name or u.email }}</label><br>
-    {% endfor %}
+  <div><label>Lead Facilitator
+    <select name="lead_facilitator_id">
+      <option value="">--Select--</option>
+      {% for u in facilitators %}
+      <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div>Additional Facilitators:
+    <div id="additional-facilitators">
+      {% set adds = session.facilitators if session else [] %}
+      {% if adds %}
+        {% for fac in adds %}
+        <select name="additional_facilitators">
+          <option value="">--Select--</option>
+          {% for u in facilitators %}
+          <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+          {% endfor %}
+        </select>
+        {% endfor %}
+      {% else %}
+        <select name="additional_facilitators">
+          <option value="">--Select--</option>
+          {% for u in facilitators %}
+          <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
+    </div>
+    <button type="button" id="add-fac">Add another facilitator</button>
   </div>
   <button type="submit">Save</button>
 </form>
+<script>
+  document.getElementById('add-fac').addEventListener('click', function(){
+    var container = document.getElementById('additional-facilitators');
+    var select = container.querySelector('select').cloneNode(true);
+    select.value='';
+    container.appendChild(select);
+  });
+</script>
 {% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Edit Participant{% endblock %}
+{% block content %}
+<h1>Edit Participant</h1>
+<form method="post">
+  <div><label>Full name <input type="text" name="full_name" value="{{ participant.full_name }}"></label></div>
+  <div><label>Title <input type="text" name="title" value="{{ participant.title }}"></label></div>
+  <button type="submit">Save</button>
+</form>
+<p><a href="{{ url_for('sessions.session_detail', session_id=session_id) }}">Back</a></p>
+{% endblock %}

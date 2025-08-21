@@ -65,13 +65,13 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language, capacity, status, sponsor, notes, simulation outline, facilitators (multi-select from KT Delivery or Contractor users); session.code derives from selected Workshop Type
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type
 3.2 Materials and shipping block on the Session:  
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
-3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date [DONE]
+3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
 3.4 Status fields: planned, ready to ship, shipped, delivered, completed  
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact  
 3.6 Session list and filters: upcoming, past, by facilitator, by client
@@ -81,7 +81,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 4.2 Link imported participants to a Session during import  
 4.3 Participant profile: name, email (lowercased unique), company, region, notes  
 4.4 Participant portal: “My Certificates” page that shows only their PDFs  
-4.5 Bulk import validation and error report (downloadable CSV)
+4.5 Bulk import validation and error report (downloadable CSV); Session Participants tab also supports CSV import with columns FullName,Email,Title and per-row error report
 
 ## 5. Certificates
 5.1 Generate certificate PDFs using template and layout rules [DONE]
@@ -242,6 +242,10 @@ Added region field and delivery type/region dropdowns to Session forms
 Workshop Type dropdown now shows Code only; session.code derives automatically
 Facilitators selectable from Delivery or Contractor users and saved via session_facilitators
 Documented Session field changes and WorkshopType Name usage for certificates
+## Latest update done by codex 11/05/2025
+Replaced free-text language with dropdown (default English) and lead/additional facilitator controls on Sessions
+Participants tab gains Title field, edit/remove, and CSV import with sample download
+Context updated for session fields and participant CSV behavior
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK
