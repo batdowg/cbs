@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
+<h1>Clients</h1>
+<p><a href="{{ url_for('clients.new_client') }}">New Client</a></p>
+<table>
+  <tr><th>Name</th><th>Status</th><th>Data Region</th><th>CRM</th><th></th></tr>
+  {% for c in clients %}
+  <tr>
+    <td><a href="{{ url_for('clients.edit_client', client_id=c.id) }}">{{ c.name }}</a></td>
+    <td>{{ c.status }}</td>
+    <td>{{ c.data_region }}</td>
+    <td>{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}</td>
+    <td>
+      <form action="{{ url_for('clients.delete_client', client_id=c.id) }}" method="post" style="display:inline">
+        <button type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

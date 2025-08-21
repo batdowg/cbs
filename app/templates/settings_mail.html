@@ -10,19 +10,22 @@
 <p>Updated: {{ settings.updated_at }}</p>
 <form method="post">
   <label>SMTP Host</label>
-  <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}">
+  <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}" autocomplete="off">
   <label>SMTP Port</label>
-  <input type="number" name="smtp_port" value="{{ settings.smtp_port or '' }}">
+  <input type="number" name="smtp_port" value="{{ settings.smtp_port or '' }}" autocomplete="off">
   <label>SMTP Auth User</label>
-  <input type="email" name="smtp_user" value="{{ settings.smtp_user or '' }}">
+  <input type="email" name="smtp_user" value="{{ settings.smtp_user or '' }}" autocomplete="off">
   <label>Default From</label>
-  <input type="email" name="smtp_from_default" value="{{ settings.smtp_from_default or '' }}">
+  <input type="email" name="smtp_from_default" value="{{ settings.smtp_from_default or '' }}" autocomplete="off">
   <label>From Name</label>
-  <input type="text" name="smtp_from_name" value="{{ settings.smtp_from_name or '' }}">
+  <input type="text" name="smtp_from_name" value="{{ settings.smtp_from_name or '' }}" autocomplete="off">
   <label>Password <small>(leave blank to keep existing)</small></label>
-  <input type="password" name="smtp_pass">
+  <input type="password" name="smtp_pass" autocomplete="new-password">
   <label><input type="checkbox" name="use_tls" {% if settings.use_tls %}checked{% endif %}> Use TLS</label>
   <label><input type="checkbox" name="use_ssl" {% if settings.use_ssl %}checked{% endif %}> Use SSL</label>
   <button type="submit">Save</button>
+</form>
+<form method="post" action="{{ url_for('settings_mail.test_send') }}">
+  <button type="submit">Send test email</button>
 </form>
 {% endblock %}

@@ -21,6 +21,15 @@
   <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ session.daily_end_time if session else '17:00' }}"></label></div>
   <div><label>Timezone <input type="text" name="timezone" value="{{ session.timezone }}"></label></div>
   <div><label>Location <input type="text" name="location" value="{{ session.location }}"></label></div>
+  <div><label>Client
+    <select name="client_id" id="client-select">
+      <option value="">--Select--</option>
+      {% for c in clients %}
+      <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
   <div><label>Delivery Type
     <select name="delivery_type">
       <option value="">--Select--</option>
@@ -140,5 +149,10 @@
   }
   document.querySelector('select[name="lead_facilitator_id"]').addEventListener('change', refreshFacOptions);
   refreshFacOptions();
+  document.getElementById('client-select').addEventListener('change', function(){
+    var sel = this;
+    var crm = sel.options[sel.selectedIndex].dataset.crm || '';
+    document.getElementById('crm-display').textContent = crm;
+  });
 </script>
 {% endblock %}

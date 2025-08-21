@@ -5,14 +5,16 @@
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
 <h1>{{ 'New User' if not user else 'Edit User' }}</h1>
-<form method="post">
+<form method="post" autocomplete="off">
+  <input type="text" style="display:none">
+  <input type="password" style="display:none">
   {% if not user %}
-  <div><label>Email <input type="email" name="email" required></label></div>
+  <div><label>Email <input type="email" name="email" required autocomplete="off"></label></div>
   {% else %}
-  <div><label>Email <input type="email" name="email" value="{{ user.email }}" readonly></label></div>
+  <div><label>Email <input type="email" name="email" value="{{ user.email }}" readonly autocomplete="off"></label></div>
   {% endif %}
   <div><label>Full Name <input type="text" name="full_name" value="{{ user.full_name if user else '' }}"></label></div>
-  <div><label>New Password <input type="password" name="password"></label></div>
+  <div><label>New Password <input type="password" name="password" autocomplete="new-password"></label></div>
   <div>
     <label><input type="checkbox" name="is_app_admin" {% if user and user.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}> Application Admin</label><br>
     <label><input type="checkbox" name="is_admin" {% if user and user.is_admin %}checked{% endif %}> Admin</label><br>

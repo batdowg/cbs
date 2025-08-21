@@ -60,8 +60,10 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
  • Emailer uses DB overrides with environment fallback
 2.3 If SMTP config is incomplete, log the composed message with a `[MAIL-OUT]` prefix [UI + backend working; real SMTP depends on env on VPS.]
 2.4 Message templates stored in DB with simple placeholders (name, session, date)  
-2.5 Test mail endpoint in Settings to send a one‑off test to an address  
+2.5 Test mail endpoint in Settings to send a one‑off test to an address
 2.6 Delivery logging table (to, subject, status, error text)
+2.7 Clients: manage client records (Name unique case-insensitive, SFC Link, CRM (User), Data Region NA/EU/SEA/Other, Status active/inactive). SysAdmin or Administrator can CRUD under Settings.
+2.8 SMTP test button uses saved settings and flashes success or error.
 
 Environment variables (reference only, do not hardcode secrets in repo):  
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` (auth account), `SMTP_PASS` (secret), `SMTP_FROM_DEFAULT`, `SMTP_FROM_NAME`
@@ -79,6 +81,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. When Confirmed-Ready switches on, participant accounts are auto-provisioned (default password "KTRocks!"), session status is forced to `Confirmed`, and a summary of created/reactivated/skipped/already-active accounts is flashed. Status options: if Confirmed-Ready is off → allow only `New`, `On Hold`, `Cancelled`; if on → allow `Confirmed`, `Delivered`, `Closed`, `Cancelled`. Delivered cannot be set before End Date and forces Confirmed-Ready on, locking it from being unchecked. A Delivered checkbox gates certificate generation until checked. Cancelling or placing on hold deactivates accounts with no other active sessions.
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
+3.7 Client Session Admin (CSA): per-session email assignment creating ParticipantAccount if missing. CSA may add/remove participants for that session until Delivered; no other access.
 
 ## 4. Participant Management
 4.1 Import participants from Salesforce CSV (`SFC Participant Import Template.csv`)  
@@ -105,8 +108,9 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 6.1 Left‑hand menu, persistent across pages, role aware. Order: Home, Sessions, My Certificates, Settings (accordion: Users, Workshop Types, Mail Settings, Clients), Logout.
 6.2 Admin dashboard for quick system status and recent actions
 6.3 Participant view: only “My Certificates”
-6.4 Consistent KT brand styles (logo at `app/static/KTlogo1.png`, colors, typography)
+6.4 Consistent KT brand styles (logo at `app/static/ktlogo1.png`, colors, typography)
 6.5 Responsive layout basics for mobile
+6.6 Forms disable autocomplete on sensitive fields (New User email/password, Mail Settings SMTP credentials)
 
 ## 7. Settings (Application Admin only)
 7.1 Settings landing page visible only to Application Admin (see Roles in section 11)  
@@ -280,4 +284,11 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Sidebar logo served from `app/static/KTlogo1.png`.
 - Left nav order: Home, Sessions, My Certificates, Settings (Users, Workshop Types, Mail Settings, Clients), Logout.
 - Settings summary styled like other links and error flashes render bold red.
+
+## Latest update done by codex 12/20/2025
+- Clients model and admin CRUD added; sessions can link to clients and show their CRM read-only.
+- Per-session Client Session Admin (CSA) assignment by email; CSA may manage participants until Delivered.
+- Mail Settings page has “Send test email” using saved SMTP config.
+- New User and Mail Settings forms disable autocomplete on sensitive fields.
+- Sidebar logo path fixed to `app/static/ktlogo1.png`.
 

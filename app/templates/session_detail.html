@@ -4,6 +4,7 @@
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
+{% if not csa_view %}
 <h1>{{ session.title }}</h1>
 <p>
 Code: {{ session.code }}<br>
@@ -12,6 +13,8 @@ Start: {{ session.start_date }} End: {{ session.end_date }}<br>
 Daily: {{ session.daily_start_time }} - {{ session.daily_end_time }}<br>
 Timezone: {{ session.timezone }}<br>
 Location: {{ session.location }}<br>
+Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
+CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
 Delivery Type: {{ session.delivery_type }}<br>
 Region: {{ session.region }}<br>
 Language: {{ session.language }}<br>
@@ -22,17 +25,33 @@ Language: {{ session.language }}<br>
   Sponsor: {{ session.sponsor }}<br>
 Notes: {{ session.notes }}<br>
 Simulation Outline: {{ session.simulation_outline }}<br>
-Lead Facilitator: {% if session.lead_facilitator %}{{ session.lead_facilitator.full_name or session.lead_facilitator.email }}{% endif %}<br>
+Lead Facilitator: {% if session.lead_facilitator %}{{ session.lead_facilitator.full_name or session.lead_facilitator.email }}{%endif %}<br>
 Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}
 </p>
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
+<div>
+  <h2>Client Session Admin</h2>
+  {% if session.csa_account %}
+    <p>Current CSA: {{ session.csa_account.email }}
+    <form action="{{ url_for('sessions.remove_csa', session_id=session.id) }}" method="post" style="display:inline"><button type="submit">Remove</button></form>
+    </p>
+  {% else %}
+    <form action="{{ url_for('sessions.assign_csa', session_id=session.id) }}" method="post">
+      <input type="email" name="email" required>
+      <button type="submit">Assign</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
 <h2>Participants</h2>
+{% if not session.delivered %}
 <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
   <input type="text" name="full_name" placeholder="Full name">
   <input type="email" name="email" placeholder="Email" required>
   <input type="text" name="title" placeholder="Title">
   <button type="submit">Add Participant</button>
 </form>
+{% if not csa_view %}
 <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
   <input type="file" name="file" accept=".csv">
   <button type="submit">Import CSV</button>
@@ -48,6 +67,27 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
   </ul>
 </div>
 {% endif %}
+{% endif %}
+{% endif %}
+{% if csa_view %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Actions</th></tr>
+  {% for row in participants %}
+  <tr>
+    <td>{{ row.participant.full_name }}</td>
+    <td>{{ row.participant.email }}</td>
+    <td>{{ row.participant.title }}</td>
+    <td>
+      {% if not session.delivered %}
+      <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
+        <button type="submit">Remove</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Actions</th></tr>
   {% for row in participants %}
@@ -66,9 +106,11 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
     </td>
     <td>
       <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
+      {% if not session.delivered %}
       <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
         <button type="submit">Remove</button>
       </form>
+      {% endif %}
     </td>
   </tr>
   {% endfor %}
@@ -79,5 +121,6 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
 </form>
 {% else %}
 <p>Certificates cannot be generated until session is marked Delivered.</p>
+{% endif %}
 {% endif %}
 {% endblock %}

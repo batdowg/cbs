@@ -264,6 +264,7 @@ def create_app():
     from .routes.learner import bp as learner_bp
     from .routes.certificates import bp as certificates_bp
     from .routes.users import bp as users_bp
+    from .routes.clients import bp as clients_bp
 
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
@@ -271,6 +272,7 @@ def create_app():
     app.register_blueprint(learner_bp)
     app.register_blueprint(certificates_bp)
     app.register_blueprint(users_bp)
+    app.register_blueprint(clients_bp)
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):

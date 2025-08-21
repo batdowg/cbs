@@ -156,6 +156,22 @@ class WorkshopType(db.Model):
         return (value or "").upper()
 
 
+class Client(db.Model):
+    __tablename__ = "clients"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    sfc_link = db.Column(db.String(512))
+    crm_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    crm = db.relationship("User")
+    data_region = db.Column(db.String(8))
+    status = db.Column(db.String(16), nullable=False, default="active")
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index("uix_clients_name_lower", db.func.lower(name), unique=True),
+    )
+
+
 class Session(db.Model):
     __tablename__ = "sessions"
 
@@ -206,6 +222,12 @@ class Session(db.Model):
         secondary="session_facilitators",
         backref="facilitated_sessions",
     )
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="SET NULL"))
+    client = db.relationship("Client")
+    csa_account_id = db.Column(
+        db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
+    )
+    csa_account = db.relationship("ParticipantAccount")
 
     @validates("workshop_type")
     def _sync_code(self, key, wt):  # pragma: no cover - simple setter

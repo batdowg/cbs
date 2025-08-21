@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New Client' if not client else 'Edit Client' }}{% endblock %}
+{% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
+<h1>{{ 'New Client' if not client else 'Edit Client' }}</h1>
+<form method="post">
+  <div><label>Name <input type="text" name="name" value="{{ client.name if client else '' }}" required></label></div>
+  <div><label>SFC Link <input type="url" name="sfc_link" value="{{ client.sfc_link if client else '' }}"></label></div>
+  <div><label>CRM
+    <select name="crm_user_id">
+      <option value="">--Select--</option>
+      {% for u in users %}
+      <option value="{{ u.id }}" {% if client and client.crm_user_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Data Region
+    <select name="data_region">
+      <option value="">--Select--</option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if client and client.data_region==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Status
+    <select name="status">
+      {% for opt in ['active','inactive'] %}
+      <option value="{{ opt }}" {% if (client and client.status==opt) or (not client and opt=='active') %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
