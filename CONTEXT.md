@@ -102,10 +102,10 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Workshop text always uses Workshop Type Name.
 
 ## 6. UI and Navigation
-6.1 Left‑hand menu, persistent across pages, role aware  
-6.2 Admin dashboard for quick system status and recent actions  
-6.3 Participant view: only “My Certificates”  
-6.4 Consistent KT brand styles (logo, colors, typography)  
+6.1 Left‑hand menu, persistent across pages, role aware. Order: Home, Sessions, My Certificates, Settings (accordion: Users, Workshop Types, Mail Settings, Clients), Logout.
+6.2 Admin dashboard for quick system status and recent actions
+6.3 Participant view: only “My Certificates”
+6.4 Consistent KT brand styles (logo at `app/static/KTlogo1.png`, colors, typography)
 6.5 Responsive layout basics for mobile
 
 ## 7. Settings (Application Admin only)
@@ -275,3 +275,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Left nav adds a Settings accordion for SysAdmin or Administrator with Users, Workshop Types, Clients, and Mail Settings (SysAdmin only); placeholder Certificates link removed.
 - Users list includes a Role Matrix modal.
 - Delivered cannot be set before End Date. Saving with Delivered forces Confirmed-Ready on and locks it.
+
+## Latest update done by codex 12/10/2025
+- Sidebar logo served from `app/static/KTlogo1.png`.
+- Left nav order: Home, Sessions, My Certificates, Settings (Users, Workshop Types, Mail Settings, Clients), Logout.
+- Settings summary styled like other links and error flashes render bold red.
+

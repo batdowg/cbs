@@ -3,3 +3,5 @@ __pycache__/
 .env
 .env.*
 .pgdata/
+
+app/static/KTlogo1.png
