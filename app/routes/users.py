@@ -40,6 +40,33 @@ def list_users(current_user):
     return render_template("users/list.html", users=users)
 
 
+@bp.post("/bulk-update")
+@app_admin_required
+def bulk_update(current_user):
+    users = User.query.order_by(User.id).all()
+    updated = 0
+    for user in users:
+        orig = _roles_str(user)
+        user.is_app_admin = bool(request.form.get(f"is_app_admin_{user.id}"))
+        user.is_admin = bool(request.form.get(f"is_admin_{user.id}"))
+        user.is_kcrm = bool(request.form.get(f"is_kcrm_{user.id}"))
+        user.is_kt_delivery = bool(request.form.get(f"is_kt_delivery_{user.id}"))
+        user.is_kt_contractor = bool(request.form.get(f"is_kt_contractor_{user.id}"))
+        new_roles = _roles_str(user)
+        if new_roles != orig:
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    action="user_update",
+                    details=f"user_id={user.id} roles={new_roles}",
+                )
+            )
+            updated += 1
+    db.session.commit()
+    flash(f"Updated {updated} users", "success")
+    return redirect(url_for("users.list_users"))
+
+
 @bp.get("/new")
 @app_admin_required
 def new_user(current_user):

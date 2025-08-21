@@ -47,7 +47,7 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
 1.7 Basic audit log for logins and role changes
 1.8 Two login surfaces:
     • **Users** (staff) managed in Users admin.
-    • **ParticipantAccount** (learners) auto-provisioned via sessions; not shown in Users admin.
+    • **ParticipantAccount** (learners) auto-provisioned via sessions with default password "KTRocks!"; not shown in Users admin.
     One email across system; provisioning skips any email that already exists in Users.
 
 ## 2. Email and Notifications
@@ -76,7 +76,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
-3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. Participant accounts are provisioned when Confirmed-Ready switches on. Advanced statuses allowed only after ready; cancelling or placing on hold deactivates accounts with no other active sessions.
+3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. When Confirmed-Ready switches on, participant accounts are auto-provisioned (default password "KTRocks!"), session status is set to `Confirmed`, and a summary of created/reactivated/skipped/already-active accounts is flashed. Status options: if Confirmed-Ready is off → allow only `New`, `On Hold`, `Cancelled`; if on → allow `Confirmed`, `Delivered`, `Closed`, `Cancelled`. A Delivered checkbox gates certificate generation until checked. Cancelling or placing on hold deactivates accounts with no other active sessions.
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
 
@@ -192,6 +192,7 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 12.7 Certificate completion date uses session end date
 12.7 Users admin UI live with audit logging [DONE]
 12.8 Participant accounts are deactivated when all their sessions are Cancelled, Closed, or On Hold; provisioning another confirmed session reactivates them.
+12.9 Users admin table includes inline role checkboxes (SysAdmin, Administrator, CRM, KT Facilitator, Contractor) with bulk save.
 
 ## 13. Current State Snapshot
 13.1 App, DB, Caddy running via Docker Compose on VPS  
@@ -251,6 +252,8 @@ Documented Session field changes and WorkshopType Name usage for certificates
 Replaced free-text language with dropdown (default English) and lead/additional facilitator controls on Sessions
 Participants tab gains Title field, edit/remove, and CSV import with sample download
 Context updated for session fields and participant CSV behavior
+## Latest update done by codex 11/15/2025
+Participant accounts provision with default password "KTRocks!" and flash summary; Confirmed-Ready auto-sets status to Confirmed with gated status options; Delivered checkbox blocks certificate generation until checked; Users admin lists inline role checkboxes with bulk save.
 ## Diagnostics 2025-08-19
 - Route exists: admin_test_mail GET /admin/test-mail
 - /healthz returns 200 OK

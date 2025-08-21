@@ -184,6 +184,9 @@ class Session(db.Model):
     confirmed_ready = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    delivered = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
     simulation_outline = db.Column(db.Text)
