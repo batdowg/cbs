@@ -7,10 +7,10 @@ from ..app import db
 from ..models import Settings
 from ..utils.rbac import app_admin_required
 
-bp = Blueprint("settings_mail", __name__, url_prefix="/admin")
+bp = Blueprint("settings_mail", __name__)
 
 
-@bp.route("/settings/mail", methods=["GET", "POST"])
+@bp.route("/mail-settings", methods=["GET", "POST"])
 @app_admin_required
 def settings(current_user):
     settings = Settings.get()

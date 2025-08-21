@@ -3,15 +3,24 @@
   <a href="{{ url_for('index') }}">Home</a>
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
-  <a href="{{ url_for('certificates.index') }}">Certificates</a>
-  <a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a>
-  {% if current_user.is_app_admin %}
-  <a href="{{ url_for('users.list_users') }}">Users</a>
-  {% endif %}
+  <details>
+    <summary>Settings</summary>
+    <ul>
+      {% if current_user.is_app_admin or current_user.is_admin %}
+      <li><a href="{{ url_for('users.list_users') }}">Users</a></li>
+      {% endif %}
+      {% if current_user.is_app_admin or current_user.is_admin %}
+      <li><a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a></li>
+      {% endif %}
+      {% if current_user.is_app_admin %}
+      <li><a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a></li>
+      {% endif %}
+      {% if current_user.is_app_admin or current_user.is_admin %}
+      <li><a href="/clients">Clients</a></li>
+      {% endif %}
+    </ul>
+  </details>
   {% endif %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
-  {% if current_user and current_user.is_app_admin %}
-  <a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a>
-  {% endif %}
   <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
