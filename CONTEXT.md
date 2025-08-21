@@ -65,7 +65,7 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, code, start date, end date, timezone, location, delivery type, facilitator(s) [DONE]
+3.1 Create Session form (staff only): title, Workshop Type (dropdown by Code), date-only start/end, daily start/end times, timezone, location, delivery type, language, capacity, status, sponsor, notes, simulation outline, facilitators (multi-select from KT Delivery staff); session.code derives from selected Workshop Type
 3.2 Materials and shipping block on the Session:  
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
@@ -95,6 +95,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Name Y from bottom 145 mm, Times-Italic, autoshrink 48→32 pt, centered.
     • Workshop Y 102 mm, start 56 pt and shrink to 40 pt if needed, centered.
     • Date Y 83 mm, format “d Month YYYY”, centered using session end date.
+    • Workshop text uses Workshop Type Name when available.
 
 ## 6. UI and Navigation
 6.1 Left‑hand menu, persistent across pages, role aware  
@@ -171,6 +172,7 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
 11.3 Users table and Users admin UI implemented [DONE]
 11.4 Users migration fixed for Postgres using inspector checks; enforces unique lower(email) index [DONE]
 11.5 Next: wire Session Details to shipping/materials where needed
+11.6 WorkshopTypes table with unique uppercase code; sessions reference it via workshop_type_id
 
 ## 12. Data and Security Rules
 12.1 One account per email across the entire system; enforce lower(email) unique in DB and app logic  
@@ -180,9 +182,10 @@ Notes: name/workshop/date placement per layout rules; uses session end date as c
  • CRM, Delivery, Contractor, Staff as needed for access scopes  
  • Participant: access only to their own certificates  
 12.3 Staff‑only pages: `/importer`, `/cert-form`, `/issued`, `/users`
-12.4 Learner page: `/my-certificates` shows only their own PDFs
-12.5 Secrets policy: never commit secrets; use environment variables and GitHub secrets
-12.6 Certificate completion date uses session end date
+12.4 Facilitators selectable only from users flagged as KT Delivery
+12.5 Learner page: `/my-certificates` shows only their own PDFs
+12.6 Secrets policy: never commit secrets; use environment variables and GitHub secrets
+12.7 Certificate completion date uses session end date
 12.7 Users admin UI live with audit logging [DONE]
 
 ## 13. Current State Snapshot

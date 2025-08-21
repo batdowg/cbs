@@ -97,6 +97,24 @@ class Settings(db.Model):
             return None
 
 
+class WorkshopType(db.Model):
+    __tablename__ = "workshop_types"
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(16), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(16), default="active")
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
+    )
+
+    @validates("code")
+    def upper_code(self, key, value):  # pragma: no cover - simple normalizer
+        return (value or "").upper()
+
+
 class Session(db.Model):
     __tablename__ = "sessions"
 
@@ -107,9 +125,34 @@ class Session(db.Model):
     client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
+    daily_start_time = db.Column(db.Time)
+    daily_end_time = db.Column(db.Time)
+    timezone = db.Column(db.String(64))
     location = db.Column(db.String(255))
-    timezone = db.Column(db.String(50))
+    delivery_type = db.Column(db.String(32))
+    language = db.Column(db.String(8))
+    capacity = db.Column(db.Integer)
+    status = db.Column(db.String(16))
+    sponsor = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+    simulation_outline = db.Column(db.Text)
+    workshop_type_id = db.Column(
+        db.Integer, db.ForeignKey("workshop_types.id", ondelete="SET NULL")
+    )
+    workshop_type = db.relationship("WorkshopType")
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    facilitators = db.relationship(
+        "User",
+        secondary="session_facilitators",
+        backref="facilitated_sessions",
+    )
+
+    @validates("workshop_type")
+    def _sync_code(self, key, wt):  # pragma: no cover - simple setter
+        if wt:
+            self.code = wt.code
+        return wt
 
 
 class Participant(db.Model):
@@ -168,6 +211,15 @@ class Certificate(db.Model):
             name="uix_certificate_session_participant",
         ),
     )
+
+
+class SessionFacilitator(db.Model):
+    __tablename__ = "session_facilitators"
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
 
 
 class MaterialType(db.Model):
