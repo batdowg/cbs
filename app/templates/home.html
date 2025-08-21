@@ -1,10 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h2>Home</h2>
-<ul>
-  <li><a href="/sessions">Sessions</a></li>
-  <li><a href="/certificates">Certificates</a></li>
-  <li><a href="/users">Users</a></li>
-</ul>
+<h2>Welcome, {{ session.get('user_email') }}</h2>
+{% if current_user or is_csa %}
+<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a> | <a href="{{ url_for('learner.my_certs') }}">My Certificates</a></p>
+{% endif %}
 {% endblock %}

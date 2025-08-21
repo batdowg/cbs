@@ -1,33 +1,21 @@
-{% extends 'base.html' %}
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
-{% if not csa_view %}
 <h1>{{ session.title }}</h1>
-<p>
-Code: {{ session.code }}<br>
-Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
-Start: {{ session.start_date }} End: {{ session.end_date }}<br>
-Daily: {{ session.daily_start_time }} - {{ session.daily_end_time }}<br>
-Timezone: {{ session.timezone }}<br>
-Location: {{ session.location }}<br>
-Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
-CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-Delivery Type: {{ session.delivery_type }}<br>
-Region: {{ session.region }}<br>
-Language: {{ session.language }}<br>
-  Capacity: {{ session.capacity }}<br>
+<div>
+  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
+  Dates: {{ session.start_date }} – {{ session.end_date }} {{ session.daily_start_time }}-{{ session.daily_end_time }}<br>
+  Region: {{ session.region }}<br>
+  Delivery Type: {{ session.delivery_type }}<br>
+  Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
+  CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Status: {{ session.status }}<br>
   Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}<br>
-  Sponsor: {{ session.sponsor }}<br>
-Notes: {{ session.notes }}<br>
-Simulation Outline: {{ session.simulation_outline }}<br>
-Lead Facilitator: {% if session.lead_facilitator %}{{ session.lead_facilitator.full_name or session.lead_facilitator.email }}{%endif %}<br>
-Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}
-</p>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}
+</div>
+{% if current_user %}
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
 <div>
   <h2>Client Session Admin</h2>
@@ -51,7 +39,6 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
   <input type="text" name="title" placeholder="Title">
   <button type="submit">Add Participant</button>
 </form>
-{% if not csa_view %}
 <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
   <input type="file" name="file" accept=".csv">
   <button type="submit">Import CSV</button>
@@ -68,7 +55,6 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
 </div>
 {% endif %}
 {% endif %}
-{% endif %}
 {% if csa_view %}
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Actions</th></tr>
@@ -79,6 +65,7 @@ Additional Facilitators: {% for u in session.facilitators %}{{ u.full_name or u.
     <td>{{ row.participant.title }}</td>
     <td>
       {% if not session.delivered %}
+      <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
       <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
         <button type="submit">Remove</button>
       </form>

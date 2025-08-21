@@ -292,3 +292,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - New User and Mail Settings forms disable autocomplete on sensitive fields.
 - Sidebar logo path fixed to `app/static/ktlogo1.png`.
 
+## Latest update done by codex 01/15/2026
+- Sidebar logo always loads from `app/static/ktlogo1.png`.
+- Added “My Sessions” page listing sessions where the user is lead or additional facilitator, client CRM, or the assigned CSA; excluded Closed/Cancelled unless toggled. Link shown for staff or CSA accounts.
+- CSA and staff may view session info and, before delivery, add/remove participants, edit participant full name and title, and import CSV; all CSA abilities disabled once Delivered.
+- Home page simplified to a welcome message with links to My Sessions and My Certificates when available.
+
