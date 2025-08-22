@@ -316,3 +316,6 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Confirmed-Ready independent; Delivered requires Confirmed-Ready.
 - “My Profile” adds Certificate Name; certs use it; typography updated.
 
+## Latest update done by codex 05/01/2026
+- Checkboxes accept y/yes/on/1 and Confirmed-Ready persists independently of Delivered.
+

@@ -43,8 +43,8 @@ FALSY = {"0", "off", "false", "f", "n", "no", "False", "FALSE", ""}
 
 def get_checkbox(form, name, default=None):
     if name not in form:
-        return default
-    v = form.get(name, "").strip()
+        return default  # missing field => leave as-is (read-only views)
+    v = (form.get(name) or "").strip()
     if v in TRUTHY:
         return True
     if v in FALSY:
@@ -294,7 +294,7 @@ def edit_session(session_id: int, current_user):
             )
         )
         db.session.commit()
-        if confirmed_ready and not old_confirmed:
+        if new_ready and not old_confirmed:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
