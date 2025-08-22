@@ -103,6 +103,10 @@ def new_session(current_user):
         info_sent = _cb(request.form.get("info_sent"))
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
+        participants_count = 0
+        if ready_for_delivery and participants_count == 0:
+            flash("Add participants before marking Ready for delivery.", "error")
+            ready_for_delivery = False
         if delivered:
             if not ready_for_delivery:
                 flash("Delivered requires 'Ready for delivery' first.", "error")
@@ -136,6 +140,17 @@ def new_session(current_user):
             simulation_outline=request.form.get("simulation_outline") or None,
             client_id=int(cid) if cid else None,
         )
+        now = datetime.utcnow()
+        if sess.materials_ordered:
+            sess.materials_ordered_at = now
+        if sess.ready_for_delivery:
+            sess.ready_at = now
+        if sess.info_sent:
+            sess.info_sent_at = now
+        if sess.delivered:
+            sess.delivered_at = now
+        if sess.finalized:
+            sess.finalized_at = now
         sess.workshop_type = wt
         lead_id = request.form.get("lead_facilitator_id")
         if lead_id:
@@ -211,6 +226,8 @@ def new_session(current_user):
         clients=clients,
         LANG_CHOICES=LANG_CHOICES,
         include_all_facilitators=include_all,
+        participants_count=0,
+        today=date.today(),
     )
 
 
@@ -229,10 +246,14 @@ def edit_session(session_id: int, current_user):
         fac_query = fac_query.filter(User.region == sess.region)
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
+    participants_count = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=sess.id)
+        .count()
+    )
     if request.method == "POST":
         old_ready = bool(sess.ready_for_delivery)
-        ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
-        new_ready = ready_for_delivery
+        new_ready = _cb(request.form.get("ready_for_delivery"))
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
@@ -240,6 +261,7 @@ def edit_session(session_id: int, current_user):
         old_materials = sess.materials_ordered
         old_info = sess.info_sent
         old_finalized = sess.finalized
+        old_on_hold = sess.on_hold
         sess.title = request.form.get("title")
         sess.start_date = request.form.get("start_date") or None
         end_date_str = request.form.get("end_date")
@@ -258,8 +280,12 @@ def edit_session(session_id: int, current_user):
         info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
         delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
         finalized = _cb(request.form.get("finalized")) if "finalized" in request.form else old_finalized
+        on_hold = _cb(request.form.get("on_hold")) if "on_hold" in request.form else old_on_hold
+        if new_ready and participants_count == 0:
+            flash("Add participants before marking Ready for delivery.", "error")
+            new_ready = False
         if delivered:
-            if not ready_for_delivery:
+            if not new_ready:
                 flash("Delivered requires 'Ready for delivery' first.", "error")
                 delivered = False
             elif sess.end_date and sess.end_date > date.today():
@@ -269,10 +295,11 @@ def edit_session(session_id: int, current_user):
             flash("Finalized requires Delivered first.", "error")
             finalized = False
         sess.materials_ordered = materials_ordered
-        sess.ready_for_delivery = ready_for_delivery or delivered
+        sess.ready_for_delivery = new_ready or delivered
         sess.info_sent = info_sent
         sess.delivered = delivered
         sess.finalized = finalized
+        sess.on_hold = on_hold
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
@@ -288,6 +315,32 @@ def edit_session(session_id: int, current_user):
         sess.facilitators = (
             User.query.filter(User.id.in_(add_ids)).all() if add_ids else []
         )
+        now = datetime.utcnow()
+        flag_changes = []
+        if materials_ordered != old_materials:
+            flag_changes.append(("materials_ordered", old_materials, materials_ordered))
+            if materials_ordered and not sess.materials_ordered_at:
+                sess.materials_ordered_at = now
+        if new_ready != old_ready:
+            flag_changes.append(("ready_for_delivery", old_ready, new_ready))
+            if new_ready and not sess.ready_at:
+                sess.ready_at = now
+        if info_sent != old_info:
+            flag_changes.append(("info_sent", old_info, info_sent))
+            if info_sent and not sess.info_sent_at:
+                sess.info_sent_at = now
+        if delivered != old_delivered:
+            flag_changes.append(("delivered", old_delivered, delivered))
+            if delivered and not sess.delivered_at:
+                sess.delivered_at = now
+        if finalized != old_finalized:
+            flag_changes.append(("finalized", old_finalized, finalized))
+            if finalized and not sess.finalized_at:
+                sess.finalized_at = now
+        if on_hold != old_on_hold:
+            flag_changes.append(("on_hold", old_on_hold, on_hold))
+            if on_hold and not sess.on_hold_at:
+                sess.on_hold_at = now
         db.session.add(
             AuditLog(
                 user_id=current_user.id,
@@ -296,6 +349,15 @@ def edit_session(session_id: int, current_user):
                 details=f"session_id={sess.id}",
             )
         )
+        for flag, old, new in flag_changes:
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    session_id=sess.id,
+                    action="lifecycle_flip",
+                    details=f"{flag}:{old}->{new}",
+                )
+            )
         db.session.commit()
         if new_ready and not old_ready:
             summary = provision_participant_accounts_for_session(sess.id)
@@ -336,9 +398,9 @@ def edit_session(session_id: int, current_user):
             changes.append(
                 "Materials ordered " + ("on" if materials_ordered else "off")
             )
-        if ready_for_delivery != old_ready:
+        if new_ready != old_ready:
             changes.append(
-                "Ready for delivery " + ("on" if ready_for_delivery else "off")
+                "Ready for delivery " + ("on" if new_ready else "off")
             )
         if info_sent != old_info:
             changes.append(
@@ -361,6 +423,8 @@ def edit_session(session_id: int, current_user):
         LANG_CHOICES=LANG_CHOICES,
         clients=clients,
         include_all_facilitators=include_all,
+        participants_count=participants_count,
+        today=date.today(),
     )
 
 
@@ -434,11 +498,22 @@ def cancel_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
-    sess.cancelled = True
-    sess.cancelled_at = datetime.utcnow()
-    remove_session_certificates(session_id, sess.end_date)
-    db.session.commit()
-    flash("Session cancelled", "error")
+    if not sess.cancelled:
+        sess.cancelled = True
+        if not sess.cancelled_at:
+            sess.cancelled_at = datetime.utcnow()
+        remove_session_certificates(session_id, sess.end_date)
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=session_id,
+                action="lifecycle_flip",
+                details="cancelled:False->True",
+            )
+        )
+        db.session.commit()
+        deactivate_orphan_accounts_for_session(sess.id)
+    flash("Session cancelled", "warning")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 
@@ -451,9 +526,19 @@ def finalize_session(session_id: int, current_user):
     if not sess.delivered:
         flash("Finalized requires Delivered first.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
-    sess.finalized = True
-    sess.finalized_at = datetime.utcnow()
-    db.session.commit()
+    if not sess.finalized:
+        sess.finalized = True
+        if not sess.finalized_at:
+            sess.finalized_at = datetime.utcnow()
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=session_id,
+                action="lifecycle_flip",
+                details="finalized:False->True",
+            )
+        )
+        db.session.commit()
     flash("Session finalized", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
@@ -495,7 +580,26 @@ def add_participant(session_id: int, sess, current_user, csa_view):
             completion_date=sess.end_date,
         )
         db.session.add(link)
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id if current_user else None,
+            session_id=session_id,
+            participant_id=participant.id,
+            action="participant_add",
+            details="CSA added 1 participant" if current_user is None else None,
+        )
+    )
     db.session.commit()
+    if sess.ready_for_delivery:
+        summary = provision_participant_accounts_for_session(sess.id)
+        total = summary["created"] + summary["reactivated"] + summary["already_active"]
+        if total:
+            flash(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                    total=total, **summary
+                ),
+                "success",
+            )
     flash("Participant added", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
@@ -608,7 +712,27 @@ def import_csv(session_id: int, sess, current_user, csa_view):
             )
             db.session.add(link)
         imported += 1
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id if current_user else None,
+            session_id=session_id,
+            action="participant_import",
+            details="CSA added {n} participants".format(n=imported)
+            if current_user is None
+            else None,
+        )
+    )
     db.session.commit()
+    if sess.ready_for_delivery:
+        summary = provision_participant_accounts_for_session(sess.id)
+        total = summary["created"] + summary["reactivated"] + summary["already_active"]
+        if total:
+            flash(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                    total=total, **summary
+                ),
+                "success",
+            )
     flask_session["import_errors"] = errors
     flash(f"Imported {imported}, skipped {len(errors)}", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))

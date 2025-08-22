@@ -230,6 +230,7 @@ class Session(db.Model):
     delivered_at = db.Column(db.DateTime)
     finalized_at = db.Column(db.DateTime)
     cancelled_at = db.Column(db.DateTime)
+    on_hold_at = db.Column(db.DateTime)
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
     simulation_outline = db.Column(db.Text)
@@ -266,15 +267,13 @@ class Session(db.Model):
     def computed_status(self) -> str:
         if self.cancelled:
             return "Cancelled"
-        if self.on_hold:
-            return "On Hold"
         if self.finalized:
             return "Closed"
         if self.delivered:
             return "Delivered"
         if self.ready_for_delivery:
             return "Ready for Delivery"
-        if self.materials_ordered or self.info_sent:
+        if self.materials_ordered or self.info_sent or self.on_hold:
             return "In Progress"
         return "New"
 
