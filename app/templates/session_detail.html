@@ -5,6 +5,7 @@
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
 <h1>{{ session.title }}</h1>
+{% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
 {% set start_time = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
 {% set end_time = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
 {% if csa_view %}
@@ -23,7 +24,6 @@
   Location: {{ session.location }}<br>
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
   Status: {{ session.computed_status }}<br>
   Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
@@ -40,7 +40,6 @@
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Status: {{ session.computed_status }}<br>
-  Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
   Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
   Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at }}){% endif %}<br>
@@ -49,7 +48,14 @@
 </div>
 {% endif %}
 {% if current_user %}
-<p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
+<p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a>
+{% if not session.cancelled %}
+<form action="{{ url_for('sessions.cancel_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Cancel session?');"><button type="submit">Cancel session</button></form>
+{% endif %}
+{% if session.delivered and not session.finalized and not session.cancelled %}
+<form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>
+{% endif %}
+</p>
 <div>
   <h2>Client Session Admin</h2>
   {% if session.csa_account %}

@@ -330,3 +330,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Delivered requires Ready for delivery and End Date not in the future; Finalized requires Delivered and locks participant edits.
 - Session pages flash saved changes and display Status and lifecycle flags.
 
+## Latest update done by codex 08/22/2025
+- Checkbox parsing consolidated with local `_cb` accepting y/yes/on/1 variants and treating missing fields as false.
+- Session forms drop Status and Confirmed-Ready fields; lifecycle flags only appear on Edit and drive a derived `computed_status`.
+- Profile page allows editing Full name and Certificate name; new participant accounts default certificate_name to full_name.
+- Sessions can be cancelled or finalized via detail page actions; cancelled sessions remove stored certificates and block generation.
+
