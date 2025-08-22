@@ -74,6 +74,7 @@
       {% endfor %}
     </select>
   </label></div>
+  <div><label><input type="checkbox" id="include-all-fac" {% if include_all_facilitators %}checked{% endif %}> Include out-of-region facilitators</label></div>
   <div>Additional Facilitators:
     <div id="additional-facilitators">
       {% set adds = session.facilitators if session else [] %}
@@ -112,6 +113,14 @@
   }
   delivered.addEventListener('change', function(){
     if(delivered.checked){
+      var end = document.querySelector('input[name="end_date"]').value;
+      var today = new Date().toISOString().slice(0,10);
+      if(end && end > today){
+        alert('This session cannot be marked as Delivered — the workshop End Date is in the future.');
+        delivered.checked = false;
+        syncDelivered();
+        return;
+      }
       if(!confirm('Mark this session Delivered? Certificates become available.')){
         delivered.checked = false;
         syncDelivered();
@@ -153,6 +162,12 @@
     var sel = this;
     var crm = sel.options[sel.selectedIndex].dataset.crm || '';
     document.getElementById('crm-display').textContent = crm;
+  });
+  document.getElementById('include-all-fac').addEventListener('change', function(){
+    var url = new URL(window.location.href);
+    if(this.checked){ url.searchParams.set('include_all_facilitators','1'); }
+    else{ url.searchParams.delete('include_all_facilitators'); }
+    window.location = url.toString();
   });
 </script>
 {% endblock %}

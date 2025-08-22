@@ -59,17 +59,27 @@ def staff_required(fn):
 @bp.get("")
 @staff_required
 def list_sessions(current_user):
-    sessions = db.session.query(Session).order_by(Session.start_date).all()
-    return render_template("sessions.html", sessions=sessions)
+    show_global = request.args.get("global") == "1"
+    query = db.session.query(Session).order_by(Session.start_date)
+    if not show_global and current_user.region:
+        query = query.filter(Session.region == current_user.region)
+    sessions = query.all()
+    return render_template("sessions.html", sessions=sessions, show_global=show_global)
 
 
 @bp.route("/new", methods=["GET", "POST"])
 @staff_required
 def new_session(current_user):
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
-    facilitators = User.query.filter(
+    include_all = request.args.get("include_all_facilitators") == "1"
+    fac_query = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
-    ).all()
+    )
+    if not include_all:
+        req_region = request.args.get("region")
+        if req_region:
+            fac_query = fac_query.filter(User.region == req_region)
+    facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
@@ -176,6 +186,7 @@ def new_session(current_user):
         clients=clients,
         LANG_CHOICES=LANG_CHOICES,
         STATUS_CHOICES=BASIC_STATUSES,
+        include_all_facilitators=include_all,
     )
 
 
@@ -186,9 +197,13 @@ def edit_session(session_id: int, current_user):
     if not sess:
         abort(404)
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
-    facilitators = User.query.filter(
+    include_all = request.args.get("include_all_facilitators") == "1"
+    fac_query = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
-    ).all()
+    )
+    if not include_all and sess.region:
+        fac_query = fac_query.filter(User.region == sess.region)
+    facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
         wt_id = request.form.get("workshop_type_id")
@@ -306,12 +321,14 @@ def edit_session(session_id: int, current_user):
         LANG_CHOICES=LANG_CHOICES,
         STATUS_CHOICES=status_choices,
         clients=clients,
+        include_all_facilitators=include_all,
     )
 
 
 @bp.get("/<int:session_id>")
 @csa_allowed_for_session(allow_delivered_view=True)
 def session_detail(session_id: int, sess, current_user, csa_view):
+    view_csa = csa_view or request.args.get("view") == "csa"
     links = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id)
@@ -329,7 +346,7 @@ def session_detail(session_id: int, sess, current_user, csa_view):
         session=sess,
         participants=participants,
         import_errors=import_errors,
-        csa_view=csa_view,
+        csa_view=view_csa,
         current_user=current_user,
     )
 

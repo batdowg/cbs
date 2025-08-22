@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}My Sessions{% endblock %}
+{% block title %}{% if current_user %}My Sessions{% else %}Sessions{% endif %}{% endblock %}
 {% block content %}
-<h1>My Sessions</h1>
+<h1>{% if current_user %}My Sessions{% else %}Sessions{% endif %}</h1>
 {% if sessions %}
 <table border="1" cellpadding="4" cellspacing="0">
   <tr>

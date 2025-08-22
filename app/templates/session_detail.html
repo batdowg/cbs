@@ -5,9 +5,31 @@
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
 <h1>{{ session.title }}</h1>
+{% set start_time = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
+{% set end_time = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
+{% if csa_view %}
+<div>
+  Title: {{ session.title }}<br>
+  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
+  Facilitator(s):
+  {% set facs = [] %}
+  {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
+  {% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
+  {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
+  Dates: {{ session.start_date }} – {{ session.end_date }} {{ start_time }}–{{ end_time }}<br>
+  Timezone: {{ session.timezone }}<br>
+  Language: {{ session.language }}<br>
+  Delivery Type: {{ session.delivery_type }}<br>
+  Location: {{ session.location }}<br>
+  Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
+  CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
+  Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}
+</div>
+{% else %}
 <div>
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
-  Dates: {{ session.start_date }} – {{ session.end_date }} {{ session.daily_start_time }}-{{ session.daily_end_time }}<br>
+  Dates: {{ session.start_date }} – {{ session.end_date }} {{ start_time }}–{{ end_time }}<br>
   Region: {{ session.region }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
@@ -16,6 +38,7 @@
   Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
   Delivered: {{ 'Yes' if session.delivered else 'No' }}
 </div>
+{% endif %}
 {% if current_user %}
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a></p>
 <div>

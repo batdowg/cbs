@@ -303,3 +303,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Delivered cannot be set before session End Date (server-enforced) and remains off until the End Date passes.
 - Session POST actions use PRG with flashes, keeping navigation consistent after saves.
 
+## Latest update done by codex 03/01/2026
+- CSA login now lands on Home with a Sessions table mirroring My Sessions, and CSA-only accounts see “Sessions” in the left nav.
+- CSA session detail shows read-only fields (Title, Workshop Type, Facilitator(s), Dates HH:MM–HH:MM, Timezone, Language, Delivery Type, Location, Client, CRM, Confirmed-Ready, Delivered) hiding Region and Status.
+- Delivered checkbox performs a pre-check and alerts “This session cannot be marked as Delivered — the workshop End Date is in the future.” when end date is in the future.
+- Users require a Region (NA/EU/SEA/Other). Admin Sessions list defaults to the admin’s region with a “Show Global Sessions” toggle, and facilitator pickers default to in-region with an “Include out-of-region facilitators” override.
+
