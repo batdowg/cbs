@@ -10,7 +10,7 @@
 {% if csa_view %}
 <div>
   Title: {{ session.title }}<br>
-  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
+  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Facilitator(s):
   {% set facs = [] %}
   {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
@@ -24,19 +24,28 @@
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}
+  Status: {{ session.computed_status }}<br>
+  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
+  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
+  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at }}){% endif %}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at }}){% endif %}<br>
+  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at }}){% endif %}
 </div>
 {% else %}
 <div>
-  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} — {{ session.workshop_type.name }}{% endif %}<br>
+  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Dates: {{ session.start_date }} – {{ session.end_date }} {{ start_time }}–{{ end_time }}<br>
   Region: {{ session.region }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  Status: {{ session.status }}<br>
+  Status: {{ session.computed_status }}<br>
   Confirmed-Ready: {{ 'Yes' if session.confirmed_ready else 'No' }}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}
+  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
+  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
+  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at }}){% endif %}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at }}){% endif %}<br>
+  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at }}){% endif %}
 </div>
 {% endif %}
 {% if current_user %}
@@ -56,7 +65,7 @@
 </div>
 {% endif %}
 <h2>Participants</h2>
-{% if not session.delivered %}
+{% if not session.delivered and not session.participants_locked() %}
 <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
   <input type="text" name="full_name" placeholder="Full name">
   <input type="email" name="email" placeholder="Email" required>
@@ -88,11 +97,11 @@
     <td>{{ row.participant.email }}</td>
     <td>{{ row.participant.title }}</td>
     <td>
-      {% if not session.delivered %}
-      <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
-      <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
-        <button type="submit">Remove</button>
-      </form>
+  {% if not session.delivered and not session.participants_locked() %}
+  <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
+  <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
+    <button type="submit">Remove</button>
+  </form>
       {% endif %}
     </td>
   </tr>
@@ -116,8 +125,8 @@
       </form>
     </td>
     <td>
+      {% if not session.delivered and not session.participants_locked() %}
       <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
-      {% if not session.delivered %}
       <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
         <button type="submit">Remove</button>
       </form>

@@ -17,8 +17,10 @@
   </label></div>
   <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date }}"></label></div>
   <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date }}"></label></div>
-  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ session.daily_start_time if session else '08:00' }}"></label></div>
-  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ session.daily_end_time if session else '17:00' }}"></label></div>
+  {% set st = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
+  {% set et = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
+  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ st or '08:00' }}"></label></div>
+  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ et or '17:00' }}"></label></div>
   <div><label>Timezone <input type="text" name="timezone" value="{{ session.timezone }}"></label></div>
   <div><label>Location <input type="text" name="location" value="{{ session.location }}"></label></div>
   <div><label>Client
@@ -62,7 +64,15 @@
     </select>
   </label></div>
   <div><label>Confirmed-Ready <input type="checkbox" name="confirmed_ready" value="1" {{ 'checked' if session.confirmed_ready else '' }}></label></div>
-  <div><label>Delivered <input type="checkbox" name="delivered" value="1" {% if session and session.delivered %}checked{% endif %}></label></div>
+  <fieldset>
+    <legend>Lifecycle</legend>
+    <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %}> Materials ordered</label></div>
+    <div><label><input type="checkbox" name="ready_for_delivery" value="1" {% if session.ready_for_delivery %}checked{% endif %}> Ready for delivery</label></div>
+    <div><label><input type="checkbox" name="info_sent" value="1" {% if session.info_sent %}checked{% endif %}> Workshop info sent</label></div>
+    <div><label><input type="checkbox" name="delivered" value="1" {% if session.delivered %}checked{% endif %}> Delivered</label></div>
+    <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %}> Finalized</label></div>
+  </fieldset>
+  <div>Status: {{ session.computed_status }}</div>
   <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
   <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
   <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
@@ -102,6 +112,8 @@
 </form>
 <script>
   var delivered = document.querySelector('input[name="delivered"]');
+  var ready = document.querySelector('input[name="ready_for_delivery"]');
+  var finalized = document.querySelector('input[name="finalized"]');
   var confirmed = document.querySelector('input[name="confirmed_ready"]');
   function syncDelivered(){
     if(delivered.checked){
@@ -115,8 +127,14 @@
     if(delivered.checked){
       var end = document.querySelector('input[name="end_date"]').value;
       var today = new Date().toISOString().slice(0,10);
+      if(!ready.checked){
+        alert('Delivered requires "Ready for delivery" first.');
+        delivered.checked = false;
+        syncDelivered();
+        return;
+      }
       if(end && end > today){
-        alert('This session cannot be marked as Delivered — Workshop End Date is in the future.');
+        alert('Cannot mark Delivered before the end date.');
         delivered.checked = false;
         syncDelivered();
         return;
@@ -128,6 +146,12 @@
       }
     }
     syncDelivered();
+  });
+  finalized.addEventListener('change', function(){
+    if(finalized.checked && !delivered.checked){
+      alert('Finalized requires Delivered first.');
+      finalized.checked = false;
+    }
   });
   document.querySelector('form').addEventListener('submit', function(){
     if(delivered.checked){

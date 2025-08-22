@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from functools import wraps
-from datetime import date
+from datetime import date, time
 
 from flask import (
     Blueprint,
@@ -108,13 +108,21 @@ def new_session(current_user):
         end_date_str = request.form.get("end_date")
         end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
         confirmed_ready = get_checkbox(request.form, "confirmed_ready", default=False)
+        materials_ordered = get_checkbox(request.form, "materials_ordered", default=False)
+        ready_for_delivery = get_checkbox(request.form, "ready_for_delivery", default=False)
+        info_sent = get_checkbox(request.form, "info_sent", default=False)
         delivered = get_checkbox(request.form, "delivered", default=False)
-        if delivered and end_date_val and end_date_val > date.today():
-            flash(
-                "Cannot mark Delivered before End Date. Adjust End Date first.",
-                "error",
-            )
-            delivered = False
+        finalized = get_checkbox(request.form, "finalized", default=False)
+        if delivered:
+            if not ready_for_delivery:
+                flash("Delivered requires 'Ready for delivery' first.", "error")
+                delivered = False
+            elif end_date_val and end_date_val > date.today():
+                flash("Cannot mark Delivered before the end date.", "error")
+                delivered = False
+        if finalized and not delivered:
+            flash("Finalized requires Delivered first.", "error")
+            finalized = False
         if delivered:
             confirmed_ready = True
         status = request.form.get("status") or "New"
@@ -138,7 +146,11 @@ def new_session(current_user):
             capacity=request.form.get("capacity") or None,
             status=status,
             confirmed_ready=confirmed_ready,
+            materials_ordered=materials_ordered,
+            ready_for_delivery=ready_for_delivery,
+            info_sent=info_sent,
             delivered=delivered,
+            finalized=finalized,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
@@ -188,13 +200,28 @@ def new_session(current_user):
                 )
             )
             db.session.commit()
-        if sess.delivered:
-            flash("Session marked Delivered", "success")
-        flash("Session saved", "success")
+        changes = []
+        if materials_ordered:
+            changes.append("Materials ordered")
+        if ready_for_delivery:
+            changes.append("Ready for delivery")
+        if info_sent:
+            changes.append("Workshop info sent")
+        if delivered:
+            changes.append("Delivered")
+        if finalized:
+            changes.append("Finalized")
+        msg = "Session saved"
+        if changes:
+            msg += ": " + ", ".join(changes)
+        flash(msg, "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
-        session=Session(),
+        session=Session(
+            daily_start_time=time.fromisoformat("08:00"),
+            daily_end_time=time.fromisoformat("17:00"),
+        ),
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
@@ -226,6 +253,10 @@ def edit_session(session_id: int, current_user):
         old_confirmed = sess.confirmed_ready
         old_delivered = sess.delivered
         old_status = sess.status or "New"
+        old_materials = sess.materials_ordered
+        old_ready = sess.ready_for_delivery
+        old_info = sess.info_sent
+        old_finalized = sess.finalized
         sess.title = request.form.get("title")
         sess.start_date = request.form.get("start_date") or None
         end_date_str = request.form.get("end_date")
@@ -241,21 +272,27 @@ def edit_session(session_id: int, current_user):
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
         new_ready = get_checkbox(request.form, "confirmed_ready", default=old_confirmed)
+        materials_ordered = get_checkbox(
+            request.form, "materials_ordered", default=old_materials
+        )
+        ready_for_delivery = get_checkbox(
+            request.form, "ready_for_delivery", default=old_ready
+        )
+        info_sent = get_checkbox(request.form, "info_sent", default=old_info)
         delivered = get_checkbox(request.form, "delivered", default=old_delivered)
+        finalized = get_checkbox(request.form, "finalized", default=old_finalized)
         if delivered:
-            if not (new_ready or old_confirmed):
-                flash("Delivered requires Confirmed-Ready.", "error")
+            if not ready_for_delivery:
+                flash("Delivered requires 'Ready for delivery' first.", "error")
                 delivered = False
-                new_ready = old_confirmed
             elif sess.end_date and sess.end_date > date.today():
-                flash(
-                    "This session cannot be marked as Delivered — Workshop End Date is in the future.",
-                    "error",
-                )
+                flash("Cannot mark Delivered before the end date.", "error")
                 delivered = False
-                new_ready = old_confirmed
-            else:
-                new_ready = True
+        if finalized and not delivered:
+            flash("Finalized requires Delivered first.", "error")
+            finalized = False
+        if delivered:
+            new_ready = True
         status = request.form.get("status") or old_status
         if not new_ready:
             if status not in BASIC_STATUSES:
@@ -269,7 +306,11 @@ def edit_session(session_id: int, current_user):
                 status = old_status if old_status in ADVANCED_STATUSES else "Confirmed"
         sess.confirmed_ready = new_ready
         sess.status = status
+        sess.materials_ordered = materials_ordered
+        sess.ready_for_delivery = ready_for_delivery
+        sess.info_sent = info_sent
         sess.delivered = delivered
+        sess.finalized = finalized
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
@@ -316,8 +357,6 @@ def edit_session(session_id: int, current_user):
                 )
             )
             db.session.commit()
-        if delivered and not old_delivered:
-            flash("Session marked Delivered", "success")
         if sess.status in ["Cancelled", "On Hold"]:
             deactivated = deactivate_orphan_accounts_for_session(sess.id)
             if deactivated:
@@ -330,7 +369,27 @@ def edit_session(session_id: int, current_user):
                     )
                 )
                 db.session.commit()
-        flash("Session saved", "success")
+        changes = []
+        if materials_ordered != old_materials:
+            changes.append(
+                "Materials ordered " + ("on" if materials_ordered else "off")
+            )
+        if ready_for_delivery != old_ready:
+            changes.append(
+                "Ready for delivery " + ("on" if ready_for_delivery else "off")
+            )
+        if info_sent != old_info:
+            changes.append(
+                "Workshop info sent " + ("on" if info_sent else "off")
+            )
+        if delivered != old_delivered:
+            changes.append("Delivered " + ("on" if delivered else "off"))
+        if finalized != old_finalized:
+            changes.append("Finalized " + ("on" if finalized else "off"))
+        msg = "Session saved"
+        if changes:
+            msg += ": " + ", ".join(changes)
+        flash(msg, "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     status_choices = ADVANCED_STATUSES if sess.confirmed_ready else BASIC_STATUSES
     return render_template(
@@ -412,6 +471,9 @@ def remove_csa(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/add")
 @csa_allowed_for_session
 def add_participant(session_id: int, sess, current_user, csa_view):
+    if sess.participants_locked():
+        flash("Participants are locked for this session.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     email = (request.form.get("email") or "").strip().lower()
     full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
@@ -451,6 +513,9 @@ def add_participant(session_id: int, sess, current_user, csa_view):
 @bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
 @csa_allowed_for_session
 def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
+    if sess.participants_locked():
+        flash("Participants are locked for this session.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -475,6 +540,9 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
 @csa_allowed_for_session
 def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
+    if sess.participants_locked():
+        flash("Participants are locked for this session.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -503,6 +571,9 @@ def sample_csv(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/import-csv")
 @csa_allowed_for_session
 def import_csv(session_id: int, sess, current_user, csa_view):
+    if sess.participants_locked():
+        flash("Participants are locked for this session.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     file = request.files.get("file")
     if not file or not file.filename.endswith(".csv"):
         flash("CSV file required", "error")
