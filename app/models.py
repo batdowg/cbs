@@ -205,6 +205,30 @@ class Session(db.Model):
     delivered = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    materials_ordered = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    ready_for_delivery = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    info_sent = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    finalized = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    on_hold = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    cancelled = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    materials_ordered_at = db.Column(db.DateTime)
+    ready_at = db.Column(db.DateTime)
+    info_sent_at = db.Column(db.DateTime)
+    delivered_at = db.Column(db.DateTime)
+    finalized_at = db.Column(db.DateTime)
+    cancelled_at = db.Column(db.DateTime)
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
     simulation_outline = db.Column(db.Text)
@@ -236,6 +260,25 @@ class Session(db.Model):
         if wt:
             self.code = wt.code
         return wt
+
+    @property
+    def computed_status(self) -> str:
+        if self.cancelled:
+            return "Cancelled"
+        if self.on_hold:
+            return "On Hold"
+        if self.finalized:
+            return "Closed"
+        if self.delivered:
+            return "Delivered"
+        if self.ready_for_delivery:
+            return "Ready for Delivery"
+        if self.materials_ordered or self.info_sent:
+            return "In Progress"
+        return "New"
+
+    def participants_locked(self) -> bool:
+        return self.on_hold or self.finalized or self.cancelled
 
 
 class Participant(db.Model):

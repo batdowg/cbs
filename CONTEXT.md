@@ -319,3 +319,8 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 ## Latest update done by codex 05/01/2026
 - Checkboxes accept y/yes/on/1 and Confirmed-Ready persists independently of Delivered.
 
+## Latest update done by codex 06/01/2026
+- Session model gains lifecycle flags (materials_ordered, ready_for_delivery, info_sent, delivered, finalized, on_hold, cancelled) with corresponding timestamps.
+- Sessions expose a read-only `computed_status` derived from those flags and a `participants_locked` helper when on hold, finalized, or cancelled.
+- Added certificate cleanup utility `remove_session_certificates` and generation now skips cancelled sessions.
+

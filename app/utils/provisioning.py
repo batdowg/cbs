@@ -5,17 +5,12 @@ from typing import Dict
 from sqlalchemy import func
 
 from ..app import db, User
-from ..models import (
-    Participant,
-    ParticipantAccount,
-    SessionParticipant,
-    Session,
-)
+from ..models import Participant, ParticipantAccount, SessionParticipant, Session
 
 
-def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int]:
+def provision_for_session(session: Session) -> Dict[str, int]:
     created = skipped_staff = reactivated = already_active = 0
-    links = SessionParticipant.query.filter_by(session_id=session_id).all()
+    links = SessionParticipant.query.filter_by(session_id=session.id).all()
     for link in links:
         participant = db.session.get(Participant, link.participant_id)
         if not participant:
@@ -51,6 +46,19 @@ def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int
         "reactivated": reactivated,
         "already_active": already_active,
     }
+
+
+def provision_participant_accounts_for_session(session_id: int) -> Dict[str, int]:
+    session = db.session.get(Session, session_id)
+    if not session:
+        return {"created": 0, "skipped_staff": 0, "reactivated": 0, "already_active": 0}
+    return provision_for_session(session)
+
+
+def provision_new_participants_if_ready(session: Session) -> Dict[str, int]:
+    if not session.ready_for_delivery:
+        return {"created": 0, "skipped_staff": 0, "reactivated": 0, "already_active": 0}
+    return provision_for_session(session)
 
 
 def deactivate_orphan_accounts_for_session(session_id: int) -> int:
