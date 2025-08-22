@@ -74,6 +74,7 @@ class ParticipantAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255))
+    certificate_name = db.Column(db.String(200), default="")
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())

@@ -42,6 +42,10 @@ BASIC_STATUSES = ["New", "On Hold", "Cancelled"]
 ADVANCED_STATUSES = ["Confirmed", "Delivered", "Closed", "Cancelled"]
 
 
+def _bool(val):
+    return str(val).lower() in ("1", "true", "on", "yes")
+
+
 def staff_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -226,16 +230,23 @@ def edit_session(session_id: int, current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
-        confirmed_ready = request.form.get("confirmed_ready") == "on"
-        delivered = request.form.get("delivered") == "on"
-        if delivered and sess.end_date and sess.end_date > date.today():
-            flash(
-                "Cannot mark Delivered before End Date. Adjust End Date first.",
-                "error",
-            )
-            delivered = False
+        raw_confirmed = request.form.get("confirmed_ready")
+        confirmed_ready = _bool(raw_confirmed) if raw_confirmed is not None else old_confirmed
+        delivered = _bool(request.form.get("delivered"))
         if delivered:
-            confirmed_ready = True
+            if not (confirmed_ready or old_confirmed):
+                flash("Delivered requires Confirmed-Ready.", "error")
+                delivered = False
+                confirmed_ready = old_confirmed
+            elif sess.end_date and sess.end_date > date.today():
+                flash(
+                    "This session cannot be marked as Delivered — Workshop End Date is in the future.",
+                    "error",
+                )
+                delivered = False
+                confirmed_ready = old_confirmed
+            else:
+                confirmed_ready = True
         status = request.form.get("status") or old_status
         if not confirmed_ready:
             if status not in BASIC_STATUSES:

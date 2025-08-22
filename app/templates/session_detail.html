@@ -84,7 +84,7 @@
   <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Actions</th></tr>
   {% for row in participants %}
   <tr>
-    <td>{{ row.participant.full_name }}</td>
+    <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
     <td>{{ row.participant.email }}</td>
     <td>{{ row.participant.title }}</td>
     <td>
@@ -103,7 +103,7 @@
   <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Actions</th></tr>
   {% for row in participants %}
   <tr>
-    <td>{{ row.participant.full_name }}</td>
+    <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
     <td>{{ row.participant.email }}</td>
     <td>{{ row.participant.title }}</td>
     <td>

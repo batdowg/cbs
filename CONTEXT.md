@@ -312,3 +312,7 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 ## Latest update done by codex 03/15/2026
 - Users Edit supports Full name + Region; Email is immutable; audit log recorded.
 
+## Latest update done by codex 04/20/2026
+- Confirmed-Ready independent; Delivered requires Confirmed-Ready.
+- “My Profile” adds Certificate Name; certs use it; typography updated.
+

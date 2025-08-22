@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<h1>My Profile</h1>
+<form method="post">
+  <div><label>Email <input type="text" value="{{ email }}" readonly></label></div>
+  <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
