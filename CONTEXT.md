@@ -337,3 +337,8 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Profile page allows editing Full name and Certificate name; new participant accounts default certificate_name to full_name.
 - Sessions can be cancelled or finalized via detail page actions; cancelled sessions remove stored certificates and block generation.
 
+## Latest update done by codex 07/20/2026
+- Added on_hold_at timestamp and audit logging for lifecycle flag flips.
+- Lifecycle gating enforces participant count for Ready, end-date check for Delivered, and Finalize after Delivered.
+- Facilitator region toggle preserves form inputs via local storage.
+- Adding or importing participants provisions accounts when session is Ready.
