@@ -230,12 +230,14 @@ def edit_session(session_id: int, current_user):
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
+        old_ready = bool(sess.ready_for_delivery)
+        ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
+        new_ready = ready_for_delivery
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
         old_delivered = sess.delivered
         old_materials = sess.materials_ordered
-        old_ready = sess.ready_for_delivery
         old_info = sess.info_sent
         old_finalized = sess.finalized
         sess.title = request.form.get("title")
@@ -253,7 +255,6 @@ def edit_session(session_id: int, current_user):
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
         materials_ordered = _cb(request.form.get("materials_ordered")) if "materials_ordered" in request.form else old_materials
-        ready_for_delivery = _cb(request.form.get("ready_for_delivery")) if "ready_for_delivery" in request.form else old_ready
         info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
         delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
         finalized = _cb(request.form.get("finalized")) if "finalized" in request.form else old_finalized
@@ -296,7 +297,7 @@ def edit_session(session_id: int, current_user):
             )
         )
         db.session.commit()
-        if new_ready and not old_confirmed:
+        if new_ready and not old_ready:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
