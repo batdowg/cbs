@@ -385,3 +385,18 @@ class AuditLog(db.Model):
     action = db.Column(db.String(255), nullable=False)
     details = db.Column(db.Text)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+
+class UserAuditLog(db.Model):
+    __tablename__ = "user_audit_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    actor_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    target_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    field = db.Column(db.String(64), nullable=False)
+    old_value = db.Column(db.String(255))
+    new_value = db.Column(db.String(255))
+    changed_at = db.Column(db.DateTime, server_default=db.func.now())

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Edit User{% endblock %}
+{% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
+<h1>Edit User</h1>
+<form method="post" action="{{ url_for('users.update_user', user_id=user.id) }}">
+  <p>Email: <input type="text" name="email" value="{{ user.email }}" readonly style="background:#eee"></p>
+  <p>Full name: <input type="text" name="full_name" value="{{ user.full_name }}" maxlength="120" required autocomplete="off"></p>
+  <p>Region:
+    <select name="region" required autocomplete="off">
+      <option value="NA" {% if user.region=='NA' %}selected{% endif %}>NA</option>
+      <option value="EU" {% if user.region=='EU' %}selected{% endif %}>EU</option>
+      <option value="SEA" {% if user.region=='SEA' %}selected{% endif %}>SEA</option>
+      <option value="Other" {% if user.region=='Other' %}selected{% endif %}>Other</option>
+    </select>
+  </p>
+  <p>
+    <button type="submit">Save</button>
+    <a href="{{ url_for('users.list_users') }}">Cancel</a>
+  </p>
+</form>
+{% endblock %}

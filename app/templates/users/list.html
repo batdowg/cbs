@@ -6,26 +6,43 @@
 {% endwith %}
 <h1>Users</h1>
 <p><a href="{{ url_for('users.new_user') }}">New User</a> | <a href="#" id="role-matrix-link">Role Matrix</a></p>
+
+<form method="get" action="{{ url_for('users.list_users') }}">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search" autocomplete="off">
+  <select name="region" autocomplete="off">
+    <option value="" {% if not region %}selected{% endif %}>All Regions</option>
+    <option value="NA" {% if region=='NA' %}selected{% endif %}>NA</option>
+    <option value="EU" {% if region=='EU' %}selected{% endif %}>EU</option>
+    <option value="SEA" {% if region=='SEA' %}selected{% endif %}>SEA</option>
+    <option value="Other" {% if region=='Other' %}selected{% endif %}>Other</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+
 <form method="post" action="{{ url_for('users.bulk_update') }}">
 <table>
   <tr>
     <th>Email</th>
     <th>Full Name</th>
+    <th>Region</th>
     <th>SysAdmin</th>
     <th>Administrator</th>
     <th>CRM</th>
     <th>KT Facilitator</th>
     <th>Contractor</th>
+    <th>Edit</th>
   </tr>
   {% for u in users %}
   <tr>
     <td>{{ u.email }}</td>
     <td>{{ u.full_name }}</td>
+    <td>{{ u.region }}</td>
     <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
     <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kt_contractor_{{ u.id }}" {% if u.is_kt_contractor %}checked{% endif %}></td>
+    <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
   </tr>
   {% endfor %}
 </table>

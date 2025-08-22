@@ -18,7 +18,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 
 # Optional email validation dependency
 try:  # pragma: no cover - import may fail if package missing
@@ -370,16 +370,19 @@ def set_setting(key: str, value: str) -> None:
 
 def seed_initial_user_safely() -> None:
     """Seed an initial admin user if the users table is empty and valid."""
-    from sqlalchemy import inspect
 
     try:
-        insp = inspect(db.engine)
-        if "users" not in insp.get_table_names():
-            return
-
-        cols = {c["name"] for c in insp.get_columns("users")}
-        required = {"id", "email", "password_hash", "is_app_admin"}
+        cols = {
+            row[0]
+            for row in db.session.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name='users'"
+                )
+            )
+        }
+        required = {"id", "email", "password_hash"}
         if not required.issubset(cols):
+            logging.info("seed skipped (columns missing)")
             return
 
         if db.session.query(User).count() > 0:
