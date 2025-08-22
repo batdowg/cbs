@@ -14,6 +14,7 @@ from flask import (
     request,
     session,
     url_for,
+    send_from_directory,
 )
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -54,6 +55,12 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
+
+    @app.route("/logo.png")
+    def logo_passthrough():
+        return send_from_directory(
+            os.path.join(app.root_path, "static"), "ktlogo1.png"
+        )
 
     @app.context_processor
     def inject_user():

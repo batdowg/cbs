@@ -83,13 +83,15 @@ def new_session(current_user):
             language = "English"
         end_date_str = request.form.get("end_date")
         end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
-        confirmed_ready = bool(request.form.get("confirmed_ready"))
-        delivered = bool(request.form.get("delivered"))
+        confirmed_ready = request.form.get("confirmed_ready") == "on"
+        delivered = request.form.get("delivered") == "on"
         if delivered and end_date_val and end_date_val > date.today():
-            flash("Cannot mark Delivered before End Date. Adjust End Date first.", "error")
+            flash(
+                "Cannot mark Delivered before End Date. Adjust End Date first.",
+                "error",
+            )
             delivered = False
-        if delivered and not confirmed_ready:
-            flash("Delivered requires Confirmed-Ready; forcing on.", "info")
+        if delivered:
             confirmed_ready = True
         status = request.form.get("status") or "New"
         if confirmed_ready:
@@ -164,6 +166,7 @@ def new_session(current_user):
             db.session.commit()
         if sess.delivered:
             flash("Session marked Delivered", "success")
+        flash("Session saved", "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
@@ -208,13 +211,15 @@ def edit_session(session_id: int, current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
-        confirmed_ready = bool(request.form.get("confirmed_ready"))
-        delivered = bool(request.form.get("delivered"))
-        if not old_delivered and delivered and sess.end_date and sess.end_date > date.today():
-            flash("Cannot mark Delivered before End Date. Adjust End Date first.", "error")
+        confirmed_ready = request.form.get("confirmed_ready") == "on"
+        delivered = request.form.get("delivered") == "on"
+        if delivered and sess.end_date and sess.end_date > date.today():
+            flash(
+                "Cannot mark Delivered before End Date. Adjust End Date first.",
+                "error",
+            )
             delivered = False
-        if delivered and not confirmed_ready:
-            flash("Delivered requires Confirmed-Ready; forcing on.", "info")
+        if delivered:
             confirmed_ready = True
         status = request.form.get("status") or old_status
         if not confirmed_ready:
@@ -290,6 +295,7 @@ def edit_session(session_id: int, current_user):
                     )
                 )
                 db.session.commit()
+        flash("Session saved", "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     status_choices = ADVANCED_STATUSES if sess.confirmed_ready else BASIC_STATUSES
     return render_template(
@@ -401,6 +407,7 @@ def add_participant(session_id: int, sess, current_user, csa_view):
         )
         db.session.add(link)
     db.session.commit()
+    flash("Participant added", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 
@@ -421,6 +428,7 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
         participant.full_name = full_name or None
         participant.title = title or None
         db.session.commit()
+        flash("Participant updated", "success")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     return render_template(
         "participant_edit.html", session_id=session_id, participant=participant
