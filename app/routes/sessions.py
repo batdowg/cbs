@@ -405,7 +405,7 @@ def assign_csa(session_id: int, current_user):
         .one_or_none()
     )
     if not account:
-        account = ParticipantAccount(email=email, is_active=True)
+        account = ParticipantAccount(email=email, full_name=email, is_active=True)
         account.set_password("KTRocks!")
         db.session.add(account)
         db.session.flush()
