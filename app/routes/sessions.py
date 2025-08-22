@@ -38,12 +38,22 @@ from ..utils.rbac import csa_allowed_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
+TRUTHY = {"1", "on", "true", "t", "y", "yes", "True", "TRUE"}
+FALSY = {"0", "off", "false", "f", "n", "no", "False", "FALSE", ""}
+
+def get_checkbox(form, name, default=None):
+    if name not in form:
+        return default
+    v = form.get(name, "").strip()
+    if v in TRUTHY:
+        return True
+    if v in FALSY:
+        return False
+    return bool(v)
+
+
 BASIC_STATUSES = ["New", "On Hold", "Cancelled"]
 ADVANCED_STATUSES = ["Confirmed", "Delivered", "Closed", "Cancelled"]
-
-
-def _bool(val):
-    return str(val).lower() in ("1", "true", "on", "yes")
 
 
 def staff_required(fn):
@@ -97,8 +107,8 @@ def new_session(current_user):
             language = "English"
         end_date_str = request.form.get("end_date")
         end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
-        confirmed_ready = request.form.get("confirmed_ready") == "on"
-        delivered = request.form.get("delivered") == "on"
+        confirmed_ready = get_checkbox(request.form, "confirmed_ready", default=False)
+        delivered = get_checkbox(request.form, "delivered", default=False)
         if delivered and end_date_val and end_date_val > date.today():
             flash(
                 "Cannot mark Delivered before End Date. Adjust End Date first.",
@@ -184,7 +194,7 @@ def new_session(current_user):
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
-        session=None,
+        session=Session(),
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
@@ -230,25 +240,24 @@ def edit_session(session_id: int, current_user):
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         sess.language = language if language in allowed else "English"
         sess.capacity = request.form.get("capacity") or None
-        raw_confirmed = request.form.get("confirmed_ready")
-        confirmed_ready = _bool(raw_confirmed) if raw_confirmed is not None else old_confirmed
-        delivered = _bool(request.form.get("delivered"))
+        new_ready = get_checkbox(request.form, "confirmed_ready", default=old_confirmed)
+        delivered = get_checkbox(request.form, "delivered", default=old_delivered)
         if delivered:
-            if not (confirmed_ready or old_confirmed):
+            if not (new_ready or old_confirmed):
                 flash("Delivered requires Confirmed-Ready.", "error")
                 delivered = False
-                confirmed_ready = old_confirmed
+                new_ready = old_confirmed
             elif sess.end_date and sess.end_date > date.today():
                 flash(
                     "This session cannot be marked as Delivered — Workshop End Date is in the future.",
                     "error",
                 )
                 delivered = False
-                confirmed_ready = old_confirmed
+                new_ready = old_confirmed
             else:
-                confirmed_ready = True
+                new_ready = True
         status = request.form.get("status") or old_status
-        if not confirmed_ready:
+        if not new_ready:
             if status not in BASIC_STATUSES:
                 flash("Status reset to New because Confirmed-Ready is off.", "error")
                 status = old_status if old_status in BASIC_STATUSES else "New"
@@ -258,7 +267,7 @@ def edit_session(session_id: int, current_user):
             elif status not in ADVANCED_STATUSES:
                 flash("Status reset to Confirmed because Confirmed-Ready is on.", "error")
                 status = old_status if old_status in ADVANCED_STATUSES else "Confirmed"
-        sess.confirmed_ready = confirmed_ready
+        sess.confirmed_ready = new_ready
         sess.status = status
         sess.delivered = delivered
         sess.sponsor = request.form.get("sponsor") or None
