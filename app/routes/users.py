@@ -84,9 +84,14 @@ def create_user(current_user):
     if User.query.filter(db.func.lower(User.email) == email).first():
         flash("Email already exists", "error")
         return redirect(url_for("users.new_user"))
+    region = request.form.get("region")
+    if region not in ["NA", "EU", "SEA", "Other"]:
+        flash("Region required", "error")
+        return redirect(url_for("users.new_user"))
     user = User(
         email=email,
         full_name=request.form.get("full_name"),
+        region=region,
         is_app_admin=bool(request.form.get("is_app_admin")) if current_user.is_app_admin else False,
         is_admin=bool(request.form.get("is_admin")),
         is_kcrm=bool(request.form.get("is_kcrm")),
@@ -127,6 +132,11 @@ def update_user(user_id: int, current_user):
     if not user:
         abort(404)
     user.full_name = request.form.get("full_name")
+    region = request.form.get("region")
+    if region not in ["NA", "EU", "SEA", "Other"]:
+        flash("Region required", "error")
+        return redirect(url_for("users.edit_user", user_id=user.id))
+    user.region = region
     if current_user.is_app_admin:
         user.is_app_admin = bool(request.form.get("is_app_admin"))
     user.is_admin = bool(request.form.get("is_admin"))

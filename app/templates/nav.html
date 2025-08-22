@@ -8,7 +8,7 @@
   {% elif current_user %}
   <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
   {% elif is_csa %}
-  <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
+  <a href="{{ url_for('my_sessions.list_my_sessions') }}">Sessions</a>
   {% endif %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}

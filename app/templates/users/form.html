@@ -15,6 +15,14 @@
   {% endif %}
   <div><label>Full Name <input type="text" name="full_name" value="{{ user.full_name if user else '' }}"></label></div>
   <div><label>New Password <input type="password" name="password" autocomplete="new-password"></label></div>
+  <div><label>Region
+    <select name="region" required>
+      <option value="">--Select--</option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if user and user.region==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <div>
     <label><input type="checkbox" name="is_app_admin" {% if user and user.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}> Application Admin</label><br>
     <label><input type="checkbox" name="is_admin" {% if user and user.is_admin %}checked{% endif %}> Admin</label><br>

@@ -49,6 +49,7 @@ class User(db.Model):
     is_kt_delivery = db.Column(db.Boolean, default=False)
     is_kt_contractor = db.Column(db.Boolean, default=False)
     is_kt_staff = db.Column(db.Boolean, default=False)
+    region = db.Column(db.String(8))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("ix_users_email_lower", db.func.lower(email), unique=True),

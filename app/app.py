@@ -18,6 +18,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from sqlalchemy import or_
 
 # Optional email validation dependency
 try:  # pragma: no cover - import may fail if package missing
@@ -34,7 +35,7 @@ except ModuleNotFoundError:  # pragma: no cover - simple fallback
 
 db = SQLAlchemy()
 
-from .models import User, ParticipantAccount, Session
+from .models import User, ParticipantAccount, Session, Client
 from .utils.rbac import app_admin_required
 
 
@@ -87,9 +88,38 @@ def create_app():
 
     @app.get("/")
     def index():  # pragma: no cover - trivial route
-        if session.get("user_id"):
-            return render_template("home.html")
-        if session.get("participant_account_id"):
+        user_id = session.get("user_id")
+        account_id = session.get("participant_account_id")
+        if user_id:
+            user = db.session.get(User, user_id)
+            query = db.session.query(Session)
+            query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
+            sessions_list = (
+                query.filter(
+                    or_(
+                        Session.lead_facilitator_id == user.id,
+                        Session.facilitators.any(User.id == user.id),
+                        Session.client.has(Client.crm_user_id == user.id),
+                    )
+                )
+                .order_by(Session.start_date)
+                .all()
+            )
+            return render_template("home.html", sessions=sessions_list)
+        if account_id:
+            is_csa = (
+                db.session.query(Session.id)
+                .filter(Session.csa_account_id == account_id)
+                .first()
+                is not None
+            )
+            if is_csa:
+                query = db.session.query(Session).filter(
+                    Session.csa_account_id == account_id
+                )
+                query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
+                sessions_list = query.order_by(Session.start_date).all()
+                return render_template("home.html", sessions=sessions_list)
             return redirect(url_for("learner.my_certs"))
         return redirect(url_for("login"))
 
