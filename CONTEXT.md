@@ -71,14 +71,14 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00–17:00; lead facilitator removed from additional facilitator options.
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00-17:00; lead facilitator removed from additional facilitator options.
 3.2 Materials and shipping block on the Session:
  • Shipping contact name, phone, email  
  • Shipping address lines, city, state, postal code, country  
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
-3.4 Session Status + Confirmed-Ready gate: statuses `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled`. When Confirmed-Ready switches on, participant accounts are auto-provisioned (default password "KTRocks!"), session status is forced to `Confirmed`, and a summary of created/reactivated/skipped/already-active accounts is flashed. Status options: if Confirmed-Ready is off → allow only `New`, `On Hold`, `Cancelled`; if on → allow `Confirmed`, `Delivered`, `Closed`, `Cancelled`. Delivered cannot be set before End Date and forces Confirmed-Ready on, locking it from being unchecked. A Delivered checkbox gates certificate generation until checked. Cancelling or placing on hold deactivates accounts with no other active sessions.
+3.4 Session lifecycle and status: UI shows checkboxes for Materials ordered, Ready for delivery, Workshop info sent, Delivered, Finalized. Delivered requires Ready for delivery and End Date not in the future; unchecking Delivered leaves Ready for delivery as-is. Finalized is allowed only when Delivered is true and then participant edits are locked. Status options remain `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled` with Confirmed-Ready gating and provisioning behavior. A Delivered checkbox gates certificate generation. Cancelling or placing on hold deactivates accounts with no other active sessions.
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
 3.7 Client Session Admin (CSA): per-session email assignment creating ParticipantAccount if missing. CSA may add/remove participants for that session until Delivered; no other access.
@@ -323,4 +323,10 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Session model gains lifecycle flags (materials_ordered, ready_for_delivery, info_sent, delivered, finalized, on_hold, cancelled) with corresponding timestamps.
 - Sessions expose a read-only `computed_status` derived from those flags and a `participants_locked` helper when on hold, finalized, or cancelled.
 - Added certificate cleanup utility `remove_session_certificates` and generation now skips cancelled sessions.
+
+## Latest update done by codex 07/10/2026
+- New Session form shows Daily Start Time 08:00 and Daily End Time 17:00 before typing.
+- Lifecycle fieldset adds Materials ordered, Ready for delivery, Workshop info sent, Delivered, Finalized with server-side gating.
+- Delivered requires Ready for delivery and End Date not in the future; Finalized requires Delivered and locks participant edits.
+- Session pages flash saved changes and display Status and lifecycle flags.
 
