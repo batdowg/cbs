@@ -86,9 +86,10 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 ## 4. Participant Management
 4.1 Import participants from Salesforce CSV (`SFC Participant Import Template.csv`)  
 4.2 Link imported participants to a Session during import  
-4.3 Participant profile: name, email (lowercased unique), company, region, notes  
-4.4 Participant portal: “My Certificates” page that shows only their PDFs  
+4.3 Participant profile: full name, certificate name, email (lowercased unique), company, region, notes
+4.4 Participant portal: “My Certificates” page that shows only their PDFs
 4.5 Bulk import validation and error report (downloadable CSV); Session Participants tab also supports CSV import with columns FullName,Email,Title and per-row error report
+4.6 ParticipantAccount stores `full_name` (account owner name) and `certificate_name` (printed on certificates); `certificate_name` defaults from `full_name` on creation but may be changed.
 
 ## 5. Certificates
 5.1 Generate certificate PDFs using template and layout rules [DONE]
