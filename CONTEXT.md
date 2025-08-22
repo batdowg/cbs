@@ -309,3 +309,6 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Delivered checkbox performs a pre-check and alerts “This session cannot be marked as Delivered — the workshop End Date is in the future.” when end date is in the future.
 - Users require a Region (NA/EU/SEA/Other). Admin Sessions list defaults to the admin’s region with a “Show Global Sessions” toggle, and facilitator pickers default to in-region with an “Include out-of-region facilitators” override.
 
+## Latest update done by codex 03/15/2026
+- Users Edit supports Full name + Region; Email is immutable; audit log recorded.
+

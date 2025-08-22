@@ -7,9 +7,10 @@ from flask import (
     request,
     url_for,
 )
+from sqlalchemy import or_
 
 from ..app import db, User
-from ..models import AuditLog
+from ..models import AuditLog, UserAuditLog
 from ..utils.rbac import admin_required
 
 
@@ -36,8 +37,23 @@ def _roles_str(user: User) -> str:
 @bp.get("/")
 @admin_required
 def list_users(current_user):
-    users = User.query.order_by(User.created_at.desc()).all()
-    return render_template("users/list.html", users=users)
+    q = (request.args.get("q") or "").strip()
+    region = request.args.get("region") or ""
+    query = User.query
+    if region in ["NA", "EU", "SEA", "Other"]:
+        query = query.filter(User.region == region)
+    if q:
+        like = f"%{q.lower()}%"
+        query = query.filter(
+            or_(
+                db.func.lower(User.email).like(like),
+                db.func.lower(User.full_name).like(like),
+            )
+        )
+    users = query.order_by(User.created_at.desc()).all()
+    return render_template(
+        "users/list.html", users=users, q=q, region=region
+    )
 
 
 @bp.post("/bulk-update")
@@ -122,7 +138,7 @@ def edit_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
         abort(404)
-    return render_template("users/form.html", user=user)
+    return render_template("users/edit.html", user=user)
 
 
 @bp.post("/<int:user_id>/edit")
@@ -131,30 +147,38 @@ def update_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
         abort(404)
-    user.full_name = request.form.get("full_name")
+    full_name = (request.form.get("full_name") or "").strip()
+    if not full_name or len(full_name) > 120:
+        flash("Full name required", "error")
+        return redirect(url_for("users.edit_user", user_id=user.id))
     region = request.form.get("region")
     if region not in ["NA", "EU", "SEA", "Other"]:
         flash("Region required", "error")
         return redirect(url_for("users.edit_user", user_id=user.id))
-    user.region = region
-    if current_user.is_app_admin:
-        user.is_app_admin = bool(request.form.get("is_app_admin"))
-    user.is_admin = bool(request.form.get("is_admin"))
-    user.is_kcrm = bool(request.form.get("is_kcrm"))
-    user.is_kt_delivery = bool(request.form.get("is_kt_delivery"))
-    user.is_kt_contractor = bool(request.form.get("is_kt_contractor"))
-    user.is_kt_staff = bool(request.form.get("is_kt_staff"))
-    pwd = request.form.get("password") or ""
-    if pwd:
-        user.set_password(pwd)
-    db.session.add(
-        AuditLog(
-            user_id=current_user.id,
-            action="user_update",
-            details=f"user_id={user.id} roles={_roles_str(user)}",
+
+    changes: list[tuple[str, str | None, str | None]] = []
+    if user.full_name != full_name:
+        changes.append(("full_name", user.full_name, full_name))
+        user.full_name = full_name
+    if user.region != region:
+        changes.append(("region", user.region, region))
+        user.region = region
+
+    for field, old, new in changes:
+        db.session.add(
+            UserAuditLog(
+                actor_user_id=current_user.id,
+                target_user_id=user.id,
+                field=field,
+                old_value=old,
+                new_value=new,
+            )
         )
-    )
+
     db.session.commit()
-    flash("User updated", "success")
+    if changes:
+        flash("User updated.", "success")
+    else:
+        flash("No changes.", "info")
     return redirect(url_for("users.list_users"))
 
