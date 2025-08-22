@@ -121,6 +121,8 @@ def generate_for_session(session_id: int, emails: Iterable[str] | None = None):
     session = db.session.get(Session, session_id)
     if not session:
         return 0, []
+    if getattr(session, "cancelled", False):
+        return 0, []
     q = (
         db.session.query(SessionParticipant)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -142,3 +144,18 @@ def generate_for_session(session_id: int, emails: Iterable[str] | None = None):
         count += 1
         paths.append(rel_path)
     return count, paths
+
+
+def remove_session_certificates(session_id: int, end_date: date) -> int:
+    year = (end_date or date.today()).year
+    base_dir = os.path.join("/srv", "certificates", str(year), str(session_id))
+    removed = 0
+    if os.path.isdir(base_dir):
+        for name in os.listdir(base_dir):
+            if name.lower().endswith(".pdf"):
+                try:
+                    os.remove(os.path.join(base_dir, name))
+                    removed += 1
+                except FileNotFoundError:
+                    pass
+    return removed
