@@ -56,14 +56,7 @@
     </select>
   </label></div>
   <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity }}"></label></div>
-  <div><label>Status
-    <select name="status">
-      {% for opt in STATUS_CHOICES %}
-      <option value="{{ opt }}" {% if (session and session.status==opt) or (not session and opt=='New') %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Confirmed-Ready <input type="checkbox" name="confirmed_ready" value="1" {{ 'checked' if session.confirmed_ready else '' }}></label></div>
+  {% if session.id %}
   <fieldset>
     <legend>Lifecycle</legend>
     <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %}> Materials ordered</label></div>
@@ -73,6 +66,7 @@
     <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %}> Finalized</label></div>
   </fieldset>
   <div>Status: {{ session.computed_status }}</div>
+  {% endif %}
   <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
   <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
   <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
@@ -114,52 +108,34 @@
   var delivered = document.querySelector('input[name="delivered"]');
   var ready = document.querySelector('input[name="ready_for_delivery"]');
   var finalized = document.querySelector('input[name="finalized"]');
-  var confirmed = document.querySelector('input[name="confirmed_ready"]');
-  function syncDelivered(){
-    if(delivered.checked){
-      confirmed.checked = true;
-      confirmed.disabled = true;
-    } else {
-      confirmed.disabled = false;
-    }
+  if(delivered){
+    delivered.addEventListener('change', function(){
+      if(delivered.checked){
+        var end = document.querySelector('input[name="end_date"]').value;
+        var today = new Date().toISOString().slice(0,10);
+        if(!ready.checked){
+          alert('Delivered requires "Ready for delivery" first.');
+          delivered.checked = false;
+          return;
+        }
+        if(end && end > today){
+          alert('Cannot mark Delivered before the end date.');
+          delivered.checked = false;
+          return;
+        }
+        if(!confirm('Mark this session Delivered? Certificates become available.')){
+          delivered.checked = false;
+          return;
+        }
+      }
+    });
+    finalized.addEventListener('change', function(){
+      if(finalized.checked && !delivered.checked){
+        alert('Finalized requires Delivered first.');
+        finalized.checked = false;
+      }
+    });
   }
-  delivered.addEventListener('change', function(){
-    if(delivered.checked){
-      var end = document.querySelector('input[name="end_date"]').value;
-      var today = new Date().toISOString().slice(0,10);
-      if(!ready.checked){
-        alert('Delivered requires "Ready for delivery" first.');
-        delivered.checked = false;
-        syncDelivered();
-        return;
-      }
-      if(end && end > today){
-        alert('Cannot mark Delivered before the end date.');
-        delivered.checked = false;
-        syncDelivered();
-        return;
-      }
-      if(!confirm('Mark this session Delivered? Certificates become available.')){
-        delivered.checked = false;
-        syncDelivered();
-        return;
-      }
-    }
-    syncDelivered();
-  });
-  finalized.addEventListener('change', function(){
-    if(finalized.checked && !delivered.checked){
-      alert('Finalized requires Delivered first.');
-      finalized.checked = false;
-    }
-  });
-  document.querySelector('form').addEventListener('submit', function(){
-    if(delivered.checked){
-      confirmed.disabled = false;
-      confirmed.checked = true;
-    }
-  });
-  syncDelivered();
   document.getElementById('add-fac').addEventListener('click', function(){
     var container = document.getElementById('additional-facilitators');
     var select = container.querySelector('select').cloneNode(true);

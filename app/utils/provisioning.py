@@ -27,7 +27,12 @@ def provision_for_session(session: Session) -> Dict[str, int]:
             func.lower(ParticipantAccount.email) == email
         ).first()
         if not account:
-            account = ParticipantAccount(email=email, is_active=True)
+            account = ParticipantAccount(
+                email=email,
+                full_name=participant.full_name or "",
+                certificate_name=participant.full_name or "",
+                is_active=True,
+            )
             account.set_password("KTRocks!")
             db.session.add(account)
             created += 1
@@ -37,6 +42,8 @@ def provision_for_session(session: Session) -> Dict[str, int]:
                 reactivated += 1
             else:
                 already_active += 1
+            if not account.certificate_name and account.full_name:
+                account.certificate_name = account.full_name
         if participant.account_id != account.id:
             participant.account_id = account.id
     db.session.commit()
