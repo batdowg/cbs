@@ -298,3 +298,8 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - CSA and staff may view session info and, before delivery, add/remove participants, edit participant full name and title, and import CSV; all CSA abilities disabled once Delivered.
 - Home page simplified to a welcome message with links to My Sessions and My Certificates when available.
 
+## Latest update done by codex 02/01/2026
+- Sidebar logo served from `/static/ktlogo1.png` with `/logo.png` passthrough fallback.
+- Delivered cannot be set before session End Date (server-enforced) and remains off until the End Date passes.
+- Session POST actions use PRG with flashes, keeping navigation consistent after saves.
+

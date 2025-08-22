@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
 {% with msgs = get_flashed_messages(with_categories=true) %}

@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Edit Participant{% endblock %}
 {% block content %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
 <h1>Edit Participant</h1>
 <form method="post">
   <div><label>Email <input type="email" value="{{ participant.email }}" readonly></label></div>
