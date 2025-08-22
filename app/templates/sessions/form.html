@@ -61,7 +61,7 @@
       {% endfor %}
     </select>
   </label></div>
-  <div><label>Confirmed-Ready <input type="checkbox" name="confirmed_ready" value="y" {% if session and session.confirmed_ready %}checked{% endif %} {% if session and session.delivered %}disabled{% endif %}></label></div>
+  <div><label>Confirmed-Ready <input type="checkbox" name="confirmed_ready" value="y" {% if session and session.confirmed_ready %}checked{% endif %}></label></div>
   <div><label>Delivered <input type="checkbox" name="delivered" value="y" {% if session and session.delivered %}checked{% endif %}></label></div>
   <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
   <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
@@ -116,7 +116,7 @@
       var end = document.querySelector('input[name="end_date"]').value;
       var today = new Date().toISOString().slice(0,10);
       if(end && end > today){
-        alert('This session cannot be marked as Delivered — the workshop End Date is in the future.');
+        alert('This session cannot be marked as Delivered — Workshop End Date is in the future.');
         delivered.checked = false;
         syncDelivered();
         return;

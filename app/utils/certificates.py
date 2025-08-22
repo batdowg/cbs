@@ -11,7 +11,12 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from ..app import db
-from ..models import Certificate, Participant, Session, SessionParticipant
+from ..models import (
+    Certificate,
+    Participant,
+    Session,
+    SessionParticipant,
+)
 from .storage import ensure_dir
 
 
@@ -60,16 +65,24 @@ def generate_certificate(participant: Participant, session: Session) -> str:
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=(w, h))
 
-    name = participant.full_name or participant.email
-    name_pt = fit_text(name, "Times-Italic", 48, 32, w - mm(40))
-    c.setFont("Times-Italic", name_pt)
-    c.drawCentredString(center_x, mm(145), name)
+    display_name = (
+        (participant.account.certificate_name or "").strip()
+        if participant.account
+        else ""
+    ) or participant.full_name or participant.email
 
-    workshop_pt = fit_text(workshop, "Helvetica", 56, 40, w - mm(40))
+    name_pt = fit_text(display_name, "Times-Italic", 48, 32, w - mm(40))
+    c.setFont("Times-Italic", name_pt)
+    c.setFillGray(0.25)
+    c.drawCentredString(center_x, mm(145), display_name)
+
+    workshop_pt = fit_text(workshop, "Helvetica", 40, 28, w - mm(40))
     c.setFont("Helvetica", workshop_pt)
+    c.setFillGray(0.3)
     c.drawCentredString(center_x, mm(102), workshop)
 
-    c.setFont("Helvetica", 28)
+    c.setFont("Helvetica", 20)
+    c.setFillGray(0.3)
     c.drawCentredString(
         center_x, mm(83), completion.strftime("%d %B %Y").lstrip("0")
     )
@@ -89,7 +102,7 @@ def generate_certificate(participant: Participant, session: Session) -> str:
     if not cert:
         cert = Certificate(session_id=session.id, participant_id=participant.id)
         db.session.add(cert)
-    cert.certificate_name = participant.full_name
+    cert.certificate_name = display_name
     cert.workshop_name = workshop
     cert.workshop_date = completion
     cert.pdf_path = rel_path

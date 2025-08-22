@@ -10,9 +10,13 @@ from flask import (
     send_file,
     session as flask_session,
     url_for,
+    request,
+    flash,
 )
 
 import os
+
+from sqlalchemy import func
 
 from ..app import db, User
 from ..models import Certificate, Participant, ParticipantAccount
@@ -48,6 +52,37 @@ def my_certs():
         .all()
     )
     return render_template("my_certificates.html", certs=certs)
+
+
+@bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    if flask_session.get("user_id"):
+        user = db.session.get(User, flask_session.get("user_id"))
+        email = (user.email or "").lower()
+    else:
+        account = db.session.get(
+            ParticipantAccount, flask_session.get("participant_account_id")
+        )
+        email = (account.email or "").lower() if account else ""
+    account = (
+        db.session.query(ParticipantAccount)
+        .filter(func.lower(ParticipantAccount.email) == email)
+        .one_or_none()
+    )
+    if not account:
+        account = ParticipantAccount(email=email, is_active=True)
+        db.session.add(account)
+        db.session.commit()
+    if request.method == "POST":
+        cert_name = (request.form.get("certificate_name") or "").strip()[:200]
+        account.certificate_name = cert_name
+        db.session.commit()
+        flash("Profile updated.", "success")
+        return redirect(url_for("learner.profile"))
+    return render_template(
+        "profile.html", email=email, certificate_name=account.certificate_name or ""
+    )
 
 
 @bp.get("/certificates/<int:cert_id>")
