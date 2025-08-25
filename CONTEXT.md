@@ -94,6 +94,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 4.6 ParticipantAccount stores `full_name` (account owner name) and `certificate_name` (printed on certificates); `certificate_name` defaults from `full_name` on creation but may be changed.
 4.7 Login & password reset:
     • Single front-door login at `/` (alias `/login`) accepts staff or learner emails and routes accordingly.
+    • Internal/test emails (e.g., `c@c.c`) are accepted; validator normalization is best-effort only.
     • If an email exists in both Users and ParticipantAccounts, staff login wins; a heads-up is flashed and `login_dupe_email` is audited.
     • Creation-time checks prevent cross-table duplicate emails going forward.
     • `/forgot-password` is shared for both kinds of accounts.
