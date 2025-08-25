@@ -22,7 +22,7 @@ def admin_required(fn):
     def wrapper(*args, **kwargs):
         user_id = flask_session.get("user_id")
         if not user_id:
-            return redirect(url_for("login"))
+            return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
         if not user or not (user.is_app_admin or user.is_admin):
             abort(403)

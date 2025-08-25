@@ -1,11 +1,12 @@
 <!doctype html>
 <title>Login</title>
-{% if error %}<p>{{ error }}</p>{% endif %}
-{% if sent %}<p>Check your email for a login link.</p>{% endif %}
+{% with msgs=get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
 <form method="post">
-  <input type="email" name="email" placeholder="Email" required>
-  <input type="password" name="password" placeholder="Password">
-  <button type="submit" name="action" value="password">Sign in</button>
-  <button type="submit" name="action" value="magic">Email me a link</button>
+  <p><input type="email" name="email" placeholder="Email" required></p>
+  <p><input type="password" name="password" placeholder="Password" required></p>
+  <p><button type="submit">Sign in</button></p>
 </form>
-<p><a href="/forgot-password">Forgot password?</a></p>
+<p><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+<p style="font-size:0.9em;color:#555">We'll direct you to the right place after sign-in.</p>

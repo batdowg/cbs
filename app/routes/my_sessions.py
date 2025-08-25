@@ -46,5 +46,5 @@ def list_my_sessions():
             .all()
         )
     else:
-        return redirect(url_for("login"))
+        return redirect(url_for("auth.login"))
     return render_template("my_sessions.html", sessions=sessions, show_all=show_all)
