@@ -4,7 +4,13 @@
 <h1>My Certificates</h1>
 <ul>
 {% for c in certs %}
-  <li><a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a></li>
+  <li>
+    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
+    {% if c.session and c.session.workshop_type and c.session.workshop_type.badge %}
+      {% set slug = c.session.workshop_type.badge.lower().replace(' ', '-') %}
+      - <a href="{{ url_for('assets.badge', slug=slug) }}">Download Badge</a>
+    {% endif %}
+  </li>
 {% endfor %}
 </ul>
 {% endblock %}

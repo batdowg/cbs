@@ -10,6 +10,13 @@
   {% endif %}
   <div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
   <div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
+  <div><label>Badge
+    <select name="badge">
+      {% for val,label in badge_choices %}
+      <option value="{{ val }}"{% if wt and wt.badge==val %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
   <button type="submit">Save</button>
 </form>
