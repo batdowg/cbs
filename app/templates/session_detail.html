@@ -138,8 +138,8 @@
       {% if row.certificate %}
       <a href="{{ url_for('learner.download_certificate', cert_id=row.certificate.id) }}">Download Certificate</a>
       {% if session.workshop_type and session.workshop_type.badge %}
-        {% set slug = session.workshop_type.badge.lower().replace(' ', '-') %}
-        <a href="{{ url_for('assets.badge', slug=slug) }}">Download Badge</a>
+        {% set slug = session.workshop_type.badge.lower().replace(' ', '') %}
+        <a href="/badges/{{ slug }}.webp">Download Badge</a>
       {% endif %}
       {% endif %}
     </td>
