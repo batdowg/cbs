@@ -7,6 +7,9 @@ cbs.ktapps.net {
     handle_path /certificates/* {
         file_server
     }
+    handle_path /badges/* {
+        file_server
+    }
     @health path /healthz
     reverse_proxy @health app:8000
     handle {

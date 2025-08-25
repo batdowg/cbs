@@ -122,6 +122,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 6.5 Responsive layout basics for mobile
 6.6 Forms disable autocomplete on sensitive fields (New User email/password, Mail Settings SMTP credentials)
 6.7 Root path shows the branded “Welcome to KT Workshop Tools” login card; `/login` aliases to it.
+6.8 Badge images live in `app/assets/badges` and are served at `/badges/<slug>.webp` from `/srv/badges` (host `./site/badges`). “Foundations” is the canonical label/filename.
 
 ## 7. Settings (Application Admin only)
 7.1 Settings landing page visible only to Application Admin (see Roles in section 11)  
@@ -361,6 +362,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 
 ## Latest update done by codex 09/01/2026
 - WorkshopType includes optional `badge` field with choices None, Foundations, Practitioner, Advanced, Expert, Coach, Facilitator, Program Leader.
-- Badge images served at `/badges/<slug>.webp` from repo or `/app/assets` fallback.
 - Certificate views show a **Download Badge** link when the session's workshop type has a badge.
 - Existing workshop types seeded to Foundations.
+
+## Latest update done by codex 09/10/2026
+- Badge images stored in `app/assets/badges` and served at `/badges/<slug>.webp` from `/srv/badges` (host `./site/badges`); “Foundations” is the canonical label/filename.
+- Templates link directly to these static badge URLs.
