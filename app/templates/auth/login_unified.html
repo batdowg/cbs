@@ -16,13 +16,12 @@
 <div class="login-card">
   <img src="/logo.png" alt="KT logo">
   <h1>Welcome to KT Workshop Tools</h1>
-  <p>Sign in to manage workshops or view your certificates.</p>
+  <p>Sign in below</p>
   <form method="post">
     <p><input type="email" name="email" placeholder="Email" required></p>
     <p><input type="password" name="password" placeholder="Password" required></p>
     <p><button type="submit">Sign in</button></p>
   </form>
   <p><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
-  <p class="footnote">We'll route you to the right place after sign-in.</p>
 </div>
 {% endblock %}
