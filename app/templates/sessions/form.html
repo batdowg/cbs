@@ -105,7 +105,6 @@
   </div>
   <button type="submit">Save</button>
 </form>
-<script src="{{ url_for('static', filename='js/form_state.js') }}"></script>
 <script>
   var delivered = document.querySelector('input[name="delivered"]');
   var ready = document.querySelector('input[name="ready_for_delivery"]');
@@ -172,4 +171,5 @@
     window.location = url.toString();
   });
 </script>
+<script src="{{ url_for('static', filename='js/form_state.js') }}"></script>
 {% endblock %}
