@@ -92,6 +92,11 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 4.4 Participant portal: “My Certificates” page that shows only their PDFs
 4.5 Bulk import validation and error report (downloadable CSV); Session Participants tab also supports CSV import with columns FullName,Email,Title and per-row error report
 4.6 ParticipantAccount stores `full_name` (account owner name) and `certificate_name` (printed on certificates); `certificate_name` defaults from `full_name` on creation but may be changed.
+4.7 Login & password reset:
+    • Unified `/login` accepts staff or learner emails, detects the account type, and routes accordingly.
+    • `/forgot-password` is shared for both kinds of accounts.
+    • `/logout` clears any role.
+    • If an email exists in both Users and ParticipantAccounts, sign-in is blocked and an audit log is written.
 
 ## 5. Certificates
 5.1 Generate certificate PDFs using template and layout rules [DONE]
@@ -108,7 +113,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Workshop text always uses Workshop Type Name.
 
 ## 6. UI and Navigation
-6.1 Left‑hand menu, persistent across pages, role aware. Order: Home, Sessions, My Certificates, Settings (accordion: Users, Workshop Types, Mail Settings, Clients), Logout.
+6.1 Left‑hand menu, persistent across pages, role aware. When signed out it shows only a Login link. When signed in the order is: Home, Sessions, My Certificates, Settings (accordion: Users, Workshop Types, Mail Settings, Clients), Logout.
 6.2 Admin dashboard for quick system status and recent actions
 6.3 Participant view: only “My Certificates”
 6.4 Consistent KT brand styles (logo at `app/static/ktlogo1.png`, colors, typography)

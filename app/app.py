@@ -1,9 +1,6 @@
 import logging
 import os
-import smtplib
-from email.message import EmailMessage
 from functools import wraps
-from datetime import datetime
 
 from flask import (
     Flask,
@@ -17,27 +14,12 @@ from flask import (
     send_from_directory,
 )
 from flask_sqlalchemy import SQLAlchemy
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import or_, text
-
-# Optional email validation dependency
-try:  # pragma: no cover - import may fail if package missing
-    from email_validator import EmailNotValidError, validate_email
-except ModuleNotFoundError:  # pragma: no cover - simple fallback
-    EmailNotValidError = ValueError
-
-    def validate_email(email: str):  # type: ignore
-        class _Result:
-            def __init__(self, e: str) -> None:
-                self.email = e
-
-        return _Result(email)
 
 db = SQLAlchemy()
 
 from .models import User, ParticipantAccount, Session, Client
 from .utils.rbac import app_admin_required
-from . import emailer
 
 
 def create_app():
@@ -81,13 +63,12 @@ def create_app():
             )
         return {"current_user": user, "is_csa": is_csa}
 
-    serializer = URLSafeTimedSerializer(app.secret_key)
-
     @app.get("/healthz")
     def healthz():  # pragma: no cover - simple healthcheck
         return "OK", 200
 
     @app.get("/")
+    @app.get("/home", endpoint="home")
     def index():  # pragma: no cover - trivial route
         user_id = session.get("user_id")
         account_id = session.get("participant_account_id")
@@ -122,193 +103,21 @@ def create_app():
                 sessions_list = query.order_by(Session.start_date).all()
                 return render_template("home.html", sessions=sessions_list)
             return redirect(url_for("learner.my_certs"))
-        return redirect(url_for("login"))
-
-    def send_magic_link(email: str, link: str) -> None:
-        smtp_vars = [
-            os.getenv("SMTP_HOST"),
-            os.getenv("SMTP_PORT"),
-            os.getenv("SMTP_USER"),
-            os.getenv("SMTP_PASS"),
-            os.getenv("SMTP_FROM"),
-            os.getenv("SMTP_FROM_NAME"),
-        ]
-        if all(smtp_vars):
-            host, port, user, pwd, sender, sender_name = smtp_vars
-            msg = EmailMessage()
-            msg["Subject"] = "Your login link"
-            msg["From"] = f"{sender_name} <{sender}>"
-            msg["To"] = email
-            msg.set_content(f"Click to sign in: {link}")
-            with smtplib.SMTP(host, int(port)) as s:
-                s.starttls()
-                s.login(user, pwd)
-                s.send_message(msg)
-        else:  # pragma: no cover - depends on environment
-            print(f"[MAGIC-LINK] {link}")
+        return redirect(url_for("auth.login"))
 
     def login_required(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             if "user_id" not in session:
-                return redirect(url_for("login"))
+                return redirect(url_for("auth.login"))
             return fn(*args, **kwargs)
 
         return wrapper
-
-    @app.route("/login", methods=["GET", "POST"])
-    def login():
-        error = None
-        if request.method == "POST":
-            email_input = request.form.get("email", "")
-            action = request.form.get("action")
-            try:
-                email = validate_email(email_input).email.lower()
-            except EmailNotValidError:
-                email = ""
-
-            if action == "password":
-                password = request.form.get("password", "")
-                user = (
-                    User.query.filter(db.func.lower(User.email) == email).first()
-                )
-                if user and user.check_password(password):
-                    session["user_id"] = user.id
-                    session["user_email"] = user.email
-                    return redirect(url_for("index"))
-                account = (
-                    ParticipantAccount.query.filter(
-                        db.func.lower(ParticipantAccount.email) == email
-                    ).first()
-                )
-                if (
-                    account
-                    and account.is_active
-                    and account.check_password(password)
-                ):
-                    session["participant_account_id"] = account.id
-                    session["user_email"] = account.email
-                    account.last_login = datetime.utcnow()
-                    db.session.commit()
-                    return redirect(url_for("learner.my_certs"))
-                error = "Invalid credentials"
-                return render_template("login.html", error=error)
-
-            # default to magic link
-            if email:
-                user = User.query.filter_by(email=email).first()
-                if not user:
-                    account = ParticipantAccount.query.filter_by(email=email).first()
-                else:
-                    account = None
-                target = user or account
-                if target:
-                    token = serializer.dumps(email, salt="magic-link")
-                    link = url_for("magic", token=token, _external=True)
-                    send_magic_link(email, link)
-            return render_template("login.html", sent=True)
-
-        return render_template("login.html", error=error)
-
-    @app.route("/forgot-password", methods=["GET", "POST"])
-    def forgot_password():
-        if request.method == "POST":
-            email_input = request.form.get("email", "")
-            try:
-                email = validate_email(email_input).email.lower()
-            except EmailNotValidError:
-                email = ""
-            target = None
-            if email:
-                target = User.query.filter(db.func.lower(User.email) == email).first()
-                kind = "user"
-                if not target:
-                    target = (
-                        ParticipantAccount.query.filter(
-                            db.func.lower(ParticipantAccount.email) == email
-                        ).first()
-                    )
-                    kind = "participant"
-            if target:
-                payload = {"kind": kind, "email": email}
-                token = serializer.dumps(payload, salt="pwd-reset")
-                link = url_for("reset_password", token=token, _external=True)
-                res = emailer.send(
-                    email,
-                    "Reset your KT CBS password.",
-                    f"Use this link to reset your password: {link}",
-                )
-                if not res.get("ok"):
-                    session["dev_reset_token"] = token
-            flash("If the email exists, a reset link has been sent.", "info")
-            return redirect(url_for("forgot_password"))
-        token = session.pop("dev_reset_token", None)
-        return render_template("forgot_password.html", token=token)
-
-    @app.route("/reset-password", methods=["GET", "POST"])
-    def reset_password():
-        token = request.values.get("token", "")
-        try:
-            data = serializer.loads(token, salt="pwd-reset", max_age=3600)
-        except (BadSignature, SignatureExpired):
-            flash("Invalid or expired token", "error")
-            return redirect(url_for("forgot_password"))
-        if request.method == "POST":
-            pwd = request.form.get("password") or ""
-            confirm = request.form.get("password_confirm") or ""
-            if not pwd or pwd != confirm:
-                flash("Passwords do not match", "error")
-                return redirect(url_for("reset_password", token=token))
-            if data.get("kind") == "user":
-                target = User.query.filter(
-                    db.func.lower(User.email) == data.get("email")
-                ).first()
-            else:
-                target = ParticipantAccount.query.filter(
-                    db.func.lower(ParticipantAccount.email) == data.get("email")
-                ).first()
-            if not target:
-                flash("Account not found", "error")
-                return redirect(url_for("forgot_password"))
-            target.set_password(pwd)
-            db.session.commit()
-            flash("Password reset. Please log in.", "success")
-            return redirect(url_for("login"))
-        return render_template("reset_password.html", token=token)
-
-    @app.get("/magic")
-    def magic():
-        token = request.args.get("token")
-        if not token:
-            return redirect(url_for("login"))
-        try:
-            email = serializer.loads(token, salt="magic-link", max_age=1200)
-        except (BadSignature, SignatureExpired):
-            return redirect(url_for("login"))
-        user = User.query.filter_by(email=email).first()
-        if user:
-            session["user_id"] = user.id
-            session["user_email"] = user.email
-            return redirect(url_for("index"))
-        account = ParticipantAccount.query.filter_by(email=email).first()
-        if account and account.is_active:
-            session["participant_account_id"] = account.id
-            session["user_email"] = account.email
-            account.last_login = datetime.utcnow()
-            db.session.commit()
-            return redirect(url_for("learner.my_certs"))
-        return redirect(url_for("login"))
-
-    @app.get("/logout")
-    def logout():
-        session.clear()
-        return redirect(url_for("login"))
 
     @app.get("/dashboard")
     @login_required
     def dashboard():
         return redirect(url_for("index"))
-
     @app.route("/settings/password", methods=["GET", "POST"])
     @login_required
     def settings_password():
@@ -377,6 +186,7 @@ def create_app():
             }
         )
 
+    from .routes.auth import bp as auth_bp
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.my_sessions import bp as my_sessions_bp
@@ -387,6 +197,7 @@ def create_app():
     from .routes.clients import bp as clients_bp
     from .routes.accounts import bp as accounts_bp
 
+    app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(my_sessions_bp)

@@ -28,7 +28,7 @@ def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         if "user_id" not in flask_session and "participant_account_id" not in flask_session:
-            return redirect(url_for("login"))
+            return redirect(url_for("auth.login"))
         return fn(*args, **kwargs)
 
     return wrapper

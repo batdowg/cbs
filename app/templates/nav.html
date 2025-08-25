@@ -31,5 +31,9 @@
     </ul>
   </details>
   {% endif %}
-  <a href="{{ url_for('logout') }}">Logout</a>
+  {% if current_user or session.get('participant_account_id') or is_csa %}
+  <a href="{{ url_for('auth.logout') }}">Logout</a>
+  {% else %}
+  <a href="{{ url_for('auth.login') }}">Login</a>
+  {% endif %}
 </nav>

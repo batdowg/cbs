@@ -63,10 +63,10 @@ def test_manual_participant_create_login(app):
     # login as participant
     resp = client.post(
         "/login",
-        data={"email": "learner@example.com", "password": "secret", "action": "password"},
+        data={"email": "learner@example.com", "password": "secret"},
         follow_redirects=True,
     )
-    assert b"My Certificates" in resp.data
+    assert resp.request.path == "/my-certificates"
 
 
 def test_provision_keeps_password(app):
@@ -109,10 +109,10 @@ def test_forgot_password_flow(app):
     )
     resp = client.post(
         "/login",
-        data={"email": "u@example.com", "password": "newpass", "action": "password"},
+        data={"email": "u@example.com", "password": "newpass"},
         follow_redirects=True,
     )
-    assert b"Logout" in resp.data
+    assert resp.request.path == "/home"
     # invalid/expired token rejected
     resp = client.get("/reset-password?token=bad", follow_redirects=True)
     assert b"Invalid or expired token" in resp.data
