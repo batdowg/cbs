@@ -1,5 +1,7 @@
 CBS bootstrap. Health endpoint at /healthz. Stack: Flask, Caddy, Postgres. Deployed on cbs.ktapps.net.
 
+Badge images are served from `/badges/<slug>.webp` via Caddy from `/srv/badges` (local `./site/badges`). “Foundations” maps to `foundations.webp`.
+
 ## Mail setup
 
 Environment variables:
