@@ -177,7 +177,7 @@ def new_session(current_user):
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -363,7 +363,7 @@ def edit_session(session_id: int, current_user):
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -580,6 +580,37 @@ def add_participant(session_id: int, sess, current_user, csa_view):
             completion_date=sess.end_date,
         )
         db.session.add(link)
+    password = request.form.get("password") or ""
+    confirm = request.form.get("password_confirm") or ""
+    if current_user and (current_user.is_admin or current_user.is_app_admin):
+        if password or confirm:
+            if password != confirm:
+                flash("Passwords do not match", "error")
+                return redirect(url_for("sessions.session_detail", session_id=session_id))
+            account = (
+                db.session.query(ParticipantAccount)
+                .filter(db.func.lower(ParticipantAccount.email) == email)
+                .one_or_none()
+            )
+            if not account:
+                account = ParticipantAccount(
+                    email=email,
+                    full_name=full_name or email,
+                    certificate_name=full_name or "",
+                    is_active=True,
+                )
+                db.session.add(account)
+                db.session.flush()
+            account.set_password(password)
+            participant.account_id = account.id
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    participant_id=participant.id,
+                    action="password_reset_admin",
+                    details=f"account_id={account.id}",
+                )
+            )
     db.session.add(
         AuditLog(
             user_id=current_user.id if current_user else None,
@@ -595,7 +626,7 @@ def add_participant(session_id: int, sess, current_user, csa_view):
         total = summary["created"] + summary["reactivated"] + summary["already_active"]
         if total:
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -728,7 +759,7 @@ def import_csv(session_id: int, sess, current_user, csa_view):
         total = summary["created"] + summary["reactivated"] + summary["already_active"]
         if total:
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",

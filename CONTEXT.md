@@ -41,7 +41,7 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
 1.1 Magic link login (email token) [DONE]  
 1.2 Password login with bcrypt hashing [DONE]  
 1.3 Logout route and session clear [DONE]  
-1.4 Password reset flow (request, email token, reset form)  
+1.4 Password reset flow (request, email token, reset form) [DONE]
 1.5 Role based access control (RBAC) middleware for routes [DONE]
 1.6 Session persistence and timeout configuration  
 1.7 Basic audit log for logins and role changes
@@ -49,6 +49,8 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
     • **Users** (staff) managed in Users admin.
     • **ParticipantAccount** (learners) auto-provisioned via sessions with default password "KTRocks!"; not shown in Users admin.
     One email across system; provisioning skips any email that already exists in Users.
+
+Passwords are hashed via a shared bcrypt helper. When manually creating Users or ParticipantAccounts, SysAdmins (and for learner accounts, Administrators) may set a password that will not be overwritten. Provisioning only applies the default "KTRocks!" password when creating new accounts or filling a null `password_hash`, and reports accounts where an existing password was kept. Forgot‑password is available at `/forgot-password` with 1‑hour tokens handled by `/reset-password`. SysAdmins can set user passwords on the Users form, and Admin/SysAdmin can set participant passwords from session participant rows; admin‑initiated resets are logged via `password_reset_admin` entries in `audit_logs`.
 
 ## 2. Email and Notifications
 2.1 Wire SMTP using Microsoft 365 auth account (authenticate as `ktbooks@kepner-tregoe.com`) [UI + backend working; real SMTP depends on env on VPS.]
@@ -342,3 +344,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Lifecycle gating enforces participant count for Ready, end-date check for Delivered, and Finalize after Delivered.
 - Facilitator region toggle preserves form inputs via local storage.
 - Adding or importing participants provisions accounts when session is Ready.
+
+## Latest update done by codex 08/01/2026
+- Centralized bcrypt helpers in `app/utils/passwords.py` and all password operations use them.
+- Manual account creation can set a password without it being overwritten by provisioning; provisioning keeps existing hashes and reports `kept_password`.
+- Forgot-password flow added with `/forgot-password` and `/reset-password` using 1-hour tokens; token shown on page when mail is stubbed.
+- SysAdmin/Admin interfaces allow setting passwords for Users and ParticipantAccounts with audit logging (`password_reset_admin`).

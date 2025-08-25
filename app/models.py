@@ -5,6 +5,7 @@ from flask import current_app
 from sqlalchemy.orm import validates
 
 from .app import db
+from .utils.passwords import hash_password, check_password
 
 # Language choices stored as human labels for now
 LANG_CHOICES = [
@@ -16,24 +17,6 @@ LANG_CHOICES = [
     ("Japanese", "ja"),
     ("Spanish", "es"),
 ]
-
-# Prefer passlib for bcrypt hashing, fall back to Werkzeug if unavailable
-try:  # pragma: no cover - import may fail if package missing
-    from passlib.hash import bcrypt
-
-    def _hash_password(password: str) -> str:
-        return bcrypt.hash(password)
-
-    def _check_password(password: str, hashed: str) -> bool:
-        return bcrypt.verify(password, hashed)
-except ModuleNotFoundError:  # pragma: no cover - simple fallback
-    from werkzeug.security import generate_password_hash, check_password_hash
-
-    def _hash_password(password: str) -> str:
-        return generate_password_hash(password)
-
-    def _check_password(password: str, hashed: str) -> bool:
-        return check_password_hash(hashed, password)
 
 
 class User(db.Model):
@@ -60,12 +43,12 @@ class User(db.Model):
         return value.lower()
 
     def set_password(self, plain: str) -> None:
-        self.password_hash = _hash_password(plain)
+        self.password_hash = hash_password(plain)
 
     def check_password(self, plain: str) -> bool:
         if not self.password_hash:
             return False
-        return _check_password(plain, self.password_hash)
+        return check_password(plain, self.password_hash)
 
 
 class ParticipantAccount(db.Model):
@@ -92,12 +75,12 @@ class ParticipantAccount(db.Model):
         return value.lower()
 
     def set_password(self, plain: str) -> None:
-        self.password_hash = _hash_password(plain)
+        self.password_hash = hash_password(plain)
 
     def check_password(self, plain: str) -> bool:
         if not self.password_hash:
             return False
-        return _check_password(plain, self.password_hash)
+        return check_password(plain, self.password_hash)
 
 
 class Settings(db.Model):

@@ -115,9 +115,15 @@ def create_user(current_user):
         is_kt_contractor=bool(request.form.get("is_kt_contractor")),
         is_kt_staff=bool(request.form.get("is_kt_staff")),
     )
-    pwd = request.form.get("password") or ""
-    if pwd:
-        user.set_password(pwd)
+    pwd = confirm = ""
+    if current_user.is_app_admin:
+        pwd = request.form.get("password") or ""
+        confirm = request.form.get("password_confirm") or ""
+        if pwd or confirm:
+            if pwd != confirm:
+                flash("Passwords do not match", "error")
+                return redirect(url_for("users.new_user"))
+            user.set_password(pwd)
     db.session.add(user)
     db.session.flush()
     db.session.add(
@@ -175,8 +181,24 @@ def update_user(user_id: int, current_user):
             )
         )
 
+    if current_user.is_app_admin:
+        pwd = request.form.get("password") or ""
+        confirm = request.form.get("password_confirm") or ""
+        if pwd or confirm:
+            if pwd != confirm:
+                flash("Passwords do not match", "error")
+                return redirect(url_for("users.edit_user", user_id=user.id))
+            user.set_password(pwd)
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    action="password_reset_admin",
+                    details=f"user_id={user.id}",
+                )
+            )
+
     db.session.commit()
-    if changes:
+    if changes or (pwd or confirm):
         flash("User updated.", "success")
     else:
         flash("No changes.", "info")
