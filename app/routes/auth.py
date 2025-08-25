@@ -27,10 +27,12 @@ def login():
     if request.method == "POST":
         email_input = request.form.get("email", "")
         password = request.form.get("password", "")
+        email = (email_input or "").strip().lower()
         try:
-            email = validate_email(email_input).email.lower()  # type: ignore
+            parsed = validate_email(email_input)  # type: ignore
+            email = parsed.email.lower()
         except Exception:
-            email = ""
+            pass
         identity = lookup_identity(email)
         if identity is None:
             flash("No account with that email.", "error")

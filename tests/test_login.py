@@ -27,6 +27,17 @@ def test_staff_login(app):
     assert resp.request.path == "/home"
 
 
+def test_internal_email_login(app):
+    with app.app_context():
+        u = User(email="c@c.c", is_app_admin=True, region="NA")
+        u.set_password("pw")
+        db.session.add(u)
+        db.session.commit()
+    client = app.test_client()
+    resp = client.post("/login", data={"email": "c@c.c", "password": "pw"}, follow_redirects=True)
+    assert resp.request.path == "/home"
+
+
 def test_participant_login(app):
     with app.app_context():
         p = ParticipantAccount(email="learner@example.com", full_name="L", is_active=True)
