@@ -93,10 +93,11 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 4.5 Bulk import validation and error report (downloadable CSV); Session Participants tab also supports CSV import with columns FullName,Email,Title and per-row error report
 4.6 ParticipantAccount stores `full_name` (account owner name) and `certificate_name` (printed on certificates); `certificate_name` defaults from `full_name` on creation but may be changed.
 4.7 Login & password reset:
-    • Unified `/login` accepts staff or learner emails, detects the account type, and routes accordingly.
+    • Single front-door login at `/` (alias `/login`) accepts staff or learner emails and routes accordingly.
+    • If an email exists in both Users and ParticipantAccounts, staff login wins; a heads-up is flashed and `login_dupe_email` is audited.
+    • Creation-time checks prevent cross-table duplicate emails going forward.
     • `/forgot-password` is shared for both kinds of accounts.
     • `/logout` clears any role.
-    • If an email exists in both Users and ParticipantAccounts, sign-in is blocked and an audit log is written.
 
 ## 5. Certificates
 5.1 Generate certificate PDFs using template and layout rules [DONE]
@@ -119,6 +120,7 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
 6.4 Consistent KT brand styles (logo at `app/static/ktlogo1.png`, colors, typography)
 6.5 Responsive layout basics for mobile
 6.6 Forms disable autocomplete on sensitive fields (New User email/password, Mail Settings SMTP credentials)
+6.7 Root path shows the branded “Welcome to KT Workshop Tools” login card; `/login` aliases to it.
 
 ## 7. Settings (Application Admin only)
 7.1 Settings landing page visible only to Application Admin (see Roles in section 11)  

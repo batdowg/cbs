@@ -57,7 +57,7 @@ def test_wrong_password(app):
     assert b"Invalid email or password." in resp.data
 
 
-def test_conflict_blocks(app):
+def test_conflict_prefers_user(app):
     with app.app_context():
         u = User(email="both@example.com", is_app_admin=True, region="NA")
         u.set_password("pw")
@@ -67,9 +67,9 @@ def test_conflict_blocks(app):
         db.session.commit()
     client = app.test_client()
     resp = client.post("/login", data={"email": "both@example.com", "password": "pw"}, follow_redirects=True)
-    assert resp.request.path == "/login"
-    assert b"Email exists as staff and learner. Contact admin." in resp.data
+    assert resp.request.path == "/home"
+    assert b"Signed in as staff account; learner account also exists." in resp.data
     with app.app_context():
-        log = db.session.query(AuditLog).filter_by(action="login_conflict").first()
+        log = db.session.query(AuditLog).filter_by(action="login_dupe_email").first()
         assert log is not None
 

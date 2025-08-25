@@ -464,6 +464,9 @@ def assign_csa(session_id: int, current_user):
     if not email:
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
+    if User.query.filter(func.lower(User.email) == email).first():
+        flash("That email belongs to a staff user.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     account = (
         db.session.query(ParticipantAccount)
         .filter(func.lower(ParticipantAccount.email) == email)
@@ -554,6 +557,9 @@ def add_participant(session_id: int, sess, current_user, csa_view):
     title = (request.form.get("title") or "").strip()
     if not email:
         flash("Email required", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    if User.query.filter(func.lower(User.email) == email).first():
+        flash("That email belongs to a staff user.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     participant = (
         db.session.query(Participant)

@@ -67,7 +67,6 @@ def create_app():
     def healthz():  # pragma: no cover - simple healthcheck
         return "OK", 200
 
-    @app.get("/")
     @app.get("/home", endpoint="home")
     def index():  # pragma: no cover - trivial route
         user_id = session.get("user_id")
@@ -117,7 +116,7 @@ def create_app():
     @app.get("/dashboard")
     @login_required
     def dashboard():
-        return redirect(url_for("index"))
+        return redirect(url_for("home"))
     @app.route("/settings/password", methods=["GET", "POST"])
     @login_required
     def settings_password():

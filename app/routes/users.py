@@ -10,7 +10,7 @@ from flask import (
 from sqlalchemy import or_
 
 from ..app import db, User
-from ..models import AuditLog, UserAuditLog
+from ..models import AuditLog, UserAuditLog, ParticipantAccount
 from ..utils.rbac import admin_required
 
 
@@ -99,6 +99,9 @@ def create_user(current_user):
         return redirect(url_for("users.new_user"))
     if User.query.filter(db.func.lower(User.email) == email).first():
         flash("Email already exists", "error")
+        return redirect(url_for("users.new_user"))
+    if ParticipantAccount.query.filter(db.func.lower(ParticipantAccount.email) == email).first():
+        flash("That email belongs to a learner account.", "error")
         return redirect(url_for("users.new_user"))
     region = request.form.get("region")
     if region not in ["NA", "EU", "SEA", "Other"]:

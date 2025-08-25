@@ -29,12 +29,16 @@
     .flashes li.error { color:#b00020; font-weight:700; }
     .flashes li.success { color:#155724; font-weight:600; }
   </style>
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <aside class="sidebar">
     {% include 'nav.html' %}
   </aside>
   <main class="content">
+    {% with msgs=get_flashed_messages(with_categories=true) %}
+      {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 </body>

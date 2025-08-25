@@ -21,6 +21,7 @@ from .. import emailer
 bp = Blueprint("auth", __name__)
 
 
+@bp.route("/", methods=["GET", "POST"])
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")
 def login():
     if request.method == "POST":
@@ -34,30 +35,39 @@ def login():
         if identity is None:
             flash("No account with that email.", "error")
             return redirect(url_for("auth.login"))
-        if identity == "conflict":
-            flash("Email exists as staff and learner. Contact admin.", "error")
-            user = User.query.filter(func.lower(User.email) == email).first()
-            participant = ParticipantAccount.query.filter(func.lower(ParticipantAccount.email) == email).first()
+        if identity.get("kind") == "participant" and not identity["obj"].is_active:
+            flash("Invalid email or password.", "error")
+            return redirect(url_for("auth.login"))
+        if identity.get("kind") == "both":
+            user = identity["user"]
+            participant = identity["participant"]
+            if not verify_password(password, user.password_hash):
+                flash("Invalid email or password.", "error")
+                return redirect(url_for("auth.login"))
+            login_identity(identity)
             db.session.add(
                 AuditLog(
-                    action="login_conflict",
-                    details=f"email={email}, user_id={user.id if user else None}, participant_account_id={participant.id if participant else None}",
+                    action="login_dupe_email",
+                    details=f"users_id={user.id}, participants_id={participant.id}",
                 )
             )
             db.session.commit()
-            return redirect(url_for("auth.login"))
+            flash("Signed in as staff account; learner account also exists.", "warning")
+            return redirect(url_for("home"))
         obj = identity["obj"]
-        if identity["kind"] == "participant" and not obj.is_active:
-            flash("Invalid email or password.", "error")
-            return redirect(url_for("auth.login"))
         if not verify_password(password, obj.password_hash):
             flash("Invalid email or password.", "error")
             return redirect(url_for("auth.login"))
         login_identity(identity)
         if identity["kind"] == "user":
             return redirect(url_for("home"))
-            return redirect(url_for("learner.my_certs"))
-    return render_template("login.html")
+        return redirect(url_for("learner.my_certs"))
+    # GET
+    if flask_session.get("user_id"):
+        return redirect(url_for("home"))
+    if flask_session.get("participant_account_id"):
+        return redirect(url_for("learner.my_certs"))
+    return render_template("auth/login_unified.html")
 
 
 @bp.route("/forgot-password", methods=["GET", "POST"], endpoint="forgot_password")

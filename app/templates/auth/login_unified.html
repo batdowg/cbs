@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Login | KT Workshop Tools{% endblock %}
+{% block extra_head %}
+<style>
+  body { justify-content:center; align-items:center; }
+  .sidebar { display:none; }
+  .content { flex:none; }
+  .login-card { text-align:center; border:1px solid #ccc; padding:2rem; border-radius:4px; max-width:320px; }
+  .login-card img { max-width:150px; margin-bottom:1rem; }
+  .login-card h1 { font-size:1.5rem; margin:0.5rem 0; }
+  .login-card p { margin:0.5rem 0; }
+  .footnote { font-size:0.9em; color:#555; margin-top:1rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="login-card">
+  <img src="/logo.png" alt="KT logo">
+  <h1>Welcome to KT Workshop Tools</h1>
+  <p>Sign in to manage workshops or view your certificates.</p>
+  <form method="post">
+    <p><input type="email" name="email" placeholder="Email" required></p>
+    <p><input type="password" name="password" placeholder="Password" required></p>
+    <p><button type="submit">Sign in</button></p>
+  </form>
+  <p><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+  <p class="footnote">We'll route you to the right place after sign-in.</p>
+</div>
+{% endblock %}
