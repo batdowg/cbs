@@ -9,7 +9,7 @@ from ..models import Participant, ParticipantAccount, SessionParticipant, Sessio
 
 
 def provision_for_session(session: Session) -> Dict[str, int]:
-    created = skipped_staff = reactivated = already_active = 0
+    created = skipped_staff = reactivated = already_active = kept_password = 0
     links = SessionParticipant.query.filter_by(session_id=session.id).all()
     for link in links:
         participant = db.session.get(Participant, link.participant_id)
@@ -37,6 +37,10 @@ def provision_for_session(session: Session) -> Dict[str, int]:
             db.session.add(account)
             created += 1
         else:
+            if account.password_hash:
+                kept_password += 1
+            else:
+                account.set_password("KTRocks!")
             if not account.is_active:
                 account.is_active = True
                 reactivated += 1
@@ -52,6 +56,7 @@ def provision_for_session(session: Session) -> Dict[str, int]:
         "skipped_staff": skipped_staff,
         "reactivated": reactivated,
         "already_active": already_active,
+        "kept_password": kept_password,
     }
 
 

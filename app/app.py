@@ -37,6 +37,7 @@ db = SQLAlchemy()
 
 from .models import User, ParticipantAccount, Session, Client
 from .utils.rbac import app_admin_required
+from . import emailer
 
 
 def create_app():
@@ -168,12 +169,18 @@ def create_app():
 
             if action == "password":
                 password = request.form.get("password", "")
-                user = User.query.filter_by(email=email).first()
+                user = (
+                    User.query.filter(db.func.lower(User.email) == email).first()
+                )
                 if user and user.check_password(password):
                     session["user_id"] = user.id
                     session["user_email"] = user.email
                     return redirect(url_for("index"))
-                account = ParticipantAccount.query.filter_by(email=email).first()
+                account = (
+                    ParticipantAccount.query.filter(
+                        db.func.lower(ParticipantAccount.email) == email
+                    ).first()
+                )
                 if (
                     account
                     and account.is_active
@@ -202,6 +209,72 @@ def create_app():
             return render_template("login.html", sent=True)
 
         return render_template("login.html", error=error)
+
+    @app.route("/forgot-password", methods=["GET", "POST"])
+    def forgot_password():
+        if request.method == "POST":
+            email_input = request.form.get("email", "")
+            try:
+                email = validate_email(email_input).email.lower()
+            except EmailNotValidError:
+                email = ""
+            target = None
+            if email:
+                target = User.query.filter(db.func.lower(User.email) == email).first()
+                kind = "user"
+                if not target:
+                    target = (
+                        ParticipantAccount.query.filter(
+                            db.func.lower(ParticipantAccount.email) == email
+                        ).first()
+                    )
+                    kind = "participant"
+            if target:
+                payload = {"kind": kind, "email": email}
+                token = serializer.dumps(payload, salt="pwd-reset")
+                link = url_for("reset_password", token=token, _external=True)
+                res = emailer.send(
+                    email,
+                    "Reset your KT CBS password.",
+                    f"Use this link to reset your password: {link}",
+                )
+                if not res.get("ok"):
+                    session["dev_reset_token"] = token
+            flash("If the email exists, a reset link has been sent.", "info")
+            return redirect(url_for("forgot_password"))
+        token = session.pop("dev_reset_token", None)
+        return render_template("forgot_password.html", token=token)
+
+    @app.route("/reset-password", methods=["GET", "POST"])
+    def reset_password():
+        token = request.values.get("token", "")
+        try:
+            data = serializer.loads(token, salt="pwd-reset", max_age=3600)
+        except (BadSignature, SignatureExpired):
+            flash("Invalid or expired token", "error")
+            return redirect(url_for("forgot_password"))
+        if request.method == "POST":
+            pwd = request.form.get("password") or ""
+            confirm = request.form.get("password_confirm") or ""
+            if not pwd or pwd != confirm:
+                flash("Passwords do not match", "error")
+                return redirect(url_for("reset_password", token=token))
+            if data.get("kind") == "user":
+                target = User.query.filter(
+                    db.func.lower(User.email) == data.get("email")
+                ).first()
+            else:
+                target = ParticipantAccount.query.filter(
+                    db.func.lower(ParticipantAccount.email) == data.get("email")
+                ).first()
+            if not target:
+                flash("Account not found", "error")
+                return redirect(url_for("forgot_password"))
+            target.set_password(pwd)
+            db.session.commit()
+            flash("Password reset. Please log in.", "success")
+            return redirect(url_for("login"))
+        return render_template("reset_password.html", token=token)
 
     @app.get("/magic")
     def magic():
@@ -312,6 +385,7 @@ def create_app():
     from .routes.certificates import bp as certificates_bp
     from .routes.users import bp as users_bp
     from .routes.clients import bp as clients_bp
+    from .routes.accounts import bp as accounts_bp
 
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(sessions_bp)
@@ -321,6 +395,7 @@ def create_app():
     app.register_blueprint(certificates_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)
+    app.register_blueprint(accounts_bp)
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):
