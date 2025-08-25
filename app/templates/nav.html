@@ -1,7 +1,7 @@
 <nav>
   <!-- Navigation Freeze v1 -->
   <a href="/"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
-  <a href="{{ url_for('index') }}">Home</a>
+  <a href="{{ url_for('home') }}">Home</a>
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
