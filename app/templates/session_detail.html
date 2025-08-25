@@ -119,7 +119,7 @@
 </table>
 {% else %}
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Actions</th></tr>
+  <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Certificate</th><th>Actions</th></tr>
   {% for row in participants %}
   <tr>
     <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
@@ -133,6 +133,15 @@
         <button type="submit" name="action" value="generate">Generate</button>
         {% endif %}
       </form>
+    </td>
+    <td>
+      {% if row.certificate %}
+      <a href="{{ url_for('learner.download_certificate', cert_id=row.certificate.id) }}">Download Certificate</a>
+      {% if session.workshop_type and session.workshop_type.badge %}
+        {% set slug = session.workshop_type.badge.lower().replace(' ', '-') %}
+        <a href="{{ url_for('assets.badge', slug=slug) }}">Download Badge</a>
+      {% endif %}
+      {% endif %}
     </td>
     <td>
       {% if not session.delivered and not session.participants_locked() %}

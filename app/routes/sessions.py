@@ -25,6 +25,7 @@ from ..models import (
     Client,
     Session,
     SessionParticipant,
+    Certificate,
     WorkshopType,
     AuditLog,
 )
@@ -441,8 +442,13 @@ def session_detail(session_id: int, sess, current_user, csa_view):
     participants = []
     for link in links:
         participant = db.session.get(Participant, link.participant_id)
+        cert = (
+            db.session.query(Certificate)
+            .filter_by(session_id=session_id, participant_id=link.participant_id)
+            .one_or_none()
+        )
         if participant:
-            participants.append({"participant": participant, "link": link})
+            participants.append({"participant": participant, "link": link, "certificate": cert})
     import_errors = flask_session.pop("import_errors", None)
     return render_template(
         "session_detail.html",

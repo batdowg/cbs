@@ -132,6 +132,7 @@ class WorkshopType(db.Model):
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
+    badge = db.Column(db.String(50), nullable=True)  # one of allowed set; NULL means none
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
@@ -325,6 +326,7 @@ class Certificate(db.Model):
             name="uix_certificate_session_participant",
         ),
     )
+    session = db.relationship("Session")
 
 
 class SessionFacilitator(db.Model):

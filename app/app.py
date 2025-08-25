@@ -195,6 +195,7 @@ def create_app():
     from .routes.users import bp as users_bp
     from .routes.clients import bp as clients_bp
     from .routes.accounts import bp as accounts_bp
+    from .routes.assets import bp as assets_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -206,6 +207,7 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(accounts_bp)
+    app.register_blueprint(assets_bp)
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):

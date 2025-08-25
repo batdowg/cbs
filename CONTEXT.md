@@ -358,3 +358,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Manual account creation can set a password without it being overwritten by provisioning; provisioning keeps existing hashes and reports `kept_password`.
 - Forgot-password flow added with `/forgot-password` and `/reset-password` using 1-hour tokens; token shown on page when mail is stubbed.
 - SysAdmin/Admin interfaces allow setting passwords for Users and ParticipantAccounts with audit logging (`password_reset_admin`).
+
+## Latest update done by codex 09/01/2026
+- WorkshopType includes optional `badge` field with choices None, Foundations, Practitioner, Advanced, Expert, Coach, Facilitator, Program Leader.
+- Badge images served at `/badges/<slug>.webp` from repo or `/app/assets` fallback.
+- Certificate views show a **Download Badge** link when the session's workshop type has a badge.
+- Existing workshop types seeded to Foundations.

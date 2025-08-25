@@ -17,9 +17,10 @@ from flask import (
 import os
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from ..app import db, User
-from ..models import Certificate, Participant, ParticipantAccount
+from ..models import Certificate, Participant, ParticipantAccount, Session
 
 bp = Blueprint("learner", __name__)
 
@@ -49,6 +50,7 @@ def my_certs():
         db.session.query(Certificate)
         .join(Participant, Certificate.participant_id == Participant.id)
         .filter(db.func.lower(Participant.email) == email)
+        .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
         .all()
     )
     return render_template("my_certificates.html", certs=certs)

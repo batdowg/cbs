@@ -4,6 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from ..app import db, User
 from ..models import WorkshopType, AuditLog
+from ..constants import BADGE_CHOICES
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
 
@@ -35,7 +36,7 @@ def list_types(current_user):
 @bp.get('/new')
 @staff_required
 def new_type(current_user):
-    return render_template('workshop_types/form.html', wt=None)
+    return render_template('workshop_types/form.html', wt=None, badge_choices=BADGE_CHOICES)
 
 
 @bp.post('/new')
@@ -54,6 +55,7 @@ def create_type(current_user):
         name=name,
         status=request.form.get('status') or 'active',
         description=request.form.get('description') or None,
+        badge=request.form.get('badge') or None,
     )
     db.session.add(wt)
     db.session.flush()
@@ -75,7 +77,7 @@ def edit_type(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    return render_template('workshop_types/form.html', wt=wt)
+    return render_template('workshop_types/form.html', wt=wt, badge_choices=BADGE_CHOICES)
 
 
 @bp.post('/<int:type_id>/edit')
@@ -87,6 +89,7 @@ def update_type(type_id: int, current_user):
     wt.name = request.form.get('name') or wt.name
     wt.status = request.form.get('status') or wt.status
     wt.description = request.form.get('description') or None
+    wt.badge = request.form.get('badge') or None
     db.session.add(
         AuditLog(
             user_id=current_user.id,
