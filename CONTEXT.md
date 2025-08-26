@@ -385,3 +385,6 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - New Session form adds an **Add Client** button and a **Client Session Admin** email field; Edit Session also shows the CSA field.
 - Ready for delivery is disabled once Delivered is set, and Delivered remains disabled until Ready for delivery is checked.
 - Left navigation reordered: Home, My Sessions, My Certificates, Resources, Sessions, Materials, Surveys, Verify Certificates, Settings (Clients, Workshop Types, My Profile, Users, Mail Settings), Logout.
+
+## Latest update done by codex 10/15/2026
+- Badge downloads handled via Flask route serving from `/srv/badges` with fallback to bundled assets, fixing broken Download Badge links.

@@ -47,6 +47,16 @@ def create_app():
             os.path.join(app.root_path, "static"), "ktlogo1.png"
         )
 
+    @app.get("/badges/<slug>.webp")
+    def badge_file(slug: str):
+        filename = f"{slug}.webp"
+        site_dir = "/srv/badges"
+        asset_dir = os.path.join(app.root_path, "assets", "badges")
+        site_path = os.path.join(site_dir, filename)
+        if os.path.isfile(site_path):
+            return send_from_directory(site_dir, filename, as_attachment=True)
+        return send_from_directory(asset_dir, filename, as_attachment=True)
+
     @app.context_processor
     def inject_user():
         user = None
