@@ -2,10 +2,6 @@
   <!-- Navigation order updated -->
   <a href="/"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
   <a href="{{ url_for('home') }}">Home</a>
-  {% if current_user or is_csa %}
-  <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
-  {% endif %}
-  <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
   {% if current_user or session.get('participant_account_id') %}
   <a href="{{ url_for('resources') }}">Resources</a>
   {% endif %}
@@ -15,6 +11,10 @@
   {% if current_user or session.get('participant_account_id') %}
   <a href="{{ url_for('surveys') }}">Surveys</a>
   {% endif %}
+  {% if current_user or is_csa %}
+  <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
+  {% endif %}
+  <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
   <a href="{{ url_for('verify_form') }}">Verify Certificates</a>
   {% if current_user or session.get('participant_account_id') or is_csa %}
   <details class="settings">
@@ -24,18 +24,11 @@
       <li><a href="{{ url_for('clients.list_clients') }}">Clients</a></li>
       <li><a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a></li>
       <li><a href="{{ url_for('settings_languages.list_langs') }}">Languages</a></li>
-      <li>
-        <details>
-          <summary>Materials</summary>
-          <ul>
-            <li><a href="{{ url_for('settings_materials.list_options', slug='standard') }}">Standard workshop</a></li>
-            <li><a href="{{ url_for('settings_materials.list_options', slug='modular') }}">Modular</a></li>
-            <li><a href="{{ url_for('settings_materials.list_options', slug='ldi') }}">LDI</a></li>
-            <li><a href="{{ url_for('settings_materials.list_options', slug='bulk') }}">Bulk order</a></li>
-            <li><a href="{{ url_for('settings_materials.list_options', slug='simulation') }}">Simulation</a></li>
-          </ul>
-        </details>
-      </li>
+      <li><a href="{{ url_for('settings_materials.list_options', slug='standard') }}">Standard Materials</a></li>
+      <li><a href="{{ url_for('settings_materials.list_options', slug='modular') }}">Modular Materials</a></li>
+      <li><a href="{{ url_for('settings_materials.list_options', slug='ldi') }}">LDI Materials</a></li>
+      <li><a href="{{ url_for('settings_materials.list_options', slug='bulk') }}">Bulk order Materials</a></li>
+      <li><a href="{{ url_for('settings_materials.list_options', slug='simulation') }}">Simulation Materials</a></li>
       {% endif %}
       <li><a href="{{ url_for('learner.profile') }}">My Profile</a></li>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
