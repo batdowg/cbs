@@ -12,6 +12,7 @@ from flask import (
     session,
     url_for,
     send_from_directory,
+    abort,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_, text
@@ -206,6 +207,32 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(accounts_bp)
+
+    @app.get("/materials")
+    def materials():
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("auth.login"))
+        user = db.session.get(User, user_id)
+        if not user or not (user.is_app_admin or user.is_admin or user.is_kt_staff):
+            abort(403)
+        return render_template("materials.html")
+
+    @app.get("/resources")
+    def resources():
+        if not (session.get("user_id") or session.get("participant_account_id")):
+            return redirect(url_for("auth.login"))
+        return render_template("resources.html")
+
+    @app.get("/surveys")
+    def surveys():
+        if not (session.get("user_id") or session.get("participant_account_id")):
+            return redirect(url_for("auth.login"))
+        return render_template("surveys.html")
+
+    @app.get("/verify")
+    def verify_form():
+        return render_template("verify.html")
 
     @app.get("/verify/<int:cert_id>")
     def verify(cert_id: int):

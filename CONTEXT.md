@@ -80,7 +80,14 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
  • Special instructions, courier, tracking, ship date  
  • Materials list (simple initially: item name, qty, notes)  
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
-3.4 Session lifecycle and status: UI shows checkboxes for Materials ordered, Ready for delivery, Workshop info sent, Delivered, Finalized. Materials ordered allowed anytime. Ready requires participants > 0. Delivered requires Ready and End Date not in the future. Finalized requires Delivered. Cancel removes PDFs and locks edits; On Hold blocks participant edits. `*_at` timestamps record the first True transition and remain if later unchecked. Status options remain `New`, `Confirmed`, `On Hold`, `Delivered`, `Closed`, `Cancelled` with Confirmed-Ready gating and provisioning behavior. A Delivered checkbox gates certificate generation. Cancelling or placing on hold deactivates accounts with no other active sessions.
+3.4 Session lifecycle and status:
+   - Flags: materials_ordered, ready_for_delivery, info_sent, delivered, finalized, on_hold_at, cancelled_at.
+   - Gates:
+     • Ready requires participants > 0.
+     • Delivered requires Ready == true and end_date ≤ today.
+     • Finalized requires Delivered == true.
+   - PRG pattern on saves; flash red when a gate blocks a change.
+   - Status is derived (New, In Progress, Ready for Delivery, Delivered, Closed, Cancelled). On-hold displays as In Progress with an on_hold note.
 3.5 Client self‑service link for a Session (tokenized URL): client can edit participant list, confirm shipping details, confirm primary contact
 3.6 Session list and filters: upcoming, past, by facilitator, by client
 3.7 Client Session Admin (CSA): per-session email assignment creating ParticipantAccount if missing. CSA may add/remove participants for that session until Delivered but cannot toggle lifecycle flags; no other access.
@@ -99,14 +106,18 @@ Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in 
     • Creation-time checks prevent cross-table duplicate emails going forward.
     • `/forgot-password` is shared for both kinds of accounts.
     • `/logout` clears any role.
+4.8 Two tables: User (staff) and ParticipantAccount (learner).
+4.9 Unified login at “/” and “/login” determines account type by email; warns if both exist.
+4.10 Passwords: bcrypt helpers in app/utils/passwords.py; reset via /forgot-password + /reset-password.
+4.11 certificate_name defaults to full_name on creation; learners can edit certificate_name in /profile.
 
 ## 5. Certificates
-5.1 Generate certificate PDFs using template and layout rules [DONE]
-5.2 Store PDFs on disk under `/srv/certificates/<year>/<session>/<email>.pdf` [DONE]
+5.1 Template: app/assets/certificate_template.pdf.
+5.2 Output: /srv/certificates/<year>/<session_id>/<email>.pdf (served by Caddy).
 5.3 Link PDF path to participant record and show on Participant portal [DONE]
  • Output path pattern and Generate Certificates buttons are staff-only
-5.4 Resend certificate email action (uses Certificates From address)  
-5.5 Unique certificate ID and simple validation endpoint  
+5.4 Resend certificate email action (uses Certificates From address)
+5.5 Unique certificate ID and simple validation endpoint
 5.6 Layout rules to follow exactly:
     • Text overlays on `app/assets/certificate_template.pdf`.
     • Name Y from bottom 145 mm, Times-Italic, autoshrink 48→32 pt, centered.
