@@ -251,13 +251,15 @@ class Session(db.Model):
     def computed_status(self) -> str:
         if self.cancelled:
             return "Cancelled"
+        if self.on_hold:
+            return "On Hold"
         if self.finalized:
-            return "Closed"
+            return "Finalized"
         if self.delivered:
             return "Delivered"
         if self.ready_for_delivery:
             return "Ready for Delivery"
-        if self.materials_ordered or self.info_sent or self.on_hold:
+        if self.materials_ordered or self.info_sent:
             return "In Progress"
         return "New"
 

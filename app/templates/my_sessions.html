@@ -22,7 +22,7 @@
     <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.region }}</td>
     <td>{{ s.delivery_type }}</td>
-    <td>{{ s.status }}</td>
+    <td>{{ s.computed_status }}</td>
     <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
   </tr>
   {% endfor %}

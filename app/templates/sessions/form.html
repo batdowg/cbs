@@ -107,16 +107,16 @@
     </div>
   </fieldset>
   {% if session.id %}
-  {% set disabled_all = session.cancelled %}
+  {% set disabled_all = session.cancelled or session.on_hold %}
   <fieldset>
     <legend>Lifecycle</legend>
-    <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %} {% if disabled_all %}disabled{% endif %}> Materials ordered</label></div>
+    <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %} {% if disabled_all %}disabled{% endif %} data-base-disabled="{{ 1 if disabled_all else 0 }}"> Materials ordered</label></div>
     {% set ready_base_disabled = disabled_all or participants_count==0 or session.delivered %}
     <div><label><input type="checkbox" name="ready_for_delivery" value="1" {% if session.ready_for_delivery %}checked{% endif %} {% if ready_base_disabled %}disabled{% endif %} data-base-disabled="{{ 1 if ready_base_disabled else 0 }}" title="{% if participants_count==0 %}Add participants before marking Ready for delivery.{% elif session.delivered %}Delivered is set{% endif %}"> Ready for delivery</label></div>
-    <div><label><input type="checkbox" name="info_sent" value="1" {% if session.info_sent %}checked{% endif %} {% if disabled_all %}disabled{% endif %}> Workshop info sent</label></div>
+    <div><label><input type="checkbox" name="info_sent" value="1" {% if session.info_sent %}checked{% endif %} {% if disabled_all %}disabled{% endif %} data-base-disabled="{{ 1 if disabled_all else 0 }}"> Workshop info sent</label></div>
     {% set delivered_base_disabled = disabled_all or not session.ready_for_delivery or (session.end_date and session.end_date > today) %}
     <div><label><input type="checkbox" name="delivered" value="1" {% if session.delivered %}checked{% endif %} {% if delivered_base_disabled %}disabled{% endif %} data-base-disabled="{{ 1 if delivered_base_disabled else 0 }}" title="{% if not session.ready_for_delivery %}Requires Ready for delivery{% elif session.end_date and session.end_date > today %}Cannot mark Delivered before the end date{% endif %}"> Delivered</label></div>
-    <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %} {% if disabled_all or not session.delivered %}disabled{% endif %} title="{% if not session.delivered %}Requires Delivered{% endif %}"> Finalized</label></div>
+    <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %} {% if disabled_all or not session.delivered %}disabled{% endif %} data-base-disabled="{{ 1 if disabled_all or not session.delivered else 0 }}" title="{% if not session.delivered %}Requires Delivered{% endif %}"> Finalized</label></div>
   </fieldset>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
   {% endif %}
@@ -126,16 +126,31 @@
   var delivered = document.querySelector('input[name="delivered"]');
   var ready = document.querySelector('input[name="ready_for_delivery"]');
   var finalized = document.querySelector('input[name="finalized"]');
+  var materials = document.querySelector('input[name="materials_ordered"]');
+  var info = document.querySelector('input[name="info_sent"]');
   function updateStates(){
-    if(ready){
-      if(delivered && delivered.checked){
-        ready.disabled = true;
-      }else{
+    if(delivered){
+      if(delivered.checked){
+        if(materials){ materials.checked = true; }
+        if(info){ info.checked = true; }
+        if(ready){ ready.disabled = true; }
+      }else if(ready){
         ready.disabled = ready.dataset.baseDisabled === '1';
       }
-    }
-    if(delivered){
       delivered.disabled = delivered.dataset.baseDisabled === '1' || (ready && !ready.checked);
+    }
+    if(finalized){
+      if(finalized.checked){
+        if(materials){ materials.disabled = true; }
+        if(ready){ ready.disabled = true; }
+        if(info){ info.disabled = true; }
+        if(delivered){ delivered.disabled = true; }
+      }else{
+        if(materials){ materials.disabled = materials.dataset.baseDisabled === '1'; }
+        if(ready){ ready.disabled = ready.dataset.baseDisabled === '1'; }
+        if(info){ info.disabled = info.dataset.baseDisabled === '1'; }
+        if(delivered){ delivered.disabled = delivered.dataset.baseDisabled === '1' || (ready && !ready.checked); }
+      }
     }
   }
   if(delivered){
@@ -169,6 +184,7 @@
         alert('Finalized requires Delivered first.');
         finalized.checked = false;
       }
+      updateStates();
     });
   }
   document.getElementById('add-fac').addEventListener('click', function(){

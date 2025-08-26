@@ -23,7 +23,7 @@ def list_my_sessions():
     show_all = request.args.get("all") == "1"
     query = db.session.query(Session)
     if not show_all:
-        query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
+        query = query.filter(Session.finalized.is_(False), Session.cancelled.is_(False))
     user_id = flask_session.get("user_id")
     account_id = flask_session.get("participant_account_id")
     if user_id:
