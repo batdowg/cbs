@@ -16,6 +16,7 @@
         <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
         {% endfor %}
       </select>
+      <a href="{{ url_for('clients.new_client') }}" class="button">Add Client</a>
     </label></div>
     <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
     <div><label>Region
@@ -27,6 +28,7 @@
       </select>
     </label></div>
     <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
+    <div><label>Client Session Admin <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
     <div><label>Location <input type="text" name="location" value="{{ session.location or '' }}"></label></div>
   </fieldset>
   <fieldset>
@@ -109,9 +111,11 @@
   <fieldset>
     <legend>Lifecycle</legend>
     <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %} {% if disabled_all %}disabled{% endif %}> Materials ordered</label></div>
-    <div><label><input type="checkbox" name="ready_for_delivery" value="1" {% if session.ready_for_delivery %}checked{% endif %} {% if disabled_all or participants_count==0 %}disabled{% endif %} title="{% if participants_count==0 %}Add participants before marking Ready for delivery.{% endif %}"> Ready for delivery</label></div>
+    {% set ready_base_disabled = disabled_all or participants_count==0 or session.delivered %}
+    <div><label><input type="checkbox" name="ready_for_delivery" value="1" {% if session.ready_for_delivery %}checked{% endif %} {% if ready_base_disabled %}disabled{% endif %} data-base-disabled="{{ 1 if ready_base_disabled else 0 }}" title="{% if participants_count==0 %}Add participants before marking Ready for delivery.{% elif session.delivered %}Delivered is set{% endif %}"> Ready for delivery</label></div>
     <div><label><input type="checkbox" name="info_sent" value="1" {% if session.info_sent %}checked{% endif %} {% if disabled_all %}disabled{% endif %}> Workshop info sent</label></div>
-    <div><label><input type="checkbox" name="delivered" value="1" {% if session.delivered %}checked{% endif %} {% if disabled_all or not session.ready_for_delivery or (session.end_date and session.end_date > today) %}disabled{% endif %} title="{% if not session.ready_for_delivery %}Requires Ready for delivery{% elif session.end_date and session.end_date > today %}Cannot mark Delivered before the end date{% endif %}"> Delivered</label></div>
+    {% set delivered_base_disabled = disabled_all or not session.ready_for_delivery or (session.end_date and session.end_date > today) %}
+    <div><label><input type="checkbox" name="delivered" value="1" {% if session.delivered %}checked{% endif %} {% if delivered_base_disabled %}disabled{% endif %} data-base-disabled="{{ 1 if delivered_base_disabled else 0 }}" title="{% if not session.ready_for_delivery %}Requires Ready for delivery{% elif session.end_date and session.end_date > today %}Cannot mark Delivered before the end date{% endif %}"> Delivered</label></div>
     <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %} {% if disabled_all or not session.delivered %}disabled{% endif %} title="{% if not session.delivered %}Requires Delivered{% endif %}"> Finalized</label></div>
   </fieldset>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
@@ -122,7 +126,20 @@
   var delivered = document.querySelector('input[name="delivered"]');
   var ready = document.querySelector('input[name="ready_for_delivery"]');
   var finalized = document.querySelector('input[name="finalized"]');
+  function updateStates(){
+    if(ready){
+      if(delivered && delivered.checked){
+        ready.disabled = true;
+      }else{
+        ready.disabled = ready.dataset.baseDisabled === '1';
+      }
+    }
+    if(delivered){
+      delivered.disabled = delivered.dataset.baseDisabled === '1' || (ready && !ready.checked);
+    }
+  }
   if(delivered){
+    updateStates();
     delivered.addEventListener('change', function(){
       if(delivered.checked){
         var end = document.querySelector('input[name="end_date"]').value;
@@ -130,19 +147,23 @@
         if(!ready.checked){
           alert('Delivered requires "Ready for delivery" first.');
           delivered.checked = false;
-          return;
-        }
-        if(end && end > today){
+        }else if(end && end > today){
           alert('Cannot mark Delivered before the end date.');
           delivered.checked = false;
-          return;
-        }
-        if(!confirm('Mark this session Delivered? Certificates become available.')){
+        }else if(!confirm('Mark this session Delivered? Certificates become available.')){
           delivered.checked = false;
-          return;
         }
       }
+      updateStates();
     });
+    if(ready){
+      ready.addEventListener('change', function(){
+        if(!ready.checked){
+          delivered.checked = false;
+        }
+        updateStates();
+      });
+    }
     finalized.addEventListener('change', function(){
       if(finalized.checked && !delivered.checked){
         alert('Finalized requires Delivered first.');
