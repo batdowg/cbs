@@ -131,6 +131,12 @@ def new_session(current_user):
         info_sent = _cb(request.form.get("info_sent"))
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
+        if finalized:
+            delivered = True
+            ready_for_delivery = True
+        if delivered:
+            materials_ordered = True
+            info_sent = True
         participants_count = 0
         if ready_for_delivery and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
@@ -241,6 +247,8 @@ def new_session(current_user):
                 )
             )
             db.session.commit()
+        if sess.finalized:
+            generate_for_session(sess.id)
         changes = []
         if materials_ordered:
             changes.append("Materials ordered")
@@ -304,7 +312,10 @@ def edit_session(session_id: int, current_user):
     )
     if request.method == "POST":
         old_ready = bool(sess.ready_for_delivery)
+        ready_present = "ready_for_delivery" in request.form
         new_ready = _cb(request.form.get("ready_for_delivery"))
+        if not ready_present:
+            new_ready = old_ready
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
@@ -332,6 +343,12 @@ def edit_session(session_id: int, current_user):
         delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
         finalized = _cb(request.form.get("finalized")) if "finalized" in request.form else old_finalized
         on_hold = _cb(request.form.get("on_hold")) if "on_hold" in request.form else old_on_hold
+        if finalized:
+            delivered = True
+            new_ready = True
+        if delivered:
+            materials_ordered = True
+            info_sent = True
         if new_ready and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
             new_ready = False
@@ -452,6 +469,8 @@ def edit_session(session_id: int, current_user):
                 )
             )
             db.session.commit()
+        if finalized and not old_finalized:
+            generate_for_session(sess.id)
         if sess.cancelled or sess.on_hold:
             deactivated = deactivate_orphan_accounts_for_session(sess.id)
             if deactivated:
@@ -619,8 +638,25 @@ def finalize_session(session_id: int, current_user):
             )
         )
         db.session.commit()
+        generate_for_session(session_id)
     flash("Session finalized", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.post("/<int:session_id>/delete")
+@staff_required
+def delete_session(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    if not sess.cancelled:
+        flash("Only cancelled sessions can be deleted.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    remove_session_certificates(session_id, sess.end_date)
+    db.session.delete(sess)
+    db.session.commit()
+    flash("Session deleted", "success")
+    return redirect(url_for("sessions.list_sessions"))
 
 
 @bp.post("/<int:session_id>/participants/add")

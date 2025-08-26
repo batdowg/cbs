@@ -51,6 +51,8 @@
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a>
 {% if not session.cancelled %}
 <form action="{{ url_for('sessions.cancel_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Cancel session?');"><button type="submit">Cancel session</button></form>
+{% elif current_user.is_admin or current_user.is_app_admin %}
+<form action="{{ url_for('sessions.delete_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete session?');"><button type="submit">Delete session</button></form>
 {% endif %}
 {% if session.delivered and not session.finalized and not session.cancelled %}
 <form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>

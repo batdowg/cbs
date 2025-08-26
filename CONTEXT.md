@@ -388,3 +388,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 
 ## Latest update done by codex 10/15/2026
 - Badge downloads handled via Flask route serving from `/srv/badges` with fallback to bundled assets, fixing broken Download Badge links.
+
+## Latest update done by codex 11/01/2026
+- My Sessions shows computed status and hides finalized/cancelled sessions unless toggled.
+- Lifecycle tweaks: Delivered auto-checks Materials ordered and Workshop info sent; Ready for delivery is required and retained if Delivered is undone; Finalized locks all lifecycle fields; cancelled or on-hold sessions disable lifecycle edits; status derives from flags including On Hold and Finalized.
+- Cancelled sessions may be deleted by Administrators or SysAdmin.
+- Certificates generate automatically on session finalization and are removed when a session is cancelled.
