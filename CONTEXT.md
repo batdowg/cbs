@@ -405,3 +405,6 @@ Participant accounts provision with default password "KTRocks!" and flash summar
   • Order Type uses fixed list: "KT-Run Standard materials", "KT-Run Modular materials", "KT-Run LDI materials", "Client-run Bulk order", "Simulation".
   • Permissions: Admin or CRM may create and edit shipments; only Admin may mark Delivered. KT Delivery and Contractors have view-only access. CSA cannot modify shipments.
   • Materials page auto-creates a shipment only for Admin/CRM; others see read-only if absent.
+
+## Latest update done by codex 01/15/2027
+- Fixed a stray endblock in `sessions/materials.html` that caused an internal server error when opening the Materials Order page.
