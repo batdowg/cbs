@@ -4,6 +4,7 @@ import csv
 import io
 from functools import wraps
 from datetime import date, time, datetime
+from zoneinfo import available_timezones
 
 from flask import (
     Blueprint,
@@ -38,6 +39,8 @@ from ..utils.provisioning import (
 from ..utils.rbac import csa_allowed_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
+
+TIMEZONES = sorted(available_timezones())
 
 
 def _cb(v) -> bool:
@@ -212,7 +215,11 @@ def new_session(current_user):
             msg += ": " + ", ".join(changes)
         flash(msg, "success")
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
-    tz_map = {"NA": "EST", "EU": "CET", "SEA": "SGT"}
+    tz_map = {
+        "NA": "America/New_York",
+        "EU": "Europe/Paris",
+        "SEA": "Asia/Singapore",
+    }
     tz = tz_map.get(current_user.region, "")
     return render_template(
         "sessions/form.html",
@@ -229,6 +236,7 @@ def new_session(current_user):
         include_all_facilitators=include_all,
         participants_count=0,
         today=date.today(),
+        timezones=TIMEZONES,
     )
 
 
@@ -426,6 +434,7 @@ def edit_session(session_id: int, current_user):
         include_all_facilitators=include_all,
         participants_count=participants_count,
         today=date.today(),
+        timezones=TIMEZONES,
     )
 
 

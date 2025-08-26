@@ -1,61 +1,109 @@
 {% extends 'base.html' %}
-{% block title %}{{ 'New Session' if not session else 'Edit Session' }}{% endblock %}
+{% block title %}{{ 'New Session' if not session or not session.id else 'Edit Session' }}{% endblock %}
 {% block content %}
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
-<h1>{{ 'New Session' if not session else 'Edit Session' }}</h1>
+<h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
 <form method="post">
-  <div><label>Title <input type="text" name="title" value="{{ session.title if session else '' }}"></label></div>
-  <div><label>Workshop Type
-    <select name="workshop_type_id" required>
-      <option value="">--Select--</option>
-      {% for wt in workshop_types %}
-      <option value="{{ wt.id }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date }}"></label></div>
-  <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date }}"></label></div>
-  {% set st = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
-  {% set et = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
-  <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ st or '08:00' }}"></label></div>
-  <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ et or '17:00' }}"></label></div>
-  <div><label>Timezone <input type="text" name="timezone" value="{{ session.timezone }}"></label></div>
-  <div><label>Location <input type="text" name="location" value="{{ session.location }}"></label></div>
-  <div><label>Client
-    <select name="client_id" id="client-select">
-      <option value="">--Select--</option>
-      {% for c in clients %}
-      <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
-  <div><label>Delivery Type
-    <select name="delivery_type">
-      <option value="">--Select--</option>
-      {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
-      <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Region
-    <select name="region">
-      <option value="">--Select--</option>
-      {% for opt in ['NA','EU','SEA','Other'] %}
-      <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Language
-    <select name="language">
-      {% for label, code in LANG_CHOICES %}
-      <option value="{{ label }}" {% if (session and session.language==label) or (not session and label=='English') %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity }}"></label></div>
+  <fieldset>
+    <legend>Session Info</legend>
+    <div><label>Title <input type="text" name="title" value="{{ session.title or '' }}"></label></div>
+    <div><label>Client
+      <select name="client_id" id="client-select">
+        <option value="">--Select--</option>
+        {% for c in clients %}
+        <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
+    <div><label>Region
+      <select name="region">
+        <option value="">--Select--</option>
+        {% for opt in ['NA','EU','SEA','Other'] %}
+        <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
+    <div><label>Location <input type="text" name="location" value="{{ session.location or '' }}"></label></div>
+  </fieldset>
+  <fieldset>
+    <legend>Details</legend>
+    <div><label>Workshop Type
+      <select name="workshop_type_id" required>
+        <option value="">--Select--</option>
+        {% for wt in workshop_types %}
+        <option value="{{ wt.id }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Delivery Type
+      <select name="delivery_type">
+        <option value="">--Select--</option>
+        {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
+        <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Language
+      <select name="language">
+        {% for label, code in LANG_CHOICES %}
+        <option value="{{ label }}" {% if (session and session.language==label) or (not session and label=='English') %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline or '' }}</textarea></label></div>
+    <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity or '' }}"></label></div>
+    <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date or '' }}"></label></div>
+    <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date or '' }}"></label></div>
+    {% set st = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
+    {% set et = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
+    <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ st or '08:00' }}"></label></div>
+    <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ et or '17:00' }}"></label></div>
+    <div><label>Timezone
+      <select name="timezone">
+        <option value="">--Select--</option>
+        {% for tz in timezones %}
+        <option value="{{ tz }}" {% if session.timezone==tz %}selected{% endif %}>{{ tz }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Notes<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div>
+    <div><label>Lead Facilitator
+      <select name="lead_facilitator_id">
+        <option value="">--Select--</option>
+        {% for u in facilitators %}
+        <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label><input type="checkbox" id="include-all-fac" {% if include_all_facilitators %}checked{% endif %}> Include out-of-region facilitators</label></div>
+    <div>Additional Facilitators:
+      <div id="additional-facilitators">
+        {% set adds = session.facilitators if session else [] %}
+        {% if adds %}
+          {% for fac in adds %}
+          <select name="additional_facilitators">
+            <option value="">--Select--</option>
+            {% for u in facilitators %}
+            <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+            {% endfor %}
+          </select>
+          {% endfor %}
+        {% else %}
+          <select name="additional_facilitators">
+            <option value="">--Select--</option>
+            {% for u in facilitators %}
+            <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+      <button type="button" id="add-fac">Add another facilitator</button>
+    </div>
+  </fieldset>
   {% if session.id %}
   {% set disabled_all = session.cancelled %}
   <fieldset>
@@ -68,41 +116,6 @@
   </fieldset>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
   {% endif %}
-  <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor }}"></label></div>
-  <div><label>Notes<br><textarea name="notes">{{ session.notes if session else '' }}</textarea></label></div>
-  <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline if session else '' }}</textarea></label></div>
-  <div><label>Lead Facilitator
-    <select name="lead_facilitator_id">
-      <option value="">--Select--</option>
-      {% for u in facilitators %}
-      <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label><input type="checkbox" id="include-all-fac" {% if include_all_facilitators %}checked{% endif %}> Include out-of-region facilitators</label></div>
-  <div>Additional Facilitators:
-    <div id="additional-facilitators">
-      {% set adds = session.facilitators if session else [] %}
-      {% if adds %}
-        {% for fac in adds %}
-        <select name="additional_facilitators">
-          <option value="">--Select--</option>
-          {% for u in facilitators %}
-          <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
-          {% endfor %}
-        </select>
-        {% endfor %}
-      {% else %}
-        <select name="additional_facilitators">
-          <option value="">--Select--</option>
-          {% for u in facilitators %}
-          <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
-          {% endfor %}
-        </select>
-      {% endif %}
-    </div>
-    <button type="button" id="add-fac">Add another facilitator</button>
-  </div>
   <button type="submit">Save</button>
 </form>
 <script>
