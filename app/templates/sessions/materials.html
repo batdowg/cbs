@@ -1,175 +1,167 @@
 {% extends 'base.html' %}
-{% block title %}Materials{% endblock %}
+{% block title %}Materials Order{% endblock %}
 {% block content %}
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
 {% endwith %}
-<h1>Materials for {{ sess.title }}</h1>
-{% if not shipment %}
-  <p>No shipment yet.</p>
-  {% if not csa_view %}
-  <form method="post">
-    <input type="hidden" name="action" value="create">
-    <button type="submit">Create shipment</button>
-  </form>
-  {% endif %}
-{% else %}
-  <p>Status: {{ status }}</p>
-  <form method="post">
-    <input type="hidden" name="action" value="update_header">
-    <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}</div>
-    <div>Delivery region: {{ sess.region }}</div>
-    <div>Workshop start date: {{ sess.start_date }}</div>
-    <div>SFC Project link:
-      {% if sess.client and sess.client.sfc_link %}
-        {{ sess.client.sfc_link }}
-      {% elif not csa_view %}
-        <input type="url" name="sfc_link">
-      {% endif %}
-    </div>
-    <div>Order type:
-      {% if can_edit_materials_header('order_type', current_user, shipment) %}
-        <select name="order_type">
-          <option value=""></option>
-          {% for ot in order_types %}
-            <option value="{{ ot }}" {% if shipment.order_type==ot %}selected{% endif %}>{{ ot }}</option>
+<h1>Materials Order for {{ sess.title }}</h1>
+<p>Status: {{ status }}</p>
+<form method="post">
+  <input type="hidden" name="action" value="update_header">
+  <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}</div>
+  <div>Delivery region: {{ sess.region|default('', true) }}</div>
+  <div>Workshop start date: {{ sess.start_date|default('', true) }}</div>
+  <div>SFC Project link:
+    {% if sess.client and sess.client.sfc_link %}
+      {{ sess.client.sfc_link }}
+    {% elif not csa_view %}
+      <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
+    {% endif %}
+  </div>
+  <div>Order type:
+    {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
+      <select name="order_type">
+        <option value="">— select —</option>
+        {% for ot in order_types %}
+          <option value="{{ ot }}" {% if shipment.order_type==ot %}selected{% endif %}>{{ ot }}</option>
+        {% endfor %}
+      </select>
+    {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
+  </div>
+  <div>Arrival date:
+    {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
+      <input type="date" name="arrival_date" value="{{ shipment.arrival_date.isoformat() if shipment.arrival_date else '' }}">
+    {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
+  </div>
+  <div>Contact name:
+    {% if can_edit_materials_header('contact_name', current_user, shipment) and not readonly %}
+      <input type="text" name="contact_name" value="{{ shipment.contact_name or '' }}">
+    {% else %}{{ shipment.contact_name|default('', true) }}{% endif %}
+  </div>
+  <div>Contact phone:
+    {% if can_edit_materials_header('contact_phone', current_user, shipment) and not readonly %}
+      <input type="text" name="contact_phone" value="{{ shipment.contact_phone or '' }}">
+    {% else %}{{ shipment.contact_phone|default('', true) }}{% endif %}
+  </div>
+  <div>Contact email:
+    {% if can_edit_materials_header('contact_email', current_user, shipment) and not readonly %}
+      <input type="email" name="contact_email" value="{{ shipment.contact_email or '' }}">
+    {% else %}{{ shipment.contact_email|default('', true) }}{% endif %}
+  </div>
+  <div>Address line1:
+    {% if can_edit_materials_header('address_line1', current_user, shipment) and not readonly %}
+      <input type="text" name="address_line1" value="{{ shipment.address_line1 or '' }}">
+    {% else %}{{ shipment.address_line1|default('', true) }}{% endif %}
+  </div>
+  <div>Address line2:
+    {% if can_edit_materials_header('address_line2', current_user, shipment) and not readonly %}
+      <input type="text" name="address_line2" value="{{ shipment.address_line2 or '' }}">
+    {% else %}{{ shipment.address_line2|default('', true) }}{% endif %}
+  </div>
+  <div>City:
+    {% if can_edit_materials_header('city', current_user, shipment) and not readonly %}
+      <input type="text" name="city" value="{{ shipment.city or '' }}">
+    {% else %}{{ shipment.city|default('', true) }}{% endif %}
+  </div>
+  <div>State:
+    {% if can_edit_materials_header('state', current_user, shipment) and not readonly %}
+      <input type="text" name="state" value="{{ shipment.state or '' }}">
+    {% else %}{{ shipment.state|default('', true) }}{% endif %}
+  </div>
+  <div>Postal code:
+    {% if can_edit_materials_header('postal_code', current_user, shipment) and not readonly %}
+      <input type="text" name="postal_code" value="{{ shipment.postal_code or '' }}">
+    {% else %}{{ shipment.postal_code|default('', true) }}{% endif %}
+  </div>
+  <div>Country:
+    {% if can_edit_materials_header('country', current_user, shipment) and not readonly %}
+      <input type="text" name="country" value="{{ shipment.country or '' }}">
+    {% else %}{{ shipment.country|default('', true) }}{% endif %}
+  </div>
+  <div>Courier:
+    {% if can_edit_materials_header('courier', current_user, shipment) and not readonly %}
+      <input type="text" name="courier" value="{{ shipment.courier or '' }}">
+    {% else %}{{ shipment.courier|default('', true) }}{% endif %}
+  </div>
+  <div>Tracking:
+    {% if can_edit_materials_header('tracking', current_user, shipment) and not readonly %}
+      <input type="text" name="tracking" value="{{ shipment.tracking or '' }}">
+    {% else %}{{ shipment.tracking|default('', true) }}{% endif %}
+  </div>
+  <div>Ship date:
+    {% if can_edit_materials_header('ship_date', current_user, shipment) and not readonly %}
+      <input type="date" name="ship_date" value="{{ shipment.ship_date.isoformat() if shipment.ship_date else '' }}">
+    {% else %}{{ shipment.ship_date|default('', true) }}{% endif %}
+  </div>
+  <div>Special instructions:
+    {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
+      <textarea name="special_instructions">{{ (shipment.special_instructions or '') | trim }}</textarea>
+    {% else %}{{ shipment.special_instructions|default('', true) }}{% endif %}
+  </div>
+  <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
+</form>
+{% if not csa_view %}
+<h3>Items</h3>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Material</th><th>Qty</th><th>Notes</th><th></th></tr>
+  {% for item in shipment.items %}
+  <tr>
+    <form method="post">
+      <input type="hidden" name="action" value="update_item">
+      <input type="hidden" name="item_id" value="{{ item.id }}">
+      <td>
+        <select name="material_id">
+          <option value="">— select —</option>
+          {% for m in materials %}
+            <option value="{{ m.id }}" {% if item.material_id==m.id %}selected{% endif %}>{{ m.name }}</option>
           {% endfor %}
         </select>
-      {% else %}{{ shipment.order_type }}{% endif %}
-    </div>
-    <div>Arrival date:
-      {% if can_edit_materials_header('arrival_date', current_user, shipment) %}
-        <input type="date" name="arrival_date" value="{{ shipment.arrival_date }}">
-      {% else %}{{ shipment.arrival_date }}{% endif %}
-    </div>
-    <div>Contact name:
-      {% if can_edit_materials_header('contact_name', current_user, shipment) %}
-        <input type="text" name="contact_name" value="{{ shipment.contact_name }}">
-      {% else %}{{ shipment.contact_name }}{% endif %}
-    </div>
-    <div>Contact phone:
-      {% if can_edit_materials_header('contact_phone', current_user, shipment) %}
-        <input type="text" name="contact_phone" value="{{ shipment.contact_phone }}">
-      {% else %}{{ shipment.contact_phone }}{% endif %}
-    </div>
-    <div>Contact email:
-      {% if can_edit_materials_header('contact_email', current_user, shipment) %}
-        <input type="email" name="contact_email" value="{{ shipment.contact_email }}">
-      {% else %}{{ shipment.contact_email }}{% endif %}
-    </div>
-    <div>Address line1:
-      {% if can_edit_materials_header('address_line1', current_user, shipment) %}
-        <input type="text" name="address_line1" value="{{ shipment.address_line1 }}">
-      {% else %}{{ shipment.address_line1 }}{% endif %}
-    </div>
-    <div>Address line2:
-      {% if can_edit_materials_header('address_line2', current_user, shipment) %}
-        <input type="text" name="address_line2" value="{{ shipment.address_line2 }}">
-      {% else %}{{ shipment.address_line2 }}{% endif %}
-    </div>
-    <div>City:
-      {% if can_edit_materials_header('city', current_user, shipment) %}
-        <input type="text" name="city" value="{{ shipment.city }}">
-      {% else %}{{ shipment.city }}{% endif %}
-    </div>
-    <div>State:
-      {% if can_edit_materials_header('state', current_user, shipment) %}
-        <input type="text" name="state" value="{{ shipment.state }}">
-      {% else %}{{ shipment.state }}{% endif %}
-    </div>
-    <div>Postal code:
-      {% if can_edit_materials_header('postal_code', current_user, shipment) %}
-        <input type="text" name="postal_code" value="{{ shipment.postal_code }}">
-      {% else %}{{ shipment.postal_code }}{% endif %}
-    </div>
-    <div>Country:
-      {% if can_edit_materials_header('country', current_user, shipment) %}
-        <input type="text" name="country" value="{{ shipment.country }}">
-      {% else %}{{ shipment.country }}{% endif %}
-    </div>
-    <div>Courier:
-      {% if can_edit_materials_header('courier', current_user, shipment) %}
-        <input type="text" name="courier" value="{{ shipment.courier }}">
-      {% else %}{{ shipment.courier }}{% endif %}
-    </div>
-    <div>Tracking:
-      {% if can_edit_materials_header('tracking', current_user, shipment) %}
-        <input type="text" name="tracking" value="{{ shipment.tracking }}">
-      {% else %}{{ shipment.tracking }}{% endif %}
-    </div>
-    <div>Ship date:
-      {% if can_edit_materials_header('ship_date', current_user, shipment) %}
-        <input type="date" name="ship_date" value="{{ shipment.ship_date }}">
-      {% else %}{{ shipment.ship_date }}{% endif %}
-    </div>
-    <div>Special instructions:
-      {% if can_edit_materials_header('special_instructions', current_user, shipment) %}
-        <textarea name="special_instructions">{{ shipment.special_instructions }}</textarea>
-      {% else %}{{ shipment.special_instructions }}{% endif %}
-    </div>
-    <button type="submit">Save</button>
-  </form>
-  {% if not csa_view %}
-  <h3>Items</h3>
-  <table border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Material</th><th>Qty</th><th>Notes</th><th></th></tr>
-    {% for item in shipment.items %}
-    <tr>
-      <form method="post">
-        <input type="hidden" name="action" value="update_item">
-        <input type="hidden" name="item_id" value="{{ item.id }}">
-        <td>
-          <select name="material_id">
-            {% for m in materials %}
-              <option value="{{ m.id }}" {% if item.material_id==m.id %}selected{% endif %}>{{ m.name }}</option>
-            {% endfor %}
-          </select>
-        </td>
-        <td><input type="number" name="quantity" min="1" value="{{ item.quantity }}"></td>
-        <td><input type="text" name="notes" value="{{ item.notes }}"></td>
-        <td>
-          <button type="submit">Update</button>
-      </form>
-      <form method="post" style="display:inline">
-        <input type="hidden" name="action" value="delete_item">
-        <input type="hidden" name="item_id" value="{{ item.id }}">
-        <button type="submit">Delete</button>
-      </form>
-        </td>
-    </tr>
+      </td>
+      <td><input type="number" name="quantity" min="1" value="{{ item.quantity }}"></td>
+      <td><input type="text" name="notes" value="{{ item.notes or '' }}"></td>
+      <td>
+        <button type="submit">Update</button>
+    </form>
+    <form method="post" style="display:inline">
+      <input type="hidden" name="action" value="delete_item">
+      <input type="hidden" name="item_id" value="{{ item.id }}">
+      <button type="submit">Delete</button>
+    </form>
+      </td>
+  </tr>
+  {% endfor %}
+</table>
+<h4>Add item</h4>
+<form method="post">
+  <input type="hidden" name="action" value="add_item">
+  <select name="material_id">
+    <option value="">— select —</option>
+    {% for m in materials %}
+      <option value="{{ m.id }}">{{ m.name }}</option>
     {% endfor %}
-  </table>
-  <h4>Add item</h4>
-  <form method="post">
-    <input type="hidden" name="action" value="add_item">
-    <select name="material_id">
-      <option value=""></option>
-      {% for m in materials %}
-        <option value="{{ m.id }}">{{ m.name }}</option>
-      {% endfor %}
-    </select>
-    <input type="number" name="quantity" min="1">
-    <input type="text" name="notes">
-    <button type="submit">Add</button>
-  </form>
-  <form method="post">
-    <input type="hidden" name="action" value="submit">
-    <button type="submit">Submit to Materials Team</button>
-  </form>
-  <form method="post">
-    <input type="hidden" name="action" value="mark_shipped">
-    <button type="submit">Mark Shipped</button>
-  </form>
-  <form method="post">
-    <input type="hidden" name="action" value="mark_delivered">
-    <button type="submit">Mark Delivered</button>
-  </form>
-  {% if not shipment.submitted_at %}
-  <form method="post" onsubmit="return confirm('Delete shipment?');">
-    <input type="hidden" name="action" value="delete">
-    <button type="submit">Delete Shipment</button>
-  </form>
-  {% endif %}
-  {% endif %}
+  </select>
+  <input type="number" name="quantity" min="1">
+  <input type="text" name="notes">
+  <button type="submit">Add</button>
+</form>
+<form method="post">
+  <input type="hidden" name="action" value="submit">
+  <button type="submit">Submit to Materials Team</button>
+</form>
+<form method="post">
+  <input type="hidden" name="action" value="mark_shipped">
+  <button type="submit">Mark Shipped</button>
+</form>
+<form method="post">
+  <input type="hidden" name="action" value="mark_delivered">
+  <button type="submit">Mark Delivered</button>
+</form>
+{% if not shipment.submitted_at %}
+<form method="post" onsubmit="return confirm('Delete shipment?');">
+  <input type="hidden" name="action" value="delete">
+  <button type="submit">Delete Shipment</button>
+</form>
+{% endif %}
 {% endif %}
 {% endblock %}
+
