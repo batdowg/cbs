@@ -359,6 +359,10 @@ class Material(db.Model):
 
 class SessionShipping(db.Model):
     __tablename__ = "session_shipping"
+    __table_args__ = (
+        db.UniqueConstraint("session_id", name="uq_session_shipping_session_id"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
@@ -375,7 +379,14 @@ class SessionShipping(db.Model):
     tracking = db.Column(db.String(255))
     ship_date = db.Column(db.Date)
     special_instructions = db.Column(db.Text)
+    arrival_date = db.Column(db.Date)
+    order_type = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime)
+    delivered_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    items = db.relationship(
+        "SessionShippingItem", backref="shipment", cascade="all, delete-orphan"
+    )
 
 
 class SessionShippingItem(db.Model):
