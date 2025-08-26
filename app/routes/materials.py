@@ -6,7 +6,13 @@ from functools import wraps
 from flask import Blueprint, abort, flash, redirect, render_template, request, session as flask_session, url_for
 
 from ..app import db, User
-from ..models import Session, SessionShipping, SessionShippingItem, Material
+from ..models import (
+    Session,
+    SessionShipping,
+    SessionShippingItem,
+    Material,
+    MaterialsOption,
+)
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -125,6 +131,7 @@ def materials_view(
         shipment = SessionShipping(
             session_id=session_id,
             created_by=current_user.id if current_user else None,
+            name="Main Shipment",
         )
         db.session.add(shipment)
         db.session.commit()
@@ -151,15 +158,21 @@ def materials_view(
                 "ship_date",
                 "special_instructions",
                 "order_type",
+                "materials_option_id",
             }
+            original_order_type = shipment.order_type
             for field in fields:
                 val = request.form.get(field)
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
                 if field in {"ship_date", "arrival_date"}:
                     setattr(shipment, field, _parse_date(val))
+                elif field == "materials_option_id":
+                    setattr(shipment, field, int(val) if val else None)
                 else:
                     setattr(shipment, field, val or None)
+            if original_order_type != shipment.order_type:
+                shipment.materials_option_id = None
             if sess.client and not sess.client.sfc_link:
                 sfc_link = request.form.get("sfc_link")
                 if sfc_link:
@@ -220,12 +233,26 @@ def materials_view(
         elif shipment.ship_date:
             status = "Shipped"
     materials = Material.query.order_by(Material.name).all() if not view_only else []
+    materials_options = (
+        MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
+        .order_by(MaterialsOption.title)
+        .all()
+        if shipment.order_type
+        else []
+    )
+    selected_option = (
+        db.session.get(MaterialsOption, shipment.materials_option_id)
+        if shipment.materials_option_id
+        else None
+    )
     return render_template(
         "sessions/materials.html",
         sess=sess,
         shipment=shipment,
         status=status,
         materials=materials,
+        materials_options=materials_options,
+        selected_option=selected_option,
         order_types=ORDER_TYPES,
         csa_view=csa_view,
         readonly=readonly,

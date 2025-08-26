@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ label }} Materials{% endblock %}
+{% block content %}
+<h1>{{ label }} Materials</h1>
+<form method="post">
+  <div>Title:
+    <input type="text" name="title" value="{{ opt.title if opt else '' }}" maxlength="160">
+  </div>
+  <div>Languages:
+    <input type="text" name="languages" value="{{ opt.languages|join(', ') if opt else '' }}">
+  </div>
+  <div>Formats:
+    {% for fmt in format_choices %}
+      <label><input type="checkbox" name="formats" value="{{ fmt }}" {% if opt and fmt in opt.formats %}checked{% endif %}>{{ fmt }}</label>
+    {% endfor %}
+  </div>
+  {% if opt %}
+  <div>Status:
+    <input type="checkbox" name="is_active" value="1" {% if opt.is_active %}checked{% endif %}>
+  </div>
+  {% endif %}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

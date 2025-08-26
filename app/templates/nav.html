@@ -12,9 +12,6 @@
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   {% endif %}
-  {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_staff) %}
-  <a href="{{ url_for('materials') }}">Materials</a>
-  {% endif %}
   {% if current_user or session.get('participant_account_id') %}
   <a href="{{ url_for('surveys') }}">Surveys</a>
   {% endif %}
@@ -26,6 +23,18 @@
       {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
       <li><a href="{{ url_for('clients.list_clients') }}">Clients</a></li>
       <li><a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a></li>
+      <li>
+        <details>
+          <summary>Materials</summary>
+          <ul>
+            <li><a href="{{ url_for('settings_materials.list_options', slug='standard') }}">Standard workshop</a></li>
+            <li><a href="{{ url_for('settings_materials.list_options', slug='modular') }}">Modular</a></li>
+            <li><a href="{{ url_for('settings_materials.list_options', slug='ldi') }}">LDI</a></li>
+            <li><a href="{{ url_for('settings_materials.list_options', slug='bulk') }}">Bulk order</a></li>
+            <li><a href="{{ url_for('settings_materials.list_options', slug='simulation') }}">Simulation</a></li>
+          </ul>
+        </details>
+      </li>
       {% endif %}
       <li><a href="{{ url_for('learner.profile') }}">My Profile</a></li>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
