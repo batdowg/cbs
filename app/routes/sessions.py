@@ -116,17 +116,44 @@ def new_session(current_user):
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     if request.method == "POST":
+        missing = []
+        title = request.form.get("title")
+        if not title:
+            missing.append("Title")
+        cid = request.form.get("client_id")
+        if not cid:
+            missing.append("Client")
+        region = request.form.get("region")
+        if not region:
+            missing.append("Region")
         wt_id = request.form.get("workshop_type_id")
         if not wt_id:
-            flash("Workshop Type required", "error")
+            missing.append("Workshop Type")
+        delivery_type = request.form.get("delivery_type")
+        if not delivery_type:
+            missing.append("Delivery type")
+        language = request.form.get("language")
+        if not language:
+            missing.append("Language")
+        capacity_str = request.form.get("capacity")
+        if not capacity_str:
+            missing.append("Capacity")
+        start_date_str = request.form.get("start_date")
+        if not start_date_str:
+            missing.append("Start date")
+        end_date_str = request.form.get("end_date")
+        if not end_date_str:
+            missing.append("End date")
+        if missing:
+            flash("Required fields: " + ", ".join(missing), "error")
             return redirect(url_for("sessions.new_session"))
         wt = db.session.get(WorkshopType, int(wt_id))
-        language = request.form.get("language") or "English"
         allowed = [lbl for lbl, _ in LANG_CHOICES]
         if language not in allowed:
             language = "English"
-        end_date_str = request.form.get("end_date")
-        end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
+        start_date_val = date.fromisoformat(start_date_str)
+        end_date_val = date.fromisoformat(end_date_str)
+        capacity_val = int(capacity_str)
         materials_ordered = _cb(request.form.get("materials_ordered"))
         ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
         info_sent = _cb(request.form.get("info_sent"))
@@ -152,19 +179,18 @@ def new_session(current_user):
         if finalized and not delivered:
             flash("Finalized requires Delivered first.", "error")
             finalized = False
-        cid = request.form.get("client_id")
         sess = Session(
-            title=request.form.get("title"),
-            start_date=request.form.get("start_date") or None,
+            title=title,
+            start_date=start_date_val,
             end_date=end_date_val,
             daily_start_time=request.form.get("daily_start_time") or None,
             daily_end_time=request.form.get("daily_end_time") or None,
             timezone=request.form.get("timezone") or None,
             location=request.form.get("location") or None,
-            delivery_type=request.form.get("delivery_type") or None,
-            region=request.form.get("region") or None,
+            delivery_type=delivery_type,
+            region=region,
             language=language,
-            capacity=request.form.get("capacity") or None,
+            capacity=capacity_val,
             materials_ordered=materials_ordered,
             ready_for_delivery=ready_for_delivery,
             info_sent=info_sent,
@@ -280,6 +306,7 @@ def new_session(current_user):
             daily_end_time=time.fromisoformat("17:00"),
             language="English",
             timezone=tz,
+            capacity=16,
         ),
         workshop_types=workshop_types,
         facilitators=facilitators,

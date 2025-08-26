@@ -5,9 +5,9 @@
 <form method="post">
   <fieldset>
     <legend>Session Info</legend>
-    <div><label>Title <input type="text" name="title" value="{{ session.title or '' }}"></label></div>
-    <div><label>Client
-      <select name="client_id" id="client-select">
+    <div><label>Title* <input type="text" name="title" value="{{ session.title or '' }}" required></label></div>
+    <div><label>Client*
+      <select name="client_id" id="client-select" required>
         <option value="">--Select--</option>
         {% for c in clients %}
         <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
@@ -16,8 +16,8 @@
       <a href="{{ url_for('clients.new_client') }}" class="button">Add Client</a>
     </label></div>
     <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
-    <div><label>Region
-      <select name="region">
+    <div><label>Region*
+      <select name="region" required>
         <option value="">--Select--</option>
         {% for opt in ['NA','EU','SEA','Other'] %}
         <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
@@ -30,7 +30,7 @@
   </fieldset>
   <fieldset>
     <legend>Details</legend>
-    <div><label>Workshop Type
+    <div><label>Workshop Type*
       <select name="workshop_type_id" required>
         <option value="">--Select--</option>
         {% for wt in workshop_types %}
@@ -38,25 +38,25 @@
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Delivery Type
-      <select name="delivery_type">
+    <div><label>Delivery Type*
+      <select name="delivery_type" required>
         <option value="">--Select--</option>
         {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
         <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Language
-      <select name="language">
+    <div><label>Language*
+      <select name="language" required>
         {% for label, code in LANG_CHOICES %}
         <option value="{{ label }}" {% if (session and session.language==label) or (not session and label=='English') %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label></div>
     <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline or '' }}</textarea></label></div>
-    <div><label>Capacity <input type="number" name="capacity" value="{{ session.capacity or '' }}"></label></div>
-    <div><label>Start Date <input type="date" name="start_date" value="{{ session.start_date or '' }}"></label></div>
-    <div><label>End Date <input type="date" name="end_date" value="{{ session.end_date or '' }}"></label></div>
+    <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
+    <div><label>Start Date* <input type="date" name="start_date" value="{{ session.start_date or '' }}" required></label></div>
+    <div><label>End Date* <input type="date" name="end_date" value="{{ session.end_date or '' }}" required></label></div>
     {% set st = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
     {% set et = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
     <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ st or '08:00' }}"></label></div>
