@@ -42,7 +42,7 @@ def upgrade() -> None:
         'Spanish',
     ])
     for n in names:
-        op.execute(
+        bind.execute(
             sa.text(
                 "INSERT INTO languages (name) VALUES (:name) ON CONFLICT (name) DO NOTHING"
             ),
