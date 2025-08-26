@@ -12,6 +12,14 @@
   {% endif %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
   <a href="{{ url_for('learner.profile') }}">My Profile</a>
+  {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_staff) %}
+  <a href="{{ url_for('materials') }}">Materials</a>
+  {% endif %}
+  {% if current_user or session.get('participant_account_id') %}
+  <a href="{{ url_for('resources') }}">Resources</a>
+  <a href="{{ url_for('surveys') }}">Surveys</a>
+  {% endif %}
+  <a href="{{ url_for('verify_form') }}">Verify Certificate</a>
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <details class="settings">
     <summary class="nav-link">Settings</summary>
