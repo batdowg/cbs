@@ -394,3 +394,12 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Lifecycle tweaks: Delivered auto-checks Materials ordered and Workshop info sent; Ready for delivery is required and retained if Delivered is undone; Finalized locks all lifecycle fields; cancelled or on-hold sessions disable lifecycle edits; status derives from flags including On Hold and Finalized.
 - Cancelled sessions may be deleted by Administrators or SysAdmin.
 - Certificates generate automatically on session finalization and are removed when a session is cancelled.
+
+## Latest update done by codex 12/15/2026
+- Sessions → Materials:
+  • Single-shipment model enforced with `session_shipping` unique per session.
+  • CSA can provide shipping location (contact, address, arrival date) before Submit; fields become read-only afterward.
+  • Staff manage line items, order type, and statuses: Submit, Shipped, Delivered.
+  • Marking Delivered sets `Session.materials_ordered = TRUE`.
+  • Submit requires `arrival_date` and at least one line item.
+  • Order Type uses fixed list: "KT-Run Standard materials", "KT-Run Modular materials", "KT-Run LDI materials", "Client-run Bulk order", "Simulation".
