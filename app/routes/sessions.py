@@ -20,7 +20,6 @@ from flask import (
 
 from ..app import db, User
 from ..models import (
-    LANG_CHOICES,
     Participant,
     ParticipantAccount,
     Client,
@@ -30,6 +29,7 @@ from ..models import (
     WorkshopType,
     AuditLog,
     SessionShipping,
+    Language,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -115,6 +115,12 @@ def new_session(current_user):
             fac_query = fac_query.filter(User.region == req_region)
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
+    languages = (
+        Language.query.filter_by(is_active=True)
+        .order_by(Language.sort_order, Language.name)
+        .all()
+    )
+    default_lang = next((l.name for l in languages if l.name == "English"), languages[0].name if languages else None)
     if request.method == "POST":
         missing = []
         title = request.form.get("title")
@@ -148,9 +154,9 @@ def new_session(current_user):
             flash("Required fields: " + ", ".join(missing), "error")
             return redirect(url_for("sessions.new_session"))
         wt = db.session.get(WorkshopType, int(wt_id))
-        allowed = [lbl for lbl, _ in LANG_CHOICES]
+        allowed = [l.name for l in languages]
         if language not in allowed:
-            language = "English"
+            language = default_lang
         start_date_val = date.fromisoformat(start_date_str)
         end_date_val = date.fromisoformat(end_date_str)
         capacity_val = int(capacity_str)
@@ -304,14 +310,14 @@ def new_session(current_user):
         session=Session(
             daily_start_time=time.fromisoformat("08:00"),
             daily_end_time=time.fromisoformat("17:00"),
-            language="English",
+            language=default_lang,
             timezone=tz,
             capacity=16,
         ),
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
-        LANG_CHOICES=LANG_CHOICES,
+        languages=languages,
         include_all_facilitators=include_all,
         participants_count=0,
         today=date.today(),
@@ -339,6 +345,16 @@ def edit_session(session_id: int, current_user):
         .filter_by(session_id=sess.id)
         .count()
     )
+    languages = (
+        Language.query.filter_by(is_active=True)
+        .order_by(Language.sort_order, Language.name)
+        .all()
+    )
+    extra_language = (
+        sess.language
+        if sess.language and sess.language not in [l.name for l in languages]
+        else None
+    )
     if request.method == "POST":
         old_ready = bool(sess.ready_for_delivery)
         ready_present = "ready_for_delivery" in request.form
@@ -363,9 +379,9 @@ def edit_session(session_id: int, current_user):
         sess.location = request.form.get("location") or None
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
-        language = request.form.get("language") or "English"
-        allowed = [lbl for lbl, _ in LANG_CHOICES]
-        sess.language = language if language in allowed else "English"
+        language = request.form.get("language") or sess.language
+        allowed = [l.name for l in languages] + ([sess.language] if sess.language else [])
+        sess.language = language if language in allowed else sess.language
         sess.capacity = request.form.get("capacity") or None
         materials_ordered = _cb(request.form.get("materials_ordered")) if "materials_ordered" in request.form else old_materials
         info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
@@ -539,7 +555,8 @@ def edit_session(session_id: int, current_user):
         session=sess,
         workshop_types=workshop_types,
         facilitators=facilitators,
-        LANG_CHOICES=LANG_CHOICES,
+        languages=languages,
+        extra_language=extra_language,
         clients=clients,
         include_all_facilitators=include_all,
         participants_count=participants_count,

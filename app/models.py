@@ -7,17 +7,6 @@ from sqlalchemy.orm import validates
 from .app import db
 from .utils.passwords import hash_password, check_password
 
-# Language choices stored as human labels for now
-LANG_CHOICES = [
-    ("Chinese", "zh"),
-    ("Dutch", "nl"),
-    ("English", "en"),
-    ("French", "fr"),
-    ("German", "de"),
-    ("Japanese", "ja"),
-    ("Spanish", "es"),
-]
-
 
 class User(db.Model):
     __tablename__ = "users"
@@ -122,6 +111,16 @@ class Settings(db.Model):
             return data.decode()
         except Exception:
             return None
+
+
+class Language(db.Model):
+    __tablename__ = "languages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.SmallInteger, nullable=False, default=100)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
 
 class WorkshopType(db.Model):
@@ -357,6 +356,23 @@ class Material(db.Model):
     description = db.Column(db.Text)
 
 
+materials_option_languages = db.Table(
+    "materials_option_languages",
+    db.Column(
+        "materials_option_id",
+        db.Integer,
+        db.ForeignKey("materials_options.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "language_id",
+        db.Integer,
+        db.ForeignKey("languages.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+)
+
+
 class MaterialsOption(db.Model):
     __tablename__ = "materials_options"
     __table_args__ = (
@@ -374,10 +390,10 @@ class MaterialsOption(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_type = db.Column(db.Text, nullable=False)
     title = db.Column(db.String(160), nullable=False)
-    languages = db.Column(db.JSON, nullable=False, default=list)
     formats = db.Column(db.JSON, nullable=False, default=list)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    languages = db.relationship("Language", secondary="materials_option_languages")
 
 
 class SessionShipping(db.Model):

@@ -23,6 +23,7 @@
       {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
       <li><a href="{{ url_for('clients.list_clients') }}">Clients</a></li>
       <li><a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a></li>
+      <li><a href="{{ url_for('settings_languages.list_langs') }}">Languages</a></li>
       <li>
         <details>
           <summary>Materials</summary>

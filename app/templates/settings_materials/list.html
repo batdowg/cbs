@@ -8,7 +8,7 @@
   {% for opt in options %}
   <tr>
     <td>{{ opt.title }}</td>
-    <td>{{ opt.languages|join(', ') }}</td>
+    <td>{{ opt.languages | map(attribute='name') | join(', ') }}</td>
     <td>{{ opt.formats|join(', ') }}</td>
     <td>{{ 'Active' if opt.is_active else 'Inactive' }}</td>
     <td>

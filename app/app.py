@@ -19,8 +19,9 @@ from sqlalchemy import or_, text
 
 db = SQLAlchemy()
 
-from .models import User, ParticipantAccount, Session, Client
+from .models import User, ParticipantAccount, Session, Client, Language
 from .utils.rbac import app_admin_required
+from .constants import LANGUAGE_NAMES
 
 
 def create_app():
@@ -199,6 +200,7 @@ def create_app():
     from .routes.auth import bp as auth_bp
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.settings_materials import bp as settings_materials_bp
+    from .routes.settings_languages import bp as settings_languages_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.my_sessions import bp as my_sessions_bp
     from .routes.workshop_types import bp as workshop_types_bp
@@ -212,6 +214,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(settings_materials_bp)
+    app.register_blueprint(settings_languages_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(my_sessions_bp)
     app.register_blueprint(workshop_types_bp)
@@ -260,6 +263,14 @@ def create_app():
     with app.app_context():
         if not os.getenv("FLASK_SKIP_SEED"):
             seed_initial_user_safely()
+            seed_languages_safely()
+
+    if not os.getenv("FLASK_SKIP_SEED"):
+        @app.before_request
+        def _seed_langs() -> None:
+            if not getattr(app, "_langs_seeded", False):
+                seed_languages_safely()
+                app._langs_seeded = True
 
     return app
 
@@ -318,6 +329,24 @@ def seed_initial_user_safely() -> None:
         db.session.commit()
     except Exception:
         logging.exception("seed_initial_user_safely failed")
+
+
+def seed_languages_safely() -> None:
+    """Seed default languages if table exists and is empty."""
+
+    try:
+        from sqlalchemy import inspect
+
+        insp = inspect(db.engine)
+        if "languages" not in insp.get_table_names():
+            return
+        if db.session.query(Language).count() > 0:
+            return
+        for name in LANGUAGE_NAMES:
+            db.session.add(Language(name=name))
+        db.session.commit()
+    except Exception:
+        logging.exception("seed_languages_safely failed")
 
 
 app = create_app()

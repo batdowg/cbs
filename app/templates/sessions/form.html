@@ -48,9 +48,12 @@
     </label></div>
     <div><label>Language*
       <select name="language" required>
-        {% for label, code in LANG_CHOICES %}
-        <option value="{{ label }}" {% if (session and session.language==label) or (not session and label=='English') %}selected{% endif %}>{{ label }}</option>
+        {% for lang in languages %}
+        <option value="{{ lang.name }}" {% if session.language==lang.name %}selected{% endif %}>{{ lang.name }}</option>
         {% endfor %}
+        {% if extra_language %}
+        <option value="{{ extra_language }}" selected>{{ extra_language }}</option>
+        {% endif %}
       </select>
     </label></div>
     <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline or '' }}</textarea></label></div>

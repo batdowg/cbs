@@ -420,3 +420,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Settings adds **Materials** management (Standard workshop, Modular, LDI, Bulk order, Simulation) limited to Admin/SysAdmin.
 - Options stored in `materials_options` (order_type, title, languages JSON[], formats JSON[], is_active).
 - Session Materials header now offers a Materials dropdown filtered by Order Type, storing `materials_option_id` on the shipment (`name` defaults to "Main Shipment").
+
+## Latest update done by codex 04/15/2027
+- Settings adds **Languages** management (Admin/SysAdmin only) with name, active flag, and sort order.
+- Materials options draw languages from this table via `materials_option_languages` and select multiple languages.
+- Session language dropdown lists active Languages but preserves legacy values.
+- Session Materials header now labels **Materials type**, filters options by Order type, and stores the chosen `materials_option_id` with a preview of its languages and formats.
