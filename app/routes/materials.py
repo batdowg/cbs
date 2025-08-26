@@ -88,7 +88,19 @@ def _parse_date(val: str | None):
 @materials_access
 def materials_view(session_id: int, sess: Session, current_user: User | None, csa_view: bool):
     shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+    readonly = False
+    if not shipment:
+        if not csa_view and current_user:
+            shipment = SessionShipping(session_id=session_id, created_by=current_user.id)
+            db.session.add(shipment)
+            db.session.commit()
+        else:
+            flash("Materials order not initialized yet. A staff member will create it.", "info")
+            readonly = True
+            shipment = SessionShipping(session_id=session_id)
     if request.method == "POST":
+        if readonly:
+            abort(403)
         action = request.form.get("action")
         if action == "create":
             if csa_view:
@@ -208,6 +220,7 @@ def materials_view(session_id: int, sess: Session, current_user: User | None, cs
         materials=materials,
         order_types=ORDER_TYPES,
         csa_view=csa_view,
+        readonly=readonly,
         current_user=current_user,
         can_edit_materials_header=can_edit_materials_header,
     )

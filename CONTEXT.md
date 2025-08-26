@@ -403,3 +403,4 @@ Participant accounts provision with default password "KTRocks!" and flash summar
   • Marking Delivered sets `Session.materials_ordered = TRUE`.
   • Submit requires `arrival_date` and at least one line item.
   • Order Type uses fixed list: "KT-Run Standard materials", "KT-Run Modular materials", "KT-Run LDI materials", "Client-run Bulk order", "Simulation".
+  • Materials page opens directly to the edit form; shipment is auto-created for staff if absent; CSA sees read-only until staff initializes.

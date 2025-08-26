@@ -57,7 +57,7 @@
 {% if session.delivered and not session.finalized and not session.cancelled %}
 <form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>
 {% endif %}
- | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials</a>
+ | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </p>
 <div>
   <h2>Client Session Admin</h2>
