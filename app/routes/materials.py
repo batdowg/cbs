@@ -52,7 +52,9 @@ def materials_access(fn):
         user_id = flask_session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
-            if can_manage_shipment(user) or is_view_only(user):
+            manageable = can_manage_shipment(user)
+            vo = not manageable and is_view_only(user)
+            if manageable or vo:
                 return fn(
                     session_id,
                     *args,
@@ -60,7 +62,7 @@ def materials_access(fn):
                     sess=sess,
                     current_user=user,
                     csa_view=False,
-                    view_only=is_view_only(user),
+                    view_only=vo,
                 )
         account_id = flask_session.get("participant_account_id")
         if account_id and sess.csa_account_id == account_id:
