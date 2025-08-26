@@ -408,3 +408,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 
 ## Latest update done by codex 01/15/2027
 - Fixed a stray endblock in `sessions/materials.html` that caused an internal server error when opening the Materials Order page.
+
+## Latest update done by codex 02/15/2027
+- Flash messages rendered only once via `base.html`, eliminating duplicated per-page blocks.
+- New Session form's save button now reads **Proceed to Material Order** and redirects to the materials order page.
+- Materials orders are auto-created for each session; Admin, SysAdmin, and CERM can edit while Delivery and Contractors have read-only access.
+- Removed the submit-to-materials step and the "Materials order not initialized" warning; shipments remain editable until delivered or the session is finalized.

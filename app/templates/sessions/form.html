@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Session' if not session or not session.id else 'Edit Session' }}{% endblock %}
 {% block content %}
-{% with msgs = get_flashed_messages(with_categories=true) %}
-  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
-{% endwith %}
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
 <form method="post">
   <fieldset>
@@ -120,7 +117,7 @@
   </fieldset>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
   {% endif %}
-  <button type="submit">Save</button>
+  <button type="submit">{{ 'Proceed to Material Order' if not session or not session.id else 'Save' }}</button>
 </form>
 <script>
   var delivered = document.querySelector('input[name="delivered"]');

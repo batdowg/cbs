@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Client' if not client else 'Edit Client' }}{% endblock %}
 {% block content %}
-{% with msgs = get_flashed_messages(with_categories=true) %}
-  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
-{% endwith %}
 <h1>{{ 'New Client' if not client else 'Edit Client' }}</h1>
 <form method="post">
   <div><label>Name <input type="text" name="name" value="{{ client.name if client else '' }}" required></label></div>

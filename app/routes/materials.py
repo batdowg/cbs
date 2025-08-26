@@ -38,7 +38,6 @@ def is_view_only(user: User | None) -> bool:
         and (
             getattr(user, "is_kt_delivery", False)
             or getattr(user, "is_kt_contractor", False)
-            or getattr(user, "is_kt_staff", False)
         )
     )
 
@@ -98,8 +97,6 @@ def can_edit_materials_header(
 ) -> bool:
     if can_manage_shipment(user):
         return True
-    if shipment and shipment.submitted_at:
-        return False
     return field in CSA_FIELDS
 
 
@@ -122,16 +119,14 @@ def materials_view(
     view_only: bool,
 ):
     shipment = SessionShipping.query.filter_by(session_id=session_id).first()
-    readonly = view_only
     if not shipment:
-        if not readonly and not csa_view:
-            shipment = SessionShipping(session_id=session_id, created_by=current_user.id)
-            db.session.add(shipment)
-            db.session.commit()
-        else:
-            flash("Materials order not initialized yet. A staff member will create it.", "info")
-            readonly = True
-            shipment = SessionShipping(session_id=session_id)
+        shipment = SessionShipping(
+            session_id=session_id,
+            created_by=current_user.id if current_user else None,
+        )
+        db.session.add(shipment)
+        db.session.commit()
+    readonly = view_only or sess.finalized or bool(shipment.delivered_at)
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -147,16 +142,6 @@ def materials_view(
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if not can_manage_shipment(current_user):
             abort(403)
-        if action == "create":
-            if shipment:
-                flash("Shipment already exists", "error")
-            else:
-                shipment = SessionShipping(session_id=session_id, created_by=current_user.id)
-                db.session.add(shipment)
-                db.session.commit()
-            return redirect(url_for("materials.materials_view", session_id=session_id))
-        if not shipment:
-            abort(404)
         if action == "update_header":
             fields = CSA_FIELDS | {
                 "courier",
@@ -214,21 +199,14 @@ def materials_view(
                 db.session.delete(item)
                 db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
-        if action == "submit":
-            if not shipment.arrival_date or len(shipment.items) == 0:
-                flash("Arrival date and at least one line item required", "error")
-            else:
-                shipment.submitted_at = datetime.utcnow()
-                db.session.commit()
-            return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "mark_shipped":
             if not shipment.ship_date:
                 shipment.ship_date = date.today()
             db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "delete":
-            if shipment.submitted_at:
-                flash("Cannot delete after submit", "error")
+            if shipment.delivered_at:
+                flash("Cannot delete after delivery", "error")
             else:
                 db.session.delete(shipment)
                 db.session.commit()
@@ -239,8 +217,6 @@ def materials_view(
             status = "Delivered"
         elif shipment.ship_date:
             status = "Shipped"
-        elif shipment.submitted_at:
-            status = "Submitted"
     materials = Material.query.order_by(Material.name).all() if not view_only else []
     return render_template(
         "sessions/materials.html",

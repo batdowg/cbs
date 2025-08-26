@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
-{% with msgs = get_flashed_messages(with_categories=true) %}
-  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
-{% endwith %}
 <h1>{{ session.title }}</h1>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
 {% set start_time = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
