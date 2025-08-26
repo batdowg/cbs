@@ -25,7 +25,7 @@
       </select>
     {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
   </div>
-  <div>Materials:
+  <div>Materials type:
     {% if shipment.order_type %}
       {% if can_edit_materials_header('materials_option_id', current_user, shipment) and not readonly %}
         <select name="materials_option_id">
@@ -36,7 +36,7 @@
         </select>
       {% else %}{{ shipment.materials_option.title | default('', true) }}{% endif %}
       {% if selected_option %}
-      <div><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages|join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
+      <div><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
       {% endif %}
     {% endif %}
   </div>

@@ -7,7 +7,11 @@
     <input type="text" name="title" value="{{ opt.title if opt else '' }}" maxlength="160">
   </div>
   <div>Languages:
-    <input type="text" name="languages" value="{{ opt.languages|join(', ') if opt else '' }}">
+    <select name="language_ids" multiple>
+      {% for lang in languages %}
+        <option value="{{ lang.id }}" {% if opt and lang in opt.languages %}selected{% endif %}>{{ lang.name }}</option>
+      {% endfor %}
+    </select>
   </div>
   <div>Formats:
     {% for fmt in format_choices %}

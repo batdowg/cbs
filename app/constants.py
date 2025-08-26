@@ -8,3 +8,13 @@ BADGE_CHOICES = [
     ("Facilitator", "Facilitator"),
     ("Program Leader", "Program Leader"),
 ]
+
+LANGUAGE_NAMES = [
+    "Chinese",
+    "Dutch",
+    "English",
+    "French",
+    "German",
+    "Japanese",
+    "Spanish",
+]
