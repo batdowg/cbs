@@ -379,3 +379,9 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 ## Latest update done by codex 09/10/2026
 - Badge images stored in `app/assets/badges` and served at `/badges/<slug>.webp` from `/srv/badges` (host `./site/badges`); “Foundations” is the canonical label/filename.
 - Templates link directly to these static badge URLs.
+
+## Latest update done by codex 10/01/2026
+- Timezone dropdowns list one entry per UTC offset.
+- New Session form adds an **Add Client** button and a **Client Session Admin** email field; Edit Session also shows the CSA field.
+- Ready for delivery is disabled once Delivered is set, and Delivered remains disabled until Ready for delivery is checked.
+- Left navigation reordered: Home, My Sessions, My Certificates, Resources, Sessions, Materials, Surveys, Verify Certificates, Settings (Clients, Workshop Types, My Profile, Users, Mail Settings), Logout.

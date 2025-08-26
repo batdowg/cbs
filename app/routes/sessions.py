@@ -4,7 +4,7 @@ import csv
 import io
 from functools import wraps
 from datetime import date, time, datetime
-from zoneinfo import available_timezones
+from zoneinfo import available_timezones, ZoneInfo
 
 from flask import (
     Blueprint,
@@ -40,7 +40,31 @@ from ..utils.rbac import csa_allowed_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
-TIMEZONES = sorted(available_timezones())
+
+def _fmt_offset(delta):
+    total_minutes = int(delta.total_seconds() // 60)
+    if total_minutes == 0:
+        return "UTC"
+    sign = "+" if total_minutes >= 0 else "-"
+    total_minutes = abs(total_minutes)
+    hours, minutes = divmod(total_minutes, 60)
+    return f"UTC{sign}{hours:02d}:{minutes:02d}"
+
+
+def _simple_timezones():
+    now = datetime.utcnow()
+    seen = {}
+    for name in sorted(available_timezones()):
+        offset = ZoneInfo(name).utcoffset(now)
+        if offset is None:
+            continue
+        seconds = int(offset.total_seconds())
+        if seconds not in seen:
+            seen[seconds] = _fmt_offset(offset)
+    return [seen[k] for k in sorted(seen)]
+
+
+TIMEZONES = _simple_timezones()
 
 
 def _cb(v) -> bool:
@@ -144,6 +168,24 @@ def new_session(current_user):
             simulation_outline=request.form.get("simulation_outline") or None,
             client_id=int(cid) if cid else None,
         )
+        csa_email = (request.form.get("csa_email") or "").strip().lower()
+        if csa_email:
+            if User.query.filter(func.lower(User.email) == csa_email).first():
+                flash("That email belongs to a staff user.", "error")
+            else:
+                account = (
+                    db.session.query(ParticipantAccount)
+                    .filter(func.lower(ParticipantAccount.email) == csa_email)
+                    .one_or_none()
+                )
+                if not account:
+                    account = ParticipantAccount(
+                        email=csa_email, full_name=csa_email, is_active=True
+                    )
+                    account.set_password("KTRocks!")
+                    db.session.add(account)
+                    db.session.flush()
+                sess.csa_account_id = account.id
         now = datetime.utcnow()
         if sess.materials_ordered:
             sess.materials_ordered_at = now
@@ -314,6 +356,26 @@ def edit_session(session_id: int, current_user):
         sess.simulation_outline = request.form.get("simulation_outline") or None
         cid = request.form.get("client_id")
         sess.client_id = int(cid) if cid else None
+        csa_email = (request.form.get("csa_email") or "").strip().lower()
+        if csa_email:
+            if User.query.filter(func.lower(User.email) == csa_email).first():
+                flash("That email belongs to a staff user.", "error")
+            else:
+                account = (
+                    db.session.query(ParticipantAccount)
+                    .filter(func.lower(ParticipantAccount.email) == csa_email)
+                    .one_or_none()
+                )
+                if not account:
+                    account = ParticipantAccount(
+                        email=csa_email, full_name=csa_email, is_active=True
+                    )
+                    account.set_password("KTRocks!")
+                    db.session.add(account)
+                    db.session.flush()
+                sess.csa_account_id = account.id
+        else:
+            sess.csa_account_id = None
         lead_id = request.form.get("lead_facilitator_id")
         sess.lead_facilitator_id = int(lead_id) if lead_id else None
         add_ids = [
