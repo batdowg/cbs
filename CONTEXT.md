@@ -426,3 +426,8 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Materials options draw languages from this table via `materials_option_languages` and select multiple languages.
 - Session language dropdown lists active Languages but preserves legacy values.
 - Session Materials header now labels **Materials type**, filters options by Order type, and stores the chosen `materials_option_id` with a preview of its languages and formats.
+
+## Latest update done by codex 05/30/2027
+- Settings navigation flattens Materials links to match other Settings items.
+- Left navigation moves My Sessions and My Certificates below Resources, Sessions, and Surveys.
+- Sessions and My Sessions tables now show Client and place Location between Title and Workshop Type.

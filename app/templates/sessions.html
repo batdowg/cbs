@@ -9,14 +9,15 @@
 <p><a href="{{ url_for('sessions.list_sessions', global=1) }}">Show Global Sessions</a></p>
 {% endif %}
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Title</th><th>Workshop Type</th><th>Start</th><th>End</th><th>Location</th><th>Status</th></tr>
+  <tr><th>Title</th><th>Location</th><th>Workshop Type</th><th>Start</th><th>End</th><th>Client</th><th>Status</th></tr>
   {% for s in sessions %}
   <tr>
     <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a></td>
+    <td>{{ s.location }}</td>
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} — {{ s.workshop_type.name }}{% endif %}</td>
     <td>{{ s.start_date }}</td>
     <td>{{ s.end_date }}</td>
-    <td>{{ s.location }}</td>
+    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.status }}</td>
   </tr>
   {% endfor %}
