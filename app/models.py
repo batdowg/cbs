@@ -357,6 +357,29 @@ class Material(db.Model):
     description = db.Column(db.Text)
 
 
+class MaterialsOption(db.Model):
+    __tablename__ = "materials_options"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "order_type",
+            "title",
+            name="uq_materials_options_order_type_title",
+        ),
+        db.CheckConstraint(
+            "order_type IN ('KT-Run Standard materials','KT-Run Modular materials','KT-Run LDI materials','Client-run Bulk order','Simulation')",
+            name="ck_materials_options_order_type",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_type = db.Column(db.Text, nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    languages = db.Column(db.JSON, nullable=False, default=list)
+    formats = db.Column(db.JSON, nullable=False, default=list)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+
 class SessionShipping(db.Model):
     __tablename__ = "session_shipping"
     __table_args__ = (
@@ -366,6 +389,11 @@ class SessionShipping(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    name = db.Column(db.String(120), nullable=False, default="Main Shipment")
+    materials_option_id = db.Column(
+        db.Integer, db.ForeignKey("materials_options.id", ondelete="SET NULL"), nullable=True
+    )
+    materials_option = db.relationship("MaterialsOption")
     contact_name = db.Column(db.String(255))
     contact_phone = db.Column(db.String(50))
     contact_email = db.Column(db.String(255))

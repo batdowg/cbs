@@ -198,6 +198,7 @@ def create_app():
 
     from .routes.auth import bp as auth_bp
     from .routes.settings_mail import bp as settings_mail_bp
+    from .routes.settings_materials import bp as settings_materials_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.my_sessions import bp as my_sessions_bp
     from .routes.workshop_types import bp as workshop_types_bp
@@ -210,6 +211,7 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
+    app.register_blueprint(settings_materials_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(my_sessions_bp)
     app.register_blueprint(workshop_types_bp)
@@ -219,16 +221,6 @@ def create_app():
     app.register_blueprint(clients_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(materials_bp)
-
-    @app.get("/materials")
-    def materials():
-        user_id = session.get("user_id")
-        if not user_id:
-            return redirect(url_for("auth.login"))
-        user = db.session.get(User, user_id)
-        if not user or not (user.is_app_admin or user.is_admin or user.is_kt_staff):
-            abort(403)
-        return render_template("materials.html")
 
     @app.get("/resources")
     def resources():

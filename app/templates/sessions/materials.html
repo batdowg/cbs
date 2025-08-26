@@ -25,6 +25,21 @@
       </select>
     {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
   </div>
+  <div>Materials:
+    {% if shipment.order_type %}
+      {% if can_edit_materials_header('materials_option_id', current_user, shipment) and not readonly %}
+        <select name="materials_option_id">
+          <option value=""></option>
+          {% for opt in materials_options %}
+            <option value="{{ opt.id }}" {% if shipment.materials_option_id==opt.id %}selected{% endif %}>{{ opt.title }}</option>
+          {% endfor %}
+        </select>
+      {% else %}{{ shipment.materials_option.title | default('', true) }}{% endif %}
+      {% if selected_option %}
+      <div><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages|join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
+      {% endif %}
+    {% endif %}
+  </div>
   <div>Arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
       <input type="date" name="arrival_date" value="{{ shipment.arrival_date.isoformat() if shipment.arrival_date else '' }}">
