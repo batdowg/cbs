@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Materials Order{% endblock %}
 {% block content %}
-{% with msgs = get_flashed_messages(with_categories=true) %}
-  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
-{% endwith %}
 <h1>Materials Order for {{ sess.title }}</h1>
 <p>Status: {{ status }}</p>
 <form method="post">
@@ -152,10 +149,6 @@
   <button type="submit">Add</button>
 </form>
 <form method="post">
-  <input type="hidden" name="action" value="submit">
-  <button type="submit">Submit to Materials Team</button>
-</form>
-<form method="post">
   <input type="hidden" name="action" value="mark_shipped">
   <button type="submit">Mark Shipped</button>
 </form>
@@ -166,7 +159,7 @@
   <button type="submit">Mark Delivered</button>
 </form>
 {% endif %}
-{% if can_manage and not shipment.submitted_at %}
+{% if can_manage and not shipment.delivered_at %}
 <form method="post" onsubmit="return confirm('Delete shipment?');">
   <input type="hidden" name="action" value="delete">
   <button type="submit">Delete Shipment</button>

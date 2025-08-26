@@ -29,6 +29,7 @@ from ..models import (
     Certificate,
     WorkshopType,
     AuditLog,
+    SessionShipping,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -216,6 +217,7 @@ def new_session(current_user):
             sess.facilitators = User.query.filter(User.id.in_(add_ids)).all()
         db.session.add(sess)
         db.session.flush()
+        db.session.add(SessionShipping(session_id=sess.id, created_by=current_user.id))
         db.session.add(
             AuditLog(
                 user_id=current_user.id,
@@ -264,7 +266,7 @@ def new_session(current_user):
         if changes:
             msg += ": " + ", ".join(changes)
         flash(msg, "success")
-        return redirect(url_for("sessions.session_detail", session_id=sess.id))
+        return redirect(url_for("materials.materials_view", session_id=sess.id))
     tz_map = {
         "NA": "America/New_York",
         "EU": "Europe/Paris",

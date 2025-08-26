@@ -1,11 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Mail Settings{% endblock %}
 {% block content %}
-{% with messages = get_flashed_messages() %}
-  {% for message in messages %}
-    <p>{{ message }}</p>
-  {% endfor %}
-{% endwith %}
 <h2>SMTP Settings</h2>
 <p>Updated: {{ settings.updated_at }}</p>
 <form method="post">

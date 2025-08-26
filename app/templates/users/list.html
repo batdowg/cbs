@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Users{% endblock %}
 {% block content %}
-{% with msgs = get_flashed_messages(with_categories=true) %}
-  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
-{% endwith %}
 <h1>Users</h1>
 <p><a href="{{ url_for('users.new_user') }}">New User</a> | <a href="#" id="role-matrix-link">Role Matrix</a></p>
 
