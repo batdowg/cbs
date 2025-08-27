@@ -1,0 +1,39 @@
+# sitemap.txt — routes and purpose
+
+/                        – Unified login (front door)
+/login                   – Alias to front door
+/logout                  – Clear session
+
+/home                    – Signed-in landing (role-aware overview)
+/sessions                – Staff/CSA: list with filters
+/sessions/new            – Create session (staff only)
+/sessions/<id>           – Session detail (overview + tabs)
+/sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
+/sessions/<id>/participants – Add/edit/CSV import participants
+/my-sessions             – Facilitators/CRM/CSA: sessions relevant to them
+/my-certificates         – Learner portal: download own PDFs
+/profile                 – Learner profile (full name, certificate name)
+
+# Settings (Admin/SysAdmin)
+/settings                – Landing (cards/links)
+  /settings/users        – Manage staff accounts & roles
+  /settings/workshop-types – CRUD workshop types (+badge select)
+  /settings/clients      – Clients list
+  /settings/clients/<id>/edit
+      – Manage client, CRM, region
+      – Client Workshop Locations (inline table + add/edit)
+      – Client Shipping Locations (inline table + add/edit)
+  /settings/materials    – Materials Options (by order_type; languages, formats)
+  /settings/languages    – Languages list (active, sort)
+  /settings/mail         – SMTP + From mapping + test send
+
+# Badges & cert files
+/badges/<slug>.webp      – Static badge image from /srv/badges
+/certificates/<...>.pdf  – Static certificate PDFs from /srv/certificates
+
+# Auth helpers
+/forgot-password         – Request reset
+/reset-password          – Reset with token
+
+# Health & misc
+/healthz                 – JSON “ok”
