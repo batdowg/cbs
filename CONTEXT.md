@@ -75,7 +75,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Header fields on Materials page (mirrors Session + adds order bits):
   - **Order Type** (fixed list): KT-Run Standard materials / KT-Run Modular materials / KT-Run LDI materials / Client-run Bulk order / Simulation. **[DONE]**
   - **Materials type** dropdown filtered by Order Type (from **Materials Options** below). **[DONE]**
-  - **Latest arrival date** (required), **Workshop start date** (auto from Session), **SFC Project link**, **Delivery region** (from Session). **[DONE]**
+  - **Latest arrival date** (UI label, stored in `session_shipping.arrival_date`, required), **Workshop start date** (auto from Session), **SFC Project link**, **Delivery region** (from Session). **[DONE]**
   - Read-only **Shipping Location** (from Session). **[DONE]**
   - Status actions: Submit, Shipped (courier+tracking+ship date), Delivered (marks `materials_ordered = true`). **[DONE]**
 - **Permissions**:  

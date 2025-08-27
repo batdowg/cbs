@@ -61,7 +61,7 @@ def list_orders():
             {
                 "client": client.name if client else "",
                 "title": sess.title,
-                "workshop_type": wt.title if wt else "",
+                "workshop_type": wt.name if wt else "",
                 "start_date": sess.start_date,
                 "order_type": sh.order_type or "",
                 "materials_status": mstatus,
