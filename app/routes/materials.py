@@ -87,15 +87,6 @@ def materials_access(fn):
 
 
 CSA_FIELDS = {
-    "contact_name",
-    "contact_phone",
-    "contact_email",
-    "address_line1",
-    "address_line2",
-    "city",
-    "state",
-    "postal_code",
-    "country",
     "arrival_date",
 }
 
@@ -126,6 +117,12 @@ def materials_view(
     csa_view: bool,
     view_only: bool,
 ):
+    if not sess.shipping_location_id:
+        flash(
+            "Shipping location required before creating materials order.",
+            "error",
+        )
+        return redirect(url_for("sessions.edit_session", session_id=sess.id))
     shipment = SessionShipping.query.filter_by(session_id=session_id).first()
     if not shipment:
         shipment = SessionShipping(
@@ -135,6 +132,18 @@ def materials_view(
         )
         db.session.add(shipment)
         db.session.commit()
+    shipment.client_shipping_location_id = sess.shipping_location_id
+    if sess.shipping_location:
+        shipment.contact_name = sess.shipping_location.contact_name
+        shipment.contact_phone = sess.shipping_location.contact_phone
+        shipment.contact_email = sess.shipping_location.contact_email
+        shipment.address_line1 = sess.shipping_location.address_line1
+        shipment.address_line2 = sess.shipping_location.address_line2
+        shipment.city = sess.shipping_location.city
+        shipment.state = sess.shipping_location.state
+        shipment.postal_code = sess.shipping_location.postal_code
+        shipment.country = sess.shipping_location.country
+    db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
     if request.method == "POST":
         if readonly:
@@ -171,6 +180,17 @@ def materials_view(
                     setattr(shipment, field, int(val) if val else None)
                 else:
                     setattr(shipment, field, val or None)
+            shipment.client_shipping_location_id = sess.shipping_location_id
+            if sess.shipping_location:
+                shipment.contact_name = sess.shipping_location.contact_name
+                shipment.contact_phone = sess.shipping_location.contact_phone
+                shipment.contact_email = sess.shipping_location.contact_email
+                shipment.address_line1 = sess.shipping_location.address_line1
+                shipment.address_line2 = sess.shipping_location.address_line2
+                shipment.city = sess.shipping_location.city
+                shipment.state = sess.shipping_location.state
+                shipment.postal_code = sess.shipping_location.postal_code
+                shipment.country = sess.shipping_location.country
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
             if sess.client and not sess.client.sfc_link:

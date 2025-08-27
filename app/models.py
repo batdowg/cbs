@@ -158,6 +158,76 @@ class Client(db.Model):
     )
 
 
+class ClientShippingLocation(db.Model):
+    __tablename__ = "client_shipping_locations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(
+        db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
+    )
+    client = db.relationship("Client", backref="shipping_locations")
+    contact_name = db.Column(db.String(255))
+    contact_phone = db.Column(db.String(50))
+    contact_email = db.Column(db.String(255))
+    address_line1 = db.Column(db.String(255))
+    address_line2 = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    postal_code = db.Column(db.String(50))
+    country = db.Column(db.String(100))
+    is_active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.text("true")
+    )
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index(
+            "ix_client_shipping_locations_client_active",
+            "client_id",
+            "is_active",
+        ),
+    )
+
+    def display_name(self) -> str:  # pragma: no cover - simple helper
+        parts = [
+            self.contact_name,
+            self.address_line1,
+            self.city,
+            self.country,
+        ]
+        return " / ".join([p for p in parts if p])
+
+
+class ClientWorkshopLocation(db.Model):
+    __tablename__ = "client_workshop_locations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(
+        db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
+    )
+    client = db.relationship("Client", backref="workshop_locations")
+    label = db.Column(db.String(255), nullable=False)
+    is_virtual = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    platform = db.Column(db.String(100))
+    address_line1 = db.Column(db.String(255))
+    address_line2 = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    postal_code = db.Column(db.String(50))
+    country = db.Column(db.String(100))
+    is_active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.text("true")
+    )
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    __table_args__ = (
+        db.Index(
+            "ix_client_workshop_locations_client_active",
+            "client_id",
+            "is_active",
+        ),
+    )
+
 class Session(db.Model):
     __tablename__ = "sessions"
 
@@ -235,6 +305,16 @@ class Session(db.Model):
     )
     client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="SET NULL"))
     client = db.relationship("Client")
+    workshop_location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_workshop_locations.id", ondelete="SET NULL"),
+    )
+    workshop_location = db.relationship("ClientWorkshopLocation")
+    shipping_location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_shipping_locations.id", ondelete="SET NULL"),
+    )
+    shipping_location = db.relationship("ClientShippingLocation")
     csa_account_id = db.Column(
         db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
     )
@@ -410,6 +490,11 @@ class SessionShipping(db.Model):
         db.Integer, db.ForeignKey("materials_options.id", ondelete="SET NULL"), nullable=True
     )
     materials_option = db.relationship("MaterialsOption")
+    client_shipping_location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_shipping_locations.id", ondelete="SET NULL"),
+    )
+    client_shipping_location = db.relationship("ClientShippingLocation")
     contact_name = db.Column(db.String(255))
     contact_phone = db.Column(db.String(50))
     contact_email = db.Column(db.String(255))
@@ -486,3 +571,36 @@ class UserAuditLog(db.Model):
     old_value = db.Column(db.String(255))
     new_value = db.Column(db.String(255))
     changed_at = db.Column(db.DateTime, server_default=db.func.now())
+
+
+VIRTUAL_WORKSHOP_DEFAULTS = [
+    ("Virtual - MS Teams", "MS Teams"),
+    ("Virtual - Zoom", "Zoom"),
+    ("Virtual - Google Meets", "Google Meets"),
+    ("Virtual - Webex", "Webex"),
+    ("Virtual - Other", "Other"),
+]
+
+
+def ensure_virtual_workshop_locations(client_id: int) -> None:
+    for label, platform in VIRTUAL_WORKSHOP_DEFAULTS:
+        exists = (
+            db.session.query(ClientWorkshopLocation)
+            .filter_by(client_id=client_id, label=label)
+            .first()
+        )
+        if not exists:
+            db.session.add(
+                ClientWorkshopLocation(
+                    client_id=client_id,
+                    label=label,
+                    is_virtual=True,
+                    platform=platform,
+                )
+            )
+    db.session.commit()
+
+
+def seed_virtual_workshop_locations() -> None:
+    for client in Client.query.all():
+        ensure_virtual_workshop_locations(client.id)

@@ -15,7 +15,7 @@ The Certs and Badges System (CBS) is a standalone web application built to manag
 * **Sessions**: Staff can create and manage sessions, including fields like title, dates, facilitators, delivery type, and location.
 * **Participants**: Add manually or import from Salesforce CSV; ensure lowercased unique emails; manage attendance and completion dates.
 * **Certificates**: Generated per participant or in bulk, stored under `/srv/certificates/<year>/<session>/<email>.pdf`, linked to participant portal. Layout rules follow KT branding exactly, using the session end date as completion date.
-* **Materials & Shipping**: Staff can track shipping contact details, address, courier, tracking, ship date, and materials list; material options are managed under Settings → Materials (Admin/SysAdmin only).
+* **Materials & Shipping**: Staff track shipments per session; shipping address/contact come from per‑client Shipping Locations; courier, tracking, ship date, and materials list; options managed under Settings → Materials (Admin/SysAdmin only).
 * **Prework**: Support distribution of prework emails with configurable “From” address and templates.
 * **Surveys**: Provide survey instructions to learners post-session and allow completion tracking (feature-flagged, enabled later).
 * **Portal**: Learners log in to see only their own certificates; staff have access to importer, cert-form, issued, users, and certificates pages.
@@ -73,13 +73,11 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, location, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00-17:00; lead facilitator removed from additional facilitator options. “Include out-of-region facilitators” toggle preserves current inputs.
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, **Workshop Location** and **Shipping Location** dropdowns (per-client; workshop may be virtual), delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00-17:00; lead facilitator removed from additional facilitator options. “Include out-of-region facilitators” toggle preserves current inputs.
 3.2 Materials and shipping block on the Session:
- • Shipping contact name, phone, email
- • Shipping address lines, city, state, postal code, country
- • Special instructions, courier, tracking, ship date
  • Order Type select and Materials dropdown (filtered by type) storing `materials_option_id`
  • Materials list (item name, qty, notes)
+ • Uses Session’s Shipping Location for address/contact (read-only on Materials page)
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
 3.4 Session lifecycle and status:
    - Flags: materials_ordered, ready_for_delivery, info_sent, delivered, finalized, on_hold_at, cancelled_at.
@@ -431,3 +429,7 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 - Settings navigation flattens Materials links to match other Settings items.
 - Left navigation moves My Sessions and My Certificates below Resources, Sessions, and Surveys.
 - Sessions and My Sessions tables now show Client and place Location between Title and Workshop Type.
+
+## Latest update done by codex 06/15/2027
+- Added per-client Shipping and Workshop Locations with virtual defaults (MS Teams, Zoom, Google Meets, Webex, Other).
+- Sessions select both locations; Materials page uses the Session’s Shipping Location read-only and stores the link on shipments.

@@ -15,6 +15,15 @@
       <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
     {% endif %}
   </div>
+  <div>Shipping location:
+    {% if sess.shipping_location %}
+      {{ sess.shipping_location.contact_name|default('', true) }}<br>
+      {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
+      {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
+      {{ sess.shipping_location.country|default('', true) }}
+    {% endif %}
+    <a href="{{ url_for('sessions.edit_session', session_id=sess.id) }}">edit session</a>
+  </div>
   <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
       <select name="order_type">
@@ -44,51 +53,6 @@
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
       <input type="date" name="arrival_date" value="{{ shipment.arrival_date.isoformat() if shipment.arrival_date else '' }}">
     {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
-  </div>
-  <div>Contact name:
-    {% if can_edit_materials_header('contact_name', current_user, shipment) and not readonly %}
-      <input type="text" name="contact_name" value="{{ shipment.contact_name or '' }}">
-    {% else %}{{ shipment.contact_name|default('', true) }}{% endif %}
-  </div>
-  <div>Contact phone:
-    {% if can_edit_materials_header('contact_phone', current_user, shipment) and not readonly %}
-      <input type="text" name="contact_phone" value="{{ shipment.contact_phone or '' }}">
-    {% else %}{{ shipment.contact_phone|default('', true) }}{% endif %}
-  </div>
-  <div>Contact email:
-    {% if can_edit_materials_header('contact_email', current_user, shipment) and not readonly %}
-      <input type="email" name="contact_email" value="{{ shipment.contact_email or '' }}">
-    {% else %}{{ shipment.contact_email|default('', true) }}{% endif %}
-  </div>
-  <div>Address line1:
-    {% if can_edit_materials_header('address_line1', current_user, shipment) and not readonly %}
-      <input type="text" name="address_line1" value="{{ shipment.address_line1 or '' }}">
-    {% else %}{{ shipment.address_line1|default('', true) }}{% endif %}
-  </div>
-  <div>Address line2:
-    {% if can_edit_materials_header('address_line2', current_user, shipment) and not readonly %}
-      <input type="text" name="address_line2" value="{{ shipment.address_line2 or '' }}">
-    {% else %}{{ shipment.address_line2|default('', true) }}{% endif %}
-  </div>
-  <div>City:
-    {% if can_edit_materials_header('city', current_user, shipment) and not readonly %}
-      <input type="text" name="city" value="{{ shipment.city or '' }}">
-    {% else %}{{ shipment.city|default('', true) }}{% endif %}
-  </div>
-  <div>State:
-    {% if can_edit_materials_header('state', current_user, shipment) and not readonly %}
-      <input type="text" name="state" value="{{ shipment.state or '' }}">
-    {% else %}{{ shipment.state|default('', true) }}{% endif %}
-  </div>
-  <div>Postal code:
-    {% if can_edit_materials_header('postal_code', current_user, shipment) and not readonly %}
-      <input type="text" name="postal_code" value="{{ shipment.postal_code or '' }}">
-    {% else %}{{ shipment.postal_code|default('', true) }}{% endif %}
-  </div>
-  <div>Country:
-    {% if can_edit_materials_header('country', current_user, shipment) and not readonly %}
-      <input type="text" name="country" value="{{ shipment.country or '' }}">
-    {% else %}{{ shipment.country|default('', true) }}{% endif %}
   </div>
   <div>Courier:
     {% if can_edit_materials_header('courier', current_user, shipment) and not readonly %}
