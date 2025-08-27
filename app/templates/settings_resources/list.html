@@ -1,0 +1,26 @@
+{% block title %}Resources{% endblock %}
+{% block content %}
+<h1>Resources</h1>
+<p><a href="{{ url_for('settings_resources.new_resource') }}">New Resource</a></p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th>Name</th><th>Type</th><th>Target</th><th>Workshop Types</th><th>Active</th><th>Actions</th>
+  </tr>
+  {% for r in resources %}
+  <tr>
+    <td>{{ r.name }}</td>
+    <td>{{ r.type }}</td>
+    <td>
+      {% if r.type == 'DOCUMENT' %}
+        {{ r.resource_value }}
+      {% else %}
+        <a href="{{ r.resource_value }}" target="_blank">{{ r.resource_value }}</a>
+      {% endif %}
+    </td>
+    <td>{% for wt in r.workshop_types %}{{ wt.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+    <td>{{ 'Yes' if r.active else 'No' }}</td>
+    <td><a href="{{ url_for('settings_resources.edit_resource', res_id=r.id) }}">Edit</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
