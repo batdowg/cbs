@@ -139,3 +139,24 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 8. **Branding settings**: logo/color upload with safe storage.
 9. **SSO (later)** if MS365 makes sense.
 
+## 12) Resources
+- **Purpose**: Provide participants with workshop materials (links, documents, apps) grouped by Workshop Type.  
+- **Staff management**:  
+  - Route: `/settings/resources` (Admin, SysAdmin, Delivery).  
+  - Fields:  
+    - **Name** (string, required)  
+    - **Type** (enum: Link, Document, App)  
+    - **Resource** (URL if Link/App; uploaded file if Document)  
+    - **Workshop Types** (multi-select checkboxes; resource may apply to multiple types)  
+  - Uploaded files are stored under `/srv/resources/<title-as-filename>`.  
+  - Resources may be activated/deactivated (soft delete).  
+- **Participant view**:  
+  - Route: `/my-resources` (sidebar label: “My Resources”).  
+  - Groups resources under each Workshop Type the participant is enrolled in.  
+  - Each resource appears as a link:  
+    - **Links/Apps** → open in new tab.  
+    - **Documents** → download directly from `/resources/<filename>`.  
+- **Permissions**:  
+  - **SysAdmin, Administrator, Delivery**: full CRUD.  
+  - **Facilitator, Contractor**: view only.  
+  - **Participants**: view only, scoped to their workshop types.  
