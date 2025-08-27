@@ -78,7 +78,9 @@ def my_resources():
         )
         if items:
             grouped.append((wt, items))
-    return render_template("my_resources.html", grouped=grouped)
+    return render_template(
+        "my_resources.html", grouped=grouped, active_nav="my-resources"
+    )
     
 @bp.get("/my-certificates")
 @login_required

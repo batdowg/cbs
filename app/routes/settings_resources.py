@@ -50,7 +50,12 @@ def list_resources():
     if isinstance(current_user, Response):
         return current_user
     resources = Resource.query.order_by(Resource.name).all()
-    return render_template("settings_resources/list.html", resources=resources)
+    return render_template(
+        "settings_resources/list.html",
+        resources=resources,
+        active_nav="settings",
+        active_section="resources",
+    )
 
 
 @bp.get("/new")
@@ -60,7 +65,11 @@ def new_resource():
         return current_user
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
     return render_template(
-        "settings_resources/form.html", resource=None, workshop_types=workshop_types
+        "settings_resources/form.html",
+        resource=None,
+        workshop_types=workshop_types,
+        active_nav="settings",
+        active_section="resources",
     )
 
 
@@ -110,7 +119,11 @@ def edit_resource(res_id: int):
         abort(404)
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
     return render_template(
-        "settings_resources/form.html", resource=res, workshop_types=workshop_types
+        "settings_resources/form.html",
+        resource=res,
+        workshop_types=workshop_types,
+        active_nav="settings",
+        active_section="resources",
     )
 
 

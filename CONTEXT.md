@@ -158,5 +158,6 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
     - **Documents** → download directly from `/resources/<filename>`.  
 - **Permissions**:  
   - **SysAdmin, Administrator, Delivery**: full CRUD.  
-  - **Facilitator, Contractor**: view only.  
-  - **Participants**: view only, scoped to their workshop types.  
+  - **Facilitator, Contractor**: view only.
+  - **Participants**: view only, scoped to their workshop types.
+  - Resources pages use the standard base layout with persistent left sidebar; active nav: Settings→Resources; Learner→My Resources.
