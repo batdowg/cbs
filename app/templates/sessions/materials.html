@@ -22,7 +22,7 @@
       {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
       {{ sess.shipping_location.country|default('', true) }}
     {% endif %}
-    <a href="{{ url_for('sessions.edit_session', session_id=sess.id) }}">edit session</a>
+    <a href="{{ url_for('sessions.edit_session', session_id=sess.id) }}" style="font-size:smaller">Edit session</a>
   </div>
   <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}

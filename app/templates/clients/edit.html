@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Edit Client{% endblock %}
+{% block content %}
+<h1>Edit Client</h1>
+<form method="post">
+  <input type="hidden" name="form" value="client">
+  <div><label>Name <input type="text" name="name" value="{{ client.name }}" required></label></div>
+  <div><label>SFC Link <input type="url" name="sfc_link" value="{{ client.sfc_link or '' }}"></label></div>
+  <div><label>CRM
+    <select name="crm_user_id">
+      <option value=""></option>
+      {% for u in users %}
+      <option value="{{ u.id }}" {% if client.crm_user_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Data Region
+    <select name="data_region">
+      <option value=""></option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if client.data_region==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Status
+    <select name="status">
+      {% for opt in ['active','inactive'] %}
+      <option value="{{ opt }}" {% if client.status==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <button type="submit">Save</button>
+</form>
+<hr>
+<h2 id="workshop-section">Workshop Locations</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Label</th><th>Virtual/Platform</th><th>Address</th><th>Active</th><th>Actions</th></tr>
+  {% for loc in workshop_locations %}
+  <tr>
+    <td>{{ loc.label }}</td>
+    <td>{% if loc.is_virtual %}{{ loc.platform or 'Virtual' }}{% endif %}</td>
+    <td>{{ loc.address_line1|default('', true) }} {{ loc.city|default('', true) }} {{ loc.country|default('', true) }}</td>
+    <td>{{ 'Yes' if loc.is_active else 'No' }}</td>
+    <td>
+      <a href="{{ url_for('clients.edit_client', client_id=client.id, section='workshop', loc_id=loc.id, next=next_url) }}">Edit</a>
+      {% if can_toggle %}
+      <form method="post" style="display:inline">
+        <input type="hidden" name="form" value="workshop_deactivate">
+        <input type="hidden" name="loc_id" value="{{ loc.id }}">
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+        <button type="submit">Deactivate</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<h3>{{ 'Edit' if edit_wl else 'New' }} Workshop Location</h3>
+<form method="post">
+  <input type="hidden" name="form" value="workshop">
+  {% if edit_wl %}<input type="hidden" name="loc_id" value="{{ edit_wl.id }}">{% endif %}
+  {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <div><label>Label <input type="text" name="label" value="{{ edit_wl.label if edit_wl else '' }}" required></label></div>
+  <div><label>Virtual <input type="checkbox" name="is_virtual" value="1" {% if edit_wl and edit_wl.is_virtual %}checked{% endif %}></label></div>
+  <div><label>Platform <input type="text" name="platform" value="{{ edit_wl.platform if edit_wl else '' }}"></label></div>
+  <div><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_wl.address_line1 if edit_wl else '' }}"></label></div>
+  <div><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_wl.address_line2 if edit_wl else '' }}"></label></div>
+  <div><label>City <input type="text" name="city" value="{{ edit_wl.city if edit_wl else '' }}"></label></div>
+  <div><label>State <input type="text" name="state" value="{{ edit_wl.state if edit_wl else '' }}"></label></div>
+  <div><label>Postal Code <input type="text" name="postal_code" value="{{ edit_wl.postal_code if edit_wl else '' }}"></label></div>
+  <div><label>Country <input type="text" name="country" value="{{ edit_wl.country if edit_wl else '' }}"></label></div>
+  {% if can_toggle %}
+  <div><label>Active <input type="checkbox" name="is_active" value="1" {% if not edit_wl or edit_wl.is_active %}checked{% endif %}></label></div>
+  {% endif %}
+  <button type="submit">Save</button>
+</form>
+<hr>
+<h2 id="shipping-section">Shipping Locations</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Contact</th><th>Email/Phone</th><th>Address</th><th>Active</th><th>Actions</th></tr>
+  {% for loc in shipping_locations %}
+  <tr>
+    <td>{{ loc.contact_name|default('', true) }}</td>
+    <td>{{ loc.contact_email|default('', true) }} {{ loc.contact_phone|default('', true) }}</td>
+    <td>{{ loc.address_line1|default('', true) }} {{ loc.city|default('', true) }} {{ loc.country|default('', true) }}</td>
+    <td>{{ 'Yes' if loc.is_active else 'No' }}</td>
+    <td>
+      <a href="{{ url_for('clients.edit_client', client_id=client.id, section='shipping', loc_id=loc.id, next=next_url) }}">Edit</a>
+      {% if can_toggle %}
+      <form method="post" style="display:inline">
+        <input type="hidden" name="form" value="shipping_deactivate">
+        <input type="hidden" name="loc_id" value="{{ loc.id }}">
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+        <button type="submit">Deactivate</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<h3>{{ 'Edit' if edit_sl else 'New' }} Shipping Location</h3>
+<form method="post">
+  <input type="hidden" name="form" value="shipping">
+  {% if edit_sl %}<input type="hidden" name="loc_id" value="{{ edit_sl.id }}">{% endif %}
+  {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <div><label>Contact Name <input type="text" name="contact_name" value="{{ edit_sl.contact_name if edit_sl else '' }}"></label></div>
+  <div><label>Contact Phone <input type="text" name="contact_phone" value="{{ edit_sl.contact_phone if edit_sl else '' }}"></label></div>
+  <div><label>Contact Email <input type="email" name="contact_email" value="{{ edit_sl.contact_email if edit_sl else '' }}"></label></div>
+  <div><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_sl.address_line1 if edit_sl else '' }}"></label></div>
+  <div><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_sl.address_line2 if edit_sl else '' }}"></label></div>
+  <div><label>City <input type="text" name="city" value="{{ edit_sl.city if edit_sl else '' }}"></label></div>
+  <div><label>State <input type="text" name="state" value="{{ edit_sl.state if edit_sl else '' }}"></label></div>
+  <div><label>Postal Code <input type="text" name="postal_code" value="{{ edit_sl.postal_code if edit_sl else '' }}"></label></div>
+  <div><label>Country <input type="text" name="country" value="{{ edit_sl.country if edit_sl else '' }}"></label></div>
+  {% if can_toggle %}
+  <div><label>Active <input type="checkbox" name="is_active" value="1" {% if not edit_sl or edit_sl.is_active %}checked{% endif %}></label></div>
+  {% endif %}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
