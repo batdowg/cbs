@@ -5,11 +5,15 @@
 <ul>
 {% for c in certs %}
   <li>
-    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
-    {% if c.session and c.session.workshop_type and c.session.workshop_type.badge %}
-    {% set slug = c.session.workshop_type.badge.lower().replace(' ', '') %}
-      - <a href="/badges/{{ slug }}.webp">Download Badge</a>
+    {% set b = c.session.workshop_type.badge if c.session and c.session.workshop_type else None %}
+    {% if b and b != 'None' %}
+      {% set cand = badge_candidates(b) %}
+      <picture style="vertical-align:middle;">
+        <source srcset="{{ cand[0] }}" type="image/webp">
+        <img src="{{ cand[1] }}" alt="{{ b }} badge" style="height:20px;width:auto;">
+      </picture>
     {% endif %}
+    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
   </li>
 {% endfor %}
 </ul>
