@@ -3,7 +3,15 @@ from datetime import date
 import pytest
 
 from app.app import create_app, db
-from app.models import User, WorkshopType, Session, MaterialType, Material
+from app.models import (
+    User,
+    WorkshopType,
+    Session,
+    MaterialType,
+    Material,
+    Client,
+    ClientShippingLocation,
+)
 
 
 @pytest.fixture
@@ -23,10 +31,26 @@ def test_materials_page_loads(app):
         admin.set_password("x")
         wt = WorkshopType(code="WT", name="WT")
         mt = MaterialType(name="Kit")
-        db.session.add_all([admin, wt, mt])
+        client = Client(name="C1")
+        ship = ClientShippingLocation(
+            client=client,
+            contact_name="CN",
+            address_line1="A1",
+            city="City",
+            postal_code="123",
+            country="US",
+        )
+        db.session.add_all([admin, wt, mt, client, ship])
         db.session.commit()
         mat = Material(material_type_id=mt.id, name="Sample Kit")
-        sess = Session(title="S1", workshop_type=wt, start_date=date.today(), end_date=date.today())
+        sess = Session(
+            title="S1",
+            workshop_type=wt,
+            start_date=date.today(),
+            end_date=date.today(),
+            client=client,
+            shipping_location=ship,
+        )
         db.session.add_all([mat, sess])
         db.session.commit()
         admin_id = admin.id

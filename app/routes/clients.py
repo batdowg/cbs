@@ -12,7 +12,13 @@ from flask import (
 )
 
 from ..app import db, User
-from ..models import Client, Session
+from ..models import (
+    Client,
+    Session,
+    ClientWorkshopLocation,
+    ClientShippingLocation,
+    ensure_virtual_workshop_locations,
+)
 
 bp = Blueprint("clients", __name__, url_prefix="/clients")
 
@@ -64,6 +70,7 @@ def new_client(current_user):
         )
         db.session.add(client)
         db.session.commit()
+        ensure_virtual_workshop_locations(client.id)
         return redirect(url_for("clients.list_clients"))
     return render_template("clients/form.html", client=None, users=users)
 
@@ -110,3 +117,54 @@ def delete_client(client_id, current_user):
     db.session.delete(client)
     db.session.commit()
     return redirect(url_for("clients.list_clients"))
+
+
+@bp.post("/<int:client_id>/workshop-locations/inline")
+@admin_required
+def workshop_location_inline(client_id, current_user):
+    client = db.session.get(Client, client_id)
+    if not client:
+        abort(404)
+    label = request.form.get("label") or ""
+    is_virtual = request.form.get("is_virtual", "1") not in {"0", "false", ""}
+    platform = request.form.get("platform") or None
+    loc = ClientWorkshopLocation(
+        client_id=client_id,
+        label=label,
+        is_virtual=is_virtual,
+        platform=platform,
+        address_line1=request.form.get("address_line1") or None,
+        address_line2=request.form.get("address_line2") or None,
+        city=request.form.get("city") or None,
+        state=request.form.get("state") or None,
+        postal_code=request.form.get("postal_code") or None,
+        country=request.form.get("country") or None,
+    )
+    db.session.add(loc)
+    db.session.commit()
+    return f"<option value='{loc.id}' selected>{loc.label}</option>"
+
+
+@bp.post("/<int:client_id>/shipping-locations/inline")
+@admin_required
+def shipping_location_inline(client_id, current_user):
+    client = db.session.get(Client, client_id)
+    if not client:
+        abort(404)
+    loc = ClientShippingLocation(
+        client_id=client_id,
+        contact_name=request.form.get("contact_name") or None,
+        contact_phone=request.form.get("contact_phone") or None,
+        contact_email=request.form.get("contact_email") or None,
+        address_line1=request.form.get("address_line1") or None,
+        address_line2=request.form.get("address_line2") or None,
+        city=request.form.get("city") or None,
+        state=request.form.get("state") or None,
+        postal_code=request.form.get("postal_code") or None,
+        country=request.form.get("country") or None,
+    )
+    db.session.add(loc)
+    db.session.commit()
+    return (
+        f"<option value='{loc.id}' selected>{loc.display_name()}</option>"
+    )

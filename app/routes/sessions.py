@@ -30,6 +30,8 @@ from ..models import (
     AuditLog,
     SessionShipping,
     Language,
+    ClientWorkshopLocation,
+    ClientShippingLocation,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -115,6 +117,26 @@ def new_session(current_user):
             fac_query = fac_query.filter(User.region == req_region)
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
+    cid_arg = request.args.get("client_id")
+    workshop_locations: list[ClientWorkshopLocation] = []
+    shipping_locations: list[ClientShippingLocation] = []
+    selected_client_id = None
+    if cid_arg and cid_arg.isdigit():
+        selected_client_id = int(cid_arg)
+        workshop_locations = (
+            ClientWorkshopLocation.query.filter_by(
+                client_id=selected_client_id, is_active=True
+            )
+            .order_by(ClientWorkshopLocation.label)
+            .all()
+        )
+        shipping_locations = (
+            ClientShippingLocation.query.filter_by(
+                client_id=selected_client_id, is_active=True
+            )
+            .order_by(ClientShippingLocation.id)
+            .all()
+        )
     languages = (
         Language.query.filter_by(is_active=True)
         .order_by(Language.sort_order, Language.name)
@@ -154,6 +176,14 @@ def new_session(current_user):
             flash("Required fields: " + ", ".join(missing), "error")
             return redirect(url_for("sessions.new_session"))
         wt = db.session.get(WorkshopType, int(wt_id))
+        wl_id = request.form.get("workshop_location_id")
+        sl_id = request.form.get("shipping_location_id")
+        wl = (
+            db.session.get(ClientWorkshopLocation, int(wl_id))
+            if wl_id
+            else None
+        )
+        sl = int(sl_id) if sl_id else None
         allowed = [l.name for l in languages]
         if language not in allowed:
             language = default_lang
@@ -192,7 +222,7 @@ def new_session(current_user):
             daily_start_time=request.form.get("daily_start_time") or None,
             daily_end_time=request.form.get("daily_end_time") or None,
             timezone=request.form.get("timezone") or None,
-            location=request.form.get("location") or None,
+            location=wl.label if wl else None,
             delivery_type=delivery_type,
             region=region,
             language=language,
@@ -206,6 +236,8 @@ def new_session(current_user):
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
             client_id=int(cid) if cid else None,
+            workshop_location=wl,
+            shipping_location_id=sl,
         )
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         if csa_email:
@@ -313,6 +345,7 @@ def new_session(current_user):
             language=default_lang,
             timezone=tz,
             capacity=16,
+            client_id=selected_client_id,
         ),
         workshop_types=workshop_types,
         facilitators=facilitators,
@@ -322,6 +355,8 @@ def new_session(current_user):
         participants_count=0,
         today=date.today(),
         timezones=TIMEZONES,
+        workshop_locations=workshop_locations,
+        shipping_locations=shipping_locations,
     )
 
 
@@ -344,6 +379,24 @@ def edit_session(session_id: int, current_user):
         db.session.query(SessionParticipant)
         .filter_by(session_id=sess.id)
         .count()
+    )
+    workshop_locations = (
+        ClientWorkshopLocation.query.filter_by(
+            client_id=sess.client_id, is_active=True
+        )
+        .order_by(ClientWorkshopLocation.label)
+        .all()
+        if sess.client_id
+        else []
+    )
+    shipping_locations = (
+        ClientShippingLocation.query.filter_by(
+            client_id=sess.client_id, is_active=True
+        )
+        .order_by(ClientShippingLocation.id)
+        .all()
+        if sess.client_id
+        else []
     )
     languages = (
         Language.query.filter_by(is_active=True)
@@ -376,7 +429,19 @@ def edit_session(session_id: int, current_user):
         sess.daily_start_time = request.form.get("daily_start_time") or None
         sess.daily_end_time = request.form.get("daily_end_time") or None
         sess.timezone = request.form.get("timezone") or None
-        sess.location = request.form.get("location") or None
+        sess.workshop_location_id = (
+            int(request.form.get("workshop_location_id"))
+            if request.form.get("workshop_location_id")
+            else None
+        )
+        sess.shipping_location_id = (
+            int(request.form.get("shipping_location_id"))
+            if request.form.get("shipping_location_id")
+            else None
+        )
+        sess.location = (
+            sess.workshop_location.label if sess.workshop_location else None
+        )
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
         language = request.form.get("language") or sess.language
@@ -562,6 +627,8 @@ def edit_session(session_id: int, current_user):
         participants_count=participants_count,
         today=date.today(),
         timezones=TIMEZONES,
+        workshop_locations=workshop_locations,
+        shipping_locations=shipping_locations,
     )
 
 
