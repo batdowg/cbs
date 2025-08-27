@@ -20,7 +20,7 @@ from sqlalchemy import or_, text
 db = SQLAlchemy()
 
 from .models import User, ParticipantAccount, Session, Client, Language
-from .utils.badges import badge_candidates, slug_for_badge
+from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
 
@@ -28,8 +28,8 @@ from .constants import LANGUAGE_NAMES
 def create_app():
     app = Flask(__name__, template_folder="templates")
     app.secret_key = os.getenv("SECRET_KEY", "dev")
-    app.jinja_env.globals["badge_candidates"] = badge_candidates
     app.jinja_env.globals["slug_for_badge"] = slug_for_badge
+    app.jinja_env.globals["best_badge_url"] = best_badge_url
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
