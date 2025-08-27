@@ -26,6 +26,8 @@ from ..models import (
     ParticipantAccount,
     Session,
     SessionParticipant,
+    PreworkAssignment,
+    PreworkAnswer,
 )
 from ..models import Resource, WorkshopType
 from ..models import resource_workshop_types
@@ -80,6 +82,70 @@ def my_resources():
             grouped.append((wt, items))
     return render_template(
         "my_resources.html", grouped=grouped, active_nav="my-resources"
+    )
+
+
+@bp.get("/my-prework")
+@login_required
+def my_prework():
+    account_id = flask_session.get("participant_account_id")
+    if not account_id:
+        return render_template(
+            "my_prework.html", assignments=[], active_nav="my-prework"
+        )
+    assignments = (
+        PreworkAssignment.query.filter_by(participant_account_id=account_id)
+        .order_by(PreworkAssignment.due_at)
+        .all()
+    )
+    return render_template(
+        "my_prework.html", assignments=assignments, active_nav="my-prework"
+    )
+
+
+@bp.route("/prework/<int:assignment_id>", methods=["GET", "POST"])
+@login_required
+def prework_form(assignment_id: int):
+    account_id = flask_session.get("participant_account_id")
+    if not account_id:
+        abort(403)
+    assignment = db.session.get(PreworkAssignment, assignment_id)
+    if not assignment or assignment.participant_account_id != account_id:
+        abort(404)
+    questions = assignment.snapshot_json.get("questions", [])
+    answers = {a.question_index: a.answer_text for a in assignment.answers}
+    if request.method == "POST":
+        for q in questions:
+            key = f"q{q['index']}"
+            text = (request.form.get(key) or "").strip()
+            if q["index"] in answers:
+                ans = (
+                    PreworkAnswer.query.filter_by(
+                        assignment_id=assignment.id, question_index=q["index"]
+                    ).first()
+                )
+                if ans:
+                    ans.answer_text = text
+            else:
+                if text:
+                    db.session.add(
+                        PreworkAnswer(
+                            assignment_id=assignment.id,
+                            question_index=q["index"],
+                            answer_text=text,
+                        )
+                    )
+        db.session.commit()
+        db.session.refresh(assignment)
+        assignment.update_completion()
+        db.session.commit()
+        flash("Prework saved", "success")
+        return redirect(url_for("learner.my_prework"))
+    return render_template(
+        "prework_form.html",
+        assignment=assignment,
+        questions=questions,
+        answers=answers,
     )
     
 @bp.get("/my-certificates")

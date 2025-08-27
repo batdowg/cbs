@@ -31,6 +31,8 @@ from ..models import (
     SessionShipping,
     Language,
     ClientWorkshopLocation,
+    PreworkTemplate,
+    PreworkAssignment,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -1029,3 +1031,81 @@ def generate_bulk(session_id: int, current_user):
     count, _ = generate_for_session(session_id)
     flash(f"Generated {count} certificates", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+
+@bp.route("/<int:session_id>/prework", methods=["GET", "POST"])
+@staff_required
+def session_prework(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    template = PreworkTemplate.query.filter_by(
+        workshop_type_id=sess.workshop_type_id, is_active=True
+    ).first()
+    participants = (
+        db.session.query(Participant, ParticipantAccount)
+        .join(SessionParticipant, SessionParticipant.participant_id == Participant.id)
+        .outerjoin(ParticipantAccount, Participant.account_id == ParticipantAccount.id)
+        .filter(SessionParticipant.session_id == sess.id)
+        .order_by(Participant.full_name)
+        .all()
+    )
+    if request.method == "POST":
+        if not template:
+            flash("No active prework template", "error")
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+        for p, account in participants:
+            if not account:
+                continue
+            assignment = PreworkAssignment.query.filter_by(
+                session_id=sess.id, participant_account_id=account.id
+            ).first()
+            if not assignment:
+                snapshot = {
+                    "questions": [
+                        {
+                            "index": idx,
+                            "text": q.text,
+                            "required": q.required,
+                        }
+                        for idx, q in enumerate(
+                            sorted(template.questions, key=lambda q: q.position),
+                            start=1,
+                        )
+                    ],
+                    "resources": [],
+                }
+                due_at = None
+                if sess.start_date and sess.daily_start_time:
+                    from datetime import datetime, timedelta
+
+                    due_at = datetime.combine(
+                        sess.start_date, sess.daily_start_time
+                    ) - timedelta(days=3)
+                assignment = PreworkAssignment(
+                    session_id=sess.id,
+                    participant_account_id=account.id,
+                    template_id=template.id,
+                    status="SENT",
+                    sent_at=db.func.now(),
+                    due_at=due_at,
+                    snapshot_json=snapshot,
+                )
+                db.session.add(assignment)
+            elif assignment.status == "PENDING":
+                assignment.status = "SENT"
+                assignment.sent_at = db.func.now()
+        db.session.commit()
+        flash("Prework assignments sent", "success")
+        return redirect(url_for("sessions.session_prework", session_id=session_id))
+    rows = []
+    for p, account in participants:
+        assignment = None
+        if account:
+            assignment = PreworkAssignment.query.filter_by(
+                session_id=sess.id, participant_account_id=account.id
+            ).first()
+        rows.append((p, account, assignment))
+    return render_template(
+        "sessions/prework.html", session=sess, rows=rows, template=template
+    )

@@ -1,6 +1,7 @@
 import logging
 import os
 from functools import wraps
+from datetime import datetime
 
 from flask import (
     Flask,
@@ -15,11 +16,21 @@ from flask import (
     abort,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_, text
+from sqlalchemy import or_, text, func
 
 db = SQLAlchemy()
 
-from .models import User, ParticipantAccount, Session, Client, Language
+from .models import (
+    User,
+    ParticipantAccount,
+    Session,
+    Client,
+    Language,
+    Participant,
+    SessionParticipant,
+    Certificate,
+    PreworkAssignment,
+)
 from .models import resource  # ensures app/models/resource.py is imported
 from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
@@ -67,9 +78,14 @@ def create_app():
     def inject_user():
         user = None
         is_csa = False
+        show_prework_nav = False
+        show_resources_nav = False
+        show_certificates_nav = False
         user_id = session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
+            show_resources_nav = True
+            show_certificates_nav = True
         account_id = session.get("participant_account_id")
         if account_id:
             is_csa = (
@@ -78,7 +94,40 @@ def create_app():
                 .first()
                 is not None
             )
-        return {"current_user": user, "is_csa": is_csa}
+            pa = db.session.get(ParticipantAccount, account_id)
+            email = (pa.email or "").lower() if pa else ""
+            show_prework_nav = (
+                db.session.query(PreworkAssignment.id)
+                .filter(
+                    PreworkAssignment.participant_account_id == account_id,
+                    PreworkAssignment.status != "COMPLETED",
+                )
+                .first()
+                is not None
+            )
+            show_resources_nav = (
+                db.session.query(Session.id)
+                .join(SessionParticipant, SessionParticipant.session_id == Session.id)
+                .join(Participant, SessionParticipant.participant_id == Participant.id)
+                .filter(func.lower(Participant.email) == email)
+                .filter(Session.start_date <= datetime.utcnow().date())
+                .first()
+                is not None
+            )
+            show_certificates_nav = (
+                db.session.query(Certificate.id)
+                .join(Participant, Certificate.participant_id == Participant.id)
+                .filter(func.lower(Participant.email) == email)
+                .first()
+                is not None
+            )
+        return {
+            "current_user": user,
+            "is_csa": is_csa,
+            "show_prework_nav": show_prework_nav,
+            "show_resources_nav": show_resources_nav,
+            "show_certificates_nav": show_certificates_nav,
+        }
 
     @app.get("/healthz")
     def healthz():  # pragma: no cover - simple healthcheck
