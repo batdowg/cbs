@@ -151,6 +151,7 @@ def edit_client(client_id, current_user, csa_account):
             loc.label = (request.form.get("label") or "").strip()
             loc.is_virtual = request.form.get("is_virtual") in {"1", "on", "true"}
             loc.platform = request.form.get("platform") or None
+            loc.access_notes = request.form.get("access_notes") or None
             loc.address_line1 = request.form.get("address_line1") or None
             loc.address_line2 = request.form.get("address_line2") or None
             loc.city = request.form.get("city") or None
@@ -178,6 +179,7 @@ def edit_client(client_id, current_user, csa_account):
             loc.state = request.form.get("state") or None
             loc.postal_code = request.form.get("postal_code") or None
             loc.country = request.form.get("country") or None
+            loc.notes = request.form.get("notes") or None
             if can_toggle and "is_active" in request.form:
                 loc.is_active = request.form.get("is_active") in {"1", "on", "true"}
             db.session.add(loc)

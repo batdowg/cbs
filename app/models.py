@@ -175,6 +175,7 @@ class ClientShippingLocation(db.Model):
     state = db.Column(db.String(255))
     postal_code = db.Column(db.String(50))
     country = db.Column(db.String(100))
+    notes = db.Column(db.String(255))
     is_active = db.Column(
         db.Boolean, nullable=False, default=True, server_default=db.text("true")
     )
@@ -210,6 +211,7 @@ class ClientWorkshopLocation(db.Model):
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
     platform = db.Column(db.String(100))
+    access_notes = db.Column(db.String(255))
     address_line1 = db.Column(db.String(255))
     address_line2 = db.Column(db.String(255))
     city = db.Column(db.String(255))

@@ -35,15 +35,6 @@
       </select>
       <a href="#" id="add-workshop-location">Add</a>
     </label></div>
-    <div><label>Shipping Location
-      <select name="shipping_location_id" id="shipping-location-select">
-        <option value=""></option>
-        {% for loc in shipping_locations %}
-        <option value="{{ loc.id }}" {% if session.shipping_location_id==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
-        {% endfor %}
-      </select>
-      <a href="#" id="add-shipping-location">Add</a>
-    </label></div>
   </fieldset>
   <fieldset>
     <legend>Details</legend>
@@ -253,12 +244,6 @@
     var cid = document.getElementById('client-select').value;
     if(!cid){ alert('Select client first'); return; }
     window.location = '/clients/'+cid+'/edit?section=workshop&next='+encodeURIComponent(nextUrl());
-  });
-  document.getElementById('add-shipping-location').addEventListener('click', function(e){
-    e.preventDefault();
-    var cid = document.getElementById('client-select').value;
-    if(!cid){ alert('Select client first'); return; }
-    window.location = '/clients/'+cid+'/edit?section=shipping&next='+encodeURIComponent(nextUrl());
   });
 </script>
 <script src="{{ url_for('static', filename='js/form_state.js') }}"></script>

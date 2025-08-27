@@ -63,13 +63,14 @@
   {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
   <div><label>Label <input type="text" name="label" value="{{ edit_wl.label if edit_wl else '' }}" required></label></div>
   <div><label>Virtual <input type="checkbox" name="is_virtual" value="1" {% if edit_wl and edit_wl.is_virtual %}checked{% endif %}></label></div>
-  <div><label>Platform <input type="text" name="platform" value="{{ edit_wl.platform if edit_wl else '' }}"></label></div>
-  <div><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_wl.address_line1 if edit_wl else '' }}"></label></div>
-  <div><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_wl.address_line2 if edit_wl else '' }}"></label></div>
-  <div><label>City <input type="text" name="city" value="{{ edit_wl.city if edit_wl else '' }}"></label></div>
-  <div><label>State <input type="text" name="state" value="{{ edit_wl.state if edit_wl else '' }}"></label></div>
-  <div><label>Postal Code <input type="text" name="postal_code" value="{{ edit_wl.postal_code if edit_wl else '' }}"></label></div>
-  <div><label>Country <input type="text" name="country" value="{{ edit_wl.country if edit_wl else '' }}"></label></div>
+  <div id="platform-field"><label>Platform <input type="text" name="platform" value="{{ edit_wl.platform|default('', true) if edit_wl else '' }}"></label></div>
+  <div><label>Location access notes <input type="text" name="access_notes" value="{{ edit_wl.access_notes|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_wl.address_line1|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_wl.address_line2|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>City <input type="text" name="city" value="{{ edit_wl.city|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>State <input type="text" name="state" value="{{ edit_wl.state|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>Postal Code <input type="text" name="postal_code" value="{{ edit_wl.postal_code|default('', true) if edit_wl else '' }}"></label></div>
+  <div class="address-field"><label>Country <input type="text" name="country" value="{{ edit_wl.country|default('', true) if edit_wl else '' }}"></label></div>
   {% if can_toggle %}
   <div><label>Active <input type="checkbox" name="is_active" value="1" {% if not edit_wl or edit_wl.is_active %}checked{% endif %}></label></div>
   {% endif %}
@@ -104,18 +105,34 @@
   <input type="hidden" name="form" value="shipping">
   {% if edit_sl %}<input type="hidden" name="loc_id" value="{{ edit_sl.id }}">{% endif %}
   {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-  <div><label>Contact Name <input type="text" name="contact_name" value="{{ edit_sl.contact_name if edit_sl else '' }}"></label></div>
-  <div><label>Contact Phone <input type="text" name="contact_phone" value="{{ edit_sl.contact_phone if edit_sl else '' }}"></label></div>
-  <div><label>Contact Email <input type="email" name="contact_email" value="{{ edit_sl.contact_email if edit_sl else '' }}"></label></div>
-  <div><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_sl.address_line1 if edit_sl else '' }}"></label></div>
-  <div><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_sl.address_line2 if edit_sl else '' }}"></label></div>
-  <div><label>City <input type="text" name="city" value="{{ edit_sl.city if edit_sl else '' }}"></label></div>
-  <div><label>State <input type="text" name="state" value="{{ edit_sl.state if edit_sl else '' }}"></label></div>
-  <div><label>Postal Code <input type="text" name="postal_code" value="{{ edit_sl.postal_code if edit_sl else '' }}"></label></div>
-  <div><label>Country <input type="text" name="country" value="{{ edit_sl.country if edit_sl else '' }}"></label></div>
+  <div><label>Contact Name <input type="text" name="contact_name" value="{{ edit_sl.contact_name|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Contact Phone <input type="text" name="contact_phone" value="{{ edit_sl.contact_phone|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Contact Email <input type="email" name="contact_email" value="{{ edit_sl.contact_email|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Shipping Notes <input type="text" name="notes" value="{{ edit_sl.notes|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Address line 1 <input type="text" name="address_line1" value="{{ edit_sl.address_line1|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Address line 2 <input type="text" name="address_line2" value="{{ edit_sl.address_line2|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>City <input type="text" name="city" value="{{ edit_sl.city|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>State <input type="text" name="state" value="{{ edit_sl.state|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Postal Code <input type="text" name="postal_code" value="{{ edit_sl.postal_code|default('', true) if edit_sl else '' }}"></label></div>
+  <div><label>Country <input type="text" name="country" value="{{ edit_sl.country|default('', true) if edit_sl else '' }}"></label></div>
   {% if can_toggle %}
   <div><label>Active <input type="checkbox" name="is_active" value="1" {% if not edit_sl or edit_sl.is_active %}checked{% endif %}></label></div>
   {% endif %}
   <button type="submit">Save</button>
 </form>
+<script>
+  function toggleVirtual(){
+    const cb = document.querySelector('input[name="is_virtual"]');
+    const show = cb.checked;
+    document.getElementById('platform-field').style.display = show ? 'block' : 'none';
+    document.querySelectorAll('.address-field').forEach(el => {
+      el.style.display = show ? 'none' : 'block';
+    });
+  }
+  const virtCb = document.querySelector('input[name="is_virtual"]');
+  if (virtCb){
+    virtCb.addEventListener('change', toggleVirtual);
+    toggleVirtual();
+  }
+</script>
 {% endblock %}
