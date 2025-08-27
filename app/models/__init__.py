@@ -615,3 +615,29 @@ def seed_virtual_workshop_locations() -> None:
 
 
 from .resource import Resource, resource_workshop_types  # noqa: E402,F401
+
+__all__ = [
+    "User",
+    "ParticipantAccount",
+    "Settings",
+    "Language",
+    "WorkshopType",
+    "Client",
+    "ClientShippingLocation",
+    "ClientWorkshopLocation",
+    "Session",
+    "Participant",
+    "SessionParticipant",
+    "Certificate",
+    "SessionFacilitator",
+    "MaterialType",
+    "Material",
+    "MaterialsOption",
+    "SessionShipping",
+    "SessionShippingItem",
+    "Badge",
+    "AuditLog",
+    "UserAuditLog",
+    "Resource",
+    "resource_workshop_types",
+]
