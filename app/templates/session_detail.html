@@ -135,11 +135,15 @@
     </td>
     <td>
       {% if row.certificate %}
-      <a href="{{ url_for('learner.download_certificate', cert_id=row.certificate.id) }}">Download Certificate</a>
-      {% if session.workshop_type and session.workshop_type.badge %}
-        {% set slug = session.workshop_type.badge.lower().replace(' ', '') %}
-        <a href="/badges/{{ slug }}.webp">Download Badge</a>
-      {% endif %}
+        {% set b = session.workshop_type.badge if session.workshop_type else None %}
+        {% if b and b != 'None' %}
+          {% set cand = badge_candidates(b) %}
+          <picture style="vertical-align:middle;">
+            <source srcset="{{ cand[0] }}" type="image/webp">
+            <img src="{{ cand[1] }}" alt="{{ b }} badge" style="height:20px;width:auto;">
+          </picture>
+        {% endif %}
+        <a href="{{ url_for('learner.download_certificate', cert_id=row.certificate.id) }}">Download Certificate</a>
       {% endif %}
     </td>
     <td>

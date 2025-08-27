@@ -65,8 +65,11 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 ## 4) Workshop Types & Badges
 - WorkshopTypes: `code` (unique uppercase), `name`, `status`, `description`, optional `badge` from: **None, Foundations, Practitioner, Advanced, Expert, Coach, Facilitator, Program Leader**. **[DONE]**
 - Certificates and session UI can show **Download Badge** when the workshop type has a badge. **[DONE]**
-- **Badges static delivery**: images live in `app/assets/badges`, synced to `/srv/badges`, served at `/badges/<slug>.webp`.  
+- **Badges static delivery**: images live in `app/assets/badges`, synced to `/srv/badges`, served at `/badges/<slug>.webp`.
   Canonical filename/slug for Foundations is `foundations.webp`. **Do not commit new badge binaries.** **[DONE]**
+  - Badge files live under `/srv/badges`.
+  - Names map via slug (lowercase, no spaces). We try `.webp` first, then `.png`.
+  - To add a PNG alternative, drop `<slug>.png` in `/srv/badges`.
 
 ---
 
