@@ -51,7 +51,9 @@
         <option value="{{ loc.id }}" {% if sess.shipping_location_id==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
         {% endfor %}
       </select>
+      {% if sess.client_id %}
       <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+      {% endif %}
     {% endif %}
     {% if sess.shipping_location %}
       {% if can_manage and not readonly %}<br>{% endif %}
