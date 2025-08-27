@@ -20,6 +20,7 @@ from sqlalchemy import or_, text
 db = SQLAlchemy()
 
 from .models import User, ParticipantAccount, Session, Client, Language
+from .models import resource  # ensures app/models/resource.py is imported
 from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
