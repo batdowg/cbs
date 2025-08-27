@@ -4,8 +4,8 @@ import base64
 from flask import current_app
 from sqlalchemy.orm import validates
 
-from .app import db
-from .utils.passwords import hash_password, check_password
+from ..app import db
+from ..utils.passwords import hash_password, check_password
 
 
 class User(db.Model):
@@ -135,6 +135,12 @@ class WorkshopType(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
+    )
+
+    resources = db.relationship(
+        "Resource",
+        secondary="resource_workshop_types",
+        back_populates="workshop_types",
     )
 
     @validates("code")
@@ -606,3 +612,6 @@ def ensure_virtual_workshop_locations(client_id: int) -> None:
 def seed_virtual_workshop_locations() -> None:
     for client in Client.query.all():
         ensure_virtual_workshop_locations(client.id)
+
+
+from .resource import Resource, resource_workshop_types  # noqa: E402,F401

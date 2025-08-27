@@ -20,7 +20,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from ..app import db, User
-from ..models import Certificate, Participant, ParticipantAccount, Session
+from ..models import (
+    Certificate,
+    Participant,
+    ParticipantAccount,
+    Session,
+    SessionParticipant,
+)
+from ..models import Resource, WorkshopType
+from ..models import resource_workshop_types
 
 bp = Blueprint("learner", __name__)
 
@@ -35,6 +43,43 @@ def login_required(fn):
     return wrapper
 
 
+@bp.get("/my-resources")
+@login_required
+def my_resources():
+    if flask_session.get("user_id"):
+        user = db.session.get(User, flask_session.get("user_id"))
+        email = (user.email or "").lower()
+    else:
+        account = db.session.get(
+            ParticipantAccount, flask_session.get("participant_account_id")
+        )
+        email = (account.email or "").lower() if account else ""
+    wtypes = (
+        db.session.query(WorkshopType)
+        .join(Session, Session.workshop_type_id == WorkshopType.id)
+        .join(
+            SessionParticipant,
+            SessionParticipant.session_id == Session.id,
+        )
+        .join(Participant, SessionParticipant.participant_id == Participant.id)
+        .filter(func.lower(Participant.email) == email)
+        .distinct()
+        .order_by(WorkshopType.name)
+        .all()
+    )
+    grouped = []
+    for wt in wtypes:
+        items = (
+            Resource.query.filter(Resource.active == True)
+            .join(resource_workshop_types)
+            .filter(resource_workshop_types.c.workshop_type_id == wt.id)
+            .order_by(Resource.name)
+            .all()
+        )
+        if items:
+            grouped.append((wt, items))
+    return render_template("my_resources.html", grouped=grouped)
+    
 @bp.get("/my-certificates")
 @login_required
 def my_certs():

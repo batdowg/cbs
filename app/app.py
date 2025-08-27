@@ -42,6 +42,7 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
     db.init_app(app)
 
@@ -214,6 +215,7 @@ def create_app():
     from .routes.accounts import bp as accounts_bp
     from .routes.materials import bp as materials_bp
     from .routes.materials_orders import bp as materials_orders_bp
+    from .routes.settings_resources import bp as settings_resources_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -229,12 +231,7 @@ def create_app():
     app.register_blueprint(accounts_bp)
     app.register_blueprint(materials_bp)
     app.register_blueprint(materials_orders_bp)
-
-    @app.get("/resources")
-    def resources():
-        if not (session.get("user_id") or session.get("participant_account_id")):
-            return redirect(url_for("auth.login"))
-        return render_template("resources.html")
+    app.register_blueprint(settings_resources_bp)
 
     @app.get("/surveys")
     def surveys():

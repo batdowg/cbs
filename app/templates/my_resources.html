@@ -1,0 +1,22 @@
+{% block title %}My Resources{% endblock %}
+{% block content %}
+<h1>My Resources</h1>
+{% if grouped %}
+  {% for wt, items in grouped %}
+    <h2>{{ wt.name }}</h2>
+    <ul>
+    {% for r in items %}
+      <li>
+        {% if r.type == 'DOCUMENT' %}
+          <a href="{{ r.public_url }}" download>{{ r.name }}</a>
+        {% else %}
+          <a href="{{ r.resource_value }}" target="_blank">{{ r.name }}</a>
+        {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  {% endfor %}
+{% else %}
+  <p>No resources available.</p>
+{% endif %}
+{% endblock %}
