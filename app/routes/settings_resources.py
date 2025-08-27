@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import os
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from sqlalchemy import func
 
 from ..app import db, User
@@ -13,7 +23,7 @@ from ..utils.storage import ensure_dir
 bp = Blueprint("settings_resources", __name__, url_prefix="/settings/resources")
 
 
-def _current_user(require_edit: bool = False) -> User:
+def _current_user(require_edit: bool = False) -> "User | Response":
     user_id = session.get("user_id")
     if not user_id:
         return redirect(url_for("auth.login"))
@@ -37,6 +47,8 @@ def _current_user(require_edit: bool = False) -> User:
 @bp.get("/")
 def list_resources():
     current_user = _current_user()
+    if isinstance(current_user, Response):
+        return current_user
     resources = Resource.query.order_by(Resource.name).all()
     return render_template("settings_resources/list.html", resources=resources)
 
@@ -44,6 +56,8 @@ def list_resources():
 @bp.get("/new")
 def new_resource():
     current_user = _current_user(require_edit=True)
+    if isinstance(current_user, Response):
+        return current_user
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
     return render_template(
         "settings_resources/form.html", resource=None, workshop_types=workshop_types
@@ -53,6 +67,8 @@ def new_resource():
 @bp.post("/new")
 def create_resource():
     current_user = _current_user(require_edit=True)
+    if isinstance(current_user, Response):
+        return current_user
     errors, cleaned = validate_resource_form(request.form, request.files, require_file=True if (request.form.get("type") or "").upper() == "DOCUMENT" else False)
     name = cleaned.get("name")
     if Resource.query.filter(func.lower(Resource.name) == name.lower(), Resource.active == True).first():
@@ -87,6 +103,8 @@ def create_resource():
 @bp.get("/<int:res_id>/edit")
 def edit_resource(res_id: int):
     current_user = _current_user(require_edit=True)
+    if isinstance(current_user, Response):
+        return current_user
     res = db.session.get(Resource, res_id)
     if not res:
         abort(404)
@@ -99,6 +117,8 @@ def edit_resource(res_id: int):
 @bp.post("/<int:res_id>/edit")
 def update_resource(res_id: int):
     current_user = _current_user(require_edit=True)
+    if isinstance(current_user, Response):
+        return current_user
     res = db.session.get(Resource, res_id)
     if not res:
         abort(404)
