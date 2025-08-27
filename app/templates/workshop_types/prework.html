@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Prework for {{ wt.name }}{% endblock %}
+{% block content %}
+<h1>Prework for {{ wt.name }}</h1>
+<form method="post">
+<label><input type="checkbox" name="is_active" value="1" {% if template and template.is_active %}checked{% endif %}> Active</label><br>
+<label><input type="checkbox" name="require_completion" value="1" {% if template and template.require_completion %}checked{% endif %}> Require completion</label><br>
+<label>Information</label><br>
+<textarea name="info" rows="4" cols="60">{{ template.info_html if template else '' }}</textarea><br>
+<label>Questions (one per line)</label><br>
+<textarea name="questions" rows="10" cols="80">{{ questions_text }}</textarea><br>
+<button type="submit">Save</button>
+</form>
+{% endblock %}

@@ -60,6 +60,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   Delivered auto-ticks Materials ordered + Workshop info sent. **[DONE]**
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
+- **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. **[DONE]**
 
 ---
 
@@ -71,6 +72,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   - Badge files live under `/srv/badges`.
   - Names map via slug (lowercase, no spaces). Helpers try `.webp` first, then `.png`.
   - To add a PNG alternative, drop `<slug>.png` in `/srv/badges`.
+- **Prework templates**: staff edit per Workshop Type at `/workshop-types/<id>/prework` (info & questions). **[DONE]**
 
 ---
 
@@ -119,6 +121,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Sidebar (role-aware): Home, Sessions, Materials (orders), My Sessions, My Certificates, Settings (Users, Workshop Types, Clients, Materials, Languages, Mail Settings), Logout. Guests see only Login. **[DONE]**
 - Root `/` shows branded login card (no nav). **[DONE]**
 - Basic responsive styles; flashes consistent. **[DONE]**
+- Participant nav gating: "My Prework" shows for pending assignments before sessions start; "My Resources" unlock after session start; "My Certificates" show when earned. **[DONE]**
 
 ---
 

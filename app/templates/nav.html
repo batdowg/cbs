@@ -2,7 +2,10 @@
   <!-- Navigation order updated -->
   <a href="/"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
   <a href="{{ url_for('home') }}">Home</a>
-  {% if current_user or session.get('participant_account_id') %}
+  {% if show_prework_nav %}
+  <a href="{{ url_for('learner.my_prework') }}">My Prework</a>
+  {% endif %}
+  {% if show_resources_nav %}
   <a href="{{ url_for('learner.my_resources') }}">My Resources</a>
   {% endif %}
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
@@ -17,7 +20,9 @@
   {% if current_user or is_csa %}
   <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
   {% endif %}
+  {% if show_certificates_nav %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>
+  {% endif %}
   <a href="{{ url_for('verify_form') }}">Verify Certificates</a>
   {% if current_user or session.get('participant_account_id') or is_csa %}
   <details class="settings">

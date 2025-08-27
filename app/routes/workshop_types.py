@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from ..app import db, User
-from ..models import WorkshopType, AuditLog
+from ..models import WorkshopType, AuditLog, PreworkTemplate, PreworkQuestion
 from ..constants import BADGE_CHOICES
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
@@ -100,3 +100,44 @@ def update_type(type_id: int, current_user):
     db.session.commit()
     flash('Workshop Type updated', 'success')
     return redirect(url_for('workshop_types.list_types'))
+
+
+@bp.route('/<int:type_id>/prework', methods=['GET', 'POST'])
+@staff_required
+def prework(type_id: int, current_user):
+    wt = db.session.get(WorkshopType, type_id)
+    if not wt:
+        abort(404)
+    tpl = PreworkTemplate.query.filter_by(workshop_type_id=wt.id).first()
+    if request.method == 'POST':
+        if not tpl:
+            tpl = PreworkTemplate(workshop_type_id=wt.id)
+        tpl.is_active = bool(request.form.get('is_active'))
+        tpl.require_completion = bool(request.form.get('require_completion'))
+        tpl.info_html = (request.form.get('info') or '').strip()
+        q_lines = [
+            line.strip()
+            for line in (request.form.get('questions') or '').splitlines()
+            if line.strip()
+        ][:10]
+        if tpl.id:
+            PreworkQuestion.query.filter_by(template_id=tpl.id).delete()
+        for idx, text in enumerate(q_lines, start=1):
+            db.session.add(
+                PreworkQuestion(template=tpl, position=idx, text=text, required=True)
+            )
+        db.session.add(tpl)
+        db.session.commit()
+        flash('Prework template saved', 'success')
+        return redirect(url_for('workshop_types.prework', type_id=wt.id))
+    questions_text = ''
+    if tpl:
+        questions_text = '\n'.join(
+            q.text for q in sorted(tpl.questions, key=lambda q: q.position)
+        )
+    return render_template(
+        'workshop_types/prework.html',
+        wt=wt,
+        template=tpl,
+        questions_text=questions_text,
+    )

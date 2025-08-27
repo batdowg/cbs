@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}My Prework{% endblock %}
+{% block content %}
+<h1>My Prework</h1>
+{% if assignments %}
+<ul>
+{% for a in assignments %}
+<li>
+{{ a.session.title if a.session else 'Session' }} - {{ a.status }}
+{% if a.status != 'COMPLETED' %}
+<a href="{{ url_for('learner.prework_form', assignment_id=a.id) }}">Open</a>
+{% else %}
+<a href="{{ url_for('learner.prework_form', assignment_id=a.id) }}">View</a>
+{% endif %}
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>No prework assignments.</p>
+{% endif %}
+{% endblock %}

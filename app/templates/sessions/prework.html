@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Prework - {{ session.title }}{% endblock %}
+{% block content %}
+<h1>Prework for {{ session.title }}</h1>
+{% if not template %}
+<p>No active prework template for this workshop type.</p>
+{% endif %}
+<form method="post">
+<table>
+<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th></tr>
+{% for p, account, assignment in rows %}
+<tr>
+<td>{{ p.full_name }}</td>
+<td>{{ p.email }}</td>
+<td>{{ assignment.status if assignment else 'PENDING' }}</td>
+<td>{{ assignment.sent_at if assignment else '' }}</td>
+<td>{{ assignment.completed_at if assignment else '' }}</td>
+</tr>
+{% endfor %}
+</table>
+{% if template %}<button type="submit">Send Prework</button>{% endif %}
+</form>
+{% endblock %}
