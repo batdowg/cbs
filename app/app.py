@@ -210,6 +210,7 @@ def create_app():
     from .routes.clients import bp as clients_bp
     from .routes.accounts import bp as accounts_bp
     from .routes.materials import bp as materials_bp
+    from .routes.materials_orders import bp as materials_orders_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -224,6 +225,7 @@ def create_app():
     app.register_blueprint(clients_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(materials_bp)
+    app.register_blueprint(materials_orders_bp)
 
     @app.get("/resources")
     def resources():

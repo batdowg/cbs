@@ -8,6 +8,9 @@
   {% if current_user and (current_user.is_app_admin or current_user.is_admin) %}
   <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
   {% endif %}
+  {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kcrm or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+  <a href="{{ url_for('materials_orders.list_orders') }}">Materials</a>
+  {% endif %}
   {% if current_user or session.get('participant_account_id') %}
   <a href="{{ url_for('surveys') }}">Surveys</a>
   {% endif %}
