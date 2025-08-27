@@ -79,11 +79,12 @@ def list_clients(current_user):
 @admin_required
 def new_client(current_user):
     users = User.query.order_by(User.email).all()
+    next_url = _safe_next(request.values.get("next"))
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
             flash("Name required", "error")
-            return redirect(url_for("clients.new_client"))
+            return redirect(url_for("clients.new_client", next=next_url))
         exists = (
             db.session.query(Client)
             .filter(db.func.lower(Client.name) == name.lower())
@@ -91,7 +92,7 @@ def new_client(current_user):
         )
         if exists:
             flash("Client name must be unique", "error")
-            return redirect(url_for("clients.new_client"))
+            return redirect(url_for("clients.new_client", next=next_url))
         client = Client(
             name=name,
             sfc_link=request.form.get("sfc_link") or None,
@@ -102,8 +103,8 @@ def new_client(current_user):
         db.session.add(client)
         db.session.commit()
         ensure_virtual_workshop_locations(client.id)
-        return redirect(url_for("clients.list_clients"))
-    return render_template("clients/form.html", client=None, users=users)
+        return redirect(next_url or url_for("clients.list_clients"))
+    return render_template("clients/form.html", client=None, users=users, next_url=next_url)
 
 
 @bp.route("/<int:client_id>/edit", methods=["GET", "POST"])

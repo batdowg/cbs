@@ -2,6 +2,7 @@
 {% block title %}Edit Client{% endblock %}
 {% block content %}
 <h1>Edit Client</h1>
+{% if next_url %}<p><a href="{{ next_url }}">Return</a></p>{% endif %}
 <form method="post">
   <input type="hidden" name="form" value="client">
   <div><label>Name <input type="text" name="name" value="{{ client.name }}" required></label></div>

@@ -13,7 +13,7 @@
         <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
         {% endfor %}
       </select>
-      <a href="{{ url_for('clients.new_client') }}" class="button">Add Client</a>
+      <a href="#" id="add-client" class="button">Add Client</a>
     </label></div>
     <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
     <div><label>Region*
@@ -244,6 +244,10 @@
     var cid = document.getElementById('client-select').value;
     if(!cid){ alert('Select client first'); return; }
     window.location = '/clients/'+cid+'/edit?section=workshop&next='+encodeURIComponent(nextUrl());
+  });
+  document.getElementById('add-client').addEventListener('click', function(e){
+    e.preventDefault();
+    window.location = '/clients/new?next='+encodeURIComponent(nextUrl());
   });
 </script>
 <script src="{{ url_for('static', filename='js/form_state.js') }}"></script>
