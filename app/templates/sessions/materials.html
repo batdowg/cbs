@@ -16,13 +16,22 @@
     {% endif %}
   </div>
   <div>Shipping location:
+    {% if can_manage and not readonly %}
+      <select name="shipping_location_id">
+        <option value=""></option>
+        {% for loc in shipping_locations %}
+        <option value="{{ loc.id }}" {% if sess.shipping_location_id==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
+        {% endfor %}
+      </select>
+      <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+    {% endif %}
     {% if sess.shipping_location %}
+      {% if can_manage and not readonly %}<br>{% endif %}
       {{ sess.shipping_location.contact_name|default('', true) }}<br>
       {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
       {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
       {{ sess.shipping_location.country|default('', true) }}
     {% endif %}
-    <a href="{{ url_for('sessions.edit_session', session_id=sess.id) }}" style="font-size:smaller">Edit session</a>
   </div>
   <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}

@@ -12,6 +12,7 @@ from ..models import (
     SessionShippingItem,
     Material,
     MaterialsOption,
+    ClientShippingLocation,
 )
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
@@ -117,12 +118,15 @@ def materials_view(
     csa_view: bool,
     view_only: bool,
 ):
-    if not sess.shipping_location_id:
-        flash(
-            "Shipping location required before creating materials order.",
-            "error",
+    shipping_locations = (
+        ClientShippingLocation.query.filter_by(
+            client_id=sess.client_id, is_active=True
         )
-        return redirect(url_for("sessions.edit_session", session_id=sess.id))
+        .order_by(ClientShippingLocation.id)
+        .all()
+        if sess.client_id
+        else []
+    )
     shipment = SessionShipping.query.filter_by(session_id=session_id).first()
     if not shipment:
         shipment = SessionShipping(
@@ -132,8 +136,8 @@ def materials_view(
         )
         db.session.add(shipment)
         db.session.commit()
-    shipment.client_shipping_location_id = sess.shipping_location_id
     if sess.shipping_location:
+        shipment.client_shipping_location_id = sess.shipping_location_id
         shipment.contact_name = sess.shipping_location.contact_name
         shipment.contact_phone = sess.shipping_location.contact_phone
         shipment.contact_email = sess.shipping_location.contact_email
@@ -161,6 +165,9 @@ def materials_view(
         if not can_manage_shipment(current_user):
             abort(403)
         if action == "update_header":
+            ship_id = request.form.get("shipping_location_id")
+            if ship_id is not None:
+                sess.shipping_location_id = int(ship_id) if ship_id else None
             fields = CSA_FIELDS | {
                 "courier",
                 "tracking",
@@ -191,6 +198,16 @@ def materials_view(
                 shipment.state = sess.shipping_location.state
                 shipment.postal_code = sess.shipping_location.postal_code
                 shipment.country = sess.shipping_location.country
+            else:
+                shipment.contact_name = None
+                shipment.contact_phone = None
+                shipment.contact_email = None
+                shipment.address_line1 = None
+                shipment.address_line2 = None
+                shipment.city = None
+                shipment.state = None
+                shipment.postal_code = None
+                shipment.country = None
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
             if sess.client and not sess.client.sfc_link:
@@ -280,4 +297,5 @@ def materials_view(
         can_edit_materials_header=can_edit_materials_header,
         can_manage=can_manage_shipment(current_user),
         can_mark_delivered=can_mark_delivered(current_user),
+        shipping_locations=shipping_locations,
     )

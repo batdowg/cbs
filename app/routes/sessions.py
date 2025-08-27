@@ -31,7 +31,6 @@ from ..models import (
     SessionShipping,
     Language,
     ClientWorkshopLocation,
-    ClientShippingLocation,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -119,7 +118,6 @@ def new_session(current_user):
     clients = Client.query.order_by(Client.name).all()
     cid_arg = request.args.get("client_id")
     workshop_locations: list[ClientWorkshopLocation] = []
-    shipping_locations: list[ClientShippingLocation] = []
     selected_client_id = None
     if cid_arg and cid_arg.isdigit():
         selected_client_id = int(cid_arg)
@@ -128,13 +126,6 @@ def new_session(current_user):
                 client_id=selected_client_id, is_active=True
             )
             .order_by(ClientWorkshopLocation.label)
-            .all()
-        )
-        shipping_locations = (
-            ClientShippingLocation.query.filter_by(
-                client_id=selected_client_id, is_active=True
-            )
-            .order_by(ClientShippingLocation.id)
             .all()
         )
     languages = (
@@ -177,13 +168,7 @@ def new_session(current_user):
             return redirect(url_for("sessions.new_session"))
         wt = db.session.get(WorkshopType, int(wt_id))
         wl_id = request.form.get("workshop_location_id")
-        sl_id = request.form.get("shipping_location_id")
-        wl = (
-            db.session.get(ClientWorkshopLocation, int(wl_id))
-            if wl_id
-            else None
-        )
-        sl = int(sl_id) if sl_id else None
+        wl = db.session.get(ClientWorkshopLocation, int(wl_id)) if wl_id else None
         allowed = [l.name for l in languages]
         if language not in allowed:
             language = default_lang
@@ -237,7 +222,6 @@ def new_session(current_user):
             simulation_outline=request.form.get("simulation_outline") or None,
             client_id=int(cid) if cid else None,
             workshop_location=wl,
-            shipping_location_id=sl,
         )
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         if csa_email:
@@ -356,7 +340,6 @@ def new_session(current_user):
         today=date.today(),
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
-        shipping_locations=shipping_locations,
     )
 
 
@@ -385,15 +368,6 @@ def edit_session(session_id: int, current_user):
             client_id=sess.client_id, is_active=True
         )
         .order_by(ClientWorkshopLocation.label)
-        .all()
-        if sess.client_id
-        else []
-    )
-    shipping_locations = (
-        ClientShippingLocation.query.filter_by(
-            client_id=sess.client_id, is_active=True
-        )
-        .order_by(ClientShippingLocation.id)
         .all()
         if sess.client_id
         else []
@@ -432,11 +406,6 @@ def edit_session(session_id: int, current_user):
         sess.workshop_location_id = (
             int(request.form.get("workshop_location_id"))
             if request.form.get("workshop_location_id")
-            else None
-        )
-        sess.shipping_location_id = (
-            int(request.form.get("shipping_location_id"))
-            if request.form.get("shipping_location_id")
             else None
         )
         sess.location = (
@@ -628,7 +597,6 @@ def edit_session(session_id: int, current_user):
         today=date.today(),
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
-        shipping_locations=shipping_locations,
     )
 
 
