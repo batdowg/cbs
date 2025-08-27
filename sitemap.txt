@@ -13,6 +13,7 @@
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them
 /my-certificates         – Learner portal: download own PDFs
 /profile                 – Learner profile (full name, certificate name)
+/my-resources            – Learner portal: grouped resources by Workshop Type
 
 # Settings (Admin/SysAdmin)
 /settings                – Landing (cards/links)
@@ -26,6 +27,7 @@
   /settings/materials    – Materials Options (by order_type; languages, formats)
   /settings/languages    – Languages list (active, sort)
   /settings/mail         – SMTP + From mapping + test send
+  /settings/resources    – Manage resources (name, type, link/file, workshop types)
 
 # Badges & cert files
 /badges/<slug>.webp      – Static badge image from /srv/badges
