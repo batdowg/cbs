@@ -53,9 +53,30 @@ def _fmt_offset(delta):
     return f"UTC{sign}{hours:02d}:{minutes:02d}"
 
 
+COMMON_TZ_NAMES = {
+    "UTC-10:00": "Hawaii Time",
+    "UTC-09:00": "Alaska Time",
+    "UTC-08:00": "Pacific Time",
+    "UTC-07:00": "Mountain Time",
+    "UTC-06:00": "Central Time",
+    "UTC-05:00": "Eastern Time",
+    "UTC-04:00": "Atlantic Time",
+    "UTC": "UTC",
+    "UTC+01:00": "Central European Time",
+    "UTC+02:00": "Eastern European Time",
+    "UTC+03:00": "Moscow Standard Time",
+    "UTC+05:30": "India Standard Time",
+    "UTC+07:00": "Indochina Time",
+    "UTC+08:00": "China Standard Time",
+    "UTC+09:00": "Japan Standard Time",
+    "UTC+10:00": "Australian Eastern Time",
+    "UTC+12:00": "New Zealand Time",
+}
+
+
 def _simple_timezones():
     now = datetime.utcnow()
-    seen = {}
+    seen: dict[int, str] = {}
     for name in sorted(available_timezones()):
         offset = ZoneInfo(name).utcoffset(now)
         if offset is None:
@@ -63,7 +84,15 @@ def _simple_timezones():
         seconds = int(offset.total_seconds())
         if seconds not in seen:
             seen[seconds] = _fmt_offset(offset)
-    return [seen[k] for k in sorted(seen)]
+    labels: list[str] = []
+    for k in sorted(seen):
+        offset_str = seen[k]
+        label = COMMON_TZ_NAMES.get(offset_str)
+        if label and label != "UTC":
+            labels.append(f"{label} ({offset_str})")
+        else:
+            labels.append(label or offset_str)
+    return labels
 
 
 TIMEZONES = _simple_timezones()
