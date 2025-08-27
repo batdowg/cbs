@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Materials Orders{% endblock %}
+{% block content %}
+<h1>Materials Orders</h1>
+<form method="get">
+  <label>Client
+    <select name="client_id">
+      <option value="">All</option>
+      {% for c in clients %}
+        <option value="{{ c.id }}" {% if client_id==c.id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Order Type
+    <select name="order_type">
+      <option value="">All</option>
+      {% for ot in order_types %}
+        <option value="{{ ot }}" {% if order_type==ot %}selected{% endif %}>{{ ot }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="">All</option>
+      <option value="Draft" {% if status=='Draft' %}selected{% endif %}>Draft</option>
+      <option value="Shipped" {% if status=='Shipped' %}selected{% endif %}>Shipped</option>
+      <option value="Delivered" {% if status=='Delivered' %}selected{% endif %}>Delivered</option>
+    </select>
+  </label>
+  <button type="submit">Filter</button>
+</form>
+<p>
+  {% if show_closed %}
+    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status) }}">Hide closed sessions</a>
+  {% else %}
+    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, closed=1) }}">Show closed sessions</a>
+  {% endif %}
+</p>
+{% set base = '' %}
+{% if client_id %}{% set base = base + '&client_id=' + client_id|string %}{% endif %}
+{% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
+{% if status %}{% set base = base + '&status=' + status %}{% endif %}
+{% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th><a href="?sort=client{{ base }}">Client</a></th>
+    <th><a href="?sort=title{{ base }}">Workshop title</a></th>
+    <th><a href="?sort=workshop_type{{ base }}">Workshop Type</a></th>
+    <th><a href="?sort=start_date{{ base }}">Start date</a></th>
+    <th><a href="?sort=order_type{{ base }}">Materials Order type</a></th>
+    <th><a href="?sort=materials_status{{ base }}">Materials order status</a></th>
+    <th><a href="?sort=session_status{{ base }}">Workshop status</a></th>
+  </tr>
+  {% for row in rows %}
+  <tr>
+    <td>{{ row.client }}</td>
+    <td><a href="{{ url_for('sessions.session_detail', session_id=row.session_id) }}">{{ row.title }}</a></td>
+    <td>{{ row.workshop_type }}</td>
+    <td>{{ row.start_date }}</td>
+    <td>{{ row.order_type }}</td>
+    <td>{{ row.materials_status }}</td>
+    <td>{{ row.session_status }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

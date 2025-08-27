@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from functools import wraps
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session as flask_session, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session as flask_session, url_for
 
 from ..app import db, User
 from ..models import (
@@ -299,3 +299,17 @@ def materials_view(
         can_mark_delivered=can_mark_delivered(current_user),
         shipping_locations=shipping_locations,
     )
+
+
+@bp.get("/options")
+@materials_access
+def options(session_id: int, sess: Session, current_user: User | None, csa_view: bool, view_only: bool):
+    order_type = request.args.get("order_type")
+    opts = []
+    if order_type:
+        opts = (
+            MaterialsOption.query.filter_by(order_type=order_type, is_active=True)
+            .order_by(MaterialsOption.title)
+            .all()
+        )
+    return jsonify(options=[{"id": o.id, "title": o.title} for o in opts])

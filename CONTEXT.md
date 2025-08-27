@@ -433,3 +433,8 @@ Participant accounts provision with default password "KTRocks!" and flash summar
 ## Latest update done by codex 06/15/2027
 - Added per-client Shipping and Workshop Locations with virtual defaults (MS Teams, Zoom, Google Meets, Webex, Other).
 - Sessions select both locations; Materials page uses the Session’s Shipping Location read-only and stores the link on shipments.
+
+## Latest update done by codex 07/15/2027
+- Unchecking Delivered on Session edit now persists correctly.
+- Materials order page shows a Materials type dropdown once an Order Type is selected, with options loaded dynamically.
+- Added Materials Orders list view with filters (Client, Order Type, Status), sortable columns, and a toggle to show closed sessions.
