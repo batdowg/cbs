@@ -60,7 +60,7 @@
  | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </p>
 <div>
-  <h2>Client Session Admin</h2>
+  <h2>Client Session Administrator</h2>
   {% if session.csa_account %}
     <p>Current CSA: {{ session.csa_account.email }}
     <form action="{{ url_for('sessions.remove_csa', session_id=session.id) }}" method="post" style="display:inline"><button type="submit">Remove</button></form>

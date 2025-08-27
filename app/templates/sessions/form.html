@@ -5,7 +5,8 @@
 <form method="post">
   <fieldset>
     <legend>Session Info</legend>
-    <div><label>Title* <input type="text" name="title" value="{{ session.title or '' }}" required></label></div>
+    {% set _title = title_override if title_override is not none else session.title %}
+    <div><label>Title* <input type="text" name="title" value="{{ _title or '' }}" required></label></div>
     <div><label>Client*
       <select name="client_id" id="client-select" required>
         <option value="">--Select--</option>
@@ -25,7 +26,7 @@
       </select>
     </label></div>
     <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
-    <div><label>Client Session Admin <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
+    <div><label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
     <div><label>Workshop Location
       <select name="workshop_location_id" id="workshop-location-select">
         <option value=""></option>
@@ -220,12 +221,19 @@
   }
   document.querySelector('select[name="lead_facilitator_id"]').addEventListener('change', refreshFacOptions);
   refreshFacOptions();
-  document.getElementById('client-select').addEventListener('change', function(){
-    var sel = this;
-    var crm = sel.options[sel.selectedIndex].dataset.crm || '';
+  var clientSel = document.getElementById('client-select');
+  function updateCRM(){
+    var crm = clientSel.options[clientSel.selectedIndex] ? clientSel.options[clientSel.selectedIndex].dataset.crm || '' : '';
     document.getElementById('crm-display').textContent = crm;
+  }
+  updateCRM();
+  clientSel.addEventListener('change', function(){
+    updateCRM();
     var url = new URL(window.location.href);
-    url.searchParams.set('client_id', sel.value);
+    url.searchParams.set('client_id', this.value);
+    var titleVal = document.querySelector('input[name="title"]').value;
+    if(titleVal){ url.searchParams.set('title', titleVal); }
+    else{ url.searchParams.delete('title'); }
     window.location = url.toString();
   });
   document.getElementById('include-all-fac').addEventListener('change', function(){
