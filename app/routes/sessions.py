@@ -146,6 +146,7 @@ def new_session(current_user):
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     cid_arg = request.args.get("client_id")
+    title_arg = request.args.get("title")
     workshop_locations: list[ClientWorkshopLocation] = []
     selected_client_id = None
     if cid_arg and cid_arg.isdigit():
@@ -254,22 +255,19 @@ def new_session(current_user):
         )
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         if csa_email:
-            if User.query.filter(func.lower(User.email) == csa_email).first():
-                flash("That email belongs to a staff user.", "error")
-            else:
-                account = (
-                    db.session.query(ParticipantAccount)
-                    .filter(func.lower(ParticipantAccount.email) == csa_email)
-                    .one_or_none()
+            account = (
+                db.session.query(ParticipantAccount)
+                .filter(func.lower(ParticipantAccount.email) == csa_email)
+                .one_or_none()
+            )
+            if not account:
+                account = ParticipantAccount(
+                    email=csa_email, full_name=csa_email, is_active=True
                 )
-                if not account:
-                    account = ParticipantAccount(
-                        email=csa_email, full_name=csa_email, is_active=True
-                    )
-                    account.set_password("KTRocks!")
-                    db.session.add(account)
-                    db.session.flush()
-                sess.csa_account_id = account.id
+                account.set_password("KTRocks!")
+                db.session.add(account)
+                db.session.flush()
+            sess.csa_account_id = account.id
         now = datetime.utcnow()
         if sess.materials_ordered:
             sess.materials_ordered_at = now
@@ -353,6 +351,7 @@ def new_session(current_user):
     return render_template(
         "sessions/form.html",
         session=Session(
+            title=title_arg,
             daily_start_time=time.fromisoformat("08:00"),
             daily_end_time=time.fromisoformat("17:00"),
             language=default_lang,
@@ -369,6 +368,7 @@ def new_session(current_user):
         today=date.today(),
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
+        title_override=title_arg,
     )
 
 
@@ -387,6 +387,7 @@ def edit_session(session_id: int, current_user):
         fac_query = fac_query.filter(User.region == sess.region)
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
+    title_arg = request.args.get("title")
     participants_count = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=sess.id)
@@ -483,22 +484,19 @@ def edit_session(session_id: int, current_user):
         sess.client_id = int(cid) if cid else None
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         if csa_email:
-            if User.query.filter(func.lower(User.email) == csa_email).first():
-                flash("That email belongs to a staff user.", "error")
-            else:
-                account = (
-                    db.session.query(ParticipantAccount)
-                    .filter(func.lower(ParticipantAccount.email) == csa_email)
-                    .one_or_none()
+            account = (
+                db.session.query(ParticipantAccount)
+                .filter(func.lower(ParticipantAccount.email) == csa_email)
+                .one_or_none()
+            )
+            if not account:
+                account = ParticipantAccount(
+                    email=csa_email, full_name=csa_email, is_active=True
                 )
-                if not account:
-                    account = ParticipantAccount(
-                        email=csa_email, full_name=csa_email, is_active=True
-                    )
-                    account.set_password("KTRocks!")
-                    db.session.add(account)
-                    db.session.flush()
-                sess.csa_account_id = account.id
+                account.set_password("KTRocks!")
+                db.session.add(account)
+                db.session.flush()
+            sess.csa_account_id = account.id
         else:
             sess.csa_account_id = None
         lead_id = request.form.get("lead_facilitator_id")
@@ -626,6 +624,7 @@ def edit_session(session_id: int, current_user):
         today=date.today(),
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
+        title_override=title_arg,
     )
 
 
@@ -669,9 +668,6 @@ def assign_csa(session_id: int, current_user):
     email = (request.form.get("email") or "").strip().lower()
     if not email:
         flash("Email required", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
-    if User.query.filter(func.lower(User.email) == email).first():
-        flash("That email belongs to a staff user.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     account = (
         db.session.query(ParticipantAccount)
