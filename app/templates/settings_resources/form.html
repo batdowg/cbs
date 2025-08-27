@@ -15,9 +15,16 @@
   <label>File <input type="file" name="file"></label><br>
   <fieldset>
     <legend>Workshop Types</legend>
-    {% set selected = [wt.id for wt in resource.workshop_types] if resource else [] %}
+    {% set selected = [] %}
+    {% if resource %}
+      {% set selected = resource.workshop_types | map(attribute='id') | list %}
+    {% endif %}
     {% for wt in workshop_types %}
-      <label><input type="checkbox" name="workshop_types" value="{{ wt.id }}" {% if wt.id in selected %}checked{% endif %}> {{ wt.name }}</label><br>
+      <label>
+        <input type="checkbox" name="workshop_types" value="{{ wt.id }}"
+               {% if wt.id in selected %}checked{% endif %}>
+        {{ wt.name }}
+      </label>
     {% endfor %}
   </fieldset>
   <label><input type="checkbox" name="active" {% if not resource or resource.active %}checked{% endif %}> Active</label><br>
