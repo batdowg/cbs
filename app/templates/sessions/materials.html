@@ -86,7 +86,7 @@
     <div id="materials-option-info"><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
     {% else %}<div id="materials-option-info"></div>{% endif %}
   </div>
-  <div>Arrival date:
+  <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
       <input type="date" name="arrival_date" value="{{ shipment.arrival_date.isoformat() if shipment.arrival_date else '' }}">
     {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
