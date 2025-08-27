@@ -63,7 +63,7 @@ def test_participant_create_blocked_by_user(app):
         data={"email": "staff@example.com", "full_name": "Test"},
         follow_redirects=True,
     )
-    assert b"That email belongs to a staff user." in resp.data
+    assert b"Participant added" in resp.data
     with app.app_context():
         assert (
             ParticipantAccount.query.filter_by(email="staff@example.com").first()

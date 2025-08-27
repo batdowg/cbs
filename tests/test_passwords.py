@@ -54,8 +54,6 @@ def test_manual_participant_create_login(app):
             "full_name": "Learner",
             "email": "learner@example.com",
             "title": "Mr",
-            "password": "secret",
-            "password_confirm": "secret",
         },
         follow_redirects=True,
     )
@@ -63,7 +61,7 @@ def test_manual_participant_create_login(app):
     # login as participant
     resp = client.post(
         "/login",
-        data={"email": "learner@example.com", "password": "secret"},
+        data={"email": "learner@example.com", "password": "KTRocks!"},
         follow_redirects=True,
     )
     assert resp.request.path == "/my-certificates"
@@ -140,3 +138,31 @@ def test_admin_set_password_logs(app):
         assert user.check_password("abc")
         log = db.session.query(AuditLog).filter_by(action="password_reset_admin").first()
         assert log is not None and log.user_id == admin_id
+
+
+def test_add_staff_user_as_participant(app):
+    with app.app_context():
+        admin = User(email="admin@example.com", is_app_admin=True, region="NA")
+        admin.set_password("x")
+        staff = User(email="staff@example.com", full_name="Staff Member", region="NA")
+        staff.set_password("y")
+        sess = Session(title="Test", start_date=date(2024,1,1), end_date=date(2024,1,2), region="NA")
+        db.session.add_all([admin, staff, sess])
+        db.session.commit()
+        admin_id = admin.id
+        session_id = sess.id
+    client = app.test_client()
+    login_user(client, admin_id)
+    resp = client.post(
+        f"/sessions/{session_id}/participants/add",
+        data={"full_name": "Staff Member", "email": "staff@example.com", "title": "Mr"},
+        follow_redirects=True,
+    )
+    assert b"Participant added" in resp.data
+    with app.app_context():
+        participant = Participant.query.filter_by(email="staff@example.com").first()
+        assert participant is not None
+        assert participant.full_name == "Staff Member"
+        assert participant.account_id is None
+        link = SessionParticipant.query.filter_by(session_id=session_id, participant_id=participant.id).first()
+        assert link is not None

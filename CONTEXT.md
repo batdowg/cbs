@@ -48,7 +48,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 
 ## 3) Sessions
 - **Create & edit** (staff only): title, **Workshop Type** (Code), start/end (date-only), daily start/end time, timezone, delivery type (Onsite/Virtual/Self-paced/Hybrid), region, language, capacity, status notes, **Workshop Location**, **Shipping Location**, lead + additional facilitators (delivery/contractor users; lead excluded from additional list). Prefill times 08:00–17:00. “Include out-of-region facilitators” preserves form inputs. **[DONE]**
-- **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs. **[DONE]**
+- **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts auto-created with default password "KTRocks!" and staff emails allowed. **[DONE]**
 - **Lifecycle flags & gates** (server-enforced):  
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
   Gates:
@@ -86,6 +86,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - **Materials Options (Settings → Materials)**: single table with
   - `order_type`, `title`, **languages (many-to-many)**, **formats** (`Digital (KTBooks)`, `Physical`, `Self-paced`, `Mixed`), `is_active`. **[DONE]**
   - Admin/SysAdmin only. **[DONE]**
+- Materials view page no longer errors when accessed without imports. **[DONE]**
 
 ---
 
