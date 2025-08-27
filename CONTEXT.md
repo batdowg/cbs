@@ -64,7 +64,7 @@ Passwords are hashed via a shared bcrypt helper. When manually creating Users or
 2.4 Message templates stored in DB with simple placeholders (name, session, date)  
 2.5 Test mail endpoint in Settings to send a one‑off test to an address
 2.6 Delivery logging table (to, subject, status, error text)
-2.7 Clients: manage client records (Name unique case-insensitive, SFC Link, CRM (User), Data Region NA/EU/SEA/Other, Status active/inactive). SysAdmin or Administrator can CRUD under Settings.
+2.7 Clients: manage client records (Name unique case-insensitive, SFC Link, CRM (User), Data Region NA/EU/SEA/Other, Status active/inactive). SysAdmin or Administrator can CRUD under Settings. Client edit also manages per‑client Workshop and Shipping Locations with inline create/edit forms.
 2.8 SMTP test button uses saved settings and flashes success or error.
 
 Environment variables (reference only, do not hardcode secrets in repo):  
@@ -73,11 +73,11 @@ Environment variables (reference only, do not hardcode secrets in repo):
 Note: SMTP env surfaced in UI (read-only), emailer defaults and mock logging in place. Real send depends on env on VPS.
 
 ## 3. Session Management (with client self‑service)
-3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, **Workshop Location** and **Shipping Location** dropdowns (per-client; workshop may be virtual), delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00-17:00; lead facilitator removed from additional facilitator options. “Include out-of-region facilitators” toggle preserves current inputs.
+3.1 Create Session form (staff only): title, Workshop Type (dropdown labeled by Code only), date-only start/end, daily start/end times, timezone, **Workshop Location** and **Shipping Location** dropdowns (per-client; workshop may be virtual) with blank default and links to Client → Edit to add new locations returning via `next=`, delivery type (Onsite, Virtual, Self-paced, Hybrid), region (NA, EU, SEA, Other), language (dropdown, default English), capacity, status, sponsor, notes, simulation outline, lead facilitator (single select) and additional facilitators (addable selects from KT Delivery or Contractor users); session.code derives from selected Workshop Type. Defaults: daily times prefill 08:00-17:00; lead facilitator removed from additional facilitator options. “Include out-of-region facilitators” toggle preserves current inputs.
 3.2 Materials and shipping block on the Session:
  • Order Type select and Materials dropdown (filtered by type) storing `materials_option_id`
  • Materials list (item name, qty, notes)
- • Uses Session’s Shipping Location for address/contact (read-only on Materials page)
+ • Uses Session’s Shipping Location for address/contact (read-only on Materials page with small “Edit session” link)
 3.3 Participants tab on the Session: add/remove participants, mark attendance, completion date, edit/remove entries, CSV import (FullName,Email,Title) with sample download [DONE]
 3.4 Session lifecycle and status:
    - Flags: materials_ordered, ready_for_delivery, info_sent, delivered, finalized, on_hold_at, cancelled_at.

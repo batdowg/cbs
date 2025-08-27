@@ -28,21 +28,21 @@
     <div><label>Client Session Admin <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
     <div><label>Workshop Location
       <select name="workshop_location_id" id="workshop-location-select">
-        <option value="">--Select--</option>
+        <option value=""></option>
         {% for loc in workshop_locations %}
         <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
         {% endfor %}
       </select>
-      <button type="button" id="add-workshop-location">Add</button>
+      <a href="#" id="add-workshop-location">Add</a>
     </label></div>
     <div><label>Shipping Location
       <select name="shipping_location_id" id="shipping-location-select">
-        <option value="">--Select--</option>
+        <option value=""></option>
         {% for loc in shipping_locations %}
         <option value="{{ loc.id }}" {% if session.shipping_location_id==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
         {% endfor %}
       </select>
-      <button type="button" id="add-shipping-location">Add</button>
+      <a href="#" id="add-shipping-location">Add</a>
     </label></div>
   </fieldset>
   <fieldset>
@@ -240,35 +240,25 @@
     else{ url.searchParams.delete('include_all_facilitators'); }
     window.location = url.toString();
   });
-  document.getElementById('add-workshop-location').addEventListener('click', function(){
+  function nextUrl(){
+    {% if session.id %}
+    return '/sessions/{{ session.id }}/edit';
+    {% else %}
+    var cid = document.getElementById('client-select').value;
+    return '/sessions/new?client_id='+cid;
+    {% endif %}
+  }
+  document.getElementById('add-workshop-location').addEventListener('click', function(e){
+    e.preventDefault();
     var cid = document.getElementById('client-select').value;
     if(!cid){ alert('Select client first'); return; }
-    var label = prompt('Location label');
-    if(!label) return;
-    fetch('/clients/'+cid+'/workshop-locations/inline', {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:'label='+encodeURIComponent(label)+'&is_virtual=1'
-    }).then(r=>r.text()).then(function(opt){
-      document.getElementById('workshop-location-select').insertAdjacentHTML('beforeend', opt);
-    });
+    window.location = '/clients/'+cid+'/edit?section=workshop&next='+encodeURIComponent(nextUrl());
   });
-  document.getElementById('add-shipping-location').addEventListener('click', function(){
+  document.getElementById('add-shipping-location').addEventListener('click', function(e){
+    e.preventDefault();
     var cid = document.getElementById('client-select').value;
     if(!cid){ alert('Select client first'); return; }
-    var line1 = prompt('Address line 1');
-    if(!line1) return;
-    var city = prompt('City') || '';
-    var postal = prompt('Postal code') || '';
-    var country = prompt('Country') || '';
-    var params = new URLSearchParams({address_line1:line1, city:city, postal_code:postal, country:country});
-    fetch('/clients/'+cid+'/shipping-locations/inline', {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:params.toString()
-    }).then(r=>r.text()).then(function(opt){
-      document.getElementById('shipping-location-select').insertAdjacentHTML('beforeend', opt);
-    });
+    window.location = '/clients/'+cid+'/edit?section=shipping&next='+encodeURIComponent(nextUrl());
   });
 </script>
 <script src="{{ url_for('static', filename='js/form_state.js') }}"></script>
