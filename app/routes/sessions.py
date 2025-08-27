@@ -781,22 +781,25 @@ def add_participant(session_id: int, sess, current_user, csa_view):
     if not email:
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
-    if User.query.filter(func.lower(User.email) == email).first():
-        flash("That email belongs to a staff user.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    user = User.query.filter(func.lower(User.email) == email).first()
     participant = (
         db.session.query(Participant)
         .filter(db.func.lower(Participant.email) == email)
         .one_or_none()
     )
     if not participant:
-        participant = Participant(email=email, full_name=full_name, title=title)
+        participant = Participant(
+            email=email,
+            full_name=full_name or (user.full_name if user else ""),
+            title=title,
+        )
         db.session.add(participant)
         db.session.flush()
     else:
-        participant.full_name = participant.full_name or full_name
+        if full_name:
+            participant.full_name = full_name
         if title:
-            participant.title = participant.title or title
+            participant.title = title
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant.id)
@@ -809,37 +812,28 @@ def add_participant(session_id: int, sess, current_user, csa_view):
             completion_date=sess.end_date,
         )
         db.session.add(link)
-    password = request.form.get("password") or ""
-    confirm = request.form.get("password_confirm") or ""
-    if current_user and (current_user.is_admin or current_user.is_app_admin):
-        if password or confirm:
-            if password != confirm:
-                flash("Passwords do not match", "error")
-                return redirect(url_for("sessions.session_detail", session_id=session_id))
-            account = (
-                db.session.query(ParticipantAccount)
-                .filter(db.func.lower(ParticipantAccount.email) == email)
-                .one_or_none()
+    if not user:
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter(db.func.lower(ParticipantAccount.email) == email)
+            .one_or_none()
+        )
+        if not account:
+            account = ParticipantAccount(
+                email=email,
+                full_name=full_name or "",
+                certificate_name=full_name or "",
+                is_active=True,
             )
-            if not account:
-                account = ParticipantAccount(
-                    email=email,
-                    full_name=full_name or email,
-                    certificate_name=full_name or "",
-                    is_active=True,
-                )
-                db.session.add(account)
-                db.session.flush()
-            account.set_password(password)
-            participant.account_id = account.id
-            db.session.add(
-                AuditLog(
-                    user_id=current_user.id,
-                    participant_id=participant.id,
-                    action="password_reset_admin",
-                    details=f"account_id={account.id}",
-                )
-            )
+            account.set_password("KTRocks!")
+            db.session.add(account)
+            db.session.flush()
+        else:
+            if full_name:
+                account.full_name = full_name
+                if not account.certificate_name:
+                    account.certificate_name = full_name
+        participant.account_id = account.id
     db.session.add(
         AuditLog(
             user_id=current_user.id if current_user else None,
