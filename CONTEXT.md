@@ -61,6 +61,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
 - **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. List-style questions snapshot kind/min/max and show a download link for staff. **[DONE]**
+- Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. Rows can be marked **No Prework** (status `WAIVED`), and a session-level `no_material_order` flag is toggleable. Sending prework does not gate certificates. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
@@ -73,6 +74,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   - Names map via slug (lowercase, no spaces). Helpers try `.webp` first, then `.png`.
   - To add a PNG alternative, drop `<slug>.png` in `/srv/badges`.
 - **Prework templates**: staff edit per Workshop Type at `/workshop-types/<id>/prework` (info & questions). Questions can be **Long text** or **List** with Min/Max (≤10). **[DONE]**
+- Info and question prompts support rich text (sanitized HTML: p, br, strong, em, u, ul, ol, li, a, h3, h4, blockquote). Answers are plain text rendered with `nl2br`. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
@@ -119,6 +121,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 
 ## 9) UI & Navigation
 - Sidebar (role-aware): Home, Sessions, Materials (orders), My Sessions, My Certificates, Settings (Users, Workshop Types, Clients, Materials, Languages, Mail Settings), Logout. Guests see only Login. **[DONE]**
+- Learner-facing navigation and emails say "Workshop" (e.g., "My Workshops"); staff UI retains "Session" wording. **[DONE]**
 - Root `/` shows branded login card (no nav). **[DONE]**
 - Basic responsive styles; flashes consistent. **[DONE]**
 - Participant nav gating: "My Prework" shows for pending assignments before sessions start; "My Resources" unlock after session start; "My Certificates" show when earned. **[DONE]**
@@ -130,6 +133,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Idempotent migrations; seed guards; simple audit logs for key actions (logins, role changes, password admin resets, provisioning). **[DONE] (minimal)**
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
 - Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
+- Prework mails log `[ACCOUNT]`, `[MAIL-OUT]`, `[MAIL-FAIL]`; magic links expire after 30 days; accounts are created on send if missing. **[DONE]**
 - Migration 0032_prework_list_questions explicitly creates/drops PostgreSQL enum `prework_question_kind` for reliable upgrades/downgrades. **[DONE]**
 
 ---

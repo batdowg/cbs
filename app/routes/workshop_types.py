@@ -5,6 +5,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 from ..app import db, User
 from ..models import WorkshopType, AuditLog, PreworkTemplate, PreworkQuestion
 from ..constants import BADGE_CHOICES
+from ..utils.html import sanitize_html
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
 
@@ -114,10 +115,10 @@ def prework(type_id: int, current_user):
             tpl = PreworkTemplate(workshop_type_id=wt.id)
         tpl.is_active = bool(request.form.get('is_active'))
         tpl.require_completion = bool(request.form.get('require_completion'))
-        tpl.info_html = (request.form.get('info') or '').strip()
+        tpl.info_html = sanitize_html(request.form.get('info') or '')
         questions = []
         for i in range(1, 11):
-            text = (request.form.get(f'text_{i}') or '').strip()
+            text = sanitize_html(request.form.get(f'text_{i}') or '')
             if not text:
                 continue
             kind = request.form.get(f'kind_{i}') or 'TEXT'

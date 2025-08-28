@@ -3,7 +3,9 @@ from __future__ import annotations
 import csv
 import io
 from functools import wraps
-from datetime import date, time, datetime
+from datetime import date, time, datetime, timedelta
+import secrets
+import hashlib
 from zoneinfo import available_timezones, ZoneInfo
 
 from flask import (
@@ -16,6 +18,7 @@ from flask import (
     request,
     session as flask_session,
     url_for,
+    current_app,
 )
 
 from ..app import db, User
@@ -33,6 +36,7 @@ from ..models import (
     ClientWorkshopLocation,
     PreworkTemplate,
     PreworkAssignment,
+    PreworkEmailLog,
 )
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
@@ -40,6 +44,8 @@ from ..utils.provisioning import (
     deactivate_orphan_accounts_for_session,
     provision_participant_accounts_for_session,
 )
+from ..constants import MAGIC_LINK_TTL_DAYS
+from .. import emailer
 from ..utils.rbac import csa_allowed_for_session
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
@@ -212,6 +218,7 @@ def new_session(current_user):
         info_sent = _cb(request.form.get("info_sent"))
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
+        no_material_order = _cb(request.form.get("no_material_order"))
         if finalized:
             delivered = True
             ready_for_delivery = True
@@ -249,6 +256,7 @@ def new_session(current_user):
             info_sent=info_sent,
             delivered=delivered,
             finalized=finalized,
+            no_material_order=no_material_order,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline=request.form.get("simulation_outline") or None,
@@ -339,6 +347,8 @@ def new_session(current_user):
             changes.append("Delivered")
         if finalized:
             changes.append("Finalized")
+        if no_material_order:
+            changes.append("No material order")
         msg = "Session saved"
         if changes:
             msg += ": " + ", ".join(changes)
@@ -428,6 +438,7 @@ def edit_session(session_id: int, current_user):
         old_info = sess.info_sent
         old_finalized = sess.finalized
         old_on_hold = sess.on_hold
+        old_no_material = sess.no_material_order
         sess.title = request.form.get("title")
         sess.start_date = request.form.get("start_date") or None
         end_date_str = request.form.get("end_date")
@@ -454,6 +465,11 @@ def edit_session(session_id: int, current_user):
         delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
         finalized = _cb(request.form.get("finalized")) if "finalized" in request.form else old_finalized
         on_hold = _cb(request.form.get("on_hold")) if "on_hold" in request.form else old_on_hold
+        no_material_order = (
+            _cb(request.form.get("no_material_order"))
+            if "no_material_order" in request.form
+            else old_no_material
+        )
         if finalized:
             delivered = True
             new_ready = True
@@ -479,6 +495,7 @@ def edit_session(session_id: int, current_user):
         sess.delivered = delivered
         sess.finalized = finalized
         sess.on_hold = on_hold
+        sess.no_material_order = no_material_order
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         sess.simulation_outline = request.form.get("simulation_outline") or None
@@ -608,6 +625,10 @@ def edit_session(session_id: int, current_user):
             changes.append("Delivered " + ("on" if delivered else "off"))
         if finalized != old_finalized:
             changes.append("Finalized " + ("on" if finalized else "off"))
+        if no_material_order != old_no_material:
+            changes.append(
+                "No material order " + ("on" if no_material_order else "off")
+            )
         msg = "Session saved"
         if changes:
             msg += ": " + ", ".join(changes)
@@ -1051,12 +1072,34 @@ def session_prework(session_id: int, current_user):
         .all()
     )
     if request.method == "POST":
+        action = request.form.get("action")
+        if action == "toggle_no_material_order":
+            sess.no_material_order = bool(request.form.get("no_material_order"))
+            db.session.commit()
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
         if not template:
             flash("No active prework template", "error")
             return redirect(url_for("sessions.session_prework", session_id=session_id))
-        for p, account in participants:
-            if not account:
-                continue
+
+        def ensure_account(participant: Participant) -> ParticipantAccount:
+            account = participant.account
+            if account:
+                return account
+            account = ParticipantAccount(
+                email=(participant.email or "").lower(),
+                full_name=participant.full_name or participant.email,
+                is_active=True,
+            )
+            db.session.add(account)
+            db.session.flush()
+            participant.account_id = account.id
+            db.session.add(participant)
+            current_app.logger.info(
+                f"[ACCOUNT] created participant_account_id={account.id} email={account.email}"
+            )
+            return account
+
+        def prepare_assignment(account: ParticipantAccount) -> PreworkAssignment:
             assignment = PreworkAssignment.query.filter_by(
                 session_id=sess.id, participant_account_id=account.id
             ).first()
@@ -1080,8 +1123,6 @@ def session_prework(session_id: int, current_user):
                 }
                 due_at = None
                 if sess.start_date and sess.daily_start_time:
-                    from datetime import datetime, timedelta
-
                     due_at = datetime.combine(
                         sess.start_date, sess.daily_start_time
                     ) - timedelta(days=3)
@@ -1089,17 +1130,97 @@ def session_prework(session_id: int, current_user):
                     session_id=sess.id,
                     participant_account_id=account.id,
                     template_id=template.id,
-                    status="SENT",
-                    sent_at=db.func.now(),
+                    status="PENDING",
                     due_at=due_at,
                     snapshot_json=snapshot,
                 )
                 db.session.add(assignment)
-            elif assignment.status == "PENDING":
+            return assignment
+
+        def send_mail(assignment: PreworkAssignment, account: ParticipantAccount) -> bool:
+            token = secrets.token_urlsafe(16)
+            assignment.magic_token_hash = hashlib.sha256(token.encode()).hexdigest()
+            assignment.magic_token_expires = datetime.utcnow() + timedelta(
+                days=MAGIC_LINK_TTL_DAYS
+            )
+            link = url_for(
+                "auth.prework_magic",
+                assignment_id=assignment.id,
+                token=token,
+                _external=True,
+            )
+            subject = f"Prework for Workshop: {sess.title}"
+            body = render_template(
+                "email/prework.txt", session=sess, assignment=assignment, link=link
+            )
+            html_body = render_template(
+                "email/prework.html", session=sess, assignment=assignment, link=link
+            )
+            try:
+                res = emailer.send(account.email, subject, body, html=html_body)
+            except Exception as e:  # pragma: no cover - defensive
+                res = {"ok": False, "detail": str(e)}
+            if res.get("ok"):
                 assignment.status = "SENT"
-                assignment.sent_at = db.func.now()
-        db.session.commit()
-        flash("Prework assignments sent", "success")
+                assignment.sent_at = datetime.utcnow()
+                db.session.add(
+                    PreworkEmailLog(
+                        assignment_id=assignment.id,
+                        to_email=account.email,
+                        subject=subject,
+                    )
+                )
+                current_app.logger.info(
+                    f"[MAIL-OUT] prework session={sess.id} pa={account.id} to={account.email} subject=\"{subject}\""
+                )
+                return True
+            current_app.logger.info(
+                f"[MAIL-FAIL] prework session={sess.id} pa={account.id} to={account.email} error=\"{res.get('detail')}\""
+            )
+            return False
+
+        if action == "waive":
+            pid = int(request.form.get("participant_id"))
+            participant = db.session.get(Participant, pid)
+            account = ensure_account(participant)
+            assignment = prepare_assignment(account)
+            assignment.status = "WAIVED"
+            assignment.sent_at = None
+            assignment.magic_token_hash = None
+            assignment.magic_token_expires = None
+            db.session.commit()
+            flash("Marked no prework", "info")
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+
+        if action == "resend":
+            pid = int(request.form.get("participant_id"))
+            participant = db.session.get(Participant, pid)
+            account = ensure_account(participant)
+            assignment = prepare_assignment(account)
+            if assignment.status == "WAIVED":
+                flash("Participant is waived", "error")
+                return redirect(url_for("sessions.session_prework", session_id=session_id))
+            send_mail(assignment, account)
+            db.session.commit()
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+
+        if action == "send_all":
+            any_fail = False
+            for p, account in participants:
+                account = ensure_account(p)
+                assignment = prepare_assignment(account)
+                if assignment.status == "WAIVED":
+                    continue
+                if not send_mail(assignment, account):
+                    any_fail = True
+            db.session.commit()
+            if any_fail:
+                flash("Some emails failed; check logs", "error")
+            else:
+                flash("Prework assignments sent", "success")
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+
+        flash("Unknown action", "error")
         return redirect(url_for("sessions.session_prework", session_id=session_id))
     rows = []
     for p, account in participants:

@@ -13,7 +13,7 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 
 
-def send(to_addr: str, subject: str, body: str):
+def send(to_addr: str, subject: str, body: str, html: str | None = None):
     settings = Settings.get()
     host = (settings.smtp_host if settings and settings.smtp_host else os.getenv("SMTP_HOST"))
     port = (settings.smtp_port if settings and settings.smtp_port else os.getenv("SMTP_PORT"))
@@ -51,6 +51,8 @@ def send(to_addr: str, subject: str, body: str):
         msg["To"] = to_addr
         msg["From"] = f"{from_name} <{from_addr}>" if from_name else from_addr
         msg.set_content(body)
+        if html:
+            msg.add_alternative(html, subtype="html")
         server.sendmail(from_addr, [to_addr], msg.as_string())
         server.quit()
         logger.info(

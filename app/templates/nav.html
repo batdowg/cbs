@@ -17,8 +17,10 @@
   {% if current_user or session.get('participant_account_id') %}
   <a href="{{ url_for('surveys') }}">Surveys</a>
   {% endif %}
-  {% if current_user or is_csa %}
+  {% if current_user %}
   <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
+  {% elif is_csa %}
+  <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Workshops</a>
   {% endif %}
   {% if show_certificates_nav %}
   <a href="{{ url_for('learner.my_certs') }}">My Certificates</a>

@@ -5,15 +5,15 @@
 <h1>Prework for {{ assignment.session.title if assignment.session else '' }}</h1>
 {% for q in questions %}
 <div>
-<strong>{{ q.text }}</strong>
+<strong>{{ q.text|safe }}</strong>
 {% if q.kind == 'LIST' %}
 <ul>
   {% for _, text in (answers.get(q.index, {})).items()|sort %}
-  <li>{{ text }}</li>
+  <li>{{ text|replace('\n','<br>')|safe }}</li>
   {% endfor %}
 </ul>
 {% else %}
-<p>{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</p>
+<p>{{ (answers.get(q.index, {}) or {0:''}).get(0)|replace('\n','<br>')|safe }}</p>
 {% endif %}
 </div>
 {% endfor %}

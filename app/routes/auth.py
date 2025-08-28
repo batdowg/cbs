@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import (
     Blueprint,
+    abort,
     flash,
     redirect,
     render_template,
@@ -14,11 +15,33 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func
 
 from ..app import db
-from ..models import User, ParticipantAccount, AuditLog
+from ..models import User, ParticipantAccount, AuditLog, PreworkAssignment
 from ..utils.auth_bridge import lookup_identity, verify_password, login_identity
 from .. import emailer
+import hashlib
+from datetime import datetime
 
 bp = Blueprint("auth", __name__)
+
+
+@bp.get("/prework/<int:assignment_id>/<token>")
+def prework_magic(assignment_id: int, token: str):
+    assignment = db.session.get(PreworkAssignment, assignment_id)
+    if (
+        not assignment
+        or not assignment.magic_token_hash
+        or not assignment.magic_token_expires
+        or assignment.magic_token_expires < datetime.utcnow()
+    ):
+        abort(404)
+    if hashlib.sha256(token.encode()).hexdigest() != assignment.magic_token_hash:
+        abort(404)
+    flask_session["participant_account_id"] = assignment.participant_account_id
+    account = db.session.get(ParticipantAccount, assignment.participant_account_id)
+    if account:
+        account.last_login = datetime.utcnow()
+    db.session.commit()
+    return redirect(url_for("learner.prework_form", assignment_id=assignment_id))
 
 
 @bp.route("/", methods=["GET", "POST"])
