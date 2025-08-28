@@ -1138,7 +1138,9 @@ def session_prework(session_id: int, current_user):
 
         def send_mail(assignment: PreworkAssignment, account: ParticipantAccount) -> bool:
             token = secrets.token_urlsafe(16)
-            assignment.magic_token_hash = hashlib.sha256(token.encode()).hexdigest()
+            assignment.magic_token_hash = hashlib.sha256(
+                (token + current_app.secret_key).encode()
+            ).hexdigest()
             assignment.magic_token_expires = datetime.utcnow() + timedelta(
                 days=MAGIC_LINK_TTL_DAYS
             )
@@ -1148,6 +1150,7 @@ def session_prework(session_id: int, current_user):
                 assignment_id=assignment.id,
                 token=token,
                 _external=True,
+                _scheme="https",
             )
             subject = f"Prework for Workshop: {sess.title}"
             body = render_template(

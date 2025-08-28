@@ -3,7 +3,20 @@
 {% block content %}
 <h2>Welcome, {{ session.get('user_email') }}</h2>
 {% if current_user or is_csa %}
-<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</a> | <a href="{{ url_for('learner.my_certs') }}">My Certificates</a></p>
+<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</a></p>
+{% elif session.get('participant_account_id') %}
+  {% if show_prework_nav %}
+  <div>
+    <h3>My Prework</h3>
+    <p><a href="{{ url_for('learner.my_prework') }}">Start Prework</a></p>
+  </div>
+  {% endif %}
+  {% if show_certificates_nav %}
+  <div>
+    <h3>My Certificates</h3>
+    <p><a href="{{ url_for('learner.my_certs') }}">View Certificates</a></p>
+  </div>
+  {% endif %}
 {% endif %}
 {% if sessions %}
 <h2>{% if current_user %}Sessions{% else %}Workshops{% endif %}</h2>

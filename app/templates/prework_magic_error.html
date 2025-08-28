@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Prework Link{% endblock %}
+{% block content %}
+<h1>Prework Link Invalid</h1>
+<p>This link is invalid or has expired.</p>
+{% if is_staff and assignment %}
+<form method="post" action="{{ url_for('auth.prework_magic_resend', assignment_id=assignment.id) }}">
+  <button type="submit">Request a new link</button>
+</form>
+{% else %}
+<p>Please request a new link from your workshop contact.</p>
+{% endif %}
+{% endblock %}
