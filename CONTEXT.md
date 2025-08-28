@@ -61,8 +61,9 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
 - **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. List-style questions snapshot kind/min/max and show a download link for staff. **[DONE]**
-- Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. Rows can be marked **No Prework** (status `WAIVED`), and a session-level `no_material_order` flag is toggleable. Sending prework does not gate certificates. **[DONE]**
+- Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. Rows can be marked **No Prework** (status `WAIVED`). A session-level `no_material_order` flag is set via the New Session form. Sending prework does not gate certificates. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
+- On New Session, there are two actions: **Proceed to materials order** and **No Materials Order (Save)** — the latter sets the flag and returns to the Session detail view. The Prework page does not show materials controls. **[DONE]**
 ---
 
 ## 4) Workshop Types & Badges
