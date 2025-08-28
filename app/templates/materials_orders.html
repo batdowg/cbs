@@ -43,8 +43,8 @@
 {% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
 <table border="1" cellpadding="4" cellspacing="0">
   <tr>
-    <th><a href="?sort=client{{ base }}">Client</a></th>
     <th><a href="?sort=title{{ base }}">Workshop title</a></th>
+    <th><a href="?sort=client{{ base }}">Client</a></th>
     <th><a href="?sort=workshop_type{{ base }}">Workshop Type</a></th>
     <th><a href="?sort=start_date{{ base }}">Start date</a></th>
     <th><a href="?sort=order_type{{ base }}">Materials Order type</a></th>
@@ -53,8 +53,8 @@
   </tr>
   {% for row in rows %}
   <tr>
-    <td>{{ row.client }}</td>
     <td><a href="{{ url_for('sessions.session_detail', session_id=row.session_id) }}">{{ row.title }}</a></td>
+    <td>{{ row.client }}</td>
     <td>{{ row.workshop_type }}</td>
     <td>{{ row.start_date }}</td>
     <td>{{ row.order_type }}</td>
