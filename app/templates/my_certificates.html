@@ -5,14 +5,16 @@
 <ul>
 {% for c in certs %}
   <li>
+    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
+    <li></li>
     {% set badge_name = c.session.workshop_type.badge if c.session and c.session.workshop_type else None %}
     {% set badge_url = best_badge_url(badge_name) %}
     {% if badge_url %}
       <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="{{ badge_name }} badge" style="height:20px;width:auto;vertical-align:middle;"></a>
       <a href="{{ badge_url }}" download>Badge</a>
     {% endif %}
-    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
   </li>
+  <li></li>
 {% endfor %}
 </ul>
 {% endblock %}
