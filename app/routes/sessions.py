@@ -48,6 +48,7 @@ from ..utils.provisioning import (
 from ..constants import MAGIC_LINK_TTL_DAYS
 from .. import emailer
 from ..utils.rbac import csa_allowed_for_session
+from ..utils.accounts import ensure_participant_account
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -1077,24 +1078,7 @@ def session_prework(session_id: int, current_user):
     )
     if request.method == "POST":
         action = request.form.get("action")
-
-        def ensure_account(participant: Participant) -> ParticipantAccount:
-            account = participant.account
-            if account:
-                return account
-            account = ParticipantAccount(
-                email=(participant.email or "").lower(),
-                full_name=participant.full_name or participant.email,
-                is_active=True,
-            )
-            db.session.add(account)
-            db.session.flush()
-            participant.account_id = account.id
-            db.session.add(participant)
-            current_app.logger.info(
-                f"[ACCOUNT] created participant_account_id={account.id} email={account.email}"
-            )
-            return account
+        account_cache: dict[str, ParticipantAccount] = {}
 
         def prepare_assignment(account: ParticipantAccount) -> PreworkAssignment | None:
             if not template:
@@ -1208,8 +1192,8 @@ def session_prework(session_id: int, current_user):
 
         if action == "send_accounts":
             any_fail = False
-            for p, account in participants:
-                account = ensure_account(p)
+            for p, _ in participants:
+                account = ensure_participant_account(p, account_cache)
                 assignment = prepare_assignment(account)
                 token = secrets.token_urlsafe(16)
                 account.login_magic_hash = hashlib.sha256(
@@ -1255,7 +1239,7 @@ def session_prework(session_id: int, current_user):
         if action == "resend":
             pid = int(request.form.get("participant_id"))
             participant = db.session.get(Participant, pid)
-            account = ensure_account(participant)
+            account = ensure_participant_account(participant, account_cache)
             assignment = prepare_assignment(account)
             if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")
@@ -1273,8 +1257,8 @@ def session_prework(session_id: int, current_user):
                 flash("No active prework template", "error")
                 return redirect(url_for("sessions.session_prework", session_id=session_id))
             any_fail = False
-            for p, account in participants:
-                account = ensure_account(p)
+            for p, _ in participants:
+                account = ensure_participant_account(p, account_cache)
                 assignment = prepare_assignment(account)
                 if assignment and assignment.status == "WAIVED":
                     continue
