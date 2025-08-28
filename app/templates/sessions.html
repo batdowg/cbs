@@ -13,11 +13,11 @@
   {% for s in sessions %}
   <tr>
     <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a></td>
+    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.location }}</td>
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} — {{ s.workshop_type.name }}{% endif %}</td>
     <td>{{ s.start_date }}</td>
     <td>{{ s.end_date }}</td>
-    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.status }}</td>
     <td>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
