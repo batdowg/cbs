@@ -3,8 +3,6 @@
 {% block content %}
 <h1>{{ session.title }}</h1>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
-{% set start_time = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
-{% set end_time = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
 {% if csa_view %}
 <div>
   Title: {{ session.title }}<br>
@@ -14,7 +12,7 @@
   {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
   {% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
   {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
-  Dates: {{ session.start_date }} – {{ session.end_date }} {{ start_time }}–{{ end_time }}<br>
+  Dates: {{ session.start_date }} – {{ session.end_date }} {{ session.daily_start_time|fmt_time }}–{{ session.daily_end_time|fmt_time }}<br>
   Timezone: {{ session.timezone }}<br>
   Language: {{ session.language }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
@@ -32,7 +30,7 @@
 {% else %}
 <div>
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
-  Dates: {{ session.start_date }} – {{ session.end_date }} {{ start_time }}–{{ end_time }}<br>
+  Dates: {{ session.start_date }} – {{ session.end_date }} {{ session.daily_start_time|fmt_time }}–{{ session.daily_end_time|fmt_time }}<br>
   Region: {{ session.region }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
   Workshop Location: {{ session.workshop_location.label if session.workshop_location else '' }}<br>

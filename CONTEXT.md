@@ -71,6 +71,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - Client selection keeps Title and displays CRM; Client Session Administrator accepts staff emails. **[DONE]**
 - **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
 - Saving a session requires **end date > start date**. If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
+- Session form normalizes time fields to HH:MM; server validation enforces end > start; UI sets end.min = start; past-start requires acknowledgement.
 - **Lifecycle flags & gates** (server-enforced):  
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
   Gates:
