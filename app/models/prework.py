@@ -35,6 +35,13 @@ class PreworkQuestion(db.Model):
     position = db.Column(db.Integer, nullable=False)
     text = db.Column(db.Text, nullable=False)
     required = db.Column(db.Boolean, nullable=False, default=True)
+    kind = db.Column(
+        db.Enum("TEXT", "LIST", name="prework_question_kind"),
+        nullable=False,
+        server_default="TEXT",
+    )
+    min_items = db.Column(db.Integer)
+    max_items = db.Column(db.Integer)
     __table_args__ = (
         db.UniqueConstraint("template_id", "position", name="uq_prework_question_position"),
     )
@@ -86,24 +93,37 @@ class PreworkAssignment(db.Model):
     )
 
     def update_completion(self) -> None:
-        required = {
-            q.get("index")
-            for q in self.snapshot_json.get("questions", [])
-            if q.get("required")
-        }
-        answered = {
-            a.question_index
-            for a in self.answers
-            if a.answer_text and a.answer_text.strip()
-        }
-        if required.issubset(answered):
+        if not (self.template and self.template.require_completion):
+            return
+        qs = {q["index"]: q for q in self.snapshot_json.get("questions", [])}
+        for idx, q in qs.items():
+            if not q.get("required"):
+                continue
+            if q.get("kind") == "LIST":
+                min_items = q.get("min_items") or 1
+                count = sum(
+                    1
+                    for a in self.answers
+                    if a.question_index == idx and a.answer_text and a.answer_text.strip()
+                )
+                if count < min_items:
+                    break
+            else:
+                found = any(
+                    a.answer_text and a.answer_text.strip()
+                    for a in self.answers
+                    if a.question_index == idx
+                )
+                if not found:
+                    break
+        else:
             if self.status != "COMPLETED":
                 self.status = "COMPLETED"
                 self.completed_at = datetime.utcnow()
-        else:
-            if self.status == "COMPLETED":
-                self.status = "SENT"
-                self.completed_at = None
+            return
+        if self.status == "COMPLETED":
+            self.status = "SENT"
+            self.completed_at = None
 
 
 class PreworkAnswer(db.Model):
@@ -114,6 +134,7 @@ class PreworkAnswer(db.Model):
         db.Integer, db.ForeignKey("prework_assignments.id", ondelete="CASCADE")
     )
     question_index = db.Column(db.Integer, nullable=False)
+    item_index = db.Column(db.Integer, nullable=False, default=0)
     answer_text = db.Column(db.Text, nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -122,7 +143,10 @@ class PreworkAnswer(db.Model):
     )
     __table_args__ = (
         db.UniqueConstraint(
-            "assignment_id", "question_index", name="uq_prework_answer_unique"
+            "assignment_id",
+            "question_index",
+            "item_index",
+            name="uq_prework_answer_unique",
         ),
     )
 

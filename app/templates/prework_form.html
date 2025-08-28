@@ -2,6 +2,7 @@
 {% block title %}Prework{% endblock %}
 {% block content %}
 <h1>Prework for {{ assignment.session.title if assignment.session else '' }}</h1>
+<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download Prework (PDF)</a>
 {% if assignment.template and assignment.template.info_html %}
 <div>{{ assignment.template.info_html|safe }}</div>
 {% endif %}
@@ -9,7 +10,23 @@
 {% for q in questions %}
 <div class="question">
 <label>{{ q.text }}</label><br>
-<textarea name="q{{ q.index }}" rows="3" cols="60">{{ answers.get(q.index, '') }}</textarea>
+{% if q.kind == 'LIST' %}
+<div class="list-question" data-q-index="{{ q.index }}" data-max="{{ q.max_items or 10 }}" data-next-index="{{ (answers.get(q.index, {})|length) }}">
+  <div class="list-items">
+    {% set items = answers.get(q.index, {}) %}
+    {% if not items %}{% set items = {0: ''} %}{% endif %}
+    {% for item_index, text in items.items()|sort %}
+    <div class="item">
+      <textarea data-item-index="{{ item_index }}" rows="3" cols="60">{{ text }}</textarea>
+      <button type="button" class="remove-item">Remove</button>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="add-item">Add another</button>
+</div>
+{% else %}
+<textarea name="q{{ q.index }}" rows="3" cols="60">{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</textarea>
+{% endif %}
 </div>
 {% endfor %}
 <button type="submit">Submit</button>
@@ -17,4 +34,39 @@
 {% if assignment.status == 'COMPLETED' %}
 <p>Status: Completed</p>
 {% endif %}
+<script>
+const assignmentId = {{ assignment.id }};
+document.querySelectorAll('.list-question').forEach(function(q){
+  const max = parseInt(q.dataset.max);
+  let next = parseInt(q.dataset.nextIndex || '0');
+  q.querySelectorAll('textarea').forEach(bind);
+  function bind(ta){
+    ta.addEventListener('blur', function(){
+      const item = ta.dataset.itemIndex;
+      fetch(`/prework/${assignmentId}/autosave`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question_index: q.dataset.qIndex, item_index: item, text: ta.value})});
+    });
+  }
+  q.querySelectorAll('.remove-item').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const div = btn.parentElement;
+      const ta = div.querySelector('textarea');
+      fetch(`/prework/${assignmentId}/autosave`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question_index: q.dataset.qIndex, item_index: ta.dataset.itemIndex, text: ''})}).then(()=>{div.remove();});
+    });
+  });
+  q.querySelector('.add-item').addEventListener('click', function(){
+    const count = q.querySelectorAll('textarea').length;
+    if (count >= max) return;
+    const div = document.createElement('div');
+    div.className='item';
+    div.innerHTML = `<textarea data-item-index="${next}" rows="3" cols="60"></textarea> <button type="button" class="remove-item">Remove</button>`;
+    q.querySelector('.list-items').appendChild(div);
+    const ta = div.querySelector('textarea');
+    bind(ta);
+    div.querySelector('.remove-item').addEventListener('click', function(){
+      fetch(`/prework/${assignmentId}/autosave`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question_index: q.dataset.qIndex, item_index: ta.dataset.itemIndex, text: ''})}).then(()=>{div.remove();});
+    });
+    next += 1;
+  });
+});
+</script>
 {% endblock %}

@@ -7,7 +7,7 @@
 {% endif %}
 <form method="post">
 <table>
-<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th></tr>
+<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Export</th></tr>
 {% for p, account, assignment in rows %}
 <tr>
 <td>{{ p.full_name }}</td>
@@ -15,6 +15,7 @@
 <td>{{ assignment.status if assignment else 'PENDING' }}</td>
 <td>{{ assignment.sent_at if assignment else '' }}</td>
 <td>{{ assignment.completed_at if assignment else '' }}</td>
+<td>{% if assignment %}<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download</a>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>

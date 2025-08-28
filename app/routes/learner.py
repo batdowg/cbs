@@ -32,7 +32,11 @@ from ..models import (
 from ..models import Resource, WorkshopType
 from ..models import resource_workshop_types
 
+import time
+
 bp = Blueprint("learner", __name__)
+
+autosave_hits: dict[int, list[float]] = {}
 
 
 def login_required(fn):
@@ -113,28 +117,31 @@ def prework_form(assignment_id: int):
     if not assignment or assignment.participant_account_id != account_id:
         abort(404)
     questions = assignment.snapshot_json.get("questions", [])
-    answers = {a.question_index: a.answer_text for a in assignment.answers}
+    answers: dict[int, dict[int, str]] = {}
+    for ans in assignment.answers:
+        answers.setdefault(ans.question_index, {})[ans.item_index] = ans.answer_text
     if request.method == "POST":
         for q in questions:
+            if q.get("kind") == "LIST":
+                continue
             key = f"q{q['index']}"
             text = (request.form.get(key) or "").strip()
-            if q["index"] in answers:
-                ans = (
-                    PreworkAnswer.query.filter_by(
-                        assignment_id=assignment.id, question_index=q["index"]
-                    ).first()
-                )
-                if ans:
-                    ans.answer_text = text
-            else:
-                if text:
-                    db.session.add(
-                        PreworkAnswer(
-                            assignment_id=assignment.id,
-                            question_index=q["index"],
-                            answer_text=text,
-                        )
+            existing = PreworkAnswer.query.filter_by(
+                assignment_id=assignment.id,
+                question_index=q["index"],
+                item_index=0,
+            ).first()
+            if existing:
+                existing.answer_text = text
+            elif text:
+                db.session.add(
+                    PreworkAnswer(
+                        assignment_id=assignment.id,
+                        question_index=q["index"],
+                        item_index=0,
+                        answer_text=text,
                     )
+                )
         db.session.commit()
         db.session.refresh(assignment)
         assignment.update_completion()
@@ -143,6 +150,76 @@ def prework_form(assignment_id: int):
         return redirect(url_for("learner.my_prework"))
     return render_template(
         "prework_form.html",
+        assignment=assignment,
+        questions=questions,
+        answers=answers,
+    )
+
+
+@bp.post("/prework/<int:assignment_id>/autosave")
+@login_required
+def prework_autosave(assignment_id: int):
+    account_id = flask_session.get("participant_account_id")
+    user_id = flask_session.get("user_id")
+    assignment = db.session.get(PreworkAssignment, assignment_id)
+    if not assignment or (
+        account_id != assignment.participant_account_id and not user_id
+    ):
+        abort(404)
+    now = time.time()
+    hits = autosave_hits.get(assignment_id, [])
+    hits = [t for t in hits if now - t < 10]
+    if len(hits) >= 10:
+        return ("Too Many Requests", 429)
+    hits.append(now)
+    autosave_hits[assignment_id] = hits
+    data = request.get_json() or {}
+    q_idx = int(data.get("question_index", 0))
+    item_idx = int(data.get("item_index", 0))
+    text = (data.get("text") or "").strip()
+    ans = PreworkAnswer.query.filter_by(
+        assignment_id=assignment.id,
+        question_index=q_idx,
+        item_index=item_idx,
+    ).first()
+    if text:
+        if ans:
+            ans.answer_text = text
+        else:
+            db.session.add(
+                PreworkAnswer(
+                    assignment_id=assignment.id,
+                    question_index=q_idx,
+                    item_index=item_idx,
+                    answer_text=text,
+                )
+            )
+    else:
+        if ans:
+            db.session.delete(ans)
+    db.session.commit()
+    db.session.refresh(assignment)
+    assignment.update_completion()
+    db.session.commit()
+    return {"status": "ok"}
+
+
+@bp.get("/prework/<int:assignment_id>/download")
+@login_required
+def prework_download(assignment_id: int):
+    account_id = flask_session.get("participant_account_id")
+    user_id = flask_session.get("user_id")
+    assignment = db.session.get(PreworkAssignment, assignment_id)
+    if not assignment or (
+        not user_id and assignment.participant_account_id != account_id
+    ):
+        abort(404)
+    questions = assignment.snapshot_json.get("questions", [])
+    answers: dict[int, dict[int, str]] = {}
+    for ans in assignment.answers:
+        answers.setdefault(ans.question_index, {})[ans.item_index] = ans.answer_text
+    return render_template(
+        "prework_download.html",
         assignment=assignment,
         questions=questions,
         answers=answers,

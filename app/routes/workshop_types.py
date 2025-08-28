@@ -115,29 +115,62 @@ def prework(type_id: int, current_user):
         tpl.is_active = bool(request.form.get('is_active'))
         tpl.require_completion = bool(request.form.get('require_completion'))
         tpl.info_html = (request.form.get('info') or '').strip()
-        q_lines = [
-            line.strip()
-            for line in (request.form.get('questions') or '').splitlines()
-            if line.strip()
-        ][:10]
+        questions = []
+        for i in range(1, 11):
+            text = (request.form.get(f'text_{i}') or '').strip()
+            if not text:
+                continue
+            kind = request.form.get(f'kind_{i}') or 'TEXT'
+            min_items = None
+            max_items = None
+            if kind == 'LIST':
+                try:
+                    min_items = int(request.form.get(f'min_{i}') or 3)
+                except ValueError:
+                    min_items = 3
+                try:
+                    max_items = int(request.form.get(f'max_{i}') or 5)
+                except ValueError:
+                    max_items = 5
+                if min_items < 1:
+                    min_items = 1
+                if max_items < min_items:
+                    max_items = min_items
+                if max_items > 10:
+                    max_items = 10
+            questions.append((text, kind, min_items, max_items))
         if tpl.id:
             PreworkQuestion.query.filter_by(template_id=tpl.id).delete()
-        for idx, text in enumerate(q_lines, start=1):
+        for idx, (text, kind, min_items, max_items) in enumerate(questions, start=1):
             db.session.add(
-                PreworkQuestion(template=tpl, position=idx, text=text, required=True)
+                PreworkQuestion(
+                    template=tpl,
+                    position=idx,
+                    text=text,
+                    required=True,
+                    kind=kind,
+                    min_items=min_items,
+                    max_items=max_items,
+                )
             )
         db.session.add(tpl)
         db.session.commit()
         flash('Prework template saved', 'success')
         return redirect(url_for('workshop_types.prework', type_id=wt.id))
-    questions_text = ''
+    questions = []
     if tpl:
-        questions_text = '\n'.join(
-            q.text for q in sorted(tpl.questions, key=lambda q: q.position)
-        )
+        for q in sorted(tpl.questions, key=lambda q: q.position):
+            questions.append(
+                {
+                    'text': q.text,
+                    'kind': q.kind,
+                    'min_items': q.min_items,
+                    'max_items': q.max_items,
+                }
+            )
     return render_template(
         'workshop_types/prework.html',
         wt=wt,
         template=tpl,
-        questions_text=questions_text,
+        questions=questions,
     )

@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head><title>Prework</title></head>
+<body>
+<h1>Prework for {{ assignment.session.title if assignment.session else '' }}</h1>
+{% for q in questions %}
+<div>
+<strong>{{ q.text }}</strong>
+{% if q.kind == 'LIST' %}
+<ul>
+  {% for _, text in (answers.get(q.index, {})).items()|sort %}
+  <li>{{ text }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</p>
+{% endif %}
+</div>
+{% endfor %}
+<script>window.print()</script>
+</body>
+</html>
