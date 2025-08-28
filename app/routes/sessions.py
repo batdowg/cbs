@@ -173,6 +173,7 @@ def new_session(current_user):
     )
     default_lang = next((l.name for l in languages if l.name == "English"), languages[0].name if languages else None)
     if request.method == "POST":
+        action = request.form.get("action")
         missing = []
         title = request.form.get("title")
         if not title:
@@ -218,7 +219,7 @@ def new_session(current_user):
         info_sent = _cb(request.form.get("info_sent"))
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
-        no_material_order = _cb(request.form.get("no_material_order"))
+        no_material_order = action == "no_material"
         if finalized:
             delivered = True
             ready_for_delivery = True
@@ -353,6 +354,8 @@ def new_session(current_user):
         if changes:
             msg += ": " + ", ".join(changes)
         flash(msg, "success")
+        if no_material_order:
+            return redirect(url_for("sessions.session_detail", session_id=sess.id))
         return redirect(url_for("materials.materials_view", session_id=sess.id))
     tz_map = {
         "NA": "America/New_York",
@@ -1073,10 +1076,6 @@ def session_prework(session_id: int, current_user):
     )
     if request.method == "POST":
         action = request.form.get("action")
-        if action == "toggle_no_material_order":
-            sess.no_material_order = bool(request.form.get("no_material_order"))
-            db.session.commit()
-            return redirect(url_for("sessions.session_prework", session_id=session_id))
         if not template:
             flash("No active prework template", "error")
             return redirect(url_for("sessions.session_prework", session_id=session_id))
@@ -1143,6 +1142,7 @@ def session_prework(session_id: int, current_user):
             assignment.magic_token_expires = datetime.utcnow() + timedelta(
                 days=MAGIC_LINK_TTL_DAYS
             )
+            db.session.flush()
             link = url_for(
                 "auth.prework_magic",
                 assignment_id=assignment.id,

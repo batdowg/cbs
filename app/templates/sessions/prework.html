@@ -2,11 +2,6 @@
 {% block title %}Prework - {{ session.title }}{% endblock %}
 {% block content %}
 <h1>Prework for {{ session.title }}</h1>
-<form method="post" style="margin-bottom:1rem;">
-  <input type="hidden" name="action" value="toggle_no_material_order">
-  <label><input type="checkbox" name="no_material_order" value="1" {% if session.no_material_order %}checked{% endif %}> No material order for this workshop</label>
-  <button type="submit">Save</button>
-</form>
 {% if not template %}
 <p>No active prework template for this workshop type.</p>
 {% endif %}

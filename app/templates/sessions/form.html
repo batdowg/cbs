@@ -115,7 +115,6 @@
       <button type="button" id="add-fac">Add another facilitator</button>
     </div>
   </fieldset>
-  <div><label><input type="checkbox" name="no_material_order" value="1" {% if session.no_material_order %}checked{% endif %}> No material order for this workshop</label></div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
   <fieldset>
@@ -133,7 +132,12 @@
   </fieldset>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
   {% endif %}
-  <button type="submit">{{ 'Proceed to Material Order' if not session or not session.id else 'Save' }}</button>
+  {% if not session or not session.id %}
+  <button type="submit">Proceed to materials order</button>
+  <button type="submit" name="action" value="no_material">No Materials Order (Save)</button>
+  {% else %}
+  <button type="submit">Save</button>
+  {% endif %}
 </form>
 <script>
   var delivered = document.querySelector('input[name="delivered"]');
