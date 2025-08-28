@@ -130,6 +130,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Idempotent migrations; seed guards; simple audit logs for key actions (logins, role changes, password admin resets, provisioning). **[DONE] (minimal)**
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
 - Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
+- Migration 0032_prework_list_questions explicitly creates/drops PostgreSQL enum `prework_question_kind` for reliable upgrades/downgrades. **[DONE]**
 
 ---
 
