@@ -2,42 +2,45 @@
 {% block title %}Prework - {{ session.title }}{% endblock %}
 {% block content %}
 <h1>Prework for {{ session.title }}</h1>
-{% if not template %}
-<p>No active prework template for this workshop type.</p>
+<form method="post">
+  <input type="hidden" name="action" value="toggle_no_prework">
+  <label><input type="checkbox" name="no_prework" value="1" {% if session.no_prework %}checked{% endif %}> No prework for this workshop</label>
+  <button type="submit">Save</button>
+</form>
+{% if session.no_prework and not any_assignment %}
+<p>Prework disabled for this workshop.</p>
 {% endif %}
+{% if rows %}
 <table>
-<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Export</th><th>Actions</th></tr>
+<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Account Sent</th><th>Export</th><th>Actions</th></tr>
 {% for p, account, assignment in rows %}
 <tr>
 <td>{{ p.full_name }}</td>
 <td>{{ p.email }}</td>
-<td>{{ assignment.status if assignment else 'PENDING' }}</td>
-<td>{{ assignment.sent_at if assignment else '' }}</td>
-<td>{{ assignment.completed_at if assignment else '' }}</td>
+<td>{% if assignment %}{{ assignment.status }}{% elif session.no_prework %}WAIVED{% else %}PENDING{% endif %}</td>
+<td>{{ assignment.sent_at|fmt_dt if assignment else '' }}</td>
+<td>{{ assignment.completed_at|fmt_dt if assignment else '' }}</td>
+<td>{{ assignment.account_sent_at|fmt_dt if assignment else '' }}</td>
 <td>{% if assignment %}<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download</a>{% endif %}</td>
 <td>
-  {% if assignment and assignment.status != 'WAIVED' %}
+  {% if assignment and assignment.status != 'WAIVED' and not session.no_prework %}
   <form method="post" style="display:inline">
     <input type="hidden" name="action" value="resend">
     <input type="hidden" name="participant_id" value="{{ p.id }}">
     <button type="submit">Resend</button>
   </form>
   {% endif %}
-  {% if not assignment or assignment.status != 'WAIVED' %}
-  <form method="post" style="display:inline">
-    <input type="hidden" name="action" value="waive">
-    <input type="hidden" name="participant_id" value="{{ p.id }}">
-    <button type="submit">Mark No Prework</button>
-  </form>
-  {% endif %}
 </td>
 </tr>
 {% endfor %}
 </table>
-{% if template %}
-<form method="post">
-  <input type="hidden" name="action" value="send_all">
-  <button type="submit">Send Prework</button>
-</form>
 {% endif %}
+<form method="post" style="display:inline">
+  <input type="hidden" name="action" value="send_all">
+  <button type="submit" {% if session.no_prework %}disabled{% endif %}>Send Prework</button>
+</form>
+<form method="post" style="display:inline">
+  <input type="hidden" name="action" value="send_accounts">
+  <button type="submit">Send Accounts without Prework</button>
+</form>
 {% endblock %}

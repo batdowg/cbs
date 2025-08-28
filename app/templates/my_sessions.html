@@ -3,38 +3,72 @@
 {% block content %}
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
-<table border="1" cellpadding="4" cellspacing="0">
-  <tr>
-    <th>Title</th>
-    <th>Client</th>
-    <th>Location</th>
-    <th>Workshop Type</th>
-    <th>Dates</th>
-    <th>Region</th>
-    <th>Delivery Type</th>
-    <th>Status</th>
-    <th>Actions</th>
-  </tr>
-  {% for s in sessions %}
-  <tr>
-    <td>{{ s.title }}</td>
-    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
-    <td>{{ s.location }}</td>
-    <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
-    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time }}-{{ s.daily_end_time }}</td>
-    <td>{{ s.region }}</td>
-    <td>{{ s.delivery_type }}</td>
-    <td>{{ s.computed_status }}</td>
-    <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
-  </tr>
-  {% endfor %}
-</table>
+  {% if current_user %}
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr>
+      <th>Title</th>
+      <th>Client</th>
+      <th>Location</th>
+      <th>Workshop Type</th>
+      <th>Dates</th>
+      <th>Region</th>
+      <th>Delivery Type</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+    {% for s in sessions %}
+    <tr>
+      <td>{{ s.title }}</td>
+      <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
+      <td>{{ s.location }}</td>
+      <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
+      <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time.strftime('%H:%M') if s.daily_start_time else '' }}-{{ s.daily_end_time.strftime('%H:%M') if s.daily_end_time else '' }}</td>
+      <td>{{ s.region }}</td>
+      <td>{{ s.delivery_type }}</td>
+      <td>{{ s.computed_status }}</td>
+      <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr>
+      <th>Workshop</th>
+      <th>Dates</th>
+      <th>Timezone</th>
+      <th>Location</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+    {% for s in sessions %}
+    <tr>
+      <td>{% if s.workshop_type %}{{ s.workshop_type.name }}{% endif %}</td>
+      <td>{{ s.start_date }} - {{ s.end_date }}</td>
+      <td>{{ s.timezone }}</td>
+      <td>{{ s.workshop_location.label if s.workshop_location else '' }}</td>
+      <td>{% if today < s.start_date %}upcoming{% elif not s.delivered %}started{% else %}delivered{% endif %}</td>
+      <td>
+        {% set assignment = assignments.get(s.id) if assignments else None %}
+        {% if s.delivered and certs.get(s.id) %}
+          <a href="{{ url_for('learner.my_certs') }}">Certificate</a>
+        {% elif s.start_date <= today %}
+          <a href="{{ url_for('learner.my_resources') }}">Resources</a>
+        {% elif assignment and assignment.status != 'WAIVED' %}
+          <a href="{{ url_for('learner.my_prework') }}">Go to Prework</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
 {% else %}
 <p>No workshops found.</p>
 {% endif %}
-{% if not show_all %}
-<p><a href="{{ url_for('my_sessions.list_my_sessions', all=1) }}">Show all</a></p>
-{% else %}
-<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Hide closed/cancelled</a></p>
+{% if current_user %}
+  {% if not show_all %}
+  <p><a href="{{ url_for('my_sessions.list_my_sessions', all=1) }}">Show all</a></p>
+  {% else %}
+  <p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Hide closed/cancelled</a></p>
+  {% endif %}
 {% endif %}
 {% endblock %}

@@ -6,6 +6,13 @@
   <div><label>Email <input type="text" value="{{ email }}" readonly></label></div>
   <div><label>Full name <input type="text" name="full_name" value="{{ full_name }}" maxlength="200" autocomplete="off"></label></div>
   <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
+  <div><label>Language
+    <select name="preferred_language">
+      {% for code in ['en','es','fr','de','ja','zh'] %}
+      <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ code }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <button type="submit">Save</button>
 </form>
 {% endblock %}

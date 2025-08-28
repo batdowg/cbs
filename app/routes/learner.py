@@ -272,8 +272,12 @@ def profile():
     if request.method == "POST":
         full_name = (request.form.get("full_name") or "").strip()[:200]
         cert_name = (request.form.get("certificate_name") or "").strip()[:200]
+        pref_lang = (request.form.get("preferred_language") or "en")[:10]
         account.full_name = full_name
         account.certificate_name = cert_name or full_name
+        account.preferred_language = pref_lang
+        if flask_session.get("user_id"):
+            user.preferred_language = pref_lang
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("learner.profile"))
@@ -282,6 +286,7 @@ def profile():
         email=email,
         full_name=account.full_name or "",
         certificate_name=account.certificate_name or "",
+        preferred_language=account.preferred_language or "en",
     )
 
 

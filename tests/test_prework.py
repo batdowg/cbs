@@ -1,7 +1,10 @@
 from datetime import date, time
+import secrets
 
 from app.app import create_app, db
+from app import emailer
 from app.models import (
+    User,
     WorkshopType,
     PreworkTemplate,
     PreworkQuestion,
@@ -65,6 +68,75 @@ def test_assignment_completion():
         assign.update_completion()
         db.session.commit()
         assert assign.status == "COMPLETED"
+
+
+def test_no_prework_toggle_disables_send_prework(monkeypatch):
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        user = User(email="admin@example.com", is_app_admin=True)
+        wt = WorkshopType(code="NP", name="NoPrework")
+        db.session.add_all([user, wt])
+        db.session.commit()
+        tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add(tpl)
+        db.session.flush()
+        db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
+        sess = Session(title="S", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        part = Participant(email="p@example.com", full_name="P")
+        db.session.add_all([sess, part])
+        db.session.flush()
+        db.session.add(SessionParticipant(session_id=sess.id, participant_id=part.id))
+        db.session.commit()
+        sess_id = sess.id
+        user_id = user.id
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = user_id
+        c.post(f"/sessions/{sess_id}/prework", data={"action": "toggle_no_prework", "no_prework": "1"})
+        c.post(f"/sessions/{sess_id}/prework", data={"action": "send_all"})
+        with app.app_context():
+            assert Session.query.get(sess_id).no_prework is True
+            assert PreworkAssignment.query.count() == 0
+
+
+def test_account_invite_sets_timestamp(monkeypatch):
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        user = User(email="admin2@example.com", is_app_admin=True)
+        wt = WorkshopType(code="AI", name="AcctInvite")
+        db.session.add_all([user, wt])
+        db.session.commit()
+        tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add(tpl)
+        db.session.flush()
+        db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
+        sess = Session(title="S2", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        part = Participant(email="p2@example.com", full_name="P2")
+        db.session.add_all([sess, part])
+        db.session.flush()
+        db.session.add(SessionParticipant(session_id=sess.id, participant_id=part.id))
+        db.session.commit()
+        sess_id = sess.id
+        user_id = user.id
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = user_id
+        token = "fixedtoken"
+        monkeypatch.setattr(emailer, "send", lambda *a, **k: {"ok": True})
+        monkeypatch.setattr(secrets, "token_urlsafe", lambda n: token)
+        c.post(f"/sessions/{sess_id}/prework", data={"action": "send_accounts"})
+        with app.app_context():
+            assignment = PreworkAssignment.query.filter_by(session_id=sess_id).first()
+            account = ParticipantAccount.query.filter_by(email="p2@example.com").first()
+            assert assignment and assignment.account_sent_at is not None
+            assert account and account.login_magic_hash is not None
+            account_id = account.id
+        resp = c.get(f"/account/a/{account_id}/{token}")
+        assert resp.status_code == 302
+        with c.session_transaction() as s:
+            assert s.get("participant_account_id") == account_id
 
 
 def test_nav_gating_prework():

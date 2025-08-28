@@ -76,6 +76,7 @@ class PreworkAssignment(db.Model):
     snapshot_json = db.Column(db.JSON, nullable=False)
     magic_token_hash = db.Column(db.String(128))
     magic_token_expires = db.Column(db.DateTime(timezone=True))
+    account_sent_at = db.Column(db.DateTime(timezone=True))
     __table_args__ = (
         db.UniqueConstraint(
             "session_id", "participant_account_id", name="uq_prework_assignment_unique"

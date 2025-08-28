@@ -27,6 +27,9 @@ def test_full_name_backfill(app):
                 email VARCHAR(255),
                 password_hash VARCHAR(255),
                 certificate_name VARCHAR(200),
+                login_magic_hash TEXT,
+                login_magic_expires DATETIME,
+                preferred_language VARCHAR(10) DEFAULT 'en',
                 is_active BOOLEAN NOT NULL DEFAULT 1,
                 last_login DATETIME,
                 created_at DATETIME
@@ -35,7 +38,7 @@ def test_full_name_backfill(app):
         ))
         db.session.execute(
             sa.text(
-                "INSERT INTO participant_accounts (id, email, certificate_name, is_active) VALUES (1, 'p@example.com', 'Legacy', 1)"
+                "INSERT INTO participant_accounts (id, email, certificate_name, is_active, preferred_language) VALUES (1, 'p@example.com', 'Legacy', 1, 'en')"
             )
         )
         db.session.commit()

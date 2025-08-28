@@ -1077,9 +1077,6 @@ def session_prework(session_id: int, current_user):
     )
     if request.method == "POST":
         action = request.form.get("action")
-        if not template:
-            flash("No active prework template", "error")
-            return redirect(url_for("sessions.session_prework", session_id=session_id))
 
         def ensure_account(participant: Participant) -> ParticipantAccount:
             account = participant.account
@@ -1099,7 +1096,9 @@ def session_prework(session_id: int, current_user):
             )
             return account
 
-        def prepare_assignment(account: ParticipantAccount) -> PreworkAssignment:
+        def prepare_assignment(account: ParticipantAccount) -> PreworkAssignment | None:
+            if not template:
+                return None
             assignment = PreworkAssignment.query.filter_by(
                 session_id=sess.id, participant_account_id=account.id
             ).first()
@@ -1183,17 +1182,74 @@ def session_prework(session_id: int, current_user):
             )
             return False
 
-        if action == "waive":
-            pid = int(request.form.get("participant_id"))
-            participant = db.session.get(Participant, pid)
-            account = ensure_account(participant)
-            assignment = prepare_assignment(account)
-            assignment.status = "WAIVED"
-            assignment.sent_at = None
-            assignment.magic_token_hash = None
-            assignment.magic_token_expires = None
+        if action == "toggle_no_prework":
+            sess.no_prework = _cb(request.form.get("no_prework"))
+            assignments = PreworkAssignment.query.filter_by(session_id=sess.id).all()
+            for a in assignments:
+                if sess.no_prework:
+                    a.status = "WAIVED"
+                    a.sent_at = None
+                    a.magic_token_hash = None
+                    a.magic_token_expires = None
+                else:
+                    if a.status == "WAIVED":
+                        a.status = "PENDING"
             db.session.commit()
-            flash("Marked no prework", "info")
+            current_app.logger.info(
+                f"[SESS] no_prework={sess.no_prework} session={sess.id}"
+            )
+            flash(
+                "Prework disabled for this workshop"
+                if sess.no_prework
+                else "Prework enabled",
+                "info",
+            )
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+
+        if action == "send_accounts":
+            any_fail = False
+            for p, account in participants:
+                account = ensure_account(p)
+                assignment = prepare_assignment(account)
+                token = secrets.token_urlsafe(16)
+                account.login_magic_hash = hashlib.sha256(
+                    (token + current_app.secret_key).encode()
+                ).hexdigest()
+                account.login_magic_expires = now_utc() + timedelta(
+                    days=MAGIC_LINK_TTL_DAYS
+                )
+                db.session.flush()
+                link = url_for(
+                    "auth.account_magic",
+                    account_id=account.id,
+                    token=token,
+                    _external=True,
+                    _scheme="https",
+                )
+                subject = f"Workshop Portal Access: {sess.title}"
+                body = render_template(
+                    "email/account_invite.txt", session=sess, link=link
+                )
+                html_body = render_template(
+                    "email/account_invite.html", session=sess, link=link
+                )
+                try:
+                    res = emailer.send(account.email, subject, body, html=html_body)
+                except Exception as e:  # pragma: no cover - defensive
+                    res = {"ok": False, "detail": str(e)}
+                if res.get("ok"):
+                    if assignment:
+                        assignment.account_sent_at = now_utc()
+                    current_app.logger.info(
+                        f"[MAIL-OUT] account-invite session={sess.id} pa={account.id} to={account.email}"
+                    )
+                else:
+                    any_fail = True
+            db.session.commit()
+            if any_fail:
+                flash("Some emails failed; check logs", "error")
+            else:
+                flash("Account links sent", "success")
             return redirect(url_for("sessions.session_prework", session_id=session_id))
 
         if action == "resend":
@@ -1201,21 +1257,28 @@ def session_prework(session_id: int, current_user):
             participant = db.session.get(Participant, pid)
             account = ensure_account(participant)
             assignment = prepare_assignment(account)
-            if assignment.status == "WAIVED":
+            if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")
                 return redirect(url_for("sessions.session_prework", session_id=session_id))
-            send_mail(assignment, account)
+            if assignment:
+                send_mail(assignment, account)
             db.session.commit()
             return redirect(url_for("sessions.session_prework", session_id=session_id))
 
         if action == "send_all":
+            if sess.no_prework:
+                flash("Prework disabled for this workshop", "error")
+                return redirect(url_for("sessions.session_prework", session_id=session_id))
+            if not template:
+                flash("No active prework template", "error")
+                return redirect(url_for("sessions.session_prework", session_id=session_id))
             any_fail = False
             for p, account in participants:
                 account = ensure_account(p)
                 assignment = prepare_assignment(account)
-                if assignment.status == "WAIVED":
+                if assignment and assignment.status == "WAIVED":
                     continue
-                if not send_mail(assignment, account):
+                if assignment and not send_mail(assignment, account):
                     any_fail = True
             db.session.commit()
             if any_fail:
@@ -1227,13 +1290,20 @@ def session_prework(session_id: int, current_user):
         flash("Unknown action", "error")
         return redirect(url_for("sessions.session_prework", session_id=session_id))
     rows = []
+    any_assignment = False
     for p, account in participants:
         assignment = None
         if account:
             assignment = PreworkAssignment.query.filter_by(
                 session_id=sess.id, participant_account_id=account.id
             ).first()
+        if assignment:
+            any_assignment = True
         rows.append((p, account, assignment))
     return render_template(
-        "sessions/prework.html", session=sess, rows=rows, template=template
+        "sessions/prework.html",
+        session=sess,
+        rows=rows,
+        template=template,
+        any_assignment=any_assignment,
     )

@@ -23,6 +23,9 @@ class User(db.Model):
     is_kt_staff = db.Column(db.Boolean, default=False)
     region = db.Column(db.String(8))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    preferred_language = db.Column(
+        db.String(10), nullable=False, default="en", server_default="en"
+    )
     __table_args__ = (
         db.Index("ix_users_email_lower", db.func.lower(email), unique=True),
     )
@@ -48,6 +51,11 @@ class ParticipantAccount(db.Model):
     password_hash = db.Column(db.String(255))
     full_name = db.Column(db.String(200), nullable=False)
     certificate_name = db.Column(db.String(200), default="")
+    login_magic_hash = db.Column(db.String(128))
+    login_magic_expires = db.Column(db.DateTime(timezone=True))
+    preferred_language = db.Column(
+        db.String(10), nullable=False, default="en", server_default="en"
+    )
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
@@ -283,6 +291,9 @@ class Session(db.Model):
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
     no_material_order = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    no_prework = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
     cancelled = db.Column(
