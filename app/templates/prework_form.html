@@ -9,7 +9,7 @@
 <form method="post">
 {% for q in questions %}
 <div class="question">
-<label>{{ q.text }}</label><br>
+<label>{{ q.text|safe }}</label><br>
 {% if q.kind == 'LIST' %}
 <div class="list-question" data-q-index="{{ q.index }}" data-max="{{ q.max_items or 10 }}" data-next-index="{{ (answers.get(q.index, {})|length) }}">
   <div class="list-items">

@@ -282,6 +282,9 @@ class Session(db.Model):
     on_hold = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    no_material_order = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     cancelled = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )

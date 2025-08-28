@@ -1,0 +1,12 @@
+Hello,
+
+Prework for your upcoming workshop "{{ session.title }}" ({% if session.workshop_type %}{{ session.workshop_type.name }}{% endif %}) scheduled for {{ session.start_date }} {{ session.daily_start_time }} {{ session.timezone or '' }} is ready.
+
+Please complete it by {{ assignment.due_at.date() if assignment.due_at else 'the due date' }}.
+
+Start your prework here:
+{{ link }}
+
+Thank you,
+KT
+

@@ -2,12 +2,16 @@
 {% block title %}Prework - {{ session.title }}{% endblock %}
 {% block content %}
 <h1>Prework for {{ session.title }}</h1>
+<form method="post" style="margin-bottom:1rem;">
+  <input type="hidden" name="action" value="toggle_no_material_order">
+  <label><input type="checkbox" name="no_material_order" value="1" {% if session.no_material_order %}checked{% endif %}> No material order for this workshop</label>
+  <button type="submit">Save</button>
+</form>
 {% if not template %}
 <p>No active prework template for this workshop type.</p>
 {% endif %}
-<form method="post">
 <table>
-<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Export</th></tr>
+<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Export</th><th>Actions</th></tr>
 {% for p, account, assignment in rows %}
 <tr>
 <td>{{ p.full_name }}</td>
@@ -16,9 +20,29 @@
 <td>{{ assignment.sent_at if assignment else '' }}</td>
 <td>{{ assignment.completed_at if assignment else '' }}</td>
 <td>{% if assignment %}<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download</a>{% endif %}</td>
+<td>
+  {% if assignment and assignment.status != 'WAIVED' %}
+  <form method="post" style="display:inline">
+    <input type="hidden" name="action" value="resend">
+    <input type="hidden" name="participant_id" value="{{ p.id }}">
+    <button type="submit">Resend</button>
+  </form>
+  {% endif %}
+  {% if not assignment or assignment.status != 'WAIVED' %}
+  <form method="post" style="display:inline">
+    <input type="hidden" name="action" value="waive">
+    <input type="hidden" name="participant_id" value="{{ p.id }}">
+    <button type="submit">Mark No Prework</button>
+  </form>
+  {% endif %}
+</td>
 </tr>
 {% endfor %}
 </table>
-{% if template %}<button type="submit">Send Prework</button>{% endif %}
+{% if template %}
+<form method="post">
+  <input type="hidden" name="action" value="send_all">
+  <button type="submit">Send Prework</button>
 </form>
+{% endif %}
 {% endblock %}

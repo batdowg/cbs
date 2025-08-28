@@ -18,3 +18,5 @@ LANGUAGE_NAMES = [
     "Japanese",
     "Spanish",
 ]
+
+MAGIC_LINK_TTL_DAYS = 30

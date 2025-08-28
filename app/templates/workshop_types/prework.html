@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Prework for {{ wt.name }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.js"></script>
+{% endblock %}
 {% block content %}
 <h1>Prework for {{ wt.name }}</h1>
 <form method="post">
 <label><input type="checkbox" name="is_active" value="1" {% if template and template.is_active %}checked{% endif %}> Active</label><br>
 <label><input type="checkbox" name="require_completion" value="1" {% if template and template.require_completion %}checked{% endif %}> Require completion</label><br>
 <label>Information</label><br>
-<textarea name="info" rows="4" cols="60">{{ template.info_html if template else '' }}</textarea><br>
+<input type="hidden" id="info" name="info" value="{{ template.info_html|e if template else '' }}">
+<trix-editor input="info"></trix-editor><br>
 <table>
 <tr><th>#</th><th>Question</th><th>Type</th><th>Min</th><th>Max</th></tr>
 {% for i in range(1,11) %}
   {% set q = questions[i-1] if questions|length >= i else None %}
   <tr>
     <td>{{ i }}</td>
-    <td><input type="text" name="text_{{i}}" value="{{ q.text if q else '' }}" size="60"></td>
+    <td>
+      <input type="hidden" id="text_{{i}}" name="text_{{i}}" value="{{ q.text|e if q else '' }}">
+      <trix-editor input="text_{{i}}"></trix-editor>
+    </td>
     <td>
       <select name="kind_{{i}}" class="kind-select">
         <option value="TEXT" {% if not q or q.kind=='TEXT' %}selected{% endif %}>Long text</option>

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}{% if current_user %}My Sessions{% else %}Sessions{% endif %}{% endblock %}
+{% block title %}{% if current_user %}My Sessions{% else %}My Workshops{% endif %}{% endblock %}
 {% block content %}
-<h1>{% if current_user %}My Sessions{% else %}Sessions{% endif %}</h1>
+<h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
 <table border="1" cellpadding="4" cellspacing="0">
   <tr>
@@ -30,7 +30,7 @@
   {% endfor %}
 </table>
 {% else %}
-<p>No sessions found.</p>
+<p>No workshops found.</p>
 {% endif %}
 {% if not show_all %}
 <p><a href="{{ url_for('my_sessions.list_my_sessions', all=1) }}">Show all</a></p>

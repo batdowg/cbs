@@ -115,6 +115,7 @@
       <button type="button" id="add-fac">Add another facilitator</button>
     </div>
   </fieldset>
+  <div><label><input type="checkbox" name="no_material_order" value="1" {% if session.no_material_order %}checked{% endif %}> No material order for this workshop</label></div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
   <fieldset>

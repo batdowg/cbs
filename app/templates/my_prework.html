@@ -6,7 +6,7 @@
 <ul>
 {% for a in assignments %}
 <li>
-{{ a.session.title if a.session else 'Session' }} - {{ a.status }}
+{{ a.session.title if a.session else 'Workshop' }} - {{ a.status }}
 {% if a.status != 'COMPLETED' %}
 <a href="{{ url_for('learner.prework_form', assignment_id=a.id) }}">Open</a>
 {% else %}
