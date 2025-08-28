@@ -40,6 +40,7 @@ from .constants import LANGUAGE_NAMES
 def create_app():
     app = Flask(__name__, template_folder="templates")
     app.secret_key = os.getenv("SECRET_KEY", "dev")
+    app.config["PREFERRED_URL_SCHEME"] = "https"
     app.jinja_env.globals["slug_for_badge"] = slug_for_badge
     app.jinja_env.globals["best_badge_url"] = best_badge_url
 
@@ -167,7 +168,7 @@ def create_app():
                 query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
                 sessions_list = query.order_by(Session.start_date).all()
                 return render_template("home.html", sessions=sessions_list)
-            return redirect(url_for("learner.my_certs"))
+            return render_template("home.html")
         return redirect(url_for("auth.login"))
 
     def login_required(fn):
