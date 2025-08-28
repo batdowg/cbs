@@ -7,8 +7,39 @@
 <label><input type="checkbox" name="require_completion" value="1" {% if template and template.require_completion %}checked{% endif %}> Require completion</label><br>
 <label>Information</label><br>
 <textarea name="info" rows="4" cols="60">{{ template.info_html if template else '' }}</textarea><br>
-<label>Questions (one per line)</label><br>
-<textarea name="questions" rows="10" cols="80">{{ questions_text }}</textarea><br>
+<table>
+<tr><th>#</th><th>Question</th><th>Type</th><th>Min</th><th>Max</th></tr>
+{% for i in range(1,11) %}
+  {% set q = questions[i-1] if questions|length >= i else None %}
+  <tr>
+    <td>{{ i }}</td>
+    <td><input type="text" name="text_{{i}}" value="{{ q.text if q else '' }}" size="60"></td>
+    <td>
+      <select name="kind_{{i}}" class="kind-select">
+        <option value="TEXT" {% if not q or q.kind=='TEXT' %}selected{% endif %}>Long text</option>
+        <option value="LIST" {% if q and q.kind=='LIST' %}selected{% endif %}>List</option>
+      </select>
+    </td>
+    <td><input type="number" name="min_{{i}}" min="1" max="10" value="{{ q.min_items if q and q.min_items is not none else 3 }}" class="min-input"></td>
+    <td><input type="number" name="max_{{i}}" min="1" max="10" value="{{ q.max_items if q and q.max_items is not none else 5 }}" class="max-input"></td>
+  </tr>
+{% endfor %}
+</table>
 <button type="submit">Save</button>
 </form>
+<script>
+for (const row of document.querySelectorAll('table tr')) {
+  const kindSel = row.querySelector('.kind-select');
+  if (!kindSel) continue;
+  const minInput = row.querySelector('.min-input');
+  const maxInput = row.querySelector('.max-input');
+  function toggle() {
+    const show = kindSel.value === 'LIST';
+    minInput.style.display = show ? 'inline' : 'none';
+    maxInput.style.display = show ? 'inline' : 'none';
+  }
+  kindSel.addEventListener('change', toggle);
+  toggle();
+}
+</script>
 {% endblock %}

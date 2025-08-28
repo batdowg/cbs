@@ -1067,13 +1067,16 @@ def session_prework(session_id: int, current_user):
                             "index": idx,
                             "text": q.text,
                             "required": q.required,
+                            "kind": q.kind,
+                            "min_items": q.min_items,
+                            "max_items": q.max_items,
                         }
                         for idx, q in enumerate(
                             sorted(template.questions, key=lambda q: q.position),
                             start=1,
                         )
                     ],
-                    "resources": [],
+                    "resources": [r.resource_id for r in template.resources],
                 }
                 due_at = None
                 if sess.start_date and sess.daily_start_time:

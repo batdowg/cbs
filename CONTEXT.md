@@ -60,7 +60,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   Delivered auto-ticks Materials ordered + Workshop info sent. **[DONE]**
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
-- **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. **[DONE]**
+- **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. List-style questions snapshot kind/min/max and show a download link for staff. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
@@ -72,7 +72,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   - Badge files live under `/srv/badges`.
   - Names map via slug (lowercase, no spaces). Helpers try `.webp` first, then `.png`.
   - To add a PNG alternative, drop `<slug>.png` in `/srv/badges`.
-- **Prework templates**: staff edit per Workshop Type at `/workshop-types/<id>/prework` (info & questions). **[DONE]**
+- **Prework templates**: staff edit per Workshop Type at `/workshop-types/<id>/prework` (info & questions). Questions can be **Long text** or **List** with Min/Max (≤10). **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
@@ -129,6 +129,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Docker Compose: app, db, caddy. Health: `/healthz`. **[DONE]**
 - Idempotent migrations; seed guards; simple audit logs for key actions (logins, role changes, password admin resets, provisioning). **[DONE] (minimal)**
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
+- Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
 
 ---
 
