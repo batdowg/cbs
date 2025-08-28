@@ -22,7 +22,7 @@
       <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
       <td>{{ s.location }}</td>
       <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
-      <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time.strftime('%H:%M') if s.daily_start_time else '' }}-{{ s.daily_end_time.strftime('%H:%M') if s.daily_end_time else '' }}</td>
+      <td>{{ s.start_date }}-{{ s.end_date }}  {{ s.daily_start_time.strftime('%H:%M') if s.daily_start_time else '' }}-{{ s.daily_end_time.strftime('%H:%M') if s.daily_end_time else '' }}</td>
       <td>{{ s.region }}</td>
       <td>{{ s.delivery_type }}</td>
       <td>{{ s.computed_status }}</td>
