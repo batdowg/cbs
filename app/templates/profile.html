@@ -3,6 +3,7 @@
 {% block content %}
 <h1>My Profile</h1>
 <form method="post">
+  <input type="hidden" name="form" value="profile">
   <div><label>Email <input type="text" value="{{ email }}" readonly></label></div>
   <div><label>Full name <input type="text" name="full_name" value="{{ full_name }}" maxlength="200" autocomplete="off"></label></div>
   <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
@@ -14,5 +15,12 @@
     </select>
   </label></div>
   <button type="submit">Save</button>
+</form>
+<h2 id="password">Change Password</h2>
+<form method="post">
+  <input type="hidden" name="form" value="password">
+  <div><label>New password <input type="password" name="password" autocomplete="new-password"></label></div>
+  <div><label>Confirm <input type="password" name="password_confirm" autocomplete="new-password"></label></div>
+  <button type="submit">Change Password</button>
 </form>
 {% endblock %}

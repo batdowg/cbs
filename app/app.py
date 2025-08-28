@@ -204,6 +204,24 @@ def create_app():
                 return redirect(url_for("index"))
         return render_template("password.html", error=error)
 
+    @app.before_request
+    def enforce_password_change() -> None:
+        account_id = session.get("participant_account_id")
+        if not account_id:
+            return None
+        endpoint = request.endpoint or ""
+        if endpoint in {
+            "learner.profile",
+            "auth.logout",
+            "auth.forgot_password",
+            "auth.reset_password",
+        } or endpoint.startswith("static"):
+            return None
+        account = db.session.get(ParticipantAccount, account_id)
+        if account and account.must_change_password:
+            flash("Please set a new password to continue.", "error")
+            return redirect(url_for("learner.profile") + "#password")
+
 
     @app.get("/admin/test-mail")
     @app_admin_required
@@ -271,6 +289,7 @@ def create_app():
     from .routes.materials import bp as materials_bp
     from .routes.materials_orders import bp as materials_orders_bp
     from .routes.settings_resources import bp as settings_resources_bp
+    from .routes.settings_roles import bp as settings_roles_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -287,6 +306,7 @@ def create_app():
     app.register_blueprint(materials_bp)
     app.register_blueprint(materials_orders_bp)
     app.register_blueprint(settings_resources_bp)
+    app.register_blueprint(settings_roles_bp)
 
     @app.get("/surveys")
     def surveys():

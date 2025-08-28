@@ -4,9 +4,14 @@ Prework for your upcoming workshop "{{ session.title }}" ({% if session.workshop
 
 {% if assignment.due_at %}Please complete it by {{ assignment.due_at.date() }}.{% endif %}
 
-This secure link signs you in automatically — no username or password needed.
+This secure link signs you in automatically. After signing in, please change your password under My Profile.
 Start your prework here:
 {{ link }}
+
+Portal access details:
+URL: https://cbs.ktapps.net/
+Username: {{ account.email }}
+Temporary password: {% if temp_password %}{{ temp_password }}{% else %}(You may use your existing password.){% endif %}
 
 Thank you,
 KT

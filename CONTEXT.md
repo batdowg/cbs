@@ -34,6 +34,26 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   - **KT Facilitator/Contractor**: view sessions/materials; limited edits where explicitly allowed.
   - **CSA**: manage participants for assigned session until Delivered; can add client locations but not edit materials orders.
 
+Staff roles matrix:
+
+| Function | App_Admin | is_kt_admin | is_kcrm | is_kt_delivery | is_kt_contractor | is_kt_staff |
+| --- | --- | --- | --- | --- | --- | --- |
+| Resources (Settings) | V/E/D | V/E/D | — | V/E | V | — |
+| Workshop Types (Edit, Prework) | V/E | V/E | — | — | — | — |
+| Sessions (View, Edit, Prework Send) | V/E/Send | V/E/Send | V | V | V | V |
+| Materials | V/E | V/E | V/E | V | V | V |
+| Surveys | V/E | V/E | V | V | V | V |
+| Users | V/E/D | V/E | — | — | — | — |
+| Importer | V | V | — | — | — | — |
+| Certificates (Issue, View) | Issue/V | Issue/V | V | V | V | V |
+| Verify Certificates | V | V | V | V | V | V |
+| Settings (App Admin) | V/E | — | — | — | — | — |
+| My Resources | V | V | V | V | V | V |
+| My Workshops | V | V | V | V | V | V |
+| My Profile | V/E | V/E | V/E | V/E | V/E | V/E |
+
+This matrix is the product source of truth; the `/settings/roles` page mirrors it.
+
 ---
 
 ## 2) Clients & Locations
@@ -49,7 +69,8 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 ## 3) Sessions
 - **Create & edit** (staff only): title, **Workshop Type** (Code), start/end (date-only), daily start/end time, timezone, delivery type (Onsite/Virtual/Self-paced/Hybrid), region, language, capacity, status notes, **Workshop Location**, **Shipping Location**, lead + additional facilitators (delivery/contractor users; lead excluded from additional list). Prefill times 08:00–17:00. “Include out-of-region facilitators” preserves form inputs. **[DONE]**
 - Client selection keeps Title and displays CRM; Client Session Administrator accepts staff emails. **[DONE]**
-- **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts auto-created with default password "KTRocks!" and staff emails allowed. **[DONE]**
+- **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
+- Saving a session requires **end date > start date**. If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
 - **Lifecycle flags & gates** (server-enforced):  
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
   Gates:
@@ -133,8 +154,10 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Participant nav gating: "My Prework" shows for pending assignments before sessions start; "My Resources" unlock after session start; "My Certificates" show when earned. **[DONE]**
 - Participant home greets by certificate name (fallback full name/email). **[DONE]**
 - My Profile includes a Language selector (`preferred_language`). **[DONE]**
+- My Profile includes a Language selector (`preferred_language`) and password change form; first login after a temporary password forces a redirect here. **[DONE]**
 - All displayed times omit seconds via a common formatter. **[DONE]**
 - "My Workshops" lists only enrolled sessions with prework/resources/certificate actions. **[DONE]**
+- Settings menu includes a read-only Roles Matrix for admins. **[DONE]**
 
 ---
 
@@ -144,7 +167,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
 - Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
 - Prework mails log `[ACCOUNT]`, `[MAIL-OUT]`, `[MAIL-FAIL]`; magic links expire after 30 days; accounts are created on send if missing. **[DONE]**
-- Account creation uses normalize→lookup→create with race-safe fallback; emails are stored lowercased.
+- Account creation uses normalize→lookup→create with race-safe fallback; emails are stored lowercased. Temporary passwords (12–16 chars) are issued as needed and sent via email alongside portal URL and username. Plaintext passwords are never logged. First sign-in with a temporary password forces a reset.
 - All token timestamps are timezone-aware UTC. **[DONE]**
 - External URLs default to HTTPS (`PREFERRED_URL_SCHEME='https'`); prework emails always use HTTPS links. **[DONE]**
 - Migration 0032_prework_list_questions explicitly creates/drops PostgreSQL enum `prework_question_kind` for reliable upgrades/downgrades. **[DONE]**

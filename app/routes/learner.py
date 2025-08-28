@@ -270,6 +270,18 @@ def profile():
         db.session.add(account)
         db.session.commit()
     if request.method == "POST":
+        form_kind = request.form.get("form")
+        if form_kind == "password":
+            pwd = request.form.get("password") or ""
+            confirm = request.form.get("password_confirm") or ""
+            if not pwd or pwd != confirm:
+                flash("Passwords do not match", "error")
+                return redirect(url_for("learner.profile") + "#password")
+            account.set_password(pwd)
+            account.must_change_password = False
+            db.session.commit()
+            flash("Password updated.", "success")
+            return redirect(url_for("learner.profile"))
         full_name = (request.form.get("full_name") or "").strip()[:200]
         cert_name = (request.form.get("certificate_name") or "").strip()[:200]
         pref_lang = (request.form.get("preferred_language") or "en")[:10]

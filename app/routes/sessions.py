@@ -222,26 +222,6 @@ def new_session(current_user):
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
         no_material_order = action == "no_material"
-        if finalized:
-            delivered = True
-            ready_for_delivery = True
-        if delivered:
-            materials_ordered = True
-            info_sent = True
-        participants_count = 0
-        if ready_for_delivery and participants_count == 0:
-            flash("Add participants before marking Ready for delivery.", "error")
-            ready_for_delivery = False
-        if delivered:
-            if not ready_for_delivery:
-                flash("Delivered requires 'Ready for delivery' first.", "error")
-                delivered = False
-            elif end_date_val and end_date_val > date.today():
-                flash("Cannot mark Delivered before the end date.", "error")
-                delivered = False
-        if finalized and not delivered:
-            flash("Finalized requires Delivered first.", "error")
-            finalized = False
         sess = Session(
             title=title,
             start_date=start_date_val,
@@ -266,6 +246,65 @@ def new_session(current_user):
             client_id=int(cid) if cid else None,
             workshop_location=wl,
         )
+        sess.workshop_type = wt
+        participants_count = 0
+        if end_date_val <= start_date_val:
+            flash("End date must be after start date", "error")
+            return render_template(
+                "sessions/form.html",
+                session=sess,
+                workshop_types=workshop_types,
+                facilitators=facilitators,
+                clients=clients,
+                languages=languages,
+                include_all_facilitators=include_all,
+                participants_count=participants_count,
+                today=date.today(),
+                timezones=TIMEZONES,
+                workshop_locations=workshop_locations,
+                title_override=title_arg,
+                past_warning=False,
+            )
+        if start_date_val < date.today() and request.form.get("ack_past") != "true":
+            return render_template(
+                "sessions/form.html",
+                session=sess,
+                workshop_types=workshop_types,
+                facilitators=facilitators,
+                clients=clients,
+                languages=languages,
+                include_all_facilitators=include_all,
+                participants_count=participants_count,
+                today=date.today(),
+                timezones=TIMEZONES,
+                workshop_locations=workshop_locations,
+                title_override=title_arg,
+                past_warning=True,
+            )
+        if finalized:
+            delivered = True
+            ready_for_delivery = True
+        if delivered:
+            materials_ordered = True
+            info_sent = True
+        if ready_for_delivery and participants_count == 0:
+            flash("Add participants before marking Ready for delivery.", "error")
+            ready_for_delivery = False
+        if delivered:
+            if not ready_for_delivery:
+                flash("Delivered requires 'Ready for delivery' first.", "error")
+                delivered = False
+            elif end_date_val and end_date_val > date.today():
+                flash("Cannot mark Delivered before the end date.", "error")
+                delivered = False
+        if finalized and not delivered:
+            flash("Finalized requires Delivered first.", "error")
+            finalized = False
+        sess.materials_ordered = materials_ordered
+        sess.ready_for_delivery = ready_for_delivery
+        sess.info_sent = info_sent
+        sess.delivered = delivered
+        sess.finalized = finalized
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         if csa_email:
             account = (
@@ -277,7 +316,6 @@ def new_session(current_user):
                 account = ParticipantAccount(
                     email=csa_email, full_name=csa_email, is_active=True
                 )
-                account.set_password("KTRocks!")
                 db.session.add(account)
                 db.session.flush()
             sess.csa_account_id = account.id
@@ -319,7 +357,7 @@ def new_session(current_user):
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -386,6 +424,7 @@ def new_session(current_user):
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
         title_override=title_arg,
+        past_warning=False,
     )
 
 
@@ -445,9 +484,12 @@ def edit_session(session_id: int, current_user):
         old_on_hold = sess.on_hold
         old_no_material = sess.no_material_order
         sess.title = request.form.get("title")
-        sess.start_date = request.form.get("start_date") or None
+        start_date_str = request.form.get("start_date")
+        start_date_val = date.fromisoformat(start_date_str) if start_date_str else None
+        sess.start_date = start_date_val
         end_date_str = request.form.get("end_date")
-        sess.end_date = date.fromisoformat(end_date_str) if end_date_str else None
+        end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
+        sess.end_date = end_date_val
         sess.daily_start_time = request.form.get("daily_start_time") or None
         sess.daily_end_time = request.form.get("daily_end_time") or None
         sess.timezone = request.form.get("timezone") or None
@@ -465,6 +507,41 @@ def edit_session(session_id: int, current_user):
         allowed = [l.name for l in languages] + ([sess.language] if sess.language else [])
         sess.language = language if language in allowed else sess.language
         sess.capacity = request.form.get("capacity") or None
+        if start_date_val and end_date_val and end_date_val <= start_date_val:
+            flash("End date must be after start date", "error")
+            return render_template(
+                "sessions/form.html",
+                session=sess,
+                workshop_types=workshop_types,
+                facilitators=facilitators,
+                languages=languages,
+                extra_language=extra_language,
+                clients=clients,
+                include_all_facilitators=include_all,
+                participants_count=participants_count,
+                today=date.today(),
+                timezones=TIMEZONES,
+                workshop_locations=workshop_locations,
+                title_override=title_arg,
+                past_warning=False,
+            )
+        if start_date_val and start_date_val < date.today() and request.form.get("ack_past") != "true":
+            return render_template(
+                "sessions/form.html",
+                session=sess,
+                workshop_types=workshop_types,
+                facilitators=facilitators,
+                languages=languages,
+                extra_language=extra_language,
+                clients=clients,
+                include_all_facilitators=include_all,
+                participants_count=participants_count,
+                today=date.today(),
+                timezones=TIMEZONES,
+                workshop_locations=workshop_locations,
+                title_override=title_arg,
+                past_warning=True,
+            )
         materials_ordered = _cb(request.form.get("materials_ordered")) if "materials_ordered" in request.form else old_materials
         info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
         delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
@@ -517,7 +594,6 @@ def edit_session(session_id: int, current_user):
                 account = ParticipantAccount(
                     email=csa_email, full_name=csa_email, is_active=True
                 )
-                account.set_password("KTRocks!")
                 db.session.add(account)
                 db.session.flush()
             sess.csa_account_id = account.id
@@ -581,7 +657,7 @@ def edit_session(session_id: int, current_user):
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -653,6 +729,7 @@ def edit_session(session_id: int, current_user):
         timezones=TIMEZONES,
         workshop_locations=workshop_locations,
         title_override=title_arg,
+        past_warning=False,
     )
 
 
@@ -704,7 +781,6 @@ def assign_csa(session_id: int, current_user):
     )
     if not account:
         account = ParticipantAccount(email=email, full_name=email, is_active=True)
-        account.set_password("KTRocks!")
         db.session.add(account)
         db.session.flush()
     sess.csa_account_id = account.id
@@ -849,7 +925,6 @@ def add_participant(session_id: int, sess, current_user, csa_view):
                 certificate_name=full_name or "",
                 is_active=True,
             )
-            account.set_password("KTRocks!")
             db.session.add(account)
             db.session.flush()
         else:
@@ -873,7 +948,7 @@ def add_participant(session_id: int, sess, current_user, csa_view):
         total = summary["created"] + summary["reactivated"] + summary["already_active"]
         if total:
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -1006,7 +1081,7 @@ def import_csv(session_id: int, sess, current_user, csa_view):
         total = summary["created"] + summary["reactivated"] + summary["already_active"]
         if total:
             flash(
-                "Provisioned {total} (created {created}, reactivated {reactivated}; kept password {kept_password}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
                 ),
                 "success",
@@ -1120,7 +1195,11 @@ def session_prework(session_id: int, current_user):
                 db.session.add(assignment)
             return assignment
 
-        def send_mail(assignment: PreworkAssignment, account: ParticipantAccount) -> bool:
+        def send_mail(
+            assignment: PreworkAssignment,
+            account: ParticipantAccount,
+            temp_password: str | None,
+        ) -> bool:
             token = secrets.token_urlsafe(16)
             assignment.magic_token_hash = hashlib.sha256(
                 (token + current_app.secret_key).encode()
@@ -1138,10 +1217,20 @@ def session_prework(session_id: int, current_user):
             )
             subject = f"Prework for Workshop: {sess.title}"
             body = render_template(
-                "email/prework.txt", session=sess, assignment=assignment, link=link
+                "email/prework.txt",
+                session=sess,
+                assignment=assignment,
+                link=link,
+                account=account,
+                temp_password=temp_password,
             )
             html_body = render_template(
-                "email/prework.html", session=sess, assignment=assignment, link=link
+                "email/prework.html",
+                session=sess,
+                assignment=assignment,
+                link=link,
+                account=account,
+                temp_password=temp_password,
             )
             try:
                 res = emailer.send(account.email, subject, body, html=html_body)
@@ -1193,7 +1282,7 @@ def session_prework(session_id: int, current_user):
         if action == "send_accounts":
             any_fail = False
             for p, _ in participants:
-                account = ensure_participant_account(p, account_cache)
+                account, temp_password = ensure_participant_account(p, account_cache)
                 assignment = prepare_assignment(account)
                 token = secrets.token_urlsafe(16)
                 account.login_magic_hash = hashlib.sha256(
@@ -1212,10 +1301,18 @@ def session_prework(session_id: int, current_user):
                 )
                 subject = f"Workshop Portal Access: {sess.title}"
                 body = render_template(
-                    "email/account_invite.txt", session=sess, link=link
+                    "email/account_invite.txt",
+                    session=sess,
+                    link=link,
+                    account=account,
+                    temp_password=temp_password,
                 )
                 html_body = render_template(
-                    "email/account_invite.html", session=sess, link=link
+                    "email/account_invite.html",
+                    session=sess,
+                    link=link,
+                    account=account,
+                    temp_password=temp_password,
                 )
                 try:
                     res = emailer.send(account.email, subject, body, html=html_body)
@@ -1239,13 +1336,13 @@ def session_prework(session_id: int, current_user):
         if action == "resend":
             pid = int(request.form.get("participant_id"))
             participant = db.session.get(Participant, pid)
-            account = ensure_participant_account(participant, account_cache)
+            account, temp_password = ensure_participant_account(participant, account_cache)
             assignment = prepare_assignment(account)
             if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")
                 return redirect(url_for("sessions.session_prework", session_id=session_id))
             if assignment:
-                send_mail(assignment, account)
+                send_mail(assignment, account, temp_password)
             db.session.commit()
             return redirect(url_for("sessions.session_prework", session_id=session_id))
 
@@ -1258,11 +1355,11 @@ def session_prework(session_id: int, current_user):
                 return redirect(url_for("sessions.session_prework", session_id=session_id))
             any_fail = False
             for p, _ in participants:
-                account = ensure_participant_account(p, account_cache)
+                account, temp_password = ensure_participant_account(p, account_cache)
                 assignment = prepare_assignment(account)
                 if assignment and assignment.status == "WAIVED":
                     continue
-                if assignment and not send_mail(assignment, account):
+                if assignment and not send_mail(assignment, account, temp_password):
                     any_fail = True
             db.session.commit()
             if any_fail:

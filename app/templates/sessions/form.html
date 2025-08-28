@@ -69,6 +69,9 @@
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" name="start_date" value="{{ session.start_date or '' }}" required></label></div>
     <div><label>End Date* <input type="date" name="end_date" value="{{ session.end_date or '' }}" required></label></div>
+    {% if past_warning %}
+    <div style="color:red;"><label><input type="checkbox" name="ack_past" value="true" required> The selected start date is in the past. I'm sure.</label></div>
+    {% endif %}
     {% set st = session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' %}
     {% set et = session.daily_end_time.strftime('%H:%M') if session.daily_end_time else '' %}
     <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ st or '08:00' }}"></label></div>

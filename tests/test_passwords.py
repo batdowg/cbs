@@ -1,9 +1,6 @@
 import os
 import re
 import time
-import os
-import re
-import time
 import pytest
 from itsdangerous import URLSafeTimedSerializer
 from datetime import date
@@ -18,6 +15,7 @@ from app.models import (
     AuditLog,
 )
 from app.utils.provisioning import provision_participant_accounts_for_session
+from app.utils import accounts as acct_utils
 
 
 @pytest.fixture
@@ -58,13 +56,18 @@ def test_manual_participant_create_login(app):
         follow_redirects=True,
     )
     assert b"Participant added" in resp.data
+    client.get("/logout")
     # login as participant
+    with app.app_context():
+        participant = Participant.query.filter_by(email="learner@example.com").first()
+        acct, temp_pw = acct_utils.ensure_participant_account(participant, {})
+        db.session.commit()
     resp = client.post(
         "/login",
-        data={"email": "learner@example.com", "password": "KTRocks!"},
+        data={"email": "learner@example.com", "password": temp_pw},
         follow_redirects=True,
     )
-    assert resp.request.path == "/my-certificates"
+    assert resp.request.path == "/profile"
 
 
 def test_provision_keeps_password(app):
@@ -81,7 +84,7 @@ def test_provision_keeps_password(app):
         orig = acct.password_hash
         summary = provision_participant_accounts_for_session(sess.id)
         db.session.refresh(acct)
-        assert summary["kept_password"] == 1
+        assert summary["already_active"] == 1
         assert acct.password_hash == orig
 
 
