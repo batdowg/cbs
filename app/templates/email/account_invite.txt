@@ -1,0 +1,10 @@
+Hello,
+
+Your workshop portal access for "{{ session.title }}" is ready.
+
+This secure link signs you in automatically — no username or password needed.
+Access the portal:
+{{ link }}
+
+Thank you,
+KT

@@ -161,6 +161,40 @@ def prework_magic_resend(assignment_id: int):
     return redirect(url_for("sessions.session_prework", session_id=assignment.session_id))
 
 
+@bp.get("/account/a/<int:account_id>/<token>")
+def account_magic(account_id: int, token: str):
+    account = db.session.get(ParticipantAccount, account_id)
+    reason = None
+    if not account or not account.login_magic_hash or not account.login_magic_expires:
+        reason = "missing"
+    else:
+        expires = account.login_magic_expires
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires < now_utc():
+            reason = "expired"
+        else:
+            expected = hashlib.sha256(
+                (token + current_app.secret_key).encode()
+            ).hexdigest()
+            if not hmac.compare_digest(expected, account.login_magic_hash):
+                reason = "mismatch"
+    if reason:
+        current_app.logger.info(
+            f"[AUTH-FAIL] account participant_account_id={account_id} reason={reason}"
+        )
+        abort(400)
+    flask_session["participant_account_id"] = account.id
+    account.last_login = now_utc()
+    account.login_magic_hash = None
+    account.login_magic_expires = now_utc()
+    db.session.commit()
+    current_app.logger.info(
+        f"[AUTH] account granted participant_account_id={account.id}"
+    )
+    return redirect(url_for("my_sessions.list_my_sessions"))
+
+
 @bp.route("/", methods=["GET", "POST"])
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")
 def login():

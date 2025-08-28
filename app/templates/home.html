@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h2>Welcome, {{ session.get('user_email') }}</h2>
+{% if current_account %}
+<h2>Welcome, {{ current_account.certificate_name or current_account.full_name or current_account.email }}</h2>
+{% elif current_user %}
+<h2>Welcome, {{ current_user.full_name or current_user.email }}</h2>
+{% else %}
+<h2>Welcome</h2>
+{% endif %}
 {% if current_user or is_csa %}
 <p><a href="{{ url_for('my_sessions.list_my_sessions') }}">{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</a></p>
 {% elif session.get('participant_account_id') %}
@@ -36,7 +42,7 @@
     <td>{{ s.title }}</td>
     <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
-    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time }}-{{ s.daily_end_time }}</td>
+    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time.strftime('%H:%M') if s.daily_start_time else '' }}-{{ s.daily_end_time.strftime('%H:%M') if s.daily_end_time else '' }}</td>
     <td>{{ s.region }}</td>
     <td>{{ s.delivery_type }}</td>
     <td>{{ s.status }}</td>

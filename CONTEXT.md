@@ -61,7 +61,8 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
 - **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. List-style questions snapshot kind/min/max and show a download link for staff. **[DONE]**
-- Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. Rows can be marked **No Prework** (status `WAIVED`). A session-level `no_material_order` flag is set via the New Session form. Sending prework does not gate certificates. **[DONE]**
+- Session-level `no_prework` toggle disables "Send Prework" and marks assignment rows **WAIVED**; page also offers **Send Accounts without Prework** to email portal links only. Logs `[SESS] no_prework=<true|false> session=<id>` and `[MAIL-OUT] account-invite …`. **[DONE]**
+- Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. A session-level `no_material_order` flag is set via the New Session form. Sending prework does not gate certificates. **[DONE]**
 - Magic links are single-use passwordless sign-ins. They compare `SHA256(token + SECRET_KEY)` against `magic_token_hash`, expire via `magic_token_expires`, and log `[AUTH]` or `[AUTH-FAIL]` outcomes. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 - On New Session, there are two actions: **Proceed to materials order** and **No Materials Order (Save)** — the latter sets the flag and returns to the Session detail view. The Prework page does not show materials controls. **[DONE]**
@@ -103,6 +104,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 ## 6) Languages (Settings)
 - `languages` table with `name`, `active`, `sort_order`; used by Sessions and Materials Options. **[DONE]**
 - Admin/SysAdmin manage list; sessions keep legacy language text but prefer dropdown values. **[DONE]**
+- Participant accounts and users store `preferred_language` (default `en`); edited via My Profile. **[DONE]**
 
 ---
 
@@ -129,6 +131,10 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Root `/` shows branded login card (no nav). **[DONE]**
 - Basic responsive styles; flashes consistent. **[DONE]**
 - Participant nav gating: "My Prework" shows for pending assignments before sessions start; "My Resources" unlock after session start; "My Certificates" show when earned. **[DONE]**
+- Participant home greets by certificate name (fallback full name/email). **[DONE]**
+- My Profile includes a Language selector (`preferred_language`). **[DONE]**
+- All displayed times omit seconds via a common formatter. **[DONE]**
+- "My Workshops" lists only enrolled sessions with prework/resources/certificate actions. **[DONE]**
 
 ---
 

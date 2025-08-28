@@ -35,6 +35,7 @@ from .models import resource  # ensures app/models/resource.py is imported
 from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
+from .utils.time import fmt_dt
 
 
 def create_app():
@@ -43,6 +44,7 @@ def create_app():
     app.config["PREFERRED_URL_SCHEME"] = "https"
     app.jinja_env.globals["slug_for_badge"] = slug_for_badge
     app.jinja_env.globals["best_badge_url"] = best_badge_url
+    app.jinja_env.filters["fmt_dt"] = fmt_dt
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -88,6 +90,7 @@ def create_app():
             show_resources_nav = True
             show_certificates_nav = True
         account_id = session.get("participant_account_id")
+        account = None
         if account_id:
             is_csa = (
                 db.session.query(Session.id)
@@ -95,8 +98,8 @@ def create_app():
                 .first()
                 is not None
             )
-            pa = db.session.get(ParticipantAccount, account_id)
-            email = (pa.email or "").lower() if pa else ""
+            account = db.session.get(ParticipantAccount, account_id)
+            email = (account.email or "").lower() if account else ""
             show_prework_nav = (
                 db.session.query(PreworkAssignment.id)
                 .filter(
@@ -124,6 +127,7 @@ def create_app():
             )
         return {
             "current_user": user,
+            "current_account": account,
             "is_csa": is_csa,
             "show_prework_nav": show_prework_nav,
             "show_resources_nav": show_resources_nav,

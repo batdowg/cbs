@@ -23,11 +23,11 @@
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Status: {{ session.computed_status }}<br>
-  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
-  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
-  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at }}){% endif %}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at }}){% endif %}<br>
-  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at }}){% endif %}
+  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
+  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
+  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
+  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}
 </div>
 {% else %}
 <div>
@@ -40,11 +40,11 @@
   Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Status: {{ session.computed_status }}<br>
-  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at }}){% endif %}<br>
-  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at }}){% endif %}<br>
-  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at }}){% endif %}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at }}){% endif %}<br>
-  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at }}){% endif %}
+  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
+  Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
+  Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
+  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
+  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}
 </div>
 {% endif %}
 {% if current_user %}
