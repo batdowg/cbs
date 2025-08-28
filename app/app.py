@@ -35,7 +35,7 @@ from .models import resource  # ensures app/models/resource.py is imported
 from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
-from .utils.time import fmt_dt
+from .utils.time import fmt_dt, fmt_time
 
 
 def create_app():
@@ -45,6 +45,7 @@ def create_app():
     app.jinja_env.globals["slug_for_badge"] = slug_for_badge
     app.jinja_env.globals["best_badge_url"] = best_badge_url
     app.jinja_env.filters["fmt_dt"] = fmt_dt
+    app.jinja_env.filters["fmt_time"] = fmt_time
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")

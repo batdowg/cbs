@@ -38,7 +38,7 @@ from ..models import (
     PreworkAssignment,
     PreworkEmailLog,
 )
-from ..utils.time import now_utc
+from ..utils.time import now_utc, fmt_time
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
 from ..utils.provisioning import (
@@ -215,6 +215,10 @@ def new_session(current_user):
             language = default_lang
         start_date_val = date.fromisoformat(start_date_str)
         end_date_val = date.fromisoformat(end_date_str)
+        daily_start_str = request.form.get("daily_start_time")
+        daily_end_str = request.form.get("daily_end_time")
+        daily_start_val = time.fromisoformat(daily_start_str) if daily_start_str else None
+        daily_end_val = time.fromisoformat(daily_end_str) if daily_end_str else None
         capacity_val = int(capacity_str)
         materials_ordered = _cb(request.form.get("materials_ordered"))
         ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
@@ -226,8 +230,8 @@ def new_session(current_user):
             title=title,
             start_date=start_date_val,
             end_date=end_date_val,
-            daily_start_time=request.form.get("daily_start_time") or None,
-            daily_end_time=request.form.get("daily_end_time") or None,
+            daily_start_time=daily_start_val,
+            daily_end_time=daily_end_val,
             timezone=request.form.get("timezone") or None,
             location=wl.label if wl else None,
             delivery_type=delivery_type,
@@ -250,36 +254,46 @@ def new_session(current_user):
         participants_count = 0
         if end_date_val <= start_date_val:
             flash("End date must be after start date", "error")
-            return render_template(
-                "sessions/form.html",
-                session=sess,
-                workshop_types=workshop_types,
-                facilitators=facilitators,
-                clients=clients,
-                languages=languages,
-                include_all_facilitators=include_all,
-                participants_count=participants_count,
-                today=date.today(),
-                timezones=TIMEZONES,
-                workshop_locations=workshop_locations,
-                title_override=title_arg,
-                past_warning=False,
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    languages=languages,
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                ),
+                400,
             )
         if start_date_val < date.today() and request.form.get("ack_past") != "true":
-            return render_template(
-                "sessions/form.html",
-                session=sess,
-                workshop_types=workshop_types,
-                facilitators=facilitators,
-                clients=clients,
-                languages=languages,
-                include_all_facilitators=include_all,
-                participants_count=participants_count,
-                today=date.today(),
-                timezones=TIMEZONES,
-                workshop_locations=workshop_locations,
-                title_override=title_arg,
-                past_warning=True,
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    languages=languages,
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=True,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                ),
+                400,
             )
         if finalized:
             delivered = True
@@ -425,6 +439,8 @@ def new_session(current_user):
         workshop_locations=workshop_locations,
         title_override=title_arg,
         past_warning=False,
+        daily_start_time_str="08:00",
+        daily_end_time_str="17:00",
     )
 
 
@@ -490,8 +506,10 @@ def edit_session(session_id: int, current_user):
         end_date_str = request.form.get("end_date")
         end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
         sess.end_date = end_date_val
-        sess.daily_start_time = request.form.get("daily_start_time") or None
-        sess.daily_end_time = request.form.get("daily_end_time") or None
+        daily_start_str = request.form.get("daily_start_time")
+        daily_end_str = request.form.get("daily_end_time")
+        sess.daily_start_time = time.fromisoformat(daily_start_str) if daily_start_str else None
+        sess.daily_end_time = time.fromisoformat(daily_end_str) if daily_end_str else None
         sess.timezone = request.form.get("timezone") or None
         sess.workshop_location_id = (
             int(request.form.get("workshop_location_id"))
@@ -509,38 +527,48 @@ def edit_session(session_id: int, current_user):
         sess.capacity = request.form.get("capacity") or None
         if start_date_val and end_date_val and end_date_val <= start_date_val:
             flash("End date must be after start date", "error")
-            return render_template(
-                "sessions/form.html",
-                session=sess,
-                workshop_types=workshop_types,
-                facilitators=facilitators,
-                languages=languages,
-                extra_language=extra_language,
-                clients=clients,
-                include_all_facilitators=include_all,
-                participants_count=participants_count,
-                today=date.today(),
-                timezones=TIMEZONES,
-                workshop_locations=workshop_locations,
-                title_override=title_arg,
-                past_warning=False,
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    languages=languages,
+                    extra_language=extra_language,
+                    clients=clients,
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                ),
+                400,
             )
         if start_date_val and start_date_val < date.today() and request.form.get("ack_past") != "true":
-            return render_template(
-                "sessions/form.html",
-                session=sess,
-                workshop_types=workshop_types,
-                facilitators=facilitators,
-                languages=languages,
-                extra_language=extra_language,
-                clients=clients,
-                include_all_facilitators=include_all,
-                participants_count=participants_count,
-                today=date.today(),
-                timezones=TIMEZONES,
-                workshop_locations=workshop_locations,
-                title_override=title_arg,
-                past_warning=True,
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    languages=languages,
+                    extra_language=extra_language,
+                    clients=clients,
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=True,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                ),
+                400,
             )
         materials_ordered = _cb(request.form.get("materials_ordered")) if "materials_ordered" in request.form else old_materials
         info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
@@ -730,6 +758,8 @@ def edit_session(session_id: int, current_user):
         workshop_locations=workshop_locations,
         title_override=title_arg,
         past_warning=False,
+        daily_start_time_str=fmt_time(sess.daily_start_time),
+        daily_end_time_str=fmt_time(sess.daily_end_time),
     )
 
 

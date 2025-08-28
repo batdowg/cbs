@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <body>
-<p>Prework for your upcoming workshop "<strong>{{ session.title }}</strong>" ({% if session.workshop_type %}{{ session.workshop_type.name }}{% endif %}) scheduled for {{ session.start_date }} {{ session.daily_start_time.strftime('%H:%M') if session.daily_start_time else '' }} {{ session.timezone or '' }} is ready.</p>
+<p>Prework for your upcoming workshop "<strong>{{ session.title }}</strong>" ({% if session.workshop_type %}{{ session.workshop_type.name }}{% endif %}) scheduled for {{ session.start_date }} {{ session.daily_start_time|fmt_time }} {{ session.timezone or '' }} is ready.</p>
 {% if assignment.due_at %}
 <p>Please complete it by {{ assignment.due_at.date() }}.</p>
 {% endif %}

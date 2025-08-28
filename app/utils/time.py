@@ -1,4 +1,4 @@
-from datetime import datetime, date, timezone
+from datetime import datetime, date, time, timezone
 
 
 def now_utc() -> datetime:
@@ -15,3 +15,15 @@ def fmt_dt(value: datetime | date | None) -> str:
     if isinstance(value, date):
         return value.strftime("%-d %b %Y")
     return str(value)
+
+
+def fmt_time(value: time | str | None) -> str:
+    """Render times as HH:MM, accepting strings or time objects."""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        try:
+            value = time.fromisoformat(value)
+        except ValueError:
+            return value
+    return value.strftime("%H:%M")
