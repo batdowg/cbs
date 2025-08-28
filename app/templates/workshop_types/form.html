@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}{% endblock %}
 {% block content %}
-<h1>{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}</h1>
+<h1>
+  {{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}
+  {% if wt and current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+    <a href="{{ url_for('workshop_types.prework', type_id=wt.id) }}">Prework</a>
+  {% endif %}
+</h1>
 <form method="post">
   {% if not wt %}
   <div><label>Code <input type="text" name="code" required></label></div>
