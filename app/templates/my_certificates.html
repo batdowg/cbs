@@ -6,7 +6,7 @@
 {% for c in certs %}
   <li>
     <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
-    <li></li>
+    <li>
     {% set badge_name = c.session.workshop_type.badge if c.session and c.session.workshop_type else None %}
     {% set badge_url = best_badge_url(badge_name) %}
     {% if badge_url %}
@@ -14,7 +14,6 @@
       <a href="{{ badge_url }}" download>Badge</a>
     {% endif %}
   </li>
-  <li></li>
 {% endfor %}
 </ul>
 {% endblock %}
