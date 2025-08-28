@@ -6,10 +6,10 @@
 <table border="1" cellpadding="4" cellspacing="0">
   <tr>
     <th>Title</th>
+    <th>Client</th>
     <th>Location</th>
     <th>Workshop Type</th>
     <th>Dates</th>
-    <th>Client</th>
     <th>Region</th>
     <th>Delivery Type</th>
     <th>Status</th>
@@ -18,10 +18,10 @@
   {% for s in sessions %}
   <tr>
     <td>{{ s.title }}</td>
+    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.location }}</td>
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
     <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time }}-{{ s.daily_end_time }}</td>
-    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
     <td>{{ s.region }}</td>
     <td>{{ s.delivery_type }}</td>
     <td>{{ s.computed_status }}</td>
