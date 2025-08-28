@@ -26,6 +26,7 @@ def test_full_name_backfill(app):
                 id INTEGER PRIMARY KEY,
                 email VARCHAR(255),
                 password_hash VARCHAR(255),
+                must_change_password BOOLEAN NOT NULL DEFAULT 0,
                 certificate_name VARCHAR(200),
                 login_magic_hash TEXT,
                 login_magic_expires DATETIME,

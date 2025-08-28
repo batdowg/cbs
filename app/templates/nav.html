@@ -48,6 +48,7 @@
           {% if current_user.is_app_admin %}
           <li><a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a></li>
           {% endif %}
+          <li><a href="{{ url_for('settings_roles.roles_matrix') }}">Roles Matrix</a></li>
         {% endif %}
       </ul>
     </details>

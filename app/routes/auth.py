@@ -89,6 +89,9 @@ def prework_magic(assignment_id: int, token: str):
         current_app.logger.info(
             f"[AUTH] prework granted assignment={assignment_id} email={email}"
         )
+        if account and account.must_change_password:
+            flash("Please set a new password to continue.", "error")
+            return redirect(url_for("learner.profile") + "#password")
         return redirect(url_for("learner.prework_form", assignment_id=assignment_id))
     except Exception:  # pragma: no cover - defensive
         current_app.logger.info(
@@ -192,6 +195,9 @@ def account_magic(account_id: int, token: str):
     current_app.logger.info(
         f"[AUTH] account granted participant_account_id={account.id}"
     )
+    if account.must_change_password:
+        flash("Please set a new password to continue.", "error")
+        return redirect(url_for("learner.profile") + "#password")
     return redirect(url_for("my_sessions.list_my_sessions"))
 
 
@@ -237,6 +243,10 @@ def login():
         login_identity(identity)
         if identity["kind"] == "user":
             return redirect(url_for("home"))
+        account = identity["obj"]
+        if account.must_change_password:
+            flash("Please set a new password to continue.", "error")
+            return redirect(url_for("learner.profile") + "#password")
         return redirect(url_for("learner.my_certs"))
     # GET
     if flask_session.get("user_id"):

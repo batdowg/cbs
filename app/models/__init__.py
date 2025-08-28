@@ -49,6 +49,7 @@ class ParticipantAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255))
+    must_change_password = db.Column(db.Boolean, nullable=False, default=False)
     full_name = db.Column(db.String(200), nullable=False)
     certificate_name = db.Column(db.String(200), default="")
     login_magic_hash = db.Column(db.String(128))

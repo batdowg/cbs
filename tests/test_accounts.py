@@ -22,8 +22,10 @@ def test_ensure_account_case_insensitive_reuse():
         p = Participant(email="P@Example.com", full_name="P2")
         db.session.add(p)
         db.session.commit()
-        acct = acct_utils.ensure_participant_account(p, {})
+        acct, temp_pw = acct_utils.ensure_participant_account(p, {})
         assert acct.id == existing.id
+        assert temp_pw is not None
+        assert acct.must_change_password is True
         assert ParticipantAccount.query.count() == 1
 
 
@@ -47,6 +49,7 @@ def test_ensure_account_integrity_error_fallback(monkeypatch):
             return orig(email)
 
         monkeypatch.setattr(acct_utils, "get_participant_account_by_email", fake_get)
-        acct = acct_utils.ensure_participant_account(p, {})
+        acct, temp_pw = acct_utils.ensure_participant_account(p, {})
         assert acct.id == existing.id
+        assert temp_pw is not None
         assert ParticipantAccount.query.count() == 1

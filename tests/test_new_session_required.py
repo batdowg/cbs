@@ -43,8 +43,8 @@ def test_new_session_requires_fields(app):
             "delivery_type": "Onsite",
             "language": "English",
             "capacity": "16",
-            "start_date": "2023-01-01",
-            "end_date": "2023-01-02",
+            "start_date": "2100-01-01",
+            "end_date": "2100-01-02",
         },
         follow_redirects=False,
     )
@@ -64,8 +64,8 @@ def test_new_session_requires_fields(app):
             "delivery_type": "Onsite",
             "language": "English",
             "capacity": "16",
-            "start_date": "2023-01-01",
-            "end_date": "2023-01-02",
+            "start_date": "2100-01-01",
+            "end_date": "2100-01-02",
         },
         follow_redirects=False,
     )
