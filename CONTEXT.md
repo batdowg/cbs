@@ -61,7 +61,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - **Status (derived)**: New → In Progress → Ready for Delivery → Delivered → Closed; Cancelled overrides; On-hold shows as In Progress with a note. **[DONE]**
 - PRG everywhere; red flashes explain why a save is blocked. **[DONE]**
 - **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. **[DONE]**
-
+- Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
 ## 4) Workshop Types & Badges
@@ -73,7 +73,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
   - Names map via slug (lowercase, no spaces). Helpers try `.webp` first, then `.png`.
   - To add a PNG alternative, drop `<slug>.png` in `/srv/badges`.
 - **Prework templates**: staff edit per Workshop Type at `/workshop-types/<id>/prework` (info & questions). **[DONE]**
-
+- Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 ---
 
 ## 5) Materials & Shipping (single shipment per session)
