@@ -38,6 +38,7 @@ from ..models import (
     PreworkAssignment,
     PreworkEmailLog,
 )
+from ..utils.time import now_utc
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
 from ..utils.provisioning import (
@@ -1141,7 +1142,7 @@ def session_prework(session_id: int, current_user):
             assignment.magic_token_hash = hashlib.sha256(
                 (token + current_app.secret_key).encode()
             ).hexdigest()
-            assignment.magic_token_expires = datetime.utcnow() + timedelta(
+            assignment.magic_token_expires = now_utc() + timedelta(
                 days=MAGIC_LINK_TTL_DAYS
             )
             db.session.flush()
@@ -1165,7 +1166,7 @@ def session_prework(session_id: int, current_user):
                 res = {"ok": False, "detail": str(e)}
             if res.get("ok"):
                 assignment.status = "SENT"
-                assignment.sent_at = datetime.utcnow()
+                assignment.sent_at = now_utc()
                 db.session.add(
                     PreworkEmailLog(
                         assignment_id=assignment.id,

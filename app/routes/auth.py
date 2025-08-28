@@ -23,10 +23,12 @@ from ..models import (
     PreworkEmailLog,
 )
 from ..utils.auth_bridge import lookup_identity, verify_password, login_identity
+from ..utils.time import now_utc
 from .. import emailer
 import hashlib
+import hmac
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta, timezone
 from ..constants import MAGIC_LINK_TTL_DAYS
 
 bp = Blueprint("auth", __name__)
@@ -48,16 +50,21 @@ def prework_magic(assignment_id: int, token: str):
                 ),
                 404,
             )
+        expires = assignment.magic_token_expires
         reason = None
-        expected = hashlib.sha256(
-            (token + current_app.secret_key).encode()
-        ).hexdigest()
-        if not assignment.magic_token_hash or not assignment.magic_token_expires:
+        if not assignment.magic_token_hash or not expires:
             reason = "missing"
-        elif assignment.magic_token_expires < datetime.utcnow():
-            reason = "expired"
-        elif expected != assignment.magic_token_hash:
-            reason = "mismatch"
+        else:
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires < now_utc():
+                reason = "expired"
+            else:
+                expected = hashlib.sha256(
+                    (token + current_app.secret_key).encode()
+                ).hexdigest()
+                if not hmac.compare_digest(expected, assignment.magic_token_hash):
+                    reason = "mismatch"
         if reason:
             current_app.logger.info(
                 f"[AUTH-FAIL] prework assignment={assignment_id} reason={reason}"
@@ -72,17 +79,18 @@ def prework_magic(assignment_id: int, token: str):
             )
         flask_session["participant_account_id"] = assignment.participant_account_id
         account = db.session.get(ParticipantAccount, assignment.participant_account_id)
+        email = ""
         if account:
-            account.last_login = datetime.utcnow()
+            account.last_login = now_utc()
+            email = account.email
         assignment.magic_token_hash = None
-        assignment.magic_token_expires = datetime.utcnow()
+        assignment.magic_token_expires = now_utc()
         db.session.commit()
         current_app.logger.info(
-            f"[AUTH] prework granted assignment={assignment_id}"
+            f"[AUTH] prework granted assignment={assignment_id} email={email}"
         )
         return redirect(url_for("learner.prework_form", assignment_id=assignment_id))
     except Exception:  # pragma: no cover - defensive
-        current_app.logger.exception("prework_magic")
         current_app.logger.info(
             f"[AUTH-FAIL] prework assignment={assignment_id} reason=error"
         )
@@ -108,7 +116,7 @@ def prework_magic_resend(assignment_id: int):
     assignment.magic_token_hash = hashlib.sha256(
         (token + current_app.secret_key).encode()
     ).hexdigest()
-    assignment.magic_token_expires = datetime.utcnow() + timedelta(
+    assignment.magic_token_expires = now_utc() + timedelta(
         days=MAGIC_LINK_TTL_DAYS
     )
     db.session.flush()
@@ -133,7 +141,7 @@ def prework_magic_resend(assignment_id: int):
         res = {"ok": False, "detail": str(e)}
     if res.get("ok"):
         assignment.status = "SENT"
-        assignment.sent_at = datetime.utcnow()
+        assignment.sent_at = now_utc()
         db.session.add(
             PreworkEmailLog(
                 assignment_id=assignment.id,
