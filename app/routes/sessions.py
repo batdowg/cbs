@@ -38,7 +38,7 @@ from ..models import (
     PreworkAssignment,
     PreworkEmailLog,
 )
-from ..utils.time import now_utc, fmt_time
+from ..utils.time import now_utc, fmt_time, fmt_dt
 from sqlalchemy import or_, func
 from ..utils.certificates import generate_for_session, remove_session_certificates
 from ..utils.provisioning import (
@@ -114,6 +114,39 @@ def _cb(v) -> bool:
     if v is None:
         return False
     return str(v).strip().lower() in {"1", "y", "yes", "on", "true"}
+
+
+def _maybe_send_csa_assign(sess: Session) -> None:
+    if not sess.csa_account_id:
+        return
+    if sess.csa_account_id == sess.csa_notified_account_id:
+        return
+    account = db.session.get(ParticipantAccount, sess.csa_account_id)
+    if not account or not account.email:
+        return
+    subject = (
+        f"Assigned to Workshop: {sess.workshop_type.name if sess.workshop_type else sess.code}"
+        f" ({fmt_dt(sess.start_date)})"
+    )
+    body = render_template("email/csa_assigned.txt", session=sess)
+    html = render_template("email/csa_assigned.html", session=sess)
+    try:
+        result = emailer.send(account.email, subject, body, html)
+        if result.get("ok"):
+            current_app.logger.info(
+                f"[MAIL-OUT] csa-assign session={sess.id} user={account.id} to={account.email} result=sent"
+            )
+            sess.csa_notified_account_id = account.id
+            sess.csa_notified_at = now_utc()
+            db.session.commit()
+        else:
+            current_app.logger.info(
+                f"[MAIL-FAIL] csa-assign session={sess.id} user={account.id} to={account.email} error=\"{result.get('detail')}\""
+            )
+    except Exception as e:  # pragma: no cover - unexpected send error
+        current_app.logger.info(
+            f"[MAIL-FAIL] csa-assign session={sess.id} user={account.id} to={account.email} error=\"{e}\""
+        )
 
 
 def staff_required(fn):
@@ -252,8 +285,8 @@ def new_session(current_user):
         )
         sess.workshop_type = wt
         participants_count = 0
-        if end_date_val <= start_date_val:
-            flash("End date must be after start date", "error")
+        if end_date_val < start_date_val:
+            flash("End date must be the same day or after the start date.", "error")
             return (
                 render_template(
                     "sessions/form.html",
@@ -367,6 +400,7 @@ def new_session(current_user):
             )
         )
         db.session.commit()
+        _maybe_send_csa_assign(sess)
         if sess.ready_for_delivery:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
@@ -525,8 +559,8 @@ def edit_session(session_id: int, current_user):
         allowed = [l.name for l in languages] + ([sess.language] if sess.language else [])
         sess.language = language if language in allowed else sess.language
         sess.capacity = request.form.get("capacity") or None
-        if start_date_val and end_date_val and end_date_val <= start_date_val:
-            flash("End date must be after start date", "error")
+        if start_date_val and end_date_val and end_date_val < start_date_val:
+            flash("End date must be the same day or after the start date.", "error")
             return (
                 render_template(
                     "sessions/form.html",
@@ -627,6 +661,8 @@ def edit_session(session_id: int, current_user):
             sess.csa_account_id = account.id
         else:
             sess.csa_account_id = None
+            sess.csa_notified_account_id = None
+            sess.csa_notified_at = None
         lead_id = request.form.get("lead_facilitator_id")
         sess.lead_facilitator_id = int(lead_id) if lead_id else None
         add_ids = [
@@ -681,6 +717,7 @@ def edit_session(session_id: int, current_user):
                 )
             )
         db.session.commit()
+        _maybe_send_csa_assign(sess)
         if new_ready and not old_ready:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
@@ -815,6 +852,7 @@ def assign_csa(session_id: int, current_user):
         db.session.flush()
     sess.csa_account_id = account.id
     db.session.commit()
+    _maybe_send_csa_assign(sess)
     flash("CSA assigned", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
@@ -826,6 +864,8 @@ def remove_csa(session_id: int, current_user):
     if not sess:
         abort(404)
     sess.csa_account_id = None
+    sess.csa_notified_account_id = None
+    sess.csa_notified_at = None
     db.session.commit()
     flash("CSA removed", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))

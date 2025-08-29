@@ -1,0 +1,13 @@
+<p>Hello,</p>
+<p>You've been assigned as Client Session Administrator (CSA) for this workshop.</p>
+<ul>
+  <li>Client: {{ session.client.name if session.client else '' }}</li>
+  <li>Workshop Type: {{ session.workshop_type.name if session.workshop_type else '' }}</li>
+  <li>Session: {{ session.id }}{% if session.code %} ({{ session.code }}){% endif %}</li>
+  <li>Start: {{ session.start_date|fmt_dt }}</li>
+  <li>End: {{ session.end_date|fmt_dt }}</li>
+  {% if session.timezone %}<li>Timezone: {{ session.timezone }}</li>{% endif %}
+  {% if session.location %}<li>Location: {{ session.location }}</li>{% endif %}
+  <li><a href="{{ url_for('sessions.session_detail', session_id=session.id, _external=True) }}">Session details</a></li>
+</ul>
+<p>Thank you,<br>KT</p>
