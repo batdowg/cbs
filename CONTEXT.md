@@ -70,7 +70,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Create & edit** (staff only): title, **Workshop Type** (Code), start/end (date-only), daily start/end time, timezone, delivery type (Onsite/Virtual/Self-paced/Hybrid), region, language, capacity, status notes, **Workshop Location**, **Shipping Location**, lead + additional facilitators (delivery/contractor users; lead excluded from additional list). Prefill times 08:00–17:00. “Include out-of-region facilitators” preserves form inputs. **[DONE]**
 - Client selection keeps Title and displays CRM; Client Session Administrator accepts staff emails. **[DONE]**
 - **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
-- Saving a session requires **end date > start date**. If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
+- Saving a session requires **end date ≥ start date** (single-day allowed). If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
 - Session form normalizes time fields to HH:MM; server validation enforces end > start; UI sets end.min = start; past-start requires acknowledgement.
 - **Lifecycle flags & gates** (server-enforced):  
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
@@ -168,6 +168,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
 - Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
 - Prework mails log `[ACCOUNT]`, `[MAIL-OUT]`, `[MAIL-FAIL]`; magic links expire after 30 days; accounts are created on send if missing. **[DONE]**
+- CSA assignment email fires on change and logs `[MAIL-OUT] csa-assign`. **[DONE]**
 - Account creation uses normalize→lookup→create with race-safe fallback; emails are stored lowercased. Temporary passwords (12–16 chars) are issued as needed and sent via email alongside portal URL and username. Plaintext passwords are never logged. First sign-in with a temporary password forces a reset.
 - All token timestamps are timezone-aware UTC. **[DONE]**
 - External URLs default to HTTPS (`PREFERRED_URL_SCHEME='https'`); prework emails always use HTTPS links. **[DONE]**

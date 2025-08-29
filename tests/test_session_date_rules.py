@@ -53,18 +53,18 @@ def test_end_date_rule(app):
     client = app.test_client()
     _login(client, admin_id)
     form = _base_form(client_id, wt_id)
-    form.update({"start_date": "2100-01-02", "end_date": "2100-01-02"})
+    form.update({"start_date": "2100-01-02", "end_date": "2100-01-01"})
     resp = client.post("/sessions/new", data=form)
     assert resp.status_code == 400
-    assert b"End date must be after start date" in resp.data
+    assert b"End date must be the same day or after the start date" in resp.data
     with app.app_context():
         assert Session.query.count() == 0
-    form["end_date"] = "2100-01-03"
+    form["end_date"] = "2100-01-02"
     resp = client.post("/sessions/new", data=form, follow_redirects=False)
     assert resp.status_code == 302
     with app.app_context():
         sess = Session.query.one()
-        assert sess.end_date == date(2100, 1, 3)
+        assert sess.end_date == date(2100, 1, 2)
         assert isinstance(sess.daily_start_time, time)
 
 
@@ -88,7 +88,7 @@ def test_times_preserved_on_error(app):
     _login(client, admin_id)
     form = _base_form(client_id, wt_id)
     form.update({
-        "start_date": "2100-01-01",
+        "start_date": "2100-01-02",
         "end_date": "2100-01-01",
         "daily_start_time": "09:30",
         "daily_end_time": "17:15",

@@ -5,7 +5,8 @@ psycopg2-binary==2.9.9
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 alembic==1.13.1
-passlib[bcrypt]==1.7.4
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
 email-validator==2.1.1
 PyPDF2==3.0.1
 reportlab==4.0.4

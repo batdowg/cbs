@@ -1,4 +1,7 @@
+import logging
 from passlib.hash import bcrypt
+
+logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)
 
 
 def hash_password(plain: str) -> str:

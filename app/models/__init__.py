@@ -341,7 +341,13 @@ class Session(db.Model):
     csa_account_id = db.Column(
         db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
     )
-    csa_account = db.relationship("ParticipantAccount")
+    csa_account = db.relationship(
+        "ParticipantAccount", foreign_keys=[csa_account_id]
+    )
+    csa_notified_account_id = db.Column(
+        db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
+    )
+    csa_notified_at = db.Column(db.DateTime)
 
     @validates("workshop_type")
     def _sync_code(self, key, wt):  # pragma: no cover - simple setter

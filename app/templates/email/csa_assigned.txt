@@ -1,0 +1,15 @@
+Hello,
+
+You've been assigned as Client Session Administrator (CSA) for this workshop.
+
+Client: {{ session.client.name if session.client else '' }}
+Workshop Type: {{ session.workshop_type.name if session.workshop_type else '' }}
+Session: {{ session.id }}{% if session.code %} ({{ session.code }}){% endif %}
+Start: {{ session.start_date|fmt_dt }}
+End: {{ session.end_date|fmt_dt }}
+{% if session.timezone %}Timezone: {{ session.timezone }}
+{% endif %}{% if session.location %}Location: {{ session.location }}
+{% endif %}Session details: {{ url_for('sessions.session_detail', session_id=session.id, _external=True) }}
+
+Thank you,
+KT
