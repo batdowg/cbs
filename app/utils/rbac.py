@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import abort, redirect, session, url_for
+from flask import abort, redirect, session, url_for, flash
 
 from ..app import db, User
 from ..models import Session
@@ -69,6 +69,9 @@ def csa_allowed_for_session(fn=None, *, allow_delivered_view=False):
                     current_user=None,
                     csa_view=True,
                 )
+            if not user_id and not account_id:
+                flash("Please log in to administer this session.", "error")
+                return redirect(url_for("auth.login"))
             abort(403)
 
         return wrapper

@@ -21,6 +21,9 @@ LANGUAGE_NAMES = [
 
 MAGIC_LINK_TTL_DAYS = 30
 
+# Default password for newly created Client Session Administrator accounts
+DEFAULT_CSA_PASSWORD = "KTRocks!CSA"
+
 PERMISSIONS_MATRIX = {
     "columns": [
         "App_Admin",

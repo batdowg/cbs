@@ -10,4 +10,11 @@
   {% if session.location %}<li>Location: {{ session.location }}</li>{% endif %}
   <li><a href="{{ url_for('sessions.session_detail', session_id=session.id, _external=True) }}">Session details</a></li>
 </ul>
+{% if password %}
+<p>Login at <a href="{{ url_for('auth.login', _external=True) }}">{{ url_for('auth.login', _external=True) }}</a></p>
+<ul>
+  <li>Username: {{ session.csa_account.email }}</li>
+  <li>Password: {{ password }}</li>
+</ul>
+{% endif %}
 <p>Thank you,<br>KT</p>
