@@ -11,5 +11,10 @@ End: {{ session.end_date|fmt_dt }}
 {% endif %}{% if session.location %}Location: {{ session.location }}
 {% endif %}Session details: {{ url_for('sessions.session_detail', session_id=session.id, _external=True) }}
 
+{% if password %}
+Login: {{ url_for('auth.login', _external=True) }}
+Username: {{ session.csa_account.email }}
+Password: {{ password }}
+{% endif %}
 Thank you,
 KT

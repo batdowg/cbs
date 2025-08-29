@@ -168,7 +168,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - Pagination on long tables; simple rate-limits on auth endpoints. **[DONE]**
 - Prework autosave endpoint: soft rate limit 10 writes/10s per assignment. **[DONE]**
 - Prework mails log `[ACCOUNT]`, `[MAIL-OUT]`, `[MAIL-FAIL]`; magic links expire after 30 days; accounts are created on send if missing. **[DONE]**
-- CSA assignment email fires on change and logs `[MAIL-OUT] csa-assign`. **[DONE]**
+- CSA assignment email fires on change and logs `[MAIL-OUT] csa-assign`. Missing CSA accounts are auto-created with default password `KTRocks!CSA` (existing passwords unchanged), and credentials are included in the email. Unauthenticated session administration links redirect to login with a clear message. **[DONE]**
 - Account creation uses normalize→lookup→create with race-safe fallback; emails are stored lowercased. Temporary passwords (12–16 chars) are issued as needed and sent via email alongside portal URL and username. Plaintext passwords are never logged. First sign-in with a temporary password forces a reset.
 - All token timestamps are timezone-aware UTC. **[DONE]**
 - External URLs default to HTTPS (`PREFERRED_URL_SCHEME='https'`); prework emails always use HTTPS links. **[DONE]**

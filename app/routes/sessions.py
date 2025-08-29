@@ -45,7 +45,7 @@ from ..utils.provisioning import (
     deactivate_orphan_accounts_for_session,
     provision_participant_accounts_for_session,
 )
-from ..constants import MAGIC_LINK_TTL_DAYS
+from ..constants import MAGIC_LINK_TTL_DAYS, DEFAULT_CSA_PASSWORD
 from .. import emailer
 from ..utils.rbac import csa_allowed_for_session
 from ..utils.accounts import ensure_participant_account
@@ -116,7 +116,7 @@ def _cb(v) -> bool:
     return str(v).strip().lower() in {"1", "y", "yes", "on", "true"}
 
 
-def _maybe_send_csa_assign(sess: Session) -> None:
+def _maybe_send_csa_assign(sess: Session, password: str | None = None) -> None:
     if not sess.csa_account_id:
         return
     if sess.csa_account_id == sess.csa_notified_account_id:
@@ -128,8 +128,12 @@ def _maybe_send_csa_assign(sess: Session) -> None:
         f"Assigned to Workshop: {sess.workshop_type.name if sess.workshop_type else sess.code}"
         f" ({fmt_dt(sess.start_date)})"
     )
-    body = render_template("email/csa_assigned.txt", session=sess)
-    html = render_template("email/csa_assigned.html", session=sess)
+    body = render_template(
+        "email/csa_assigned.txt", session=sess, password=password
+    )
+    html = render_template(
+        "email/csa_assigned.html", session=sess, password=password
+    )
     try:
         result = emailer.send(account.email, subject, body, html)
         if result.get("ok"):
@@ -353,6 +357,7 @@ def new_session(current_user):
         sess.delivered = delivered
         sess.finalized = finalized
         csa_email = (request.form.get("csa_email") or "").strip().lower()
+        csa_password = None
         if csa_email:
             account = (
                 db.session.query(ParticipantAccount)
@@ -363,8 +368,10 @@ def new_session(current_user):
                 account = ParticipantAccount(
                     email=csa_email, full_name=csa_email, is_active=True
                 )
+                account.set_password(DEFAULT_CSA_PASSWORD)
                 db.session.add(account)
                 db.session.flush()
+                csa_password = DEFAULT_CSA_PASSWORD
             sess.csa_account_id = account.id
         now = datetime.utcnow()
         if sess.materials_ordered:
@@ -400,7 +407,7 @@ def new_session(current_user):
             )
         )
         db.session.commit()
-        _maybe_send_csa_assign(sess)
+        _maybe_send_csa_assign(sess, password=csa_password)
         if sess.ready_for_delivery:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
@@ -442,6 +449,11 @@ def new_session(current_user):
         if changes:
             msg += ": " + ", ".join(changes)
         flash(msg, "success")
+        if csa_password:
+            flash(
+                f"Account created for {csa_email}; password: {csa_password}",
+                "success",
+            )
         if no_material_order:
             return redirect(url_for("sessions.session_detail", session_id=sess.id))
         return redirect(url_for("materials.materials_view", session_id=sess.id))
@@ -646,6 +658,7 @@ def edit_session(session_id: int, current_user):
         cid = request.form.get("client_id")
         sess.client_id = int(cid) if cid else None
         csa_email = (request.form.get("csa_email") or "").strip().lower()
+        csa_password = None
         if csa_email:
             account = (
                 db.session.query(ParticipantAccount)
@@ -656,8 +669,10 @@ def edit_session(session_id: int, current_user):
                 account = ParticipantAccount(
                     email=csa_email, full_name=csa_email, is_active=True
                 )
+                account.set_password(DEFAULT_CSA_PASSWORD)
                 db.session.add(account)
                 db.session.flush()
+                csa_password = DEFAULT_CSA_PASSWORD
             sess.csa_account_id = account.id
         else:
             sess.csa_account_id = None
@@ -717,7 +732,7 @@ def edit_session(session_id: int, current_user):
                 )
             )
         db.session.commit()
-        _maybe_send_csa_assign(sess)
+        _maybe_send_csa_assign(sess, password=csa_password)
         if new_ready and not old_ready:
             summary = provision_participant_accounts_for_session(sess.id)
             total = summary["created"] + summary["reactivated"] + summary["already_active"]
@@ -779,6 +794,11 @@ def edit_session(session_id: int, current_user):
         if changes:
             msg += ": " + ", ".join(changes)
         flash(msg, "success")
+        if csa_password:
+            flash(
+                f"Account created for {csa_email}; password: {csa_password}",
+                "success",
+            )
         return redirect(url_for("sessions.session_detail", session_id=sess.id))
     return render_template(
         "sessions/form.html",
@@ -846,14 +866,22 @@ def assign_csa(session_id: int, current_user):
         .filter(func.lower(ParticipantAccount.email) == email)
         .one_or_none()
     )
+    password = None
     if not account:
         account = ParticipantAccount(email=email, full_name=email, is_active=True)
+        account.set_password(DEFAULT_CSA_PASSWORD)
         db.session.add(account)
         db.session.flush()
+        password = DEFAULT_CSA_PASSWORD
     sess.csa_account_id = account.id
     db.session.commit()
-    _maybe_send_csa_assign(sess)
+    _maybe_send_csa_assign(sess, password=password)
     flash("CSA assigned", "success")
+    if password:
+        flash(
+            f"Account created for {account.email}; password: {password}",
+            "success",
+        )
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 

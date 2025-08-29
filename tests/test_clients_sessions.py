@@ -117,3 +117,20 @@ def test_smtp_test_route(app, monkeypatch):
     resp = client.post("/mail-settings/test", follow_redirects=True)
     assert resp.status_code == 200
     assert b"Test email sent" in resp.data
+
+
+def test_session_detail_redirects_when_not_logged_in(app):
+    with app.app_context():
+        wt = WorkshopType(code="WT", name="WT")
+        sess = Session(
+            title="S1",
+            workshop_type=wt,
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        db.session.add_all([wt, sess])
+        db.session.commit()
+        sess_id = sess.id
+    client = app.test_client()
+    resp = client.get(f"/sessions/{sess_id}", follow_redirects=True)
+    assert b"Please log in to administer this session." in resp.data

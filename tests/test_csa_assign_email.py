@@ -5,8 +5,9 @@ from datetime import date
 import pytest
 
 from app.app import create_app, db
-from app.models import User, WorkshopType, Session
+from app.models import User, WorkshopType, Session, ParticipantAccount
 from app import emailer
+from app.constants import DEFAULT_CSA_PASSWORD
 
 
 @pytest.fixture
@@ -61,3 +62,59 @@ def test_csa_assign_email_logs(app, monkeypatch, caplog):
     resp = client.post(f"/sessions/{sess_id}/assign-csa", data={"email": "csa2@example.com"})
     assert resp.status_code == 302
     assert _count_logs(caplog) == 1
+
+
+def test_assign_csa_creates_account_with_password(app, monkeypatch):
+    admin_id, sess_id = _setup(app)
+    client = app.test_client()
+    _login(client, admin_id)
+
+    sent = {}
+
+    def fake_send(to, subject, body, html):
+        sent["body"] = body
+        return {"ok": True}
+
+    monkeypatch.setattr(emailer, "send", fake_send)
+
+    resp = client.post(
+        f"/sessions/{sess_id}/assign-csa", data={"email": "newcsa@example.com"}
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter_by(email="newcsa@example.com")
+            .one()
+        )
+        assert account.check_password(DEFAULT_CSA_PASSWORD)
+    assert "newcsa@example.com" in sent["body"]
+    assert DEFAULT_CSA_PASSWORD in sent["body"]
+
+
+def test_assign_csa_existing_account_password_unchanged(app, monkeypatch):
+    admin_id, sess_id = _setup(app)
+    client = app.test_client()
+    _login(client, admin_id)
+
+    with app.app_context():
+        account = ParticipantAccount(
+            email="existing@example.com", full_name="Ex", is_active=True
+        )
+        account.set_password("orig")
+        db.session.add(account)
+        db.session.commit()
+
+    monkeypatch.setattr(emailer, "send", lambda *a, **k: {"ok": True})
+
+    resp = client.post(
+        f"/sessions/{sess_id}/assign-csa", data={"email": "existing@example.com"}
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter_by(email="existing@example.com")
+            .one()
+        )
+        assert account.check_password("orig")
