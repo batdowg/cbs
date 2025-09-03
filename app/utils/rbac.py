@@ -3,7 +3,8 @@ from functools import wraps
 from flask import abort, redirect, session, url_for, flash
 
 from ..app import db, User
-from ..models import Session
+from ..models import Session, ParticipantAccount
+from .acl import is_csa_for_session
 
 
 def app_admin_required(fn):
@@ -48,7 +49,7 @@ def csa_allowed_for_session(fn=None, *, allow_delivered_view=False):
             user_id = session.get("user_id")
             if user_id:
                 user = db.session.get(User, user_id)
-                if user and (user.is_app_admin or user.is_admin):
+                if user:
                     return fn(
                         session_id,
                         *args,
@@ -56,19 +57,23 @@ def csa_allowed_for_session(fn=None, *, allow_delivered_view=False):
                         sess=sess,
                         current_user=user,
                         csa_view=False,
+                        csa_account=None,
                     )
             account_id = session.get("participant_account_id")
-            if account_id and sess.csa_account_id == account_id:
-                if sess.delivered and not allow_delivered_view:
-                    abort(403)
-                return fn(
-                    session_id,
-                    *args,
-                    **kwargs,
-                    sess=sess,
-                    current_user=None,
-                    csa_view=True,
-                )
+            if account_id:
+                account = db.session.get(ParticipantAccount, account_id)
+                if is_csa_for_session(account, sess):
+                    if sess.delivered and not allow_delivered_view:
+                        abort(403)
+                    return fn(
+                        session_id,
+                        *args,
+                        **kwargs,
+                        sess=sess,
+                        current_user=None,
+                        csa_view=True,
+                        csa_account=account,
+                    )
             if not user_id and not account_id:
                 flash("Please log in to administer this session.", "error")
                 return redirect(url_for("auth.login"))
