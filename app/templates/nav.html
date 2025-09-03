@@ -17,6 +17,7 @@
   {% for item in nav_menu %}
     {{ render_item(item) }}
   {% endfor %}
+  {% if view_options|length > 1 %}
   <form method="post" action="{{ url_for('settings_view') }}" style="margin-top:1rem;">
     <label>View:</label>
     <select name="view" onchange="this.form.submit()">
@@ -25,4 +26,5 @@
       {% endfor %}
     </select>
   </form>
+  {% endif %}
 </nav>

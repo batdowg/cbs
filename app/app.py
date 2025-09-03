@@ -36,7 +36,7 @@ from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
 from .utils.time import fmt_dt, fmt_time
-from .utils.views import get_active_view, ALLOWED_VIEWS
+from .utils.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .utils.nav import build_menu
 
 
@@ -128,9 +128,9 @@ def create_app():
                 .first()
                 is not None
             )
-        active_view = get_active_view(user, request)
-        nav_menu = build_menu(user, active_view, show_resources_nav)
-        view_opts = ALLOWED_VIEWS if user else ["LEARNER"]
+        active_view = get_active_view(user, request, is_csa)
+        nav_menu = build_menu(user, active_view, show_resources_nav, is_csa)
+        view_opts = STAFF_VIEWS if user else (CSA_VIEWS if is_csa else [])
         return {
             "current_user": user,
             "current_account": account,
@@ -174,13 +174,8 @@ def create_app():
                 .first()
                 is not None
             )
-            if is_csa:
-                query = db.session.query(Session).filter(
-                    Session.csa_account_id == account_id
-                )
-                query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
-                sessions_list = query.order_by(Session.start_date).all()
-                return render_template("home.html", sessions=sessions_list)
+            if is_csa and get_active_view(None, request, True) == "CSA":
+                return redirect(url_for("csa.my_sessions"))
             return render_template("home.html")
         return redirect(url_for("auth.login"))
 
@@ -217,7 +212,13 @@ def create_app():
     def settings_view():
         view = request.form.get("view") or request.args.get("view", "")
         resp = redirect(url_for("home"))
-        allowed = ALLOWED_VIEWS if session.get("user_id") else ["LEARNER"]
+        allowed = STAFF_VIEWS if session.get("user_id") else ["LEARNER"]
+        if not session.get("user_id"):
+            account_id = session.get("participant_account_id")
+            if account_id and db.session.query(Session.id).filter(
+                Session.csa_account_id == account_id
+            ).first():
+                allowed = CSA_VIEWS
         if view in allowed:
             resp.set_cookie("active_view", view, samesite="Lax")
         else:
@@ -300,6 +301,7 @@ def create_app():
     from .routes.settings_languages import bp as settings_languages_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.my_sessions import bp as my_sessions_bp
+    from .routes.csa import bp as csa_bp
     from .routes.workshop_types import bp as workshop_types_bp
     from .routes.learner import bp as learner_bp
     from .routes.certificates import bp as certificates_bp
@@ -317,6 +319,7 @@ def create_app():
     app.register_blueprint(settings_languages_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(my_sessions_bp)
+    app.register_blueprint(csa_bp)
     app.register_blueprint(workshop_types_bp)
     app.register_blueprint(learner_bp)
     app.register_blueprint(certificates_bp)
