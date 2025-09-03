@@ -235,19 +235,28 @@ def login():
             )
             db.session.commit()
             flash("Signed in as staff account; learner account also exists.", "warning")
-            return redirect(url_for("home"))
+            resp = redirect(url_for("home"))
+            if not request.cookies.get("active_view"):
+                resp.set_cookie("active_view", user.preferred_view or "ADMIN", samesite="Lax")
+            return resp
         obj = identity["obj"]
         if not verify_password(password, obj.password_hash):
             flash("Invalid email or password.", "error")
             return redirect(url_for("auth.login"))
         login_identity(identity)
         if identity["kind"] == "user":
-            return redirect(url_for("home"))
+            resp = redirect(url_for("home"))
+            if not request.cookies.get("active_view"):
+                resp.set_cookie("active_view", obj.preferred_view or "ADMIN", samesite="Lax")
+            return resp
         account = identity["obj"]
         if account.must_change_password:
             flash("Please set a new password to continue.", "error")
             return redirect(url_for("learner.profile") + "#password")
-        return redirect(url_for("learner.my_certs"))
+        resp = redirect(url_for("learner.my_certs"))
+        if not request.cookies.get("active_view"):
+            resp.set_cookie("active_view", "LEARNER", samesite="Lax")
+        return resp
     # GET
     if flask_session.get("user_id"):
         return redirect(url_for("home"))

@@ -26,6 +26,12 @@
       flex:1;
       padding:1rem;
     }
+    .view-banner {
+      background:#ffe9a1;
+      padding:0.5rem 1rem;
+      margin-bottom:1rem;
+      border:1px solid #f0c36d;
+    }
     .flashes li.error { color:#b00020; font-weight:700; }
     .flashes li.success { color:#155724; font-weight:600; }
   </style>
@@ -36,6 +42,9 @@
     {% include 'nav.html' %}
   </aside>
   <main class="content">
+    {% if current_user and active_view != 'ADMIN' %}
+    <div class="view-banner">You're in <strong>{{ active_view.replace('_',' ').title() }}</strong> view. Permissions are unchanged. <a href="{{ url_for('settings_view', view='ADMIN') }}">Switch to Admin</a></div>
+    {% endif %}
     {% with msgs=get_flashed_messages(with_categories=true) %}
       {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
     {% endwith %}

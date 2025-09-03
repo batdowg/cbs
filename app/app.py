@@ -36,6 +36,8 @@ from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
 from .utils.time import fmt_dt, fmt_time
+from .utils.views import get_active_view, ALLOWED_VIEWS
+from .utils.nav import build_menu
 
 
 def create_app():
@@ -126,6 +128,9 @@ def create_app():
                 .first()
                 is not None
             )
+        active_view = get_active_view(user, request)
+        nav_menu = build_menu(user, active_view, show_resources_nav)
+        view_opts = ALLOWED_VIEWS if user else ["LEARNER"]
         return {
             "current_user": user,
             "current_account": account,
@@ -133,6 +138,9 @@ def create_app():
             "show_prework_nav": show_prework_nav,
             "show_resources_nav": show_resources_nav,
             "show_certificates_nav": show_certificates_nav,
+            "active_view": active_view,
+            "nav_menu": nav_menu,
+            "view_options": view_opts,
         }
 
     @app.get("/healthz")
@@ -204,6 +212,17 @@ def create_app():
                 flash("Password updated.")
                 return redirect(url_for("index"))
         return render_template("password.html", error=error)
+
+    @app.route("/settings/view", methods=["GET", "POST"])
+    def settings_view():
+        view = request.form.get("view") or request.args.get("view", "")
+        resp = redirect(url_for("home"))
+        allowed = ALLOWED_VIEWS if session.get("user_id") else ["LEARNER"]
+        if view in allowed:
+            resp.set_cookie("active_view", view, samesite="Lax")
+        else:
+            resp.delete_cookie("active_view")
+        return resp
 
     @app.before_request
     def enforce_password_change() -> None:

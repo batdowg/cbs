@@ -1,67 +1,28 @@
-<nav>
-  <a href="/"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
-  {% if current_user %}
-    <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Sessions</a>
-    {% if current_user.is_app_admin or current_user.is_admin %}
-    <a href="{{ url_for('sessions.list_sessions') }}">Sessions</a>
-    {% endif %}
-    {% if current_user.is_app_admin or current_user.is_admin or current_user.is_kcrm or current_user.is_kt_delivery or current_user.is_kt_contractor %}
-    <a href="{{ url_for('materials_orders.list_orders') }}">Materials</a>
-    {% endif %}
-    <a href="{{ url_for('surveys') }}">Surveys</a>
-    {% if show_resources_nav %}
-    <a href="{{ url_for('learner.my_resources') }}">My Resources</a>
-    {% endif %}
-    <details class="profile">
-      <summary class="nav-link">My Profile</summary>
+{% macro render_item(item) %}
+  {% if item.children %}
+    <details class="{{ item.id }}">
+      <summary class="nav-link">{{ item.label }}</summary>
       <ul>
-        <li><a href="{{ url_for('learner.profile') }}">My Profile</a></li>
-        <li><a href="{{ url_for('learner.my_certs') }}">My Certificates</a></li>
+      {% for child in item.children %}
+        <li>{{ render_item(child) }}</li>
+      {% endfor %}
       </ul>
     </details>
-    <details class="settings">
-      <summary class="nav-link">Settings</summary>
-      <ul>
-        {% if current_user.is_app_admin or current_user.is_admin %}
-          <li><a href="{{ url_for('clients.list_clients') }}">Clients</a></li>
-          <li><a href="{{ url_for('workshop_types.list_types') }}">Workshop Types</a></li>
-          <li><a href="{{ url_for('settings_languages.list_langs') }}">Languages</a></li>
-          <li>
-            <details>
-              <summary class="nav-link">Material settings</summary>
-              <ul>
-                <li><a href="{{ url_for('settings_materials.list_options', slug='standard') }}">Standard</a></li>
-                <li><a href="{{ url_for('settings_materials.list_options', slug='modular') }}">Modular</a></li>
-                <li><a href="{{ url_for('settings_materials.list_options', slug='ldi') }}">LDI</a></li>
-                <li><a href="{{ url_for('settings_materials.list_options', slug='bulk') }}">Bulk Order</a></li>
-                <li><a href="{{ url_for('settings_materials.list_options', slug='simulation') }}">Simulation</a></li>
-              </ul>
-            </details>
-          </li>
-        {% endif %}
-        {% if current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_facilitator or current_user.is_kt_contractor %}
-          <li><a href="{{ url_for('settings_resources.list_resources') }}">Resources</a></li>
-        {% endif %}
-        {% if current_user.is_app_admin or current_user.is_admin %}
-          <li><a href="{{ url_for('users.list_users') }}">Users</a></li>
-          {% if current_user.is_app_admin %}
-          <li><a href="{{ url_for('settings_mail.settings') }}">Mail Settings</a></li>
-          {% endif %}
-          <li><a href="{{ url_for('settings_roles.roles_matrix') }}">Roles Matrix</a></li>
-        {% endif %}
-      </ul>
-    </details>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-  {% elif session.get('participant_account_id') %}
-    <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('my_sessions.list_my_sessions') }}">My Workshops</a>
-    {% if show_resources_nav %}
-    <a href="{{ url_for('learner.my_resources') }}">My Resources</a>
-    {% endif %}
-    <a href="{{ url_for('learner.profile') }}">My Profile</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
   {% else %}
-    <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}">{{ item.label }}</a>
   {% endif %}
+{% endmacro %}
+<nav>
+  <a href="/{{''}}"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
+  {% for item in nav_menu %}
+    {{ render_item(item) }}
+  {% endfor %}
+  <form method="post" action="{{ url_for('settings_view') }}" style="margin-top:1rem;">
+    <label>View:</label>
+    <select name="view" onchange="this.form.submit()">
+      {% for opt in view_options %}
+      <option value="{{ opt }}" {% if opt == active_view %}selected{% endif %}>{{ opt.replace('_',' ').title() }}</option>
+      {% endfor %}
+    </select>
+  </form>
 </nav>

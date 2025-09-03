@@ -1,54 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-{% if current_account %}
-<h2>Welcome, {{ current_account.certificate_name or current_account.full_name or current_account.email }}</h2>
-{% elif current_user %}
-<h2>Welcome, {{ current_user.full_name or current_user.email }}</h2>
+{% if active_view == 'ADMIN' %}
+  {% include 'home/_admin.html' %}
+{% elif active_view == 'SESSION_MANAGER' %}
+  {% include 'home/_sessions.html' %}
+{% elif active_view == 'MATERIALS' %}
+  {% include 'home/_materials.html' %}
+{% elif active_view == 'DELIVERY' %}
+  {% include 'home/_delivery.html' %}
 {% else %}
-<h2>Welcome</h2>
-{% endif %}
-{% if current_user or is_csa %}
-<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</a></p>
-{% elif session.get('participant_account_id') %}
-  {% if show_prework_nav %}
-  <div>
-    <h3>My Prework</h3>
-    <p><a href="{{ url_for('learner.my_prework') }}">Start Prework</a></p>
-  </div>
-  {% endif %}
-  {% if show_certificates_nav %}
-  <div>
-    <h3>My Certificates</h3>
-    <p><a href="{{ url_for('learner.my_certs') }}">View Certificates</a></p>
-  </div>
-  {% endif %}
-{% endif %}
-{% if sessions %}
-<h2>{% if current_user %}Sessions{% else %}Workshops{% endif %}</h2>
-<table border="1" cellpadding="4" cellspacing="0">
-  <tr>
-    <th>Title</th>
-    <th>Client</th>
-    <th>Workshop Type</th>
-    <th>Dates</th>
-    <th>Region</th>
-    <th>Delivery Type</th>
-    <th>Status</th>
-    <th>Actions</th>
-  </tr>
-  {% for s in sessions %}
-  <tr>
-    <td>{{ s.title }}</td>
-    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
-    <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
-    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
-    <td>{{ s.region }}</td>
-    <td>{{ s.delivery_type }}</td>
-    <td>{{ s.status }}</td>
-    <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
-  </tr>
-  {% endfor %}
-</table>
+  {% include 'home/_learner.html' %}
 {% endif %}
 {% endblock %}
