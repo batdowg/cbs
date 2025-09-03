@@ -49,6 +49,15 @@ from ..constants import MAGIC_LINK_TTL_DAYS, DEFAULT_CSA_PASSWORD
 from .. import emailer
 from ..utils.rbac import csa_allowed_for_session
 from ..utils.accounts import ensure_participant_account
+from ..utils.acl import (
+    is_admin,
+    is_kcrm,
+    is_delivery,
+    is_contractor,
+    is_csa_for_session,
+    csa_can_manage_participants,
+    session_start_dt_utc,
+)
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -822,7 +831,7 @@ def edit_session(session_id: int, current_user):
 
 @bp.get("/<int:session_id>")
 @csa_allowed_for_session(allow_delivered_view=True)
-def session_detail(session_id: int, sess, current_user, csa_view):
+def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     view_csa = csa_view or request.args.get("view") == "csa"
     links = (
         db.session.query(SessionParticipant)
@@ -841,6 +850,10 @@ def session_detail(session_id: int, sess, current_user, csa_view):
         if participant:
             participants.append({"participant": participant, "link": link, "certificate": cert})
     import_errors = flask_session.pop("import_errors", None)
+    can_manage = False
+    start_dt_utc = session_start_dt_utc(sess)
+    if csa_account:
+        can_manage = csa_can_manage_participants(csa_account, sess, now_utc())
     return render_template(
         "session_detail.html",
         session=sess,
@@ -848,6 +861,8 @@ def session_detail(session_id: int, sess, current_user, csa_view):
         import_errors=import_errors,
         csa_view=view_csa,
         current_user=current_user,
+        csa_can_manage=can_manage,
+        session_start_dt=start_dt_utc,
     )
 
 
@@ -969,7 +984,27 @@ def delete_session(session_id: int, current_user):
 
 @bp.post("/<int:session_id>/participants/add")
 @csa_allowed_for_session
-def add_participant(session_id: int, sess, current_user, csa_view):
+def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
+    now = now_utc()
+    allowed = False
+    if current_user and (
+        is_admin(current_user)
+        or is_kcrm(current_user)
+        or is_delivery(current_user)
+        or is_contractor(current_user)
+    ):
+        allowed = True
+    elif csa_can_manage_participants(csa_account, sess, now):
+        current_app.logger.info(
+            f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
+        )
+        allowed = True
+    else:
+        if is_csa_for_session(csa_account, sess):
+            current_app.logger.info(
+                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+            )
+        abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -1057,7 +1092,19 @@ def add_participant(session_id: int, sess, current_user, csa_view):
 
 @bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
 @csa_allowed_for_session
-def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
+def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
+    now = now_utc()
+    if not (
+        current_user
+        and (
+            is_admin(current_user)
+            or is_kcrm(current_user)
+            or is_delivery(current_user)
+            or is_contractor(current_user)
+        )
+        or csa_can_manage_participants(csa_account, sess, now)
+    ):
+        abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -1084,7 +1131,25 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
 @csa_allowed_for_session
-def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view):
+def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
+    now = now_utc()
+    if current_user and (
+        is_admin(current_user)
+        or is_kcrm(current_user)
+        or is_delivery(current_user)
+        or is_contractor(current_user)
+    ):
+        pass
+    elif csa_can_manage_participants(csa_account, sess, now):
+        current_app.logger.info(
+            f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
+        )
+    else:
+        if is_csa_for_session(csa_account, sess):
+            current_app.logger.info(
+                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+            )
+        abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -1115,7 +1180,25 @@ def sample_csv(session_id: int, current_user):
 
 @bp.post("/<int:session_id>/participants/import-csv")
 @csa_allowed_for_session
-def import_csv(session_id: int, sess, current_user, csa_view):
+def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
+    now = now_utc()
+    if current_user and (
+        is_admin(current_user)
+        or is_kcrm(current_user)
+        or is_delivery(current_user)
+        or is_contractor(current_user)
+    ):
+        pass
+    elif csa_can_manage_participants(csa_account, sess, now):
+        current_app.logger.info(
+            f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
+        )
+    else:
+        if is_csa_for_session(csa_account, sess):
+            current_app.logger.info(
+                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+            )
+        abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -1233,11 +1316,26 @@ def generate_bulk(session_id: int, current_user):
 
 
 @bp.route("/<int:session_id>/prework", methods=["GET", "POST"])
-@staff_required
-def session_prework(session_id: int, current_user):
+def session_prework(session_id: int):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    user_id = flask_session.get("user_id")
+    account_id = flask_session.get("participant_account_id")
+    if account_id:
+        if sess.csa_account_id == int(account_id):
+            flash("CSA cannot send prework", "error")
+        return Response("", 403)
+    if not user_id:
+        return redirect(url_for("auth.login"))
+    current_user = db.session.get(User, user_id)
+    if not current_user or not (
+        is_admin(current_user)
+        or is_kcrm(current_user)
+        or is_delivery(current_user)
+        or is_contractor(current_user)
+    ):
+        abort(403)
     template = PreworkTemplate.query.filter_by(
         workshop_type_id=sess.workshop_type_id, is_active=True
     ).first()

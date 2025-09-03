@@ -271,10 +271,11 @@ Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/g
 | **My Workshops / My Prework / My Certificates**        | —         | —           | —       | V (own)        | V (own)          | —          | V |
 | **Login flows (magic links, account invites)**         | A         | A           | A       | A (for own sessions) | A (for own sessions) | — | — |
 
-> Notes  
-> • “own & assigned” = sessions where the user is on the delivery team or explicitly assigned the **CSA** role (see below).  
-> • “Participant” refers to **participant accounts** (learners).  
+> Notes
+> • “own & assigned” = sessions where the user is on the delivery team or explicitly assigned the **CSA** role (see below).
+> • “Participant” refers to **participant accounts** (learners).
 > • App_Admin manages system-level settings in addition to is_kt_admin’s operational superuser scope.
+> • Roles Matrix version 2024-06-13.
 
 ---
 
@@ -283,11 +284,10 @@ Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/g
 **What CSA is:** A session-scoped assignment to a user (often client-facing operations). It *does not* change the user’s global role; it adds privileges **only for the assigned session(s)**.
 
 **CSA Capabilities (session-scoped)**
-- **Sessions (assigned only):** V (detail).  
-- **Participants:** **A** add participants to the assigned session; view roster.  
-- **Prework (assigned only):** **A** send prework / send account invites / mark “no prework”.  
-- **No session field edits** beyond participant management and prework actions.  
-- **No materials / certificates / workshop-type / users / settings** access.
+- **Sessions (assigned only):** V (detail).
+- **Participants:** **A** add/remove participants until the session start time; view roster.
+- **No prework, materials, certificates, workshop-type, users, or settings access.**
+- **No session field edits** beyond participant management.
 
 **CSA Email/Logs**
 - When CSA is assigned or changed, the system sends a “CSA assigned” email to the user and logs `[MAIL-OUT] csa-assign session=<id> user=<id> to=<email> result=sent]`. Re-sending occurs only when the assignment changes.
