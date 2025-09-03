@@ -1,0 +1,21 @@
+<h2>Sessions Dashboard</h2>
+{% if sessions %}
+<h2>Sessions</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th>Title</th><th>Client</th><th>Workshop Type</th><th>Dates</th><th>Region</th><th>Delivery Type</th><th>Status</th><th>Actions</th>
+  </tr>
+  {% for s in sessions %}
+  <tr>
+    <td>{{ s.title }}</td>
+    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
+    <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
+    <td>{{ s.start_date }} - {{ s.end_date }} {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
+    <td>{{ s.region }}</td>
+    <td>{{ s.delivery_type }}</td>
+    <td>{{ s.status }}</td>
+    <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}

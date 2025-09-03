@@ -26,6 +26,9 @@ class User(db.Model):
     preferred_language = db.Column(
         db.String(10), nullable=False, default="en", server_default="en"
     )
+    preferred_view = db.Column(
+        db.String(20), nullable=True, default="ADMIN", server_default="ADMIN"
+    )
     __table_args__ = (
         db.Index("ix_users_email_lower", db.func.lower(email), unique=True),
     )

@@ -160,6 +160,13 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - "My Workshops" lists only enrolled sessions with prework/resources/certificate actions. **[DONE]**
 - Settings menu includes a read-only Roles Matrix for admins. **[DONE]**
 
+### Views
+- UI-only modes for decluttering: **ADMIN**, **SESSION_MANAGER**, **MATERIALS**, **DELIVERY**, **LEARNER**.
+- Staff profiles store `preferred_view` (enum, default **ADMIN**); participants implicitly use **LEARNER**.
+- `active_view` cookie can temporarily override `preferred_view`; clearing it resets to profile.
+- Switching views alters navigation and home dashboard only; **permissions (RBAC) are unchanged**.
+- Sidebar footer has a "View" dropdown; a banner appears when not in **ADMIN** with a quick link back.
+
 ---
 
 ## 10) Ops & non-functional
@@ -173,6 +180,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - All token timestamps are timezone-aware UTC. **[DONE]**
 - External URLs default to HTTPS (`PREFERRED_URL_SCHEME='https'`); prework emails always use HTTPS links. **[DONE]**
 - Migration 0032_prework_list_questions explicitly creates/drops PostgreSQL enum `prework_question_kind` for reliable upgrades/downgrades. **[DONE]**
+- Migration 0037_preferred_view adds `users.preferred_view` to support UI Views. **[DONE]**
 
 ---
 
