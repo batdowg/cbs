@@ -217,3 +217,96 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
   - **Facilitator, Contractor**: view only.
   - **Participants**: view only, scoped to their workshop types.
   - Resources pages use the standard base layout with persistent left sidebar; active nav: Settings→Resources; Learner→My Resources.
+
+
+## 6.x Views (UI-only, RBAC stays the source of truth)
+
+**Views** trim the homepage and menu to match a workflow. They **do not** grant or remove permissions — RBAC below controls access. Users can switch views with the footer switcher; staff default per role.
+
+**Available Views**
+- **Admin** – Everything allowed by RBAC; learner-only items hidden.
+- **Session Manager** – Sessions dashboard; session-focused menu; learner-only hidden.
+- **Materials** – Materials ordering dashboard; materials-focused menu; learner-only and certificates admin hidden.
+- **Delivery** – “My Workshops,” Resources, and Prework quick links; learner links visible (useful for support).
+- **Learner** – Learner home (My Prework • My Workshops • My Certificates); all staff pages hidden.
+
+**Default View by Role**
+- `App_Admin` → **Admin**
+- `is_kt_admin` → **Admin**
+- `is_kcrm` (CRM) → **Session Manager**
+- `is_kt_delivery` → **Delivery**
+- `is_kt_contractor` → **Delivery**
+- `is_kt_staff` (general staff) → **Admin**
+- Participant account → **Learner** (forced)
+
+> Guarantee: Views affect layout only. If a page is hidden by View but allowed by RBAC, direct URL access still works.
+
+---
+
+## 10. RBAC: Roles → Permissions Matrix
+
+Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/generate/finalize, etc.)
+
+| Feature / Page                                         | App_Admin | is_kt_admin | is_kcrm | is_kt_delivery | is_kt_contractor | is_kt_staff | Participant |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Sessions – list & detail**                           | V C E D   | V C E D     | V C E   | V (own & assigned) | V (own & assigned) | V | V (own via My Workshops) |
+| **Sessions – core fields edit**                        | E         | E           | E       | —              | —                | —          | — |
+| **Sessions – add participants**                        | A         | A           | A       | A (own & assigned) | A (own & assigned) | — | — |
+| **Sessions – finalize / cancel**                       | A         | A           | A       | —              | —                | —          | — |
+| **Prework – configure (by Workshop Type)**             | V C E D   | V C E D     | —       | —              | —                | —          | — |
+| **Prework – send / mark no-prework (by Session)**      | A         | A           | A       | A (own & assigned) | A (own & assigned) | — | V (complete own only) |
+| **Materials – create order**                           | A         | A           | A       | —              | —                | —          | — |
+| **Materials – mark ready / delivered**                 | A         | A           | A       | —              | —                | —          | — |
+| **Resources – manage (Settings → Resources)**          | V C E D   | V C E D     | —       | —              | —                | —          | — |
+| **Resources – view (My Resources)**                    | —         | —           | —       | V              | V                | —          | V |
+| **Certificates – generate/issue**                      | A         | A           | —       | —              | —                | —          | V (view own) |
+| **Verify Certificates (public/staff view)**            | V         | V           | V       | V              | V                | V          | V |
+| **Workshop Types – manage**                            | V C E D   | V C E D     | —       | —              | —                | —          | — |
+| **Users – staff & learner admin (/users)**             | V C E D   | V C E D     | —       | —              | —                | —          | — |
+| **Importer (/importer)**                               | V A       | V A         | —       | —              | —                | —          | — |
+| **Issued / Cert Form (/issued, /cert-form)**           | V A       | V A         | —       | —              | —                | —          | — |
+| **Settings – Roles Matrix**                            | V E       | V           | —       | —              | —                | —          | — |
+| **Settings – App/System settings**                     | V E       | —           | —       | —              | —                | —          | — |
+| **My Profile (change password, language)**             | V E       | V E         | V E     | V E            | V E              | V E        | V E |
+| **My Workshops / My Prework / My Certificates**        | —         | —           | —       | V (own)        | V (own)          | —          | V |
+| **Login flows (magic links, account invites)**         | A         | A           | A       | A (for own sessions) | A (for own sessions) | — | — |
+
+> Notes  
+> • “own & assigned” = sessions where the user is on the delivery team or explicitly assigned the **CSA** role (see below).  
+> • “Participant” refers to **participant accounts** (learners).  
+> • App_Admin manages system-level settings in addition to is_kt_admin’s operational superuser scope.
+
+---
+
+## 10.1 Per-Session CSA (Client Session Administrator)
+
+**What CSA is:** A session-scoped assignment to a user (often client-facing operations). It *does not* change the user’s global role; it adds privileges **only for the assigned session(s)**.
+
+**CSA Capabilities (session-scoped)**
+- **Sessions (assigned only):** V (detail).  
+- **Participants:** **A** add participants to the assigned session; view roster.  
+- **Prework (assigned only):** **A** send prework / send account invites / mark “no prework”.  
+- **No session field edits** beyond participant management and prework actions.  
+- **No materials / certificates / workshop-type / users / settings** access.
+
+**CSA Email/Logs**
+- When CSA is assigned or changed, the system sends a “CSA assigned” email to the user and logs `[MAIL-OUT] csa-assign session=<id> user=<id> to=<email> result=sent]`. Re-sending occurs only when the assignment changes.
+
+---
+
+## 10.2 Gating Rules (applies in **every** View)
+
+- **Prework (Learner):** Visible if the learner has an assignment; must answer required questions; can download allowed resources.  
+- **Resources (Learner):** Visible starting **workshop start date**; earlier only if the participant already has access from a previous course.  
+- **Certificates (Learner):** Visible after **workshop delivered** (session delivered flag set).  
+- **Date validation (Sessions):** `end_date >= start_date`. If `start_date < today`, staff must acknowledge the past start date.  
+- **File locations:** Certificates under `/srv/certificates/<year>/<session>/<email>.pdf`; public URL helper provides links.
+
+---
+
+## 10.3 Audit & Logging
+
+- All mail sends include `[MAIL-OUT]` / `[MAIL-FAIL]` with type tags (`prework`, `account-invite`, `csa-assign`).  
+- Role/permission changes and sensitive actions (issue certificates, finalize sessions) are logged with user id, timestamp (no seconds displayed in UI), and object id.
+
+---
