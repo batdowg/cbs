@@ -42,7 +42,7 @@
     {% elif not csa_view %}
       <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
     {% endif %}
-  </div>
+  </div><br>
   <div>Shipping location:
     {% if can_manage and not readonly %}
       {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
@@ -130,16 +130,17 @@
       <div class="error">Select physical components</div>
     {% endif %}
   </fieldset>
-  <div>PO Number:
-    {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
-      <input type="text" name="materials_po_number" value="{{ form.get('materials_po_number') if form else (shipment.materials_po_number or '') }}">
-    {% else %}{{ shipment.materials_po_number|default('', true) }}{% endif %}
-  </div>
   <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
       <input type="date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
     {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
   </div>
+  <div>PO Number:
+    {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
+      <input type="text" name="materials_po_number" value="{{ form.get('materials_po_number') if form else (shipment.materials_po_number or '') }}">
+    {% else %}{{ shipment.materials_po_number|default('', true) }}{% endif %}
+  </div>
+
   <div>Courier:
     {% if can_edit_materials_header('courier', current_user, shipment) and not readonly %}
       <input type="text" name="courier" value="{{ form.get('courier') if form else (shipment.courier or '') }}">
