@@ -20,10 +20,10 @@
   Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
   Notes:  {{ session.notes or session.description or '' }}<br>
   Status: {{ session.computed_status }}<br>
-  Materials ordered:  {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
+  Materials ordered : {{ ' Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
   Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
-  Delivered:          {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
+  Delivered         : {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
 </div>
 {% else %}
 <div>
