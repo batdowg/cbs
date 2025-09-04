@@ -2,6 +2,7 @@
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql as pg
 
 
 revision = '0039_materials_enhancements'
@@ -13,9 +14,11 @@ FORMATS = ('PHYSICAL', 'DIGITAL', 'MIXED', 'SIM_ONLY')
 
 
 def upgrade() -> None:
+    fmt_enum = pg.ENUM(*FORMATS, name='materials_format')
+    fmt_enum.create(op.get_bind(), checkfirst=True)
     op.add_column(
         'session_shipping',
-        sa.Column('materials_format', sa.Enum(*FORMATS, name='materials_format'), nullable=True),
+        sa.Column('materials_format', fmt_enum, nullable=True),
     )
     op.add_column(
         'session_shipping',
@@ -30,4 +33,7 @@ def downgrade() -> None:
     op.drop_column('session_shipping', 'materials_po_number')
     op.drop_column('session_shipping', 'materials_components')
     op.drop_column('session_shipping', 'materials_format')
-    sa.Enum(name='materials_format').drop(op.get_bind(), checkfirst=False)
+    comp_enum = pg.ENUM(name='materials_components')
+    fmt_enum = pg.ENUM(name='materials_format')
+    comp_enum.drop(op.get_bind(), checkfirst=True)
+    fmt_enum.drop(op.get_bind(), checkfirst=True)
