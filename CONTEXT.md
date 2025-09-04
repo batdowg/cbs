@@ -148,7 +148,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 ## 9) UI & Navigation
 - Sidebar (role-aware):
   - **Participants**: Home, My Workshops, My Resources, My Profile, Logout.
-  - **CSA**: Home, My Sessions, My Resources, My Profile, Logout.
+  - **CSA**: Home, My Workshops, My Resources, My Profile, Logout.
   - **Staff (SysAdmin/Admin/Delivery/Contractor)**: Home, My Sessions, Sessions, Materials, Surveys, My Resources, My Profile, Settings, Logout. "My Certificates" lives under My Profile; no "Verify Certificates" link. **[DONE]**
 - Learner-facing navigation and emails say "Workshop" (e.g., "My Workshops"); staff UI retains "Session" wording. **[DONE]**
 - Root `/` shows branded login card (no nav). **[DONE]**
@@ -161,13 +161,13 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - "My Workshops" lists only enrolled sessions with prework/resources/certificate actions. **[DONE]**
 - Settings menu includes a read-only Roles Matrix for admins. **[DONE]**
 
-### Views
-- UI-only modes for decluttering: **ADMIN**, **SESSION_MANAGER**, **MATERIALS**, **DELIVERY**, **LEARNER**.
+-### Views
+- UI-only modes for decluttering: **ADMIN**, **SESSION_MANAGER**, **CSA**, **MATERIALS**, **DELIVERY**, **LEARNER**.
 - Staff profiles store `preferred_view` (enum, default **ADMIN**); participants implicitly use **LEARNER**.
 - `active_view` cookie can temporarily override `preferred_view`; clearing it resets to profile.
 - Switching views alters navigation and home dashboard only; **permissions (RBAC) are unchanged**.
 - Sidebar footer has a "View" dropdown; a banner appears when not in **ADMIN** with a quick link back.
-- CSA home = My Sessions. Participants have no view switcher; CSA switcher offers CSA/Learner only.
+- CSA home = My Sessions. Participants and CSAs have no view switcher. Staff switcher includes a **Session Admin** option for the CSA view.
 
 ---
 
@@ -290,7 +290,7 @@ Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/g
 - **Participants:** **A** add/remove participants until the session start time; view roster.
 - **No prework, materials, certificates, workshop-type, users, or settings access.**
 - **No session field edits** beyond participant management.
-- Landing page lists assigned sessions ("My Sessions" menu entry); view switcher offers only CSA/Learner.
+- Landing page lists assigned sessions ("My Workshops" menu entry); CSAs do not have a view switcher.
 
 **CSA Email/Logs**
 - When CSA is assigned or changed, the system sends a “CSA assigned” email to the user and logs `[MAIL-OUT] csa-assign session=<id> user=<id> to=<email> result=sent]`. Re-sending occurs only when the assignment changes.

@@ -49,11 +49,9 @@ def test_csa_my_sessions_page(app):
     resp = client.get("/csa/my-sessions")
     assert b"My Sessions" in resp.data
     assert f"/sessions/{sess_id}".encode() in resp.data
-    assert b"href=\"/csa/my-sessions\"" in resp.data
-    form_chunk = resp.data.split(b'action="/settings/view"')[1].split(b'</form>')[0]
-    assert b'<option value="CSA"' in form_chunk
-    assert b'<option value="LEARNER"' in form_chunk
-    assert form_chunk.count(b'<option') == 2
+    assert b'href="/csa/my-sessions"' in resp.data
+    assert b'My Workshops' in resp.data
+    assert b'action="/settings/view"' not in resp.data
 
 
 def test_csa_home_redirect(app):

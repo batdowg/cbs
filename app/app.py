@@ -130,7 +130,7 @@ def create_app():
             )
         active_view = get_active_view(user, request, is_csa)
         nav_menu = build_menu(user, active_view, show_resources_nav, is_csa)
-        view_opts = STAFF_VIEWS if user else (CSA_VIEWS if is_csa else [])
+        view_opts = STAFF_VIEWS if user else []
         return {
             "current_user": user,
             "current_account": account,
