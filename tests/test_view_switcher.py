@@ -43,7 +43,7 @@ def test_home_dashboard_per_view(app):
     client = app.test_client()
     login(client, 'mat@example.com', 'pw')
     client.get('/settings/view', query_string={'view': 'MATERIALS'})
-    resp = client.get('/home')
+    resp = client.get('/home', follow_redirects=True)
     assert b'Materials Dashboard' in resp.data
 
 
@@ -55,13 +55,13 @@ def test_cookie_override_and_clear(app):
         db.session.commit()
     client = app.test_client()
     login(client, 'sess@example.com', 'pw')
-    resp = client.get('/home')
+    resp = client.get('/home', follow_redirects=True)
     assert b'Sessions Dashboard' in resp.data
     client.get('/settings/view', query_string={'view': 'MATERIALS'})
-    resp = client.get('/home')
+    resp = client.get('/home', follow_redirects=True)
     assert b'Materials Dashboard' in resp.data
     client.get('/settings/view', query_string={'view': 'INVALID'})
-    resp = client.get('/home')
+    resp = client.get('/home', follow_redirects=True)
     assert b'Sessions Dashboard' in resp.data
 
 

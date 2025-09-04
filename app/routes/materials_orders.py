@@ -7,7 +7,7 @@ from flask import Blueprint, abort, redirect, render_template, request, session 
 from ..app import db, User
 from ..models import Session, SessionShipping, Client, WorkshopType
 from .materials import ORDER_TYPES, can_manage_shipment, is_view_only
-from utils.materials import latest_arrival_date
+from ..utils.materials import latest_arrival_date
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
 
@@ -80,7 +80,7 @@ def list_orders():
         "session_status": lambda r: r["session_status"],
     }
     reverse = direction == "desc"
-    rows.sort(key=key_funcs.get(sort, key_funcs["start_date"]), reverse=reverse)
+    rows.sort(key=key_funcs.get(sort, key_funcs["arrival_date"]), reverse=reverse)
 
     clients = Client.query.order_by(Client.name).all()
     return render_template(

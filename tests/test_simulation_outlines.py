@@ -1,11 +1,11 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
 from app.app import create_app, db
 from app.models import User, WorkshopType, Session, SimulationOutline, Client, Language, SessionShipping
-from utils.materials import latest_arrival_date
+from app.utils.materials import latest_arrival_date
 
 
 @pytest.fixture
@@ -42,6 +42,8 @@ def test_simulation_outline_dropdown_and_save(app):
     login(client, admin_id)
     resp = client.get("/sessions/new")
     assert b"123456" in resp.data
+    future_start = date.today() + timedelta(days=30)
+    future_end = future_start + timedelta(days=1)
     data = {
         "title": "S1",
         "client_id": str(client_id),
@@ -50,9 +52,12 @@ def test_simulation_outline_dropdown_and_save(app):
         "delivery_type": "Onsite",
         "language": "English",
         "capacity": "10",
-        "start_date": "2025-01-01",
-        "end_date": "2025-01-02",
+        "start_date": future_start.isoformat(),
+        "end_date": future_end.isoformat(),
         "simulation_outline_id": str(sim_id),
+        "timezone": "UTC",
+        "daily_start_time": "08:00",
+        "daily_end_time": "17:00",
     }
     resp = client.post("/sessions/new", data=data)
     assert resp.status_code == 302

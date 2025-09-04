@@ -18,6 +18,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 0.6 Update this file when you finish work (flip items to **[DONE]**).  
 0.7 **Static assets:** Do **not** add/replace images under `app/assets/badges/`. Use what’s already there. Badges are served from `/srv/badges`. No binary churn in PRs.  
 0.8 **Scope guard:** Don’t invent pages or routes. Follow sections below.
+0.9 Utility modules live under `app/utils/`; import them as `from app.utils`.
 
 ---
 
@@ -115,7 +116,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
   - Read-only **Shipping Location** (from Session). **[DONE]**
   - Status actions: Submit, Shipped (courier+tracking+ship date), Delivered (marks `materials_ordered = true`). **[DONE]**
 - Header now includes **Material format** (All Physical / All Digital / Mixed / SIM Only) with optional **Physical components** and **PO Number**; physical formats require at least one component.
-- Materials list replaces Start Date with **Latest Arrival Date** (max of shipment arrival dates).
+- Materials list includes a **Latest Arrival Date** column (max of shipment arrival dates).
 - **Permissions**:
   - Create/edit order: **Administrator, CRM**.  
   - Mark Delivered: **Administrator** only.  
