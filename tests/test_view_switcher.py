@@ -77,3 +77,18 @@ def test_participant_forced_learner_view(app):
     resp = client.get('/home')
     assert b'Admin Dashboard' not in resp.data
     assert b'Welcome,' in resp.data
+
+
+def test_staff_view_switcher_shows_session_admin_option(app):
+    with app.app_context():
+        u = User(email='staff2@example.com', is_admin=True)
+        u.set_password('pw')
+        db.session.add(u)
+        db.session.commit()
+    client = app.test_client()
+    login(client, 'staff2@example.com', 'pw')
+    resp = client.get('/home')
+    assert b'action="/settings/view"' in resp.data
+    form_chunk = resp.data.split(b'action="/settings/view"')[1].split(b'</form>')[0]
+    assert b'<option value="CSA"' in form_chunk
+    assert b'Session Admin' in form_chunk

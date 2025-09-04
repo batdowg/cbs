@@ -50,7 +50,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
 def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
     items.append({'id': 'home', 'label': 'Home', 'endpoint': 'home'})
-    label = 'My Sessions' if is_csa else 'My Workshops'
+    label = 'My Workshops'
     endpoint = 'csa.my_sessions' if is_csa else 'my_sessions.list_my_sessions'
     items.append({'id': 'my_sessions', 'label': label, 'endpoint': endpoint})
     if show_resources:
