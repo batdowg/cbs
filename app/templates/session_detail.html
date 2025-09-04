@@ -5,44 +5,42 @@
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
 {% if csa_view %}
 <div>
-  Title: {{ session.title }}<br>
-  Client: {% if session.client %}{{ session.client.name }}{% endif %};   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
-  Simulation: {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Facilitator(s):
+  Client:         {% if session.client %}{{ session.client.name }}{% endif %};   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
+  Workshop Type:  {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
+  Simulation:     {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
+  Facilitator(s): 
   {% set facs = [] %}
   {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
   {% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
   {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
-  Dates: {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
-  Language: {{ session.language }}<br>
+  Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
+  Language:      {{ session.language }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
   Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
   Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
-  Notes: {{ session.notes or session.description or '' }}<br>
+  Notes:  {{ session.notes or session.description or '' }}<br>
   Status: {{ session.computed_status }}<br>
-  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
+  Materials ordered:  {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
   Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
+  Delivered:          {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
 </div>
 {% else %}
 <div>
-  Title: {{ session.title }}<br>
-  Client: {% if session.client %}{{ session.client.name }}{% endif %}    CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
+  Client:        {% if session.client %}{{ session.client.name }}{% endif %}    CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
-  Simulation: {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Dates: {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
+  Simulation:    {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
+  Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
   Delivery Type: {{ session.delivery_type }}<br>
   Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
   Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
-  Notes: {{ session.notes or session.description or '' }}<br><br>
+  Notes:  {{ session.notes or session.description or '' }}<br><br>
   Status: {{ session.computed_status }}<br>
-  Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
+  Materials ordered:  {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
   Workshop info sent: {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
-  Delivered: {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
-  Finalized: {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}
+  Delivered:          {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
+  Finalized:          {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}
 </div>
 {% endif %}
 {% if current_user %}
