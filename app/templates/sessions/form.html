@@ -15,8 +15,8 @@
         {% endfor %}
       </select>
       <a href="#" id="add-client" class="button">Add Client</a>
-    </label>
       <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
+    </label>
     </div>
     <div><label>Region*
       <select name="region" required>
