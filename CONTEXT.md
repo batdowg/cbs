@@ -72,7 +72,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
 - Saving a session requires **end date ≥ start date** (single-day allowed). If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
 - Session form normalizes time fields to HH:MM; server validation enforces end > start; UI sets end.min = start; past-start requires acknowledgement.
-- **Lifecycle flags & gates** (server-enforced):  
+- **Lifecycle flags & gates** (server-enforced):
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
   Gates:
   - Ready requires **participants > 0**.  
@@ -85,6 +85,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Prework**: session page `/sessions/<id>/prework` lists participants and lets staff send prework assignments when the workshop type has a template. List-style questions snapshot kind/min/max and show a download link for staff. **[DONE]**
 - Session-level `no_prework` toggle disables "Send Prework" and marks assignment rows **WAIVED**; page also offers **Send Accounts without Prework** to email portal links only. Logs `[SESS] no_prework=<true|false> session=<id>` and `[MAIL-OUT] account-invite …`. **[DONE]**
 - Prework send creates missing participant accounts on-the-fly (`[ACCOUNT]` logs), generates magic-link emails per participant, and logs `[MAIL-OUT]`/`[MAIL-FAIL]`. A session-level `no_material_order` flag is set via the New Session form. Sending prework does not gate certificates. **[DONE]**
+- Learner “My Workshops” list shows a **Prework** action for each enrolled session, linking directly to that participant’s prework page (or “No prework” when none). **[2025-09-04]**
 - Magic links are single-use passwordless sign-ins. They compare `SHA256(token + SECRET_KEY)` against `magic_token_hash`, expire via `magic_token_expires`, and log `[AUTH]` or `[AUTH-FAIL]` outcomes. **[DONE]**
 - Staff can access Prework via a "Prework" button on the Workshop Type edit page and on Session list/detail pages. **[DONE]**
 - On New Session, there are two actions: **Proceed to materials order** and **No Materials Order (Save)** — the latter sets the flag and returns to the Session detail view. The Prework page does not show materials controls. **[DONE]**
@@ -232,6 +233,12 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Delivery** – “My Workshops,” Resources, and Prework quick links; learner links visible (useful for support).
 - **Learner** – Learner home (My Prework • My Workshops • My Certificates); all staff pages hidden.
 
+**Navigation defaults (2025-09-04):**
+- Participants land on **My Workshops** after login.
+- CSAs land on **My Sessions** and also have a **My Workshops** menu entry.
+- Participants (non-CSA) menu: Home • My Workshops • My Profile • Logout.
+- CSA menu: Home • My Sessions • My Workshops • My Profile • Logout.
+
 **Default View by Role**
 - `App_Admin` → **Admin**
 - `is_kt_admin` → **Admin**
@@ -290,7 +297,7 @@ Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/g
 - **Participants:** **A** add/remove participants until the session start time; view roster.
 - **No prework, materials, certificates, workshop-type, users, or settings access.**
 - **No session field edits** beyond participant management.
-- Landing page lists assigned sessions ("My Workshops" menu entry); CSAs do not have a view switcher.
+- Landing page lists assigned sessions (**My Sessions**); CSA menu also includes **My Workshops**. CSAs do not have a view switcher.
 
 **CSA Email/Logs**
 - When CSA is assigned or changed, the system sends a “CSA assigned” email to the user and logs `[MAIL-OUT] csa-assign session=<id> user=<id> to=<email> result=sent]`. Re-sending occurs only when the assignment changes.

@@ -174,9 +174,9 @@ def create_app():
                 .first()
                 is not None
             )
-            if is_csa and get_active_view(None, request, True) == "CSA":
+            if is_csa:
                 return redirect(url_for("csa.my_sessions"))
-            return render_template("home.html")
+            return redirect(url_for("learner.my_workshops"))
         return redirect(url_for("auth.login"))
 
     def login_required(fn):

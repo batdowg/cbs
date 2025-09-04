@@ -21,6 +21,7 @@ from ..models import (
     AuditLog,
     PreworkAssignment,
     PreworkEmailLog,
+    Session,
 )
 from ..utils.auth_bridge import lookup_identity, verify_password, login_identity
 from ..utils.time import now_utc
@@ -198,7 +199,17 @@ def account_magic(account_id: int, token: str):
     if account.must_change_password:
         flash("Please set a new password to continue.", "error")
         return redirect(url_for("learner.profile") + "#password")
-    return redirect(url_for("my_sessions.list_my_sessions"))
+    is_csa = (
+        db.session.query(Session.id)
+        .filter(Session.csa_account_id == account.id)
+        .first()
+        is not None
+    )
+    target = "csa.my_sessions" if is_csa else "learner.my_workshops"
+    resp = redirect(url_for(target))
+    if not request.cookies.get("active_view"):
+        resp.set_cookie("active_view", "CSA" if is_csa else "LEARNER", samesite="Lax")
+    return resp
 
 
 @bp.route("/", methods=["GET", "POST"])
@@ -253,15 +264,33 @@ def login():
         if account.must_change_password:
             flash("Please set a new password to continue.", "error")
             return redirect(url_for("learner.profile") + "#password")
-        resp = redirect(url_for("learner.my_certs"))
+        is_csa = (
+            db.session.query(Session.id)
+            .filter(Session.csa_account_id == account.id)
+            .first()
+            is not None
+        )
+        target = "csa.my_sessions" if is_csa else "learner.my_workshops"
+        resp = redirect(url_for(target))
         if not request.cookies.get("active_view"):
-            resp.set_cookie("active_view", "LEARNER", samesite="Lax")
+            resp.set_cookie(
+                "active_view", "CSA" if is_csa else "LEARNER", samesite="Lax"
+            )
         return resp
     # GET
     if flask_session.get("user_id"):
         return redirect(url_for("home"))
     if flask_session.get("participant_account_id"):
-        return redirect(url_for("learner.my_certs"))
+        account_id = flask_session.get("participant_account_id")
+        is_csa = (
+            db.session.query(Session.id)
+            .filter(Session.csa_account_id == account_id)
+            .first()
+            is not None
+        )
+        if is_csa:
+            return redirect(url_for("csa.my_sessions"))
+        return redirect(url_for("learner.my_workshops"))
     return render_template("auth/login_unified.html")
 
 

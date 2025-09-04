@@ -49,6 +49,50 @@ def login_required(fn):
     return wrapper
 
 
+@bp.get("/my-workshops")
+@login_required
+def my_workshops():
+    """List sessions where the current user is a participant."""
+    account_id = flask_session.get("participant_account_id")
+    user_id = flask_session.get("user_id")
+    email = ""
+    account = None
+    if account_id:
+        account = db.session.get(ParticipantAccount, account_id)
+        email = (account.email or "").lower() if account else ""
+    elif user_id:
+        user = db.session.get(User, user_id)
+        email = (user.email or "").lower()
+        account = (
+            ParticipantAccount.query.filter(
+                func.lower(ParticipantAccount.email) == email
+            ).first()
+        )
+        account_id = account.id if account else None
+    else:
+        return redirect(url_for("auth.login"))
+
+    sessions = (
+        db.session.query(Session)
+        .join(SessionParticipant, SessionParticipant.session_id == Session.id)
+        .join(Participant, SessionParticipant.participant_id == Participant.id)
+        .filter(func.lower(Participant.email) == email)
+        .order_by(Session.start_date)
+        .all()
+    )
+    assignments = {}
+    if account_id:
+        assignments = {
+            a.session_id: a
+            for a in PreworkAssignment.query.filter_by(
+                participant_account_id=account_id
+            ).all()
+        }
+    return render_template(
+        "my_workshops.html", sessions=sessions, assignments=assignments
+    )
+
+
 @bp.get("/my-resources")
 @login_required
 def my_resources():

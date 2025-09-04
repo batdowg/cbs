@@ -192,8 +192,8 @@ def test_nav_gating_prework():
     with app.test_client() as c:
         with c.session_transaction() as sess_data:
             sess_data["participant_account_id"] = account_id
-        resp = c.get("/home", follow_redirects=True)
-        assert b"My Prework" in resp.data
+        resp = c.get("/my-workshops")
+        assert b"Prework" in resp.data
         assert b"My Resources" not in resp.data
 
 

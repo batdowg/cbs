@@ -69,7 +69,7 @@ def test_manual_participant_create_login(app):
         data={"email": "learner@example.com", "password": temp_pw},
         follow_redirects=True,
     )
-    assert resp.request.path == "/my-certificates"
+    assert resp.request.path == "/my-workshops"
 
 
 def test_provision_sets_default_password(app):
