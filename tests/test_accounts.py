@@ -10,6 +10,7 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 from app.app import create_app, db
 from app.models import Participant, ParticipantAccount
 from app.utils import accounts as acct_utils
+from app.constants import DEFAULT_PARTICIPANT_PASSWORD
 
 
 def test_ensure_account_case_insensitive_reuse():
@@ -24,8 +25,8 @@ def test_ensure_account_case_insensitive_reuse():
         db.session.commit()
         acct, temp_pw = acct_utils.ensure_participant_account(p, {})
         assert acct.id == existing.id
-        assert temp_pw is not None
-        assert acct.must_change_password is True
+        assert temp_pw == DEFAULT_PARTICIPANT_PASSWORD
+        assert acct.must_change_password is False
         assert ParticipantAccount.query.count() == 1
 
 
@@ -51,5 +52,5 @@ def test_ensure_account_integrity_error_fallback(monkeypatch):
         monkeypatch.setattr(acct_utils, "get_participant_account_by_email", fake_get)
         acct, temp_pw = acct_utils.ensure_participant_account(p, {})
         assert acct.id == existing.id
-        assert temp_pw is not None
+        assert temp_pw == DEFAULT_PARTICIPANT_PASSWORD
         assert ParticipantAccount.query.count() == 1

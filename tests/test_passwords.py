@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.utils.provisioning import provision_participant_accounts_for_session
 from app.utils import accounts as acct_utils
+from app.constants import DEFAULT_PARTICIPANT_PASSWORD
 
 
 @pytest.fixture
@@ -62,12 +63,13 @@ def test_manual_participant_create_login(app):
         participant = Participant.query.filter_by(email="learner@example.com").first()
         acct, temp_pw = acct_utils.ensure_participant_account(participant, {})
         db.session.commit()
+        assert temp_pw == DEFAULT_PARTICIPANT_PASSWORD
     resp = client.post(
         "/login",
         data={"email": "learner@example.com", "password": temp_pw},
         follow_redirects=True,
     )
-    assert resp.request.path == "/profile"
+    assert resp.request.path == "/my-certificates"
 
 
 def test_provision_keeps_password(app):
