@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}My Workshops{% endblock %}
+{% block content %}
+<h1>My Workshops</h1>
+{% if sessions %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Dates</th><th>Client</th><th>Title</th><th>Action</th></tr>
+  {% for s in sessions %}
+  <tr>
+    <td>{{ s.start_date }} - {{ s.end_date }}</td>
+    <td>{{ s.client.name if s.client else '' }}</td>
+    <td>{{ s.title }}</td>
+    <td>
+      {% set assignment = assignments.get(s.id) if assignments else None %}
+      {% if assignment and assignment.status != 'WAIVED' %}
+        <a href="{{ url_for('learner.prework_form', assignment_id=assignment.id) }}">Prework</a>
+      {% else %}
+        <span class="muted">No prework</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No workshops found.</p>
+{% endif %}
+{% endblock %}

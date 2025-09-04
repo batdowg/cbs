@@ -50,7 +50,7 @@ def test_csa_my_sessions_page(app):
     assert b"My Sessions" in resp.data
     assert f"/sessions/{sess_id}".encode() in resp.data
     assert b'href="/csa/my-sessions"' in resp.data
-    assert b'My Workshops' in resp.data
+    assert b'href="/my-workshops"' in resp.data
     assert b'action="/settings/view"' not in resp.data
 
 
@@ -58,7 +58,7 @@ def test_csa_home_redirect(app):
     csa_id, part_id, sess_id = _setup(app)
     client = app.test_client()
     _login(client, csa_id)
-    resp = client.get("/home")
+    resp = client.get("/")
     assert resp.status_code == 302
     assert "/csa/my-sessions" in resp.headers["Location"]
 
@@ -67,5 +67,5 @@ def test_participant_no_view_switcher(app):
     csa_id, part_id, sess_id = _setup(app)
     client = app.test_client()
     _login(client, part_id)
-    resp = client.get("/home")
+    resp = client.get("/my-workshops")
     assert b'action="/settings/view"' not in resp.data

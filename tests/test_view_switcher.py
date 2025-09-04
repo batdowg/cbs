@@ -74,9 +74,9 @@ def test_participant_forced_learner_view(app):
     client = app.test_client()
     client.set_cookie('active_view', 'ADMIN', domain='localhost')
     login(client, 'learner@example.com', 'pw')
-    resp = client.get('/home')
+    resp = client.get('/home', follow_redirects=True)
+    assert resp.request.path == '/my-workshops'
     assert b'Admin Dashboard' not in resp.data
-    assert b'Welcome,' in resp.data
 
 
 def test_staff_view_switcher_shows_session_admin_option(app):

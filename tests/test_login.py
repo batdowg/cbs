@@ -46,7 +46,7 @@ def test_participant_login(app):
         db.session.commit()
     client = app.test_client()
     resp = client.post("/login", data={"email": "learner@example.com", "password": "pw"}, follow_redirects=True)
-    assert resp.request.path == "/my-certificates"
+    assert resp.request.path == "/my-workshops"
 
 
 def test_unknown_email(app):

@@ -50,9 +50,11 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
 def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
     items.append({'id': 'home', 'label': 'Home', 'endpoint': 'home'})
-    label = 'My Workshops'
-    endpoint = 'csa.my_sessions' if is_csa else 'my_sessions.list_my_sessions'
-    items.append({'id': 'my_sessions', 'label': label, 'endpoint': endpoint})
+    if is_csa:
+        items.append({'id': 'my_sessions', 'label': 'My Sessions', 'endpoint': 'csa.my_sessions'})
+        items.append({'id': 'my_workshops', 'label': 'My Workshops', 'endpoint': 'learner.my_workshops'})
+    else:
+        items.append({'id': 'my_workshops', 'label': 'My Workshops', 'endpoint': 'learner.my_workshops'})
     if show_resources:
         items.append({'id': 'my_resources', 'label': 'My Resources', 'endpoint': 'learner.my_resources'})
     items.append({'id': 'profile', 'label': 'My Profile', 'endpoint': 'learner.profile'})
@@ -65,8 +67,8 @@ VIEW_FILTERS = {
     'SESSION_MANAGER': {'home', 'my_sessions', 'sessions', 'surveys', 'my_resources', 'profile', 'logout'},
     'MATERIALS': {'home', 'my_sessions', 'materials', 'surveys', 'my_resources', 'profile', 'settings', 'logout'},
     'DELIVERY': {'home', 'my_sessions', 'surveys', 'my_resources', 'profile', 'logout'},
-    'LEARNER': {'home', 'my_sessions', 'my_resources', 'profile', 'logout'},
-    'CSA': {'home', 'my_sessions', 'my_resources', 'profile', 'logout'},
+    'LEARNER': {'home', 'my_workshops', 'my_resources', 'profile', 'logout'},
+    'CSA': {'home', 'my_sessions', 'my_workshops', 'my_resources', 'profile', 'logout'},
 }
 
 
