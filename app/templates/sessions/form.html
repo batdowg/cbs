@@ -15,8 +15,9 @@
         {% endfor %}
       </select>
       <a href="#" id="add-client" class="button">Add Client</a>
-    </label></div>
-    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
+    </label>
+      <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
+    </div>
     <div><label>Region*
       <select name="region" required>
         <option value="">--Select--</option>
@@ -25,7 +26,7 @@
         {% endfor %}
       </select>
     </label></div>
-    <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
+    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
     <div><label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
     <div><label>Workshop Location
       <select name="workshop_location_id" id="workshop-location-select">
