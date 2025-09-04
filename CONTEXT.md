@@ -74,7 +74,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
 - Saving a session requires **end date ≥ start date** (single-day allowed). If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
 - Session form normalizes time fields to HH:MM; server validation enforces end > start; UI sets end.min = start; past-start requires acknowledgement.
-- Sessions link to a managed catalog of **Simulation Outlines**; forms use a dropdown labeled "<Number> – <Skill> – <Descriptor>" and the detail view displays this label or “—”.
+- Sessions link to a managed catalog of **Simulation Outlines**. When the chosen Workshop Type is marked **Simulation based**, the Session form shows a "Simulation outline" dropdown labeled "<Number> – <Skill> – <Descriptor>"; otherwise the field is hidden. The detail view displays the selected outline or “—”.
 - Session detail shows full physical workshop address (or "Virtual"), places Notes after CRM, and displays daily time range with timezone abbreviation.
 - **Lifecycle flags & gates** (server-enforced):
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
@@ -96,7 +96,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 ---
 
 ## 4) Workshop Types & Badges
-- WorkshopTypes: `code` (unique uppercase), `name`, `status`, `description`, optional `badge` from: **None, Foundations, Practitioner, Advanced, Expert, Coach, Facilitator, Program Leader**. **[DONE]**
+- WorkshopTypes: `code` (unique uppercase), `name`, `status`, `description`, optional `badge` from: **None, Foundations, Practitioner, Advanced, Expert, Coach, Facilitator, Program Leader**, and a boolean `simulation_based`. **[DONE]**
 - Certificates and session UI show a small badge chip and a **Badge** download link when the workshop type has a badge. **[DONE]**
 - **Badges static delivery**: images live in `app/assets/badges`, synced to `/srv/badges`, served at `/badges/<slug>.webp`.
   Canonical filename/slug for Foundations is `foundations.webp`. **Do not commit new badge binaries.** **[DONE]**
@@ -116,7 +116,8 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
   - **Latest arrival date** (UI label, stored in `session_shipping.arrival_date`, required), **Workshop start date** (auto from Session), **SFC Project link**, **Delivery region** (from Session). **[DONE]**
   - Read-only **Shipping Location** (from Session). **[DONE]**
   - Status actions: Submit, Shipped (courier+tracking+ship date), Delivered (marks `materials_ordered = true`). **[DONE]**
-- Header now includes **Material format** (All Physical / All Digital / Mixed / SIM Only) with optional **Physical components** and **PO Number**. "Physical components" appears only when Material format is **All Physical** or **Mixed** and is required in those cases. On validation errors, the form preserves user input (dates, selects, text fields).
+- Header now includes **Material format** (All Physical / Mixed / All Digital / SIM Only), a always-visible **Physical components** block (4 checkboxes), and **PO Number**. All four boxes are pre-checked for **All Physical** and validation requires at least one; **Mixed** leaves boxes enabled but unchecked and also requires at least one. **All Digital** and **SIM Only** disable the checkboxes with no validation. On validation errors, the form preserves user input.
+- If the Session's Workshop Type is **Simulation based**, the Materials Order page also displays a **Simulation outline** selector that updates the session.
 - Materials list includes a **Latest Arrival Date** column (max of shipment arrival dates).
 - **Permissions**:
   - Create/edit order: **Administrator, CRM**.  

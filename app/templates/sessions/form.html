@@ -65,14 +65,19 @@
         {% endif %}
       </select>
     </label></div>
-    <div><label>Simulation Outline
+    {% if workshop_type and workshop_type.simulation_based %}
+    <div><label>Simulation outline
       <select name="simulation_outline_id">
-        <option value=""></option>
-        {% for so in simulation_outlines %}
-        <option value="{{ so.id }}" {% if session.simulation_outline_id==so.id %}selected{% endif %}>{{ so.label }}</option>
+        <option value="">— select —</option>
+        {% for o in simulation_outlines %}
+          {% set so_val = form.simulation_outline_id|int if form else session.simulation_outline_id %}
+          <option value="{{ o.id }}" {% if so_val == o.id %}selected{% endif %}>
+            {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
+          </option>
         {% endfor %}
       </select>
     </label></div>
+    {% endif %}
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label></div>
     <div><label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>
