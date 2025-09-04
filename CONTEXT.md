@@ -189,6 +189,7 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - External URLs default to HTTPS (`PREFERRED_URL_SCHEME='https'`); prework emails always use HTTPS links. **[DONE]**
 - Migration 0032_prework_list_questions explicitly creates/drops PostgreSQL enum `prework_question_kind` for reliable upgrades/downgrades. **[DONE]**
 - Migration 0037_preferred_view adds `users.preferred_view` to support UI Views. **[DONE]**
+- Migration 0039_materials_enhancements explicitly creates/drops PostgreSQL enum `materials_format` for reliable upgrades/downgrades. **[DONE]**
 
 ---
 
