@@ -175,6 +175,8 @@ def materials_view(
                 "special_instructions",
                 "order_type",
                 "materials_option_id",
+                "materials_format",
+                "materials_po_number",
             }
             original_order_type = shipment.order_type
             for field in fields:
@@ -187,6 +189,12 @@ def materials_view(
                     setattr(shipment, field, int(val) if val else None)
                 else:
                     setattr(shipment, field, val or None)
+            if can_edit_materials_header("materials_components", current_user, shipment):
+                comps = request.form.getlist("materials_components")
+                shipment.materials_components = comps or None
+            if shipment.materials_format in {"PHYSICAL", "MIXED"} and not shipment.materials_components:
+                flash("Select physical components", "error")
+                return redirect(url_for("materials.materials_view", session_id=session_id))
             shipment.client_shipping_location_id = sess.shipping_location_id
             if sess.shipping_location:
                 shipment.contact_name = sess.shipping_location.contact_name

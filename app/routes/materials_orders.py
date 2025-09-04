@@ -7,6 +7,7 @@ from flask import Blueprint, abort, redirect, render_template, request, session 
 from ..app import db, User
 from ..models import Session, SessionShipping, Client, WorkshopType
 from .materials import ORDER_TYPES, can_manage_shipment, is_view_only
+from utils.materials import latest_arrival_date
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
 
@@ -23,7 +24,7 @@ def list_orders():
     order_type = request.args.get("order_type")
     status = request.args.get("status")
     show_closed = request.args.get("closed") == "1"
-    sort = request.args.get("sort", "start_date")
+    sort = request.args.get("sort", "arrival_date")
     direction = request.args.get("dir", "asc")
 
     query = (
@@ -62,7 +63,7 @@ def list_orders():
                 "client": client.name if client else "",
                 "title": sess.title,
                 "workshop_type": wt.name if wt else "",
-                "start_date": sess.start_date,
+                "arrival_date": latest_arrival_date(sess),
                 "order_type": sh.order_type or "",
                 "materials_status": mstatus,
                 "session_status": sess.computed_status,
@@ -73,7 +74,7 @@ def list_orders():
         "client": lambda r: (r["client"] or "").lower(),
         "title": lambda r: (r["title"] or "").lower(),
         "workshop_type": lambda r: (r["workshop_type"] or "").lower(),
-        "start_date": lambda r: r["start_date"] or date.min,
+        "arrival_date": lambda r: r["arrival_date"] or date.min,
         "order_type": lambda r: (r["order_type"] or "").lower(),
         "materials_status": lambda r: r["materials_status"],
         "session_status": lambda r: r["session_status"],

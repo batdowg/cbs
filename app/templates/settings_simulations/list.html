@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Simulation Outlines{% endblock %}
+{% block content %}
+<h1>Simulation Outlines</h1>
+<p><a href="{{ url_for('settings_simulations.new_simulation') }}">New Simulation Outline</a></p>
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Number</th><th>Skill</th><th>Level</th><th>Descriptor</th><th></th></tr>
+  {% for sim in simulations %}
+  <tr>
+    <td>{{ sim.number }}</td>
+    <td>{{ sim.skill }}</td>
+    <td>{{ sim.level }}</td>
+    <td>{{ sim.descriptor }}</td>
+    <td><a href="{{ url_for('settings_simulations.edit_simulation', sim_id=sim.id) }}">Edit</a>
+      <form action="{{ url_for('settings_simulations.delete_simulation', sim_id=sim.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete?');"><button type="submit">Delete</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

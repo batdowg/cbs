@@ -65,7 +65,14 @@
         {% endif %}
       </select>
     </label></div>
-    <div><label>Simulation Outline<br><textarea name="simulation_outline">{{ session.simulation_outline or '' }}</textarea></label></div>
+    <div><label>Simulation Outline
+      <select name="simulation_outline_id">
+        <option value=""></option>
+        {% for so in simulation_outlines %}
+        <option value="{{ so.id }}" {% if session.simulation_outline_id==so.id %}selected{% endif %}>{{ so.label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label></div>
     <div><label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>

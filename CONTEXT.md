@@ -72,6 +72,8 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - **Participants** tab: add/edit/remove, CSV import (FullName,Email,Title), lowercased emails, portal link after certs; accounts are created on demand and credentials are emailed. **[DONE]**
 - Saving a session requires **end date ≥ start date** (single-day allowed). If the start date is in the past, the form warns in red and requires an explicit “The selected start date is in the past. I’m sure.” checkbox.
 - Session form normalizes time fields to HH:MM; server validation enforces end > start; UI sets end.min = start; past-start requires acknowledgement.
+- Sessions link to a managed catalog of **Simulation Outlines**; forms use a dropdown labeled "<Number> – <Skill> – <Descriptor>" and the detail view displays this label or “—”.
+- Session detail shows full physical workshop address (or "Virtual"), places Notes after CRM, and displays daily time range with timezone abbreviation.
 - **Lifecycle flags & gates** (server-enforced):
   `materials_ordered`, `ready_for_delivery`, `info_sent`, `delivered`, `finalized`, `on_hold_at`, `cancelled_at`.  
   Gates:
@@ -112,7 +114,9 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
   - **Latest arrival date** (UI label, stored in `session_shipping.arrival_date`, required), **Workshop start date** (auto from Session), **SFC Project link**, **Delivery region** (from Session). **[DONE]**
   - Read-only **Shipping Location** (from Session). **[DONE]**
   - Status actions: Submit, Shipped (courier+tracking+ship date), Delivered (marks `materials_ordered = true`). **[DONE]**
-- **Permissions**:  
+- Header now includes **Material format** (All Physical / All Digital / Mixed / SIM Only) with optional **Physical components** and **PO Number**; physical formats require at least one component.
+- Materials list replaces Start Date with **Latest Arrival Date** (max of shipment arrival dates).
+- **Permissions**:
   - Create/edit order: **Administrator, CRM**.  
   - Mark Delivered: **Administrator** only.  
   - View-only: **KT Facilitator, Contractor** (and CSA).  
@@ -238,6 +242,8 @@ This matrix is the product source of truth; the `/settings/roles` page mirrors i
 - CSAs land on **My Sessions** and also have a **My Workshops** menu entry.
 - Participants (non-CSA) menu: Home • My Workshops • My Profile • Logout.
 - CSA menu: Home • My Sessions • My Workshops • My Profile • Logout.
+- Delivery view home lists sessions where the user is a facilitator.
+- Materials view home routes to the Materials dashboard list.
 
 **Default View by Role**
 - `App_Admin` → **Admin**

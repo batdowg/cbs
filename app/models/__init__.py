@@ -7,6 +7,8 @@ from sqlalchemy.orm import validates
 from ..app import db
 from ..utils.passwords import hash_password, check_password
 
+from .simulation import SimulationOutline  # noqa: E402,F401
+
 
 class User(db.Model):
     __tablename__ = "users"
@@ -312,7 +314,11 @@ class Session(db.Model):
     on_hold_at = db.Column(db.DateTime)
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
-    simulation_outline = db.Column(db.Text)
+    simulation_outline_text = db.Column("simulation_outline", db.Text)
+    simulation_outline_id = db.Column(
+        db.Integer, db.ForeignKey("simulation_outlines.id", ondelete="SET NULL"), nullable=True
+    )
+    simulation_outline = db.relationship("SimulationOutline")
     workshop_type_id = db.Column(
         db.Integer, db.ForeignKey("workshop_types.id", ondelete="SET NULL")
     )
@@ -542,6 +548,12 @@ class SessionShipping(db.Model):
     special_instructions = db.Column(db.Text)
     arrival_date = db.Column(db.Date)
     order_type = db.Column(db.Text)
+    materials_format = db.Column(
+        db.Enum("PHYSICAL", "DIGITAL", "MIXED", "SIM_ONLY", name="materials_format"),
+        nullable=True,
+    )
+    materials_components = db.Column(db.JSON)
+    materials_po_number = db.Column(db.String(64))
     submitted_at = db.Column(db.DateTime)
     delivered_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
@@ -657,6 +669,7 @@ __all__ = [
     "Client",
     "ClientShippingLocation",
     "ClientWorkshopLocation",
+    "SimulationOutline",
     "Session",
     "Participant",
     "SessionParticipant",
