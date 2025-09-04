@@ -14,8 +14,8 @@
         <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
         {% endfor %}
       </select>
-      <a href="#" id="add-client" class="button">Add Client</a>
-      CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span>
+      <a href="#" id="add-client" class="button">Add Client</a> 
+       CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span>
     </label>
     </div>
     <div><label>Region*
@@ -77,17 +77,16 @@
         {% endif %}
       </select>
     </label></div>
-
     </label></div>
     {% endif %}
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
-    <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label></div>
-    <div><label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>
+    <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>  
+    <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>
     {% if past_warning %}
     <div style="color:red;"><label><input type="checkbox" name="ack_past" value="true" required> The selected start date is in the past. I'm sure.</label></div>
     {% endif %}
-    <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label></div>
-    <div><label>Daily End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label></div>
+    <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label>  
+    <label>End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label></div>
     <div><label>Timezone
       <select name="timezone">
         <option value="">--Select--</option>
@@ -96,7 +95,7 @@
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Notes<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div>
+    <div><label>Notes<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
     <div><label>Lead Facilitator
       <select name="lead_facilitator_id">
         <option value="">--Select--</option>
