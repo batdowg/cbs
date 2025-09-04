@@ -94,8 +94,7 @@
         <option value="{{ tz }}" {% if session.timezone==tz %}selected{% endif %}>{{ tz }}</option>
         {% endfor %}
       </select>
-    </label></div>
-    <div><label>Notes<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
+    </label></div><br>
     <div><label>Lead Facilitator
       <select name="lead_facilitator_id">
         <option value="">--Select--</option>
@@ -127,7 +126,8 @@
         {% endif %}
       </div>
       <button type="button" id="add-fac">Add another facilitator</button>
-    </div>
+    </div><br>
+    <div><label>Notes & Special instructions<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
   </fieldset>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
