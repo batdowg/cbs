@@ -89,17 +89,6 @@
     <div id="materials-option-info"><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
     {% else %}<div id="materials-option-info"></div>{% endif %}
   </div>
-  <div>Material format:
-    {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
-      {% set fmt_val = form.get('materials_format') if form else fmt %}
-      <select name="materials_format" id="materials-format">
-        <option value=""></option>
-        {% for key, label in material_formats %}
-          <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    {% else %}{{ fmt|default('', true) }}{% endif %}
-  </div>
   {% if show_sim_outline %}
   <div>
     <label>Simulation outline
@@ -114,6 +103,18 @@
       </select>
     </label>
   </div>
+  <div>Material format:
+    {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
+      {% set fmt_val = form.get('materials_format') if form else fmt %}
+      <select name="materials_format" id="materials-format">
+        <option value=""></option>
+        {% for key, label in material_formats %}
+          <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    {% else %}{{ fmt|default('', true) }}{% endif %}
+  </div>
+
   {% endif %}
   <fieldset class="components">
     <legend>Physical components</legend>
