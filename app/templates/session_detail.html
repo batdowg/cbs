@@ -33,9 +33,8 @@
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Simulation: {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
   Dates: {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
-  Region: {{ session.region }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
-  Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
+  Region: {{ session.region }}  Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
   Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
   Notes: {{ session.notes or session.description or '' }}<br><br>
   Status: {{ session.computed_status }}<br>
