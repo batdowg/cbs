@@ -26,6 +26,17 @@
         });
     });
   }
+  var formatSelect = document.getElementById('materials-format');
+  var componentsField = document.getElementById('components-field');
+  if(formatSelect && componentsField){
+    formatSelect.addEventListener('change', function(){
+      if(this.value == 'PHYSICAL' || this.value == 'MIXED'){
+        componentsField.style.display = 'block';
+      } else {
+        componentsField.style.display = 'none';
+      }
+    });
+  }
 </script>
 {% endblock %}
 {% block content %}
@@ -85,6 +96,32 @@
     {% if selected_option %}
     <div id="materials-option-info"><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
     {% else %}<div id="materials-option-info"></div>{% endif %}
+  </div>
+  <div>Material format:
+    {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
+      <select name="materials_format" id="materials-format">
+        <option value=""></option>
+        <option value="PHYSICAL" {% if shipment.materials_format=='PHYSICAL' %}selected{% endif %}>All Physical</option>
+        <option value="DIGITAL" {% if shipment.materials_format=='DIGITAL' %}selected{% endif %}>All Digital</option>
+        <option value="MIXED" {% if shipment.materials_format=='MIXED' %}selected{% endif %}>Mixed</option>
+        <option value="SIM_ONLY" {% if shipment.materials_format=='SIM_ONLY' %}selected{% endif %}>SIM Only</option>
+      </select>
+    {% else %}{{ shipment.materials_format|default('', true) }}{% endif %}
+  </div>
+  <div id="components-field"{% if shipment.materials_format not in ['PHYSICAL','MIXED'] %} style="display:none"{% endif %}>Physical components:
+    {% if can_edit_materials_header('materials_components', current_user, shipment) and not readonly %}
+      {% set comps = shipment.materials_components or [] %}
+      <select name="materials_components" multiple>
+        {% for opt in ['WORKSHOP_LEARNER','SESSION_MATERIALS','PHYSICAL_PROCESS_CARDS','BOX_F'] %}
+          <option value="{{ opt }}" {% if opt in comps %}selected{% endif %}>{{ opt.replace('_',' ')|title }}</option>
+        {% endfor %}
+      </select>
+    {% else %}{{ (shipment.materials_components or [])|join(', ') }}{% endif %}
+  </div>
+  <div>PO Number:
+    {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
+      <input type="text" name="materials_po_number" value="{{ shipment.materials_po_number or '' }}">
+    {% else %}{{ shipment.materials_po_number|default('', true) }}{% endif %}
   </div>
   <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}

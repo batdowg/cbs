@@ -46,7 +46,7 @@
     <th><a href="?sort=title{{ base }}">Workshop title</a></th>
     <th><a href="?sort=client{{ base }}">Client</a></th>
     <th><a href="?sort=workshop_type{{ base }}">Workshop Type</a></th>
-    <th><a href="?sort=start_date{{ base }}">Start date</a></th>
+    <th><a href="?sort=arrival_date{{ base }}">Latest Arrival Date</a></th>
     <th><a href="?sort=order_type{{ base }}">Materials Order type</a></th>
     <th><a href="?sort=materials_status{{ base }}">Materials order status</a></th>
     <th><a href="?sort=session_status{{ base }}">Workshop status</a></th>
@@ -56,7 +56,7 @@
     <td><a href="{{ url_for('sessions.session_detail', session_id=row.session_id) }}">{{ row.title }}</a></td>
     <td>{{ row.client }}</td>
     <td>{{ row.workshop_type }}</td>
-    <td>{{ row.start_date }}</td>
+    <td>{{ row.arrival_date }}</td>
     <td>{{ row.order_type }}</td>
     <td>{{ row.materials_status }}</td>
     <td>{{ row.session_status }}</td>

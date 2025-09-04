@@ -35,6 +35,8 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         ])
     if user.is_app_admin or user.is_admin or user.is_kt_delivery or getattr(user, 'is_kt_facilitator', False) or user.is_kt_contractor:
         settings_children.append({'id': 'resources', 'label': 'Resources', 'endpoint': 'settings_resources.list_resources'})
+    if user.is_app_admin or user.is_admin or user.is_kt_staff or user.is_kt_delivery or user.is_kt_contractor:
+        settings_children.append({'id': 'simulation_outlines', 'label': 'Simulation Outlines', 'endpoint': 'settings_simulations.list_simulations'})
     if user.is_app_admin or user.is_admin:
         settings_children.extend([
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},

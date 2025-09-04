@@ -35,7 +35,7 @@ from .models import resource  # ensures app/models/resource.py is imported
 from .utils.badges import best_badge_url, slug_for_badge
 from .utils.rbac import app_admin_required
 from .constants import LANGUAGE_NAMES
-from .utils.time import fmt_dt, fmt_time
+from .utils.time import fmt_dt, fmt_time, fmt_time_range_with_tz
 from .utils.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .utils.nav import build_menu
 
@@ -48,6 +48,7 @@ def create_app():
     app.jinja_env.globals["best_badge_url"] = best_badge_url
     app.jinja_env.filters["fmt_dt"] = fmt_dt
     app.jinja_env.filters["fmt_time"] = fmt_time
+    app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -153,19 +154,27 @@ def create_app():
         account_id = session.get("participant_account_id")
         if user_id:
             user = db.session.get(User, user_id)
+            active_view = get_active_view(user, request)
+            if active_view == "MATERIALS":
+                return redirect(url_for("materials_orders.list_orders"))
             query = db.session.query(Session)
             query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
-            sessions_list = (
-                query.filter(
+            if active_view == "DELIVERY":
+                query = query.filter(
+                    or_(
+                        Session.lead_facilitator_id == user.id,
+                        Session.facilitators.any(User.id == user.id),
+                    )
+                )
+            else:
+                query = query.filter(
                     or_(
                         Session.lead_facilitator_id == user.id,
                         Session.facilitators.any(User.id == user.id),
                         Session.client.has(Client.crm_user_id == user.id),
                     )
                 )
-                .order_by(Session.start_date)
-                .all()
-            )
+            sessions_list = query.order_by(Session.start_date).all()
             return render_template("home.html", sessions=sessions_list)
         if account_id:
             is_csa = (
@@ -298,6 +307,7 @@ def create_app():
     from .routes.auth import bp as auth_bp
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.settings_materials import bp as settings_materials_bp
+    from .routes.settings_simulations import bp as settings_simulations_bp
     from .routes.settings_languages import bp as settings_languages_bp
     from .routes.sessions import bp as sessions_bp
     from .routes.my_sessions import bp as my_sessions_bp
@@ -316,6 +326,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(settings_materials_bp)
+    app.register_blueprint(settings_simulations_bp)
     app.register_blueprint(settings_languages_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(my_sessions_bp)
@@ -399,6 +410,8 @@ def seed_initial_user_safely() -> None:
     """Seed an initial admin user if the users table is empty and valid."""
 
     try:
+        if db.engine.url.drivername.startswith("sqlite"):
+            return
         cols = {
             row[0]
             for row in db.session.execute(

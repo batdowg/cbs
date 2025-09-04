@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'New' if not sim else 'Edit' }} Simulation Outline{% endblock %}
+{% block content %}
+<h1>{{ 'New' if not sim else 'Edit' }} Simulation Outline</h1>
+<form method="post">
+  <div><label>Number* <input type="text" name="number" value="{{ sim.number if sim else '' }}" required></label></div>
+  <div><label>Skill*
+    <select name="skill" required>
+      {% for opt in ['Systematic Troubleshooting','Frontline','Risk','PSDMxp','Refresher','Custom'] %}
+      <option value="{{ opt }}" {% if sim and sim.skill==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Descriptor* <input type="text" name="descriptor" value="{{ sim.descriptor if sim else '' }}" required></label></div>
+  <div><label>Level*
+    <select name="level" required>
+      {% for opt in ['Novice','Competent','Advanced'] %}
+      <option value="{{ opt }}" {% if sim and sim.level==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

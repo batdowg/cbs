@@ -34,6 +34,7 @@ from ..models import (
     SessionShipping,
     Language,
     ClientWorkshopLocation,
+    SimulationOutline,
     PreworkTemplate,
     PreworkAssignment,
     PreworkEmailLog,
@@ -220,6 +221,7 @@ def new_session(current_user):
         .all()
     )
     default_lang = next((l.name for l in languages if l.name == "English"), languages[0].name if languages else None)
+    simulation_outlines = SimulationOutline.query.order_by(SimulationOutline.number, SimulationOutline.skill).all()
     if request.method == "POST":
         action = request.form.get("action")
         missing = []
@@ -292,7 +294,7 @@ def new_session(current_user):
             no_material_order=no_material_order,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
-            simulation_outline=request.form.get("simulation_outline") or None,
+            simulation_outline_id=int(request.form.get("simulation_outline_id")) if request.form.get("simulation_outline_id") else None,
             client_id=int(cid) if cid else None,
             workshop_location=wl,
         )
@@ -317,6 +319,7 @@ def new_session(current_user):
                     past_warning=False,
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
                 ),
                 400,
             )
@@ -338,6 +341,7 @@ def new_session(current_user):
                     past_warning=True,
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
                 ),
                 400,
             )
@@ -496,6 +500,7 @@ def new_session(current_user):
         past_warning=False,
         daily_start_time_str="08:00",
         daily_end_time_str="17:00",
+        simulation_outlines=simulation_outlines,
     )
 
 
@@ -515,6 +520,7 @@ def edit_session(session_id: int, current_user):
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     title_arg = request.args.get("title")
+    simulation_outlines = SimulationOutline.query.order_by(SimulationOutline.number, SimulationOutline.skill).all()
     participants_count = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=sess.id)
@@ -600,6 +606,7 @@ def edit_session(session_id: int, current_user):
                     past_warning=False,
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
                 ),
                 400,
             )
@@ -622,6 +629,7 @@ def edit_session(session_id: int, current_user):
                     past_warning=True,
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
                 ),
                 400,
             )
@@ -663,7 +671,8 @@ def edit_session(session_id: int, current_user):
         sess.no_material_order = no_material_order
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
-        sess.simulation_outline = request.form.get("simulation_outline") or None
+        so_id = request.form.get("simulation_outline_id")
+        sess.simulation_outline_id = int(so_id) if so_id else None
         cid = request.form.get("client_id")
         sess.client_id = int(cid) if cid else None
         csa_email = (request.form.get("csa_email") or "").strip().lower()
@@ -826,6 +835,7 @@ def edit_session(session_id: int, current_user):
         past_warning=False,
         daily_start_time_str=fmt_time(sess.daily_start_time),
         daily_end_time_str=fmt_time(sess.daily_end_time),
+        simulation_outlines=simulation_outlines,
     )
 
 
