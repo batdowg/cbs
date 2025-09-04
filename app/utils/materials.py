@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from app.app import db
-from app.models import SessionShipping
+from ..app import db
+from ..models import SessionShipping
 
 
 def latest_arrival_date(sess) -> date | None:
