@@ -72,6 +72,26 @@ def test_manual_participant_create_login(app):
     assert resp.request.path == "/my-certificates"
 
 
+def test_provision_sets_default_password(app):
+    with app.app_context():
+        part = Participant(email="p@example.com", full_name="P")
+        sess = Session(
+            title="S",
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 2),
+            region="NA",
+        )
+        db.session.add_all([part, sess])
+        db.session.flush()
+        link = SessionParticipant(session_id=sess.id, participant_id=part.id)
+        db.session.add(link)
+        db.session.commit()
+        summary = provision_participant_accounts_for_session(sess.id)
+        acct = ParticipantAccount.query.filter_by(email="p@example.com").one()
+        assert summary["created"] == 1
+        assert acct.check_password(DEFAULT_PARTICIPANT_PASSWORD)
+
+
 def test_provision_keeps_password(app):
     with app.app_context():
         acct = ParticipantAccount(email="p@example.com", full_name="P", is_active=True)

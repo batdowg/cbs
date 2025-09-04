@@ -5,6 +5,7 @@ from typing import Dict
 from sqlalchemy import func
 
 from ..app import db, User
+from ..constants import DEFAULT_PARTICIPANT_PASSWORD
 from ..models import Participant, ParticipantAccount, SessionParticipant, Session
 
 
@@ -33,6 +34,7 @@ def provision_for_session(session: Session) -> Dict[str, int]:
                 certificate_name=participant.full_name or "",
                 is_active=True,
             )
+            account.set_password(DEFAULT_PARTICIPANT_PASSWORD)
             db.session.add(account)
             created += 1
         else:
@@ -43,6 +45,8 @@ def provision_for_session(session: Session) -> Dict[str, int]:
                 already_active += 1
             if not account.certificate_name and account.full_name:
                 account.certificate_name = account.full_name
+            if account.password_hash is None:
+                account.set_password(DEFAULT_PARTICIPANT_PASSWORD)
         if participant.account_id != account.id:
             participant.account_id = account.id
     db.session.commit()
