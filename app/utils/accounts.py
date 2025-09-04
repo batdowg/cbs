@@ -5,12 +5,11 @@ from typing import Dict, Optional
 from flask import current_app
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-import secrets
-import string
 
 from ..app import db
 from ..models import Participant, ParticipantAccount
 from .strings import normalize_email
+from ..constants import DEFAULT_PARTICIPANT_PASSWORD
 
 
 def get_participant_account_by_email(email: str) -> Optional[ParticipantAccount]:
@@ -37,11 +36,8 @@ def ensure_participant_account(
         db.session.add(participant)
         temp_password = None
         if account.password_hash is None:
-            length = secrets.randbelow(5) + 12
-            alphabet = string.ascii_letters + string.digits
-            temp_password = "".join(secrets.choice(alphabet) for _ in range(length))
+            temp_password = DEFAULT_PARTICIPANT_PASSWORD
             account.set_password(temp_password)
-            account.must_change_password = True
         return account, temp_password
 
     account = get_participant_account_by_email(email_norm)
@@ -53,11 +49,8 @@ def ensure_participant_account(
             f"[ACCOUNT] found pa={account.id} email={email_norm}"
         )
         if account.password_hash is None:
-            length = secrets.randbelow(5) + 12
-            alphabet = string.ascii_letters + string.digits
-            temp_password = "".join(secrets.choice(alphabet) for _ in range(length))
+            temp_password = DEFAULT_PARTICIPANT_PASSWORD
             account.set_password(temp_password)
-            account.must_change_password = True
         if cache is not None:
             cache[email_norm] = account
         return account, temp_password
@@ -83,11 +76,8 @@ def ensure_participant_account(
             )
         else:
             raise
-    length = secrets.randbelow(5) + 12
-    alphabet = string.ascii_letters + string.digits
-    temp_password = "".join(secrets.choice(alphabet) for _ in range(length))
+    temp_password = DEFAULT_PARTICIPANT_PASSWORD
     account.set_password(temp_password)
-    account.must_change_password = True
     participant.account_id = account.id
     db.session.add(participant)
     if cache is not None:

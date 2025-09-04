@@ -3,6 +3,7 @@ import secrets
 
 from app.app import create_app, db
 from app import emailer
+from app.constants import DEFAULT_PARTICIPANT_PASSWORD
 from app.models import (
     User,
     WorkshopType,
@@ -124,7 +125,13 @@ def test_account_invite_sets_timestamp(monkeypatch):
         with c.session_transaction() as s:
             s["user_id"] = user_id
         token = "fixedtoken"
-        monkeypatch.setattr(emailer, "send", lambda *a, **k: {"ok": True})
+        sent = {}
+
+        def fake_send(to, subject, body, html):
+            sent["body"] = body
+            return {"ok": True}
+
+        monkeypatch.setattr(emailer, "send", fake_send)
         monkeypatch.setattr(secrets, "token_urlsafe", lambda n: token)
         c.post(f"/sessions/{sess_id}/prework", data={"action": "send_accounts"})
         with app.app_context():
@@ -133,6 +140,7 @@ def test_account_invite_sets_timestamp(monkeypatch):
             assert assignment and assignment.account_sent_at is not None
             assert account and account.login_magic_hash is not None
             account_id = account.id
+        assert DEFAULT_PARTICIPANT_PASSWORD in sent["body"]
         resp = c.get(f"/account/a/{account_id}/{token}")
         assert resp.status_code == 302
         with c.session_transaction() as s:
