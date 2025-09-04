@@ -26,8 +26,6 @@
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label></div>
-    <div><label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
     <div><label>Workshop Location
       <select name="workshop_location_id" id="workshop-location-select">
         <option value=""></option>
@@ -36,7 +34,9 @@
         {% endfor %}
       </select>
       <a href="#" id="add-workshop-location">Add</a>
-    </label></div>
+    </label></div><br>
+    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label>  
+    <label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
   </fieldset>
   <fieldset>
     <legend>Details</legend>
