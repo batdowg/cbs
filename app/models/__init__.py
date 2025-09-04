@@ -146,6 +146,9 @@ class WorkshopType(db.Model):
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
     badge = db.Column(db.String(50), nullable=True)  # one of allowed set; NULL means none
+    simulation_based = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
@@ -549,7 +552,13 @@ class SessionShipping(db.Model):
     arrival_date = db.Column(db.Date)
     order_type = db.Column(db.Text)
     materials_format = db.Column(
-        db.Enum("PHYSICAL", "DIGITAL", "MIXED", "SIM_ONLY", name="materials_format"),
+        db.Enum(
+            "ALL_PHYSICAL",
+            "MIXED",
+            "ALL_DIGITAL",
+            "SIM_ONLY",
+            name="materials_format",
+        ),
         nullable=True,
     )
     materials_components = db.Column(db.JSON)
@@ -560,6 +569,15 @@ class SessionShipping(db.Model):
     items = db.relationship(
         "SessionShippingItem", backref="shipment", cascade="all, delete-orphan"
     )
+
+    # Compatibility alias for materials_components
+    @property
+    def physical_components(self):
+        return self.materials_components
+
+    @physical_components.setter
+    def physical_components(self, value):
+        self.materials_components = value
 
 
 class SessionShippingItem(db.Model):

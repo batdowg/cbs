@@ -57,6 +57,7 @@ def create_type(current_user):
         status=request.form.get('status') or 'active',
         description=request.form.get('description') or None,
         badge=request.form.get('badge') or None,
+        simulation_based=bool(request.form.get('simulation_based')),
     )
     db.session.add(wt)
     db.session.flush()
@@ -91,6 +92,7 @@ def update_type(type_id: int, current_user):
     wt.status = request.form.get('status') or wt.status
     wt.description = request.form.get('description') or None
     wt.badge = request.form.get('badge') or None
+    wt.simulation_based = bool(request.form.get('simulation_based'))
     db.session.add(
         AuditLog(
             user_id=current_user.id,

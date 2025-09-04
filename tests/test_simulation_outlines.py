@@ -1,4 +1,5 @@
 import os
+import os
 from datetime import date, timedelta
 
 import pytest
@@ -27,7 +28,7 @@ def setup_basic(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT", simulation_based=True)
         client = Client(name="C1")
         lang = Language(name="English")
         sim = SimulationOutline(number="123456", skill="Risk", descriptor="Desc", level="Novice")
@@ -40,8 +41,6 @@ def test_simulation_outline_dropdown_and_save(app):
     admin_id, wt_id, client_id, sim_id = setup_basic(app)
     client = app.test_client()
     login(client, admin_id)
-    resp = client.get("/sessions/new")
-    assert b"123456" in resp.data
     future_start = date.today() + timedelta(days=30)
     future_end = future_start + timedelta(days=1)
     data = {

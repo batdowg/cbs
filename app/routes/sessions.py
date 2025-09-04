@@ -274,6 +274,11 @@ def new_session(current_user):
         delivered = _cb(request.form.get("delivered"))
         finalized = _cb(request.form.get("finalized"))
         no_material_order = action == "no_material"
+        so_id = (
+            int(request.form.get("simulation_outline_id"))
+            if wt and wt.simulation_based and request.form.get("simulation_outline_id")
+            else None
+        )
         sess = Session(
             title=title,
             start_date=start_date_val,
@@ -294,7 +299,7 @@ def new_session(current_user):
             no_material_order=no_material_order,
             sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
-            simulation_outline_id=int(request.form.get("simulation_outline_id")) if request.form.get("simulation_outline_id") else None,
+            simulation_outline_id=so_id,
             client_id=int(cid) if cid else None,
             workshop_location=wl,
         )
@@ -320,6 +325,8 @@ def new_session(current_user):
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
                     simulation_outlines=simulation_outlines,
+                    workshop_type=wt,
+                    form=request.form,
                 ),
                 400,
             )
@@ -342,6 +349,8 @@ def new_session(current_user):
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
                     simulation_outlines=simulation_outlines,
+                    workshop_type=wt,
+                    form=request.form,
                 ),
                 400,
             )
@@ -501,6 +510,8 @@ def new_session(current_user):
         daily_start_time_str="08:00",
         daily_end_time_str="17:00",
         simulation_outlines=simulation_outlines,
+        workshop_type=None,
+        form=None,
     )
 
 
@@ -607,6 +618,8 @@ def edit_session(session_id: int, current_user):
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
                     simulation_outlines=simulation_outlines,
+                    workshop_type=sess.workshop_type,
+                    form=request.form,
                 ),
                 400,
             )
@@ -630,6 +643,8 @@ def edit_session(session_id: int, current_user):
                     daily_start_time_str=daily_start_str,
                     daily_end_time_str=daily_end_str,
                     simulation_outlines=simulation_outlines,
+                    workshop_type=sess.workshop_type,
+                    form=request.form,
                 ),
                 400,
             )
@@ -671,8 +686,11 @@ def edit_session(session_id: int, current_user):
         sess.no_material_order = no_material_order
         sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
-        so_id = request.form.get("simulation_outline_id")
-        sess.simulation_outline_id = int(so_id) if so_id else None
+        if sess.workshop_type and sess.workshop_type.simulation_based:
+            so_id = request.form.get("simulation_outline_id")
+            sess.simulation_outline_id = int(so_id) if so_id else None
+        else:
+            sess.simulation_outline_id = None
         cid = request.form.get("client_id")
         sess.client_id = int(cid) if cid else None
         csa_email = (request.form.get("csa_email") or "").strip().lower()
@@ -836,6 +854,8 @@ def edit_session(session_id: int, current_user):
         daily_start_time_str=fmt_time(sess.daily_start_time),
         daily_end_time_str=fmt_time(sess.daily_end_time),
         simulation_outlines=simulation_outlines,
+        workshop_type=sess.workshop_type,
+        form=None,
     )
 
 

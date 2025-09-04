@@ -3,7 +3,17 @@ from __future__ import annotations
 from datetime import date, datetime
 from functools import wraps
 
-from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session as flask_session, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session as flask_session,
+    url_for,
+)
 
 from ..app import db, User
 from ..models import (
@@ -13,6 +23,11 @@ from ..models import (
     Material,
     MaterialsOption,
     ClientShippingLocation,
+    SimulationOutline,
+)
+from ..utils.materials import (
+    PHYSICAL_COMPONENTS,
+    material_format_choices,
 )
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
@@ -23,20 +38,6 @@ ORDER_TYPES = [
     "KT-Run LDI materials",
     "Client-run Bulk order",
     "Simulation",
-]
-
-PHYSICAL_COMPONENT_CHOICES = [
-    ("WORKSHOP_LEARNER", "Workshop Materials – Learner"),
-    ("SESSION_MATERIALS", "Session Materials (wallcharts etc.)"),
-    ("PROCESS_CARDS", "Physical Process Cards"),
-    ("BOX_F", "Box F (markers, post-its etc.)"),
-]
-
-MATERIAL_FORMAT_CHOICES = [
-    ("PHYSICAL", "All Physical"),
-    ("DIGITAL", "All Digital"),
-    ("MIXED", "Mixed"),
-    ("SIM_ONLY", "SIM Only"),
 ]
 
 
@@ -163,6 +164,17 @@ def materials_view(
         shipment.country = sess.shipping_location.country
     db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
+    fmt = shipment.materials_format or "ALL_DIGITAL"
+    selected_components = shipment.materials_components or []
+    if fmt in {"ALL_DIGITAL", "SIM_ONLY"}:
+        selected_components = []
+    elif fmt == "ALL_PHYSICAL" and not selected_components:
+        selected_components = [key for key, _ in PHYSICAL_COMPONENTS]
+    components_required = fmt in {"ALL_PHYSICAL", "MIXED"}
+    simulation_outlines = SimulationOutline.query.order_by(
+        SimulationOutline.number, SimulationOutline.skill
+    ).all()
+    show_sim_outline = bool(sess.workshop_type and sess.workshop_type.simulation_based)
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -201,17 +213,25 @@ def materials_view(
                     setattr(shipment, field, _parse_date(val))
                 elif field == "materials_option_id":
                     setattr(shipment, field, int(val) if val else None)
+                elif field == "materials_format":
+                    setattr(shipment, field, val or None)
                 else:
                     setattr(shipment, field, val or None)
             errors: dict[str, str] = {}
             selected_components = request.form.getlist("components")
-            required_components = shipment.materials_format in {"PHYSICAL", "MIXED"}
-            if can_edit_materials_header("materials_components", current_user, shipment):
-                if required_components and not selected_components:
+            fmt = shipment.materials_format or "ALL_DIGITAL"
+            components_required = fmt in {"ALL_PHYSICAL", "MIXED"}
+            if components_required:
+                if not selected_components:
                     errors["components"] = "Select physical components"
                     flash("Select physical components", "error")
                 else:
-                    shipment.materials_components = selected_components or None
+                    shipment.materials_components = selected_components
+            else:
+                shipment.materials_components = None
+            if show_sim_outline:
+                so_id = request.form.get("simulation_outline_id")
+                sess.simulation_outline_id = int(so_id) if so_id else None
             shipment.client_shipping_location_id = sess.shipping_location_id
             if sess.shipping_location:
                 shipment.contact_name = sess.shipping_location.contact_name
@@ -235,8 +255,6 @@ def materials_view(
                 shipment.country = None
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
-            if shipment.materials_format not in {"PHYSICAL", "MIXED"}:
-                shipment.materials_components = None
             if errors:
                 db.session.rollback()
                 form = request.form.to_dict(flat=True)
@@ -275,10 +293,13 @@ def materials_view(
                         can_manage=can_manage_shipment(current_user),
                         can_mark_delivered=can_mark_delivered(current_user),
                         shipping_locations=shipping_locations,
-                        material_formats=MATERIAL_FORMAT_CHOICES,
-                        physical_components=PHYSICAL_COMPONENT_CHOICES,
-                        required_components=required_components,
+                        material_formats=material_format_choices(),
+                        physical_components=PHYSICAL_COMPONENTS,
+                        components_required=components_required,
                         selected_components=selected_components,
+                        fmt=fmt,
+                        show_sim_outline=show_sim_outline,
+                        simulation_outlines=simulation_outlines,
                         form=form,
                         errors=errors,
                     ),
@@ -372,10 +393,13 @@ def materials_view(
         can_manage=can_manage_shipment(current_user),
         can_mark_delivered=can_mark_delivered(current_user),
         shipping_locations=shipping_locations,
-        material_formats=MATERIAL_FORMAT_CHOICES,
-        physical_components=PHYSICAL_COMPONENT_CHOICES,
-        required_components=shipment.materials_format in {"PHYSICAL", "MIXED"},
-        selected_components=shipment.materials_components or [],
+        material_formats=material_format_choices(),
+        physical_components=PHYSICAL_COMPONENTS,
+        components_required=components_required,
+        selected_components=selected_components,
+        fmt=fmt,
+        show_sim_outline=show_sim_outline,
+        simulation_outlines=simulation_outlines,
         form=None,
         errors={},
     )

@@ -1,5 +1,6 @@
 import os
 from datetime import date
+import re
 
 import pytest
 
@@ -58,85 +59,106 @@ def _setup_data():
     return admin.id, sess.id
 
 
-def test_renders_components_for_physical_or_mixed_format(app):
+def _login(client, admin_id):
+    with client.session_transaction() as sess_tx:
+        sess_tx["user_id"] = admin_id
+
+
+def test_always_renders_components_box(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert b"Physical components" in resp.data
+
+
+def test_components_required_for_physical_and_mixed_only(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+    client = app.test_client()
+    _login(client, admin_id)
+    # ALL_PHYSICAL requires components
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={"action": "update_header", "materials_format": "ALL_PHYSICAL"},
+    )
+    assert resp.status_code == 400
+    # MIXED requires components
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={"action": "update_header", "materials_format": "MIXED"},
+    )
+    assert resp.status_code == 400
+    # ALL_DIGITAL ignores components
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={"action": "update_header", "materials_format": "ALL_DIGITAL"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    # SIM_ONLY ignores components
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={"action": "update_header", "materials_format": "SIM_ONLY"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+
+def test_all_physical_prechecked_mixed_not_prechecked(app):
     with app.app_context():
         admin_id, session_id = _setup_data()
         shipment = SessionShipping.query.filter_by(session_id=session_id).first()
-        shipment.materials_format = "PHYSICAL"
+        shipment.materials_format = "ALL_PHYSICAL"
+        shipment.materials_components = None
         db.session.commit()
     client = app.test_client()
-    with client.session_transaction() as sess_tx:
-        sess_tx["user_id"] = admin_id
+    _login(client, admin_id)
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"name=\"components\"" in resp.data
+    # ALL_PHYSICAL pre-checks all boxes
+    assert re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
     with app.app_context():
         shipment = SessionShipping.query.filter_by(session_id=session_id).first()
         shipment.materials_format = "MIXED"
+        shipment.materials_components = None
         db.session.commit()
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"name=\"components\"" in resp.data
+    assert not re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
+
+
+def test_digital_and_sim_only_disable_components(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+        shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+        shipment.materials_format = "ALL_DIGITAL"
+        shipment.materials_components = ["WORKSHOP_LEARNER"]
+        db.session.commit()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert re.search(b'value="WORKSHOP_LEARNER"[^>]*disabled', resp.data)
+    assert not re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
     with app.app_context():
         shipment = SessionShipping.query.filter_by(session_id=session_id).first()
-        shipment.materials_format = "DIGITAL"
+        shipment.materials_format = "SIM_ONLY"
         shipment.materials_components = ["WORKSHOP_LEARNER"]
         db.session.commit()
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"name=\"components\"" not in resp.data
+    assert re.search(b'value="WORKSHOP_LEARNER"[^>]*disabled', resp.data)
+    assert not re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
 
 
-def test_requires_components_only_when_needed(app):
+def test_sticky_values_on_error(app):
     with app.app_context():
         admin_id, session_id = _setup_data()
     client = app.test_client()
-    with client.session_transaction() as sess_tx:
-        sess_tx["user_id"] = admin_id
-    # Missing components for physical format
+    _login(client, admin_id)
     resp = client.post(
         f"/sessions/{session_id}/materials",
         data={
             "action": "update_header",
-            "materials_format": "PHYSICAL",
-        },
-    )
-    assert resp.status_code == 400
-    assert b"Select physical components" in resp.data
-    # Digital format doesn't require components
-    resp = client.post(
-        f"/sessions/{session_id}/materials",
-        data={
-            "action": "update_header",
-            "materials_format": "DIGITAL",
-        },
-        follow_redirects=False,
-    )
-    assert resp.status_code == 302
-    # Physical with components succeeds
-    resp = client.post(
-        f"/sessions/{session_id}/materials",
-        data={
-            "action": "update_header",
-            "materials_format": "PHYSICAL",
-            "components": ["WORKSHOP_LEARNER", "BOX_F"],
-        },
-        follow_redirects=False,
-    )
-    assert resp.status_code == 302
-    with app.app_context():
-        shipment = SessionShipping.query.filter_by(session_id=session_id).first()
-        assert shipment.materials_components == ["WORKSHOP_LEARNER", "BOX_F"]
-
-
-def test_post_preserves_user_input_on_error(app):
-    with app.app_context():
-        admin_id, session_id = _setup_data()
-    client = app.test_client()
-    with client.session_transaction() as sess_tx:
-        sess_tx["user_id"] = admin_id
-    resp = client.post(
-        f"/sessions/{session_id}/materials",
-        data={
-            "action": "update_header",
-            "materials_format": "PHYSICAL",
+            "materials_format": "ALL_PHYSICAL",
             "materials_po_number": "PO123",
             "arrival_date": "2024-01-01",
         },

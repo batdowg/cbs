@@ -22,6 +22,7 @@
       {% endfor %}
     </select>
   </label></div>
+  <div><label><input type="checkbox" name="simulation_based" {% if wt and wt.simulation_based %}checked{% endif %}> Simulation based</label></div>
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
   <button type="submit">Save</button>
 </form>

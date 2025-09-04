@@ -91,27 +91,44 @@
   </div>
   <div>Material format:
     {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
-      {% set fmt_val = form.get('materials_format') if form else shipment.materials_format %}
+      {% set fmt_val = form.get('materials_format') if form else fmt %}
       <select name="materials_format" id="materials-format">
         <option value=""></option>
         {% for key, label in material_formats %}
           <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-    {% else %}{{ shipment.materials_format|default('', true) }}{% endif %}
+    {% else %}{{ fmt|default('', true) }}{% endif %}
   </div>
-  {% if required_components %}
-  <div>Physical components:
-    {% if can_edit_materials_header('materials_components', current_user, shipment) and not readonly %}
-      <select name="components" multiple size="4">
-        {% for key, label in physical_components %}
-          <option value="{{ key }}" {% if key in selected_components %}selected{% endif %}>{{ label }}</option>
+  {% if show_sim_outline %}
+  <div>
+    <label>Simulation outline
+      <select name="simulation_outline_id">
+        <option value="">— select —</option>
+        {% for o in simulation_outlines %}
+          {% set so_val = form.get('simulation_outline_id') if form else sess.simulation_outline_id %}
+          <option value="{{ o.id }}" {% if so_val|int==o.id %}selected{% endif %}>
+            {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
+          </option>
         {% endfor %}
       </select>
-      {% if errors.get('components') %}<div class="error">{{ errors['components'] }}</div>{% endif %}
-    {% else %}{{ selected_components|join(', ') }}{% endif %}
+    </label>
   </div>
   {% endif %}
+  <fieldset class="components">
+    <legend>Physical components</legend>
+    {% for key,label in physical_components %}
+      <label>
+        <input type="checkbox" name="components" value="{{ key }}"
+               {% if key in selected_components %}checked{% endif %}
+               {% if fmt in ['ALL_DIGITAL','SIM_ONLY'] %}disabled{% endif %}>
+        {{ label }}
+      </label><br>
+    {% endfor %}
+    {% if components_required and errors.get('components') %}
+      <div class="error">Select physical components</div>
+    {% endif %}
+  </fieldset>
   <div>PO Number:
     {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
       <input type="text" name="materials_po_number" value="{{ form.get('materials_po_number') if form else (shipment.materials_po_number or '') }}">
@@ -144,6 +161,19 @@
   </div>
   <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
 </form>
+<script>
+  (function(){
+    const fmtSel = document.querySelector('select[name="materials_format"]');
+    const boxes = [...document.querySelectorAll('input[name="components"]')];
+    function applyState(){
+      const fmt = fmtSel?.value || '';
+      const disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
+      boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
+      if(fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
+    }
+    fmtSel && (fmtSel.addEventListener('change', applyState), applyState());
+  })();
+  </script>
 <h3>Items</h3>
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Material</th><th>Qty</th><th>Notes</th>{% if can_manage %}<th></th>{% endif %}</tr>
