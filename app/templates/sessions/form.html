@@ -25,8 +25,8 @@
         <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
       </select>
-    </label></div>
-    <div><label>Workshop Location
+    </label>  
+    <label>Workshop Location
       <select name="workshop_location_id" id="workshop-location-select">
         <option value=""></option>
         {% for loc in workshop_locations %}
