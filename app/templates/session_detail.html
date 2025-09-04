@@ -29,16 +29,15 @@
 {% else %}
 <div>
   Title: {{ session.title }}<br>
-  Client: {% if session.client %}{{ session.client.name }}{% endif %}<br>
+  Client: {% if session.client %}{{ session.client.name }}{% endif %}    CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Simulation: {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Dates: {{ session.start_date }} – {{ session.end_date }} {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
+  Dates: {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
   Region: {{ session.region }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
   Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
   Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
-  CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  Notes: {{ session.notes or session.description or '' }}<br>
+  Notes: {{ session.notes or session.description or '' }}<br><br>
   Status: {{ session.computed_status }}<br>
   Materials ordered: {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
   Ready for delivery: {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
