@@ -25,6 +25,20 @@ ORDER_TYPES = [
     "Simulation",
 ]
 
+PHYSICAL_COMPONENT_CHOICES = [
+    ("WORKSHOP_LEARNER", "Workshop Materials – Learner"),
+    ("SESSION_MATERIALS", "Session Materials (wallcharts etc.)"),
+    ("PROCESS_CARDS", "Physical Process Cards"),
+    ("BOX_F", "Box F (markers, post-its etc.)"),
+]
+
+MATERIAL_FORMAT_CHOICES = [
+    ("PHYSICAL", "All Physical"),
+    ("DIGITAL", "All Digital"),
+    ("MIXED", "Mixed"),
+    ("SIM_ONLY", "SIM Only"),
+]
+
 
 def can_manage_shipment(user: User | None) -> bool:
     return bool(
@@ -189,12 +203,15 @@ def materials_view(
                     setattr(shipment, field, int(val) if val else None)
                 else:
                     setattr(shipment, field, val or None)
+            errors: dict[str, str] = {}
+            selected_components = request.form.getlist("components")
+            required_components = shipment.materials_format in {"PHYSICAL", "MIXED"}
             if can_edit_materials_header("materials_components", current_user, shipment):
-                comps = request.form.getlist("materials_components")
-                shipment.materials_components = comps or None
-            if shipment.materials_format in {"PHYSICAL", "MIXED"} and not shipment.materials_components:
-                flash("Select physical components", "error")
-                return redirect(url_for("materials.materials_view", session_id=session_id))
+                if required_components and not selected_components:
+                    errors["components"] = "Select physical components"
+                    flash("Select physical components", "error")
+                else:
+                    shipment.materials_components = selected_components or None
             shipment.client_shipping_location_id = sess.shipping_location_id
             if sess.shipping_location:
                 shipment.contact_name = sess.shipping_location.contact_name
@@ -218,6 +235,55 @@ def materials_view(
                 shipment.country = None
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
+            if shipment.materials_format not in {"PHYSICAL", "MIXED"}:
+                shipment.materials_components = None
+            if errors:
+                db.session.rollback()
+                form = request.form.to_dict(flat=True)
+                status = "Draft"
+                if shipment.delivered_at:
+                    status = "Delivered"
+                elif shipment.ship_date:
+                    status = "Shipped"
+                materials = Material.query.order_by(Material.name).all() if not view_only else []
+                materials_options = (
+                    MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
+                    .order_by(MaterialsOption.title)
+                    .all()
+                    if shipment.order_type
+                    else []
+                )
+                selected_option = (
+                    db.session.get(MaterialsOption, shipment.materials_option_id)
+                    if shipment.materials_option_id
+                    else None
+                )
+                return (
+                    render_template(
+                        "sessions/materials.html",
+                        sess=sess,
+                        shipment=shipment,
+                        status=status,
+                        materials=materials,
+                        materials_options=materials_options,
+                        selected_option=selected_option,
+                        order_types=ORDER_TYPES,
+                        csa_view=csa_view,
+                        readonly=readonly,
+                        current_user=current_user,
+                        can_edit_materials_header=can_edit_materials_header,
+                        can_manage=can_manage_shipment(current_user),
+                        can_mark_delivered=can_mark_delivered(current_user),
+                        shipping_locations=shipping_locations,
+                        material_formats=MATERIAL_FORMAT_CHOICES,
+                        physical_components=PHYSICAL_COMPONENT_CHOICES,
+                        required_components=required_components,
+                        selected_components=selected_components,
+                        form=form,
+                        errors=errors,
+                    ),
+                    400,
+                )
             if sess.client and not sess.client.sfc_link:
                 sfc_link = request.form.get("sfc_link")
                 if sfc_link:
@@ -306,6 +372,12 @@ def materials_view(
         can_manage=can_manage_shipment(current_user),
         can_mark_delivered=can_mark_delivered(current_user),
         shipping_locations=shipping_locations,
+        material_formats=MATERIAL_FORMAT_CHOICES,
+        physical_components=PHYSICAL_COMPONENT_CHOICES,
+        required_components=shipment.materials_format in {"PHYSICAL", "MIXED"},
+        selected_components=shipment.materials_components or [],
+        form=None,
+        errors={},
     )
 
 

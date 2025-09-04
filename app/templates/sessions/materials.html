@@ -26,17 +26,6 @@
         });
     });
   }
-  var formatSelect = document.getElementById('materials-format');
-  var componentsField = document.getElementById('components-field');
-  if(formatSelect && componentsField){
-    formatSelect.addEventListener('change', function(){
-      if(this.value == 'PHYSICAL' || this.value == 'MIXED'){
-        componentsField.style.display = 'block';
-      } else {
-        componentsField.style.display = 'none';
-      }
-    });
-  }
 </script>
 {% endblock %}
 {% block content %}
@@ -56,10 +45,11 @@
   </div>
   <div>Shipping location:
     {% if can_manage and not readonly %}
+      {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
       <select name="shipping_location_id">
         <option value=""></option>
         {% for loc in shipping_locations %}
-        <option value="{{ loc.id }}" {% if sess.shipping_location_id==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
+        <option value="{{ loc.id }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
         {% endfor %}
       </select>
       {% if sess.client_id %}
@@ -76,20 +66,22 @@
   </div>
   <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
+      {% set ot_val = form.get('order_type') if form else shipment.order_type %}
       <select name="order_type" data-options-url="{{ url_for('materials.options', session_id=sess.id) }}">
         <option value="">— select —</option>
         {% for ot in order_types %}
-          <option value="{{ ot }}" {% if shipment.order_type==ot %}selected{% endif %}>{{ ot }}</option>
+          <option value="{{ ot }}" {% if ot_val==ot %}selected{% endif %}>{{ ot }}</option>
         {% endfor %}
       </select>
     {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
   </div>
-  <div id="materials-type" {% if not shipment.order_type %}style="display:none"{% endif %}>Materials type:
+  <div id="materials-type" {% if not (form.get('order_type') if form else shipment.order_type) %}style="display:none"{% endif %}>Materials type:
     {% if can_edit_materials_header('materials_option_id', current_user, shipment) and not readonly %}
+      {% set opt_val = form.get('materials_option_id') if form else shipment.materials_option_id %}
       <select name="materials_option_id" id="materials-option">
         <option value=""></option>
         {% for opt in materials_options %}
-          <option value="{{ opt.id }}" {% if shipment.materials_option_id==opt.id %}selected{% endif %}>{{ opt.title }}</option>
+          <option value="{{ opt.id }}" {% if opt_val and opt_val|int==opt.id %}selected{% endif %}>{{ opt.title }}</option>
         {% endfor %}
       </select>
     {% else %}{{ shipment.materials_option.title | default('', true) }}{% endif %}
@@ -99,53 +91,55 @@
   </div>
   <div>Material format:
     {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
+      {% set fmt_val = form.get('materials_format') if form else shipment.materials_format %}
       <select name="materials_format" id="materials-format">
         <option value=""></option>
-        <option value="PHYSICAL" {% if shipment.materials_format=='PHYSICAL' %}selected{% endif %}>All Physical</option>
-        <option value="DIGITAL" {% if shipment.materials_format=='DIGITAL' %}selected{% endif %}>All Digital</option>
-        <option value="MIXED" {% if shipment.materials_format=='MIXED' %}selected{% endif %}>Mixed</option>
-        <option value="SIM_ONLY" {% if shipment.materials_format=='SIM_ONLY' %}selected{% endif %}>SIM Only</option>
+        {% for key, label in material_formats %}
+          <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
       </select>
     {% else %}{{ shipment.materials_format|default('', true) }}{% endif %}
   </div>
-  <div id="components-field"{% if shipment.materials_format not in ['PHYSICAL','MIXED'] %} style="display:none"{% endif %}>Physical components:
+  {% if required_components %}
+  <div>Physical components:
     {% if can_edit_materials_header('materials_components', current_user, shipment) and not readonly %}
-      {% set comps = shipment.materials_components or [] %}
-      <select name="materials_components" multiple>
-        {% for opt in ['WORKSHOP_LEARNER','SESSION_MATERIALS','PHYSICAL_PROCESS_CARDS','BOX_F'] %}
-          <option value="{{ opt }}" {% if opt in comps %}selected{% endif %}>{{ opt.replace('_',' ')|title }}</option>
+      <select name="components" multiple size="4">
+        {% for key, label in physical_components %}
+          <option value="{{ key }}" {% if key in selected_components %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-    {% else %}{{ (shipment.materials_components or [])|join(', ') }}{% endif %}
+      {% if errors.get('components') %}<div class="error">{{ errors['components'] }}</div>{% endif %}
+    {% else %}{{ selected_components|join(', ') }}{% endif %}
   </div>
+  {% endif %}
   <div>PO Number:
     {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
-      <input type="text" name="materials_po_number" value="{{ shipment.materials_po_number or '' }}">
+      <input type="text" name="materials_po_number" value="{{ form.get('materials_po_number') if form else (shipment.materials_po_number or '') }}">
     {% else %}{{ shipment.materials_po_number|default('', true) }}{% endif %}
   </div>
   <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
-      <input type="date" name="arrival_date" value="{{ shipment.arrival_date.isoformat() if shipment.arrival_date else '' }}">
+      <input type="date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
     {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
   </div>
   <div>Courier:
     {% if can_edit_materials_header('courier', current_user, shipment) and not readonly %}
-      <input type="text" name="courier" value="{{ shipment.courier or '' }}">
+      <input type="text" name="courier" value="{{ form.get('courier') if form else (shipment.courier or '') }}">
     {% else %}{{ shipment.courier|default('', true) }}{% endif %}
   </div>
   <div>Tracking:
     {% if can_edit_materials_header('tracking', current_user, shipment) and not readonly %}
-      <input type="text" name="tracking" value="{{ shipment.tracking or '' }}">
+      <input type="text" name="tracking" value="{{ form.get('tracking') if form else (shipment.tracking or '') }}">
     {% else %}{{ shipment.tracking|default('', true) }}{% endif %}
   </div>
   <div>Ship date:
     {% if can_edit_materials_header('ship_date', current_user, shipment) and not readonly %}
-      <input type="date" name="ship_date" value="{{ shipment.ship_date.isoformat() if shipment.ship_date else '' }}">
+      <input type="date" name="ship_date" value="{{ form.get('ship_date') if form else (shipment.ship_date.isoformat() if shipment.ship_date else '') }}">
     {% else %}{{ shipment.ship_date|default('', true) }}{% endif %}
   </div>
   <div>Special instructions:
     {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
-      <textarea name="special_instructions">{{ (shipment.special_instructions or '') | trim }}</textarea>
+      <textarea name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
     {% else %}{{ shipment.special_instructions|default('', true) }}{% endif %}
   </div>
   <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
