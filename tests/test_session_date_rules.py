@@ -41,7 +41,6 @@ def _base_form(client_id, wt_id):
         "region": "NA",
         "workshop_type_id": str(wt_id),
         "delivery_type": "Onsite",
-        "language": "English",
         "workshop_language": "en",
         "capacity": "16",
         "daily_start_time": "09:00",

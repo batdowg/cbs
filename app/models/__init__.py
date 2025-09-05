@@ -286,7 +286,7 @@ class Session(db.Model):
         server_default="A4",
     )
     workshop_language = db.Column(
-        db.Enum("en", "es", "fr", "ja", "de", "nl", name="workshop_language"),
+        db.Enum("en", "es", "fr", "ja", "de", "nl", "zh", name="workshop_language"),
         nullable=False,
         default="en",
         server_default="en",
