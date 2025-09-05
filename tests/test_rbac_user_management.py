@@ -2,7 +2,7 @@ import os
 import pytest
 
 from app.app import create_app, db
-from app.models import User, ParticipantAccount
+from app.models import User
 from app.utils.nav import build_menu
 from app.utils.acl import is_kt_staff
 
@@ -22,30 +22,21 @@ def login(client, user_id):
         sess["user_id"] = user_id
 
 
-def test_only_admins_can_access_user_create_edit_promote(app):
+def test_only_admins_can_access_user_create_edit(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_admin=True)
         non = User(email="non@example.com")
-        p = ParticipantAccount(email="p@example.com", full_name="P")
-        db.session.add_all([admin, non, p])
+        db.session.add_all([admin, non])
         db.session.commit()
         admin_id = admin.id
         non_id = non.id
-        p_id = p.id
     client = app.test_client()
     login(client, non_id)
     assert client.get("/users/new").status_code == 403
     assert client.get(f"/users/{admin_id}/edit").status_code == 403
-    assert client.post("/users/promote", data={"email": "p@example.com"}).status_code == 403
     login(client, admin_id)
     assert client.get("/users/new").status_code == 200
     assert client.get(f"/users/{non_id}/edit").status_code == 200
-    assert (
-        client.post(
-            "/users/promote", data={"email": "p@example.com"}, follow_redirects=True
-        ).status_code
-        == 200
-    )
 
 
 def test_contractor_cannot_be_combined_with_other_roles_on_create(app):
@@ -72,27 +63,7 @@ def test_contractor_cannot_be_combined_with_other_roles_on_create(app):
         assert db.session.query(User).filter_by(email="x@example.com").count() == 0
 
 
-def test_contractor_cannot_be_combined_on_promote(app):
-    with app.app_context():
-        admin = User(email="admin@example.com", is_admin=True)
-        p = ParticipantAccount(email="p@example.com", full_name="P")
-        db.session.add_all([admin, p])
-        db.session.commit()
-        admin_id = admin.id
-    client = app.test_client()
-    login(client, admin_id)
-    resp = client.post(
-        "/users/promote",
-        data={
-            "email": "p@example.com",
-            "is_admin": "1",
-            "is_kt_contractor": "1",
-        },
-        follow_redirects=True,
-    )
-    assert b"Invalid role combination" in resp.data
-    with app.app_context():
-        assert db.session.query(User).filter_by(email="p@example.com").count() == 0
+# Removed promote tests since promotion is no longer supported
 
 
 def test_kt_staff_helper_true_for_non_contractor_users(app):

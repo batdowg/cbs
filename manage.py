@@ -4,7 +4,7 @@ from flask.cli import FlaskGroup
 import click
 from sqlalchemy import func
 from app.utils.certificates import render_certificate
-from app.models import Session, ParticipantAccount
+from app.models import Session, ParticipantAccount, User
 
 
 migrate = Migrate()
@@ -35,6 +35,31 @@ def gen_cert(session_id: int, email: str):
         return
     path = render_certificate(sess, acct)
     click.echo(path)
+
+
+@cli.command("account_dupes")
+@click.option("--fix-sync", is_flag=True, help="Sync User.full_name to ParticipantAccount.full_name")
+def account_dupes(fix_sync: bool):
+    rows = (
+        db.session.query(User, ParticipantAccount)
+        .join(
+            ParticipantAccount,
+            func.lower(User.email) == func.lower(ParticipantAccount.email),
+        )
+        .all()
+    )
+    if not rows:
+        click.echo("No duplicates")
+        return
+    for user, acct in rows:
+        click.echo(
+            f"{user.email} user_id={user.id} name={user.full_name} | pa_id={acct.id} name={acct.full_name}"
+        )
+        if fix_sync:
+            acct.full_name = user.full_name
+    if fix_sync:
+        db.session.commit()
+        click.echo("Names synced")
 
 
 if __name__ == "__main__":

@@ -14,7 +14,6 @@ from ..models import AuditLog, UserAuditLog, ParticipantAccount
 from ..constants import ROLE_ATTRS, SYS_ADMIN
 from ..utils.acl import validate_role_combo, can_demote_to_contractor
 from ..utils.rbac import manage_users_required
-from ..utils.accounts import promote_participant_to_user
 
 
 bp = Blueprint("users", __name__, url_prefix="/users")
@@ -109,9 +108,11 @@ def create_user(current_user):
     if User.query.filter(db.func.lower(User.email) == email).first():
         flash("Email already exists", "error")
         return redirect(url_for("users.new_user"))
-    account = ParticipantAccount.query.filter(
+    if ParticipantAccount.query.filter(
         db.func.lower(ParticipantAccount.email) == email
-    ).first()
+    ).first():
+        flash("Email exists as a participant", "error")
+        return redirect(url_for("users.new_user"))
     role_names = []
     for name, attr in ROLE_ATTRS.items():
         if request.form.get(attr):
@@ -123,13 +124,6 @@ def create_user(current_user):
     except ValueError:
         flash("Invalid role combination", "error")
         return redirect(url_for("users.new_user"))
-    if account:
-        return render_template(
-            "users/promote.html",
-            email=email,
-            role_names=role_names,
-            account=account,
-        )
     region = request.form.get("region")
     if region not in ["NA", "EU", "SEA", "Other"]:
         flash("Region required", "error")
@@ -231,25 +225,6 @@ def update_user(user_id: int, current_user):
         flash("No changes.", "info")
     return redirect(url_for("users.list_users"))
 
-
-@bp.post("/promote")
-@manage_users_required
-def promote_user(current_user):
-    email = (request.form.get("email") or "").lower()
-    role_names = []
-    for name, attr in ROLE_ATTRS.items():
-        if request.form.get(attr):
-            if name == SYS_ADMIN and not current_user.is_app_admin:
-                continue
-            role_names.append(name)
-    try:
-        promote_participant_to_user(email, role_names, current_user)
-    except ValueError:
-        flash("Invalid role combination", "error")
-        return redirect(url_for("users.new_user"))
-    db.session.commit()
-    flash("Participant promoted", "success")
-    return redirect(url_for("users.list_users"))
 
 
 @bp.post("/<int:user_id>/demote-contractor")

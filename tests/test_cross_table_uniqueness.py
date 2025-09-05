@@ -40,7 +40,7 @@ def test_user_create_blocked(app):
         data={"email": "p@example.com", "region": "NA"},
         follow_redirects=True,
     )
-    assert b"Promote to a user account" in resp.data
+    assert b"Email exists as a participant" in resp.data
 
 
 def test_participant_create_blocked_by_user(app):
@@ -63,7 +63,7 @@ def test_participant_create_blocked_by_user(app):
         data={"email": "staff@example.com", "full_name": "Test"},
         follow_redirects=True,
     )
-    assert b"Participant added" in resp.data
+    assert b"Email belongs to a staff user" in resp.data
     with app.app_context():
         assert (
             ParticipantAccount.query.filter_by(email="staff@example.com").first()

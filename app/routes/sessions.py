@@ -386,6 +386,16 @@ def new_session(current_user):
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:
+            if User.query.filter(func.lower(User.email) == csa_email).first():
+                flash("Email belongs to a staff user", "error")
+                return render_template(
+                    "sessions/form.html",
+                    form=request.form,
+                    session=sess,
+                    workshop_type=wt,
+                    past_warning=False,
+                    simulation_outlines=simulation_outlines,
+                ), 400
             account = (
                 db.session.query(ParticipantAccount)
                 .filter(func.lower(ParticipantAccount.email) == csa_email)
@@ -689,6 +699,9 @@ def edit_session(session_id: int, current_user):
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:
+            if User.query.filter(func.lower(User.email) == csa_email).first():
+                flash("Email belongs to a staff user", "error")
+                return redirect(url_for("sessions.edit_session", session_id=session_id))
             account = (
                 db.session.query(ParticipantAccount)
                 .filter(func.lower(ParticipantAccount.email) == csa_email)
@@ -898,6 +911,9 @@ def assign_csa(session_id: int, current_user):
     if not email:
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
+    if User.query.filter(func.lower(User.email) == email).first():
+        flash("Email belongs to a staff user", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     account = (
         db.session.query(ParticipantAccount)
         .filter(func.lower(ParticipantAccount.email) == email)
@@ -1037,6 +1053,9 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     user = User.query.filter(func.lower(User.email) == email).first()
+    if user:
+        flash("Email belongs to a staff user", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     participant = (
         db.session.query(Participant)
         .filter(db.func.lower(Participant.email) == email)
@@ -1067,27 +1086,26 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
             completion_date=sess.end_date,
         )
         db.session.add(link)
-    if not user:
-        account = (
-            db.session.query(ParticipantAccount)
-            .filter(db.func.lower(ParticipantAccount.email) == email)
-            .one_or_none()
+    account = (
+        db.session.query(ParticipantAccount)
+        .filter(db.func.lower(ParticipantAccount.email) == email)
+        .one_or_none()
+    )
+    if not account:
+        account = ParticipantAccount(
+            email=email,
+            full_name=full_name or "",
+            certificate_name=full_name or "",
+            is_active=True,
         )
-        if not account:
-            account = ParticipantAccount(
-                email=email,
-                full_name=full_name or "",
-                certificate_name=full_name or "",
-                is_active=True,
-            )
-            db.session.add(account)
-            db.session.flush()
-        else:
-            if full_name:
-                account.full_name = full_name
-                if not account.certificate_name:
-                    account.certificate_name = full_name
-        participant.account_id = account.id
+        db.session.add(account)
+        db.session.flush()
+    else:
+        if full_name:
+            account.full_name = full_name
+            if not account.certificate_name:
+                account.certificate_name = full_name
+    participant.account_id = account.id
     db.session.add(
         AuditLog(
             user_id=current_user.id if current_user else None,
@@ -1503,7 +1521,10 @@ def session_prework(session_id: int):
         if action == "send_accounts":
             any_fail = False
             for p, _ in participants:
-                account, temp_password = ensure_participant_account(p, account_cache)
+                try:
+                    account, temp_password = ensure_participant_account(p, account_cache)
+                except ValueError:
+                    continue
                 assignment = prepare_assignment(account)
                 token = secrets.token_urlsafe(16)
                 account.login_magic_hash = hashlib.sha256(
@@ -1557,7 +1578,11 @@ def session_prework(session_id: int):
         if action == "resend":
             pid = int(request.form.get("participant_id"))
             participant = db.session.get(Participant, pid)
-            account, temp_password = ensure_participant_account(participant, account_cache)
+            try:
+                account, temp_password = ensure_participant_account(participant, account_cache)
+            except ValueError:
+                flash("Participant is staff", "error")
+                return redirect(url_for("sessions.session_prework", session_id=session_id))
             assignment = prepare_assignment(account)
             if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")
@@ -1576,7 +1601,10 @@ def session_prework(session_id: int):
                 return redirect(url_for("sessions.session_prework", session_id=session_id))
             any_fail = False
             for p, _ in participants:
-                account, temp_password = ensure_participant_account(p, account_cache)
+                try:
+                    account, temp_password = ensure_participant_account(p, account_cache)
+                except ValueError:
+                    continue
                 assignment = prepare_assignment(account)
                 if assignment and assignment.status == "WAIVED":
                     continue

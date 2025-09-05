@@ -28,6 +28,7 @@ Every functional change must update this file **in the same PR**.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
 - Certificates: `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (where `workshop_code = workshop_types.code`) and linked in-portal.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
+- One email across **users** and **participant_accounts**; block cross-table duplicates at create-time.
 - “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
 
 ## 0.4 App Conventions & PR Hygiene
@@ -95,7 +96,7 @@ Every functional change must update this file **in the same PR**.
 
 # 2. Accounts & Identity
 
-Two separate tables; a person may exist in **both** with the same email.
+Two separate tables; one email across the system – duplicates across users and participant_accounts are blocked.
 
 ## 2.1 Users (internal)
 - Table: `users`  
@@ -188,9 +189,10 @@ Two separate tables; a person may exist in **both** with the same email.
 
 # 7. Validation & Forms
 
-- **Dates**: `end_date >= start_date` (one-day workshops allowed).  
-- **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.  
-- **Times**: display `HH:MM` only + short timezone.  
+- **Dates**: `end_date >= start_date` (one-day workshops allowed).
+- **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
+- **Times**: display `HH:MM` only + short timezone.
+- **Profile**: staff `/profile` edits `User.full_name` (syncs to participant if exists); learners edit `ParticipantAccount.full_name` and `certificate_name`.
 - **Materials**: physical components UI:
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
@@ -256,6 +258,7 @@ Two separate tables; a person may exist in **both** with the same email.
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
 - **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`
+- **Ops CLI**: `manage.py account_dupes`
 
 ---
 
