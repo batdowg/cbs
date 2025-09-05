@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from ..app import db, User
 from ..models import SimulationOutline, AuditLog
-from ..utils.acl import is_staff_user
+from ..utils.acl import is_kt_staff, is_delivery, is_contractor
 
 bp = Blueprint("settings_simulations", __name__, url_prefix="/settings/simulations")
 
@@ -17,10 +17,10 @@ def _current_user(require_edit: bool = False) -> User | Response:
     user = db.session.get(User, user_id)
     if not user:
         abort(403)
-    can_view = is_staff_user(user) or user.is_kt_delivery or user.is_kt_contractor
+    can_view = is_kt_staff(user) or is_delivery(user) or is_contractor(user)
     if not can_view:
         abort(403)
-    if require_edit and not (is_staff_user(user) or user.is_kt_delivery):
+    if require_edit and not (is_kt_staff(user) or is_delivery(user)):
         abort(403)
     return user
 

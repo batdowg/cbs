@@ -395,3 +395,33 @@ def test_staff_send_flows_run(monkeypatch):
     with app.app_context():
         assert ParticipantAccount.query.count() == 1
         assert PreworkAssignment.query.count() == 1
+
+
+def test_contractor_can_send_prework(monkeypatch):
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        user = User(email="cont@example.com", is_kt_contractor=True)
+        wt = WorkshopType(code="CT", name="Contractor")
+        db.session.add_all([user, wt])
+        db.session.commit()
+        tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add(tpl)
+        db.session.flush()
+        db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
+        sess = Session(title="S", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        part = Participant(email="ct@example.com", full_name="CT")
+        db.session.add_all([sess, part])
+        db.session.flush()
+        db.session.add(SessionParticipant(session_id=sess.id, participant_id=part.id))
+        db.session.commit()
+        sess_id = sess.id
+        user_id = user.id
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = user_id
+        monkeypatch.setattr(emailer, "send", lambda *a, **k: {"ok": True})
+        c.post(f"/sessions/{sess_id}/prework", data={"action": "send_all"})
+    with app.app_context():
+        assert ParticipantAccount.query.count() == 1
+        assert PreworkAssignment.query.count() == 1
