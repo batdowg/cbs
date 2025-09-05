@@ -40,7 +40,7 @@ def test_user_create_blocked(app):
         data={"email": "p@example.com", "region": "NA"},
         follow_redirects=True,
     )
-    assert b"That email belongs to a learner account." in resp.data
+    assert b"Promote to a user account" in resp.data
 
 
 def test_participant_create_blocked_by_user(app):

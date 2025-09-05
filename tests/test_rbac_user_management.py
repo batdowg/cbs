@@ -40,9 +40,12 @@ def test_only_admins_can_access_user_create_edit_promote(app):
     login(client, admin_id)
     assert client.get("/users/new").status_code == 200
     assert client.get(f"/users/{non_id}/edit").status_code == 200
-    assert client.post(
-        "/users/promote", data={"email": "p@example.com", "region": "NA", "is_kt_staff": "1"}, follow_redirects=True
-    ).status_code == 200
+    assert (
+        client.post(
+            "/users/promote", data={"email": "p@example.com"}, follow_redirects=True
+        ).status_code
+        == 200
+    )
 
 
 def test_contractor_cannot_be_combined_with_other_roles_on_create(app):
@@ -82,7 +85,6 @@ def test_contractor_cannot_be_combined_on_promote(app):
         "/users/promote",
         data={
             "email": "p@example.com",
-            "region": "NA",
             "is_admin": "1",
             "is_kt_contractor": "1",
         },

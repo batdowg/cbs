@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Promote Participant{% endblock %}
+{% block content %}
+<h1>Promote Participant</h1>
+<p>This email belongs to a participant/CSA account. Promote to a user account?</p>
+<form method="post" action="{{ url_for('users.promote_user') }}">
+  <input type="hidden" name="email" value="{{ email }}">
+  <div>
+    <label><input type="checkbox" name="is_app_admin" {% if 'app_admin' in role_names %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}> Application Admin</label><br>
+    <label><input type="checkbox" name="is_admin" {% if 'admin' in role_names %}checked{% endif %}> Admin</label><br>
+    <label><input type="checkbox" name="is_kcrm" {% if 'kcrm' in role_names %}checked{% endif %}> KCRM</label><br>
+    <label><input type="checkbox" name="is_kt_delivery" {% if 'kt_delivery' in role_names %}checked{% endif %}> KT Delivery</label><br>
+    <label><input type="checkbox" name="is_kt_contractor" {% if 'kt_contractor' in role_names %}checked{% endif %}> KT Contractor</label><br>
+  </div>
+  <button type="submit">Promote</button>
+</form>
+{% endblock %}

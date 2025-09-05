@@ -436,7 +436,6 @@ def seed_initial_user_safely() -> None:
             full_name=first_admin_email,
             is_app_admin=True,
             is_admin=True,
-            is_kt_staff=True,
         )
         db.session.add(admin)
         db.session.commit()

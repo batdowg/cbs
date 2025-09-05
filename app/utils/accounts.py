@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from typing import Dict, Optional
+import secrets
 
 from flask import current_app
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..app import db
-from ..models import Participant, ParticipantAccount, User
+from ..models import Participant, ParticipantAccount, User, AuditLog
 from .strings import normalize_email
 from ..constants import DEFAULT_PARTICIPANT_PASSWORD, ROLE_ATTRS, CONTRACTOR
-from ..utils.acl import validate_role_combo
+from ..utils.acl import validate_role_combo, can_demote_to_contractor
 
 
 def get_participant_account_by_email(email: str) -> Optional[ParticipantAccount]:
@@ -86,20 +87,43 @@ def ensure_participant_account(
     return account, temp_password
 
 
-def promote_participant_to_user(account: ParticipantAccount, role_names: list[str]) -> User:
+def promote_participant_to_user(email: str, role_names: list[str], actor) -> User:
     """Promote a participant account to a staff user."""
+    account = get_participant_account_by_email(email)
+    if not account:
+        raise ValueError("Participant not found")
     validate_role_combo(role_names)
-    if CONTRACTOR in role_names and len(role_names) != 1:
-        raise ValueError("Contractor must be exclusive")
-    user = User.query.filter(func.lower(User.email) == account.email.lower()).one_or_none()
-    if user:
-        if user.is_kt_contractor and CONTRACTOR not in role_names:
-            raise ValueError("Contractor cannot receive other roles")
-        if not user.is_kt_contractor and CONTRACTOR in role_names:
-            raise ValueError("Staff user cannot become contractor")
-    else:
-        user = User(email=account.email, full_name=account.full_name, region="NA")
+    if User.query.filter(func.lower(User.email) == account.email.lower()).first():
+        raise ValueError("Already a user")
+    user = User(email=account.email, full_name=account.full_name, region="NA")
+    temp_password = secrets.token_urlsafe(8)
+    user.set_password(temp_password)
+    if hasattr(user, "must_change_password"):
+        user.must_change_password = True
     for name, attr in ROLE_ATTRS.items():
         setattr(user, attr, name in role_names)
     db.session.add(user)
+    db.session.add(
+        AuditLog(
+            user_id=actor.id,
+            action="PROMOTE",
+            details=f"email={user.email} roles={','.join(role_names)} actor={actor.id}",
+        )
+    )
     return user
+
+
+def demote_user_to_contractor(user: User, actor) -> None:
+    if not can_demote_to_contractor(actor, user):
+        raise PermissionError
+    for name, attr in ROLE_ATTRS.items():
+        setattr(user, attr, False)
+    user.is_kt_contractor = True
+    db.session.add(user)
+    db.session.add(
+        AuditLog(
+            user_id=actor.id,
+            action="DEMOTE→CONTRACTOR",
+            details=f"user_id={user.id} actor={actor.id}",
+        )
+    )

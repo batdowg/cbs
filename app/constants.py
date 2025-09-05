@@ -38,7 +38,6 @@ ROLE_ATTRS = {
     "kcrm": "is_kcrm",
     "kt_delivery": "is_kt_delivery",
     CONTRACTOR: "is_kt_contractor",
-    STAFF: "is_kt_staff",
 }
 
 MANAGE_USERS_ROLES = {SYS_ADMIN, ADMIN}

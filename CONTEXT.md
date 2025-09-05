@@ -28,7 +28,7 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Passwords via bcrypt helpers; shared reset flow: `/forgot-password` → token email → `/reset-password`. **[DONE]**
 - Session keys (`user_id` or `participant_account_id`) live side-by-side; `/logout` clears either. **[DONE]**
 - Cross-table uniqueness: new staff cannot reuse learner emails and vice-versa. **[DONE]**
-- Roles (booleans on `users`): SysAdmin, Administrator, CRM, KT Facilitator, Contractor, Staff.
+- Roles (booleans on `users`): SysAdmin, Administrator, CRM, KT Facilitator, Contractor. Staff is derived.
   Access quick map:
   - **SysAdmin**: everything.
   - **Administrator**: sessions, participants, certificates, clients, materials settings; not app-wide secrets.
@@ -40,19 +40,22 @@ Role semantics:
 - **Sys Admin**: full control; can manage users; sees all settings.
 - **Admin**: full control of user accounts and RBAC inside their org scope; can manage users.
 - **Contractor**: user account restricted to contractor-specific functions. **Exclusive** — cannot hold any other staff role concurrently.
-- **Staff (definition)**: any **user** that is **not Contractor**. Learners are not staff; they are participant-only accounts.
+- **Staff (derived)**: any **user** that has roles and is not Contractor. Learners are not staff; they are participant-only accounts.
 - **Learner/Participant**: portal-only, no user privileges.
 
 User management permissions:
-- Only **Sys Admin** and **Admin** can create, edit, promote, deactivate users and change roles. All others: 403 + hidden UI.
+- Only **Sys Admin** and **Admin** can create, edit, promote, demote users and change roles. All others: 403 + hidden UI.
 
 Promotion flow:
 - Only Sys Admin/Admin can promote a participant to a user.
+- If email matches a participant/CSA account, the system offers to “Promote to user account?”.
 - Role selection must pass exclusivity rules (e.g., Contractor cannot be combined).
 - Promotion links the participant to the new user and emails temp credentials.
+- Demotion: Admin/Sys Admin can convert a user to **Contractor** (strip all other roles) but cannot demote a Sys Admin or remove the last Admin/Sys Admin.
 
 UI visibility:
 - Settings ▸ Users, Roles Matrix, and any user-edit links render only for Sys Admin/Admin.
+- “KT Staff” checkbox removed; staff behavior is role-derived.
 
 Staff roles matrix:
 
@@ -344,7 +347,8 @@ Legend: **V**=View, **C**=Create, **E**=Edit, **D**=Delete, **A**=Action (send/g
 
 ## 10.3 Audit & Logging
 
-- All mail sends include `[MAIL-OUT]` / `[MAIL-FAIL]` with type tags (`prework`, `account-invite`, `csa-assign`).  
+- All mail sends include `[MAIL-OUT]` / `[MAIL-FAIL]` with type tags (`prework`, `account-invite`, `csa-assign`).
 - Role/permission changes and sensitive actions (issue certificates, finalize sessions) are logged with user id, timestamp (no seconds displayed in UI), and object id.
+- User promotions and contractor demotions log `PROMOTE` and `DEMOTE→CONTRACTOR` events.
 
 ---

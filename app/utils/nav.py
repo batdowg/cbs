@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from .acl import can_manage_users
+from .acl import can_manage_users, is_staff_user
 
 MenuItem = Dict[str, Any]
 
@@ -37,7 +37,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         ])
     if user.is_app_admin or user.is_admin or user.is_kt_delivery or getattr(user, 'is_kt_facilitator', False) or user.is_kt_contractor:
         settings_children.append({'id': 'resources', 'label': 'Resources', 'endpoint': 'settings_resources.list_resources'})
-    if user.is_app_admin or user.is_admin or user.is_kt_staff or user.is_kt_delivery or user.is_kt_contractor:
+    if is_staff_user(user) or user.is_kt_contractor:
         settings_children.append({'id': 'simulation_outlines', 'label': 'Simulation Outlines', 'endpoint': 'settings_simulations.list_simulations'})
     if can_manage_users(user):
         settings_children.extend([
