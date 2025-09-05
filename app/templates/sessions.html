@@ -18,7 +18,7 @@
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} — {{ s.workshop_type.name }}{% endif %}</td>
     <td>{{ s.start_date }}</td>
     <td>{{ s.end_date }}</td>
-    <td>{{ s.status }}</td>
+    <td>{{ s.computed_status }}</td>
     <td>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
         <a href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>

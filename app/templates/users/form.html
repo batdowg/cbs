@@ -11,6 +11,7 @@
   <div><label>Email <input type="email" name="email" value="{{ user.email }}" readonly autocomplete="off"></label></div>
   {% endif %}
   <div><label>Full Name <input type="text" name="full_name" value="{{ user.full_name if user else '' }}"></label></div>
+  <div><label>Title <input type="text" name="title" value="{{ user.title if user else '' }}"></label></div>
   {% if current_user.is_app_admin %}
   <div><label>Password <input type="password" name="password" autocomplete="new-password"></label></div>
   <div><label>Confirm Password <input type="password" name="password_confirm" autocomplete="new-password"></label></div>

@@ -246,7 +246,7 @@ def new_session(current_user):
         delivery_type = request.form.get("delivery_type")
         if not delivery_type:
             missing.append("Delivery type")
-        workshop_language = request.form.get("workshop_language") or request.form.get("language")
+        workshop_language = request.form.get("workshop_language")
         if not workshop_language:
             missing.append("Workshop language")
         if workshop_language not in [c for c, _ in WORKSHOP_LANGUAGES]:
@@ -386,24 +386,17 @@ def new_session(current_user):
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:
-            if User.query.filter(func.lower(User.email) == csa_email).first():
-                flash("Email belongs to a staff user", "error")
-                return render_template(
-                    "sessions/form.html",
-                    form=request.form,
-                    session=sess,
-                    workshop_type=wt,
-                    past_warning=False,
-                    simulation_outlines=simulation_outlines,
-                ), 400
             account = (
                 db.session.query(ParticipantAccount)
                 .filter(func.lower(ParticipantAccount.email) == csa_email)
                 .one_or_none()
             )
             if not account:
+                user = User.query.filter(func.lower(User.email) == csa_email).first()
                 account = ParticipantAccount(
-                    email=csa_email, full_name=csa_email, is_active=True
+                    email=csa_email,
+                    full_name=user.full_name if user else csa_email,
+                    is_active=True,
                 )
                 account.set_password(DEFAULT_CSA_PASSWORD)
                 db.session.add(account)
@@ -598,7 +591,7 @@ def edit_session(session_id: int, current_user):
         )
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
-        wl_val = request.form.get("workshop_language") or request.form.get("language")
+        wl_val = request.form.get("workshop_language")
         if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
             sess.workshop_language = wl_val
         sess.capacity = request.form.get("capacity") or None
@@ -699,17 +692,17 @@ def edit_session(session_id: int, current_user):
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:
-            if User.query.filter(func.lower(User.email) == csa_email).first():
-                flash("Email belongs to a staff user", "error")
-                return redirect(url_for("sessions.edit_session", session_id=session_id))
             account = (
                 db.session.query(ParticipantAccount)
                 .filter(func.lower(ParticipantAccount.email) == csa_email)
                 .one_or_none()
             )
             if not account:
+                user = User.query.filter(func.lower(User.email) == csa_email).first()
                 account = ParticipantAccount(
-                    email=csa_email, full_name=csa_email, is_active=True
+                    email=csa_email,
+                    full_name=user.full_name if user else csa_email,
+                    is_active=True,
                 )
                 account.set_password(DEFAULT_CSA_PASSWORD)
                 db.session.add(account)
@@ -911,9 +904,6 @@ def assign_csa(session_id: int, current_user):
     if not email:
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
-    if User.query.filter(func.lower(User.email) == email).first():
-        flash("Email belongs to a staff user", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
     account = (
         db.session.query(ParticipantAccount)
         .filter(func.lower(ParticipantAccount.email) == email)
@@ -921,7 +911,12 @@ def assign_csa(session_id: int, current_user):
     )
     password = None
     if not account:
-        account = ParticipantAccount(email=email, full_name=email, is_active=True)
+        user = User.query.filter(func.lower(User.email) == email).first()
+        account = ParticipantAccount(
+            email=email,
+            full_name=user.full_name if user else email,
+            is_active=True,
+        )
         account.set_password(DEFAULT_CSA_PASSWORD)
         db.session.add(account)
         db.session.flush()
@@ -1053,9 +1048,6 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         flash("Email required", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
     user = User.query.filter(func.lower(User.email) == email).first()
-    if user:
-        flash("Email belongs to a staff user", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
     participant = (
         db.session.query(Participant)
         .filter(db.func.lower(Participant.email) == email)
@@ -1065,15 +1057,19 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         participant = Participant(
             email=email,
             full_name=full_name or (user.full_name if user else ""),
-            title=title,
+            title=title or (user.title if user else None),
         )
         db.session.add(participant)
         db.session.flush()
     else:
         if full_name:
             participant.full_name = full_name
+        elif user and user.full_name and not participant.full_name:
+            participant.full_name = user.full_name
         if title:
             participant.title = title
+        elif user and user.title and not participant.title:
+            participant.title = user.title
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant.id)
@@ -1092,10 +1088,11 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         .one_or_none()
     )
     if not account:
+        base_name = full_name or (user.full_name if user else "")
         account = ParticipantAccount(
             email=email,
-            full_name=full_name or "",
-            certificate_name=full_name or "",
+            full_name=base_name,
+            certificate_name=base_name,
             is_active=True,
         )
         db.session.add(account)
@@ -1105,6 +1102,10 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
             account.full_name = full_name
             if not account.certificate_name:
                 account.certificate_name = full_name
+        elif user and user.full_name and not account.full_name:
+            account.full_name = user.full_name
+            if not account.certificate_name:
+                account.certificate_name = user.full_name
     participant.account_id = account.id
     db.session.add(
         AuditLog(
@@ -1578,11 +1579,7 @@ def session_prework(session_id: int):
         if action == "resend":
             pid = int(request.form.get("participant_id"))
             participant = db.session.get(Participant, pid)
-            try:
-                account, temp_password = ensure_participant_account(participant, account_cache)
-            except ValueError:
-                flash("Participant is staff", "error")
-                return redirect(url_for("sessions.session_prework", session_id=session_id))
+            account, temp_password = ensure_participant_account(participant, account_cache)
             assignment = prepare_assignment(account)
             if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")

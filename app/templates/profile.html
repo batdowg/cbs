@@ -14,6 +14,9 @@
   <input type="hidden" name="form" value="profile">
   <div><label>Email <input type="text" value="{{ email }}" readonly></label></div>
   <div><label>Full name <input type="text" name="full_name" value="{{ full_name }}" maxlength="200" autocomplete="off"></label></div>
+  {% if is_staff %}
+  <div><label>Title <input type="text" name="title" value="{{ title }}" maxlength="255" autocomplete="off"></label></div>
+  {% endif %}
   {% if not is_staff %}
   <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
   {% endif %}
