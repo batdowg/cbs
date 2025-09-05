@@ -1,6 +1,13 @@
 from typing import Any, Dict, List
 
-from .acl import can_manage_users, is_staff_user
+from .acl import (
+    can_manage_users,
+    is_admin,
+    is_kcrm,
+    is_delivery,
+    is_contractor,
+    is_kt_staff,
+)
 
 MenuItem = Dict[str, Any]
 
@@ -9,9 +16,9 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
     items.append({'id': 'home', 'label': 'Home', 'endpoint': 'home'})
     items.append({'id': 'my_sessions', 'label': 'My Sessions', 'endpoint': 'my_sessions.list_my_sessions'})
-    if user.is_app_admin or user.is_admin:
+    if is_admin(user):
         items.append({'id': 'sessions', 'label': 'Sessions', 'endpoint': 'sessions.list_sessions'})
-    if user.is_app_admin or user.is_admin or user.is_kcrm or user.is_kt_delivery or user.is_kt_contractor:
+    if is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user):
         items.append({'id': 'materials', 'label': 'Materials', 'endpoint': 'materials_orders.list_orders'})
     items.append({'id': 'surveys', 'label': 'Surveys', 'endpoint': 'surveys'})
     if show_resources:
@@ -35,9 +42,9 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                 {'id': 'simulation', 'label': 'Simulation', 'endpoint': 'settings_materials.list_options', 'args': {'slug': 'simulation'}},
             ]},
         ])
-    if user.is_app_admin or user.is_admin or user.is_kt_delivery or getattr(user, 'is_kt_facilitator', False) or user.is_kt_contractor:
+    if is_admin(user) or is_delivery(user) or getattr(user, 'is_kt_facilitator', False) or is_contractor(user):
         settings_children.append({'id': 'resources', 'label': 'Resources', 'endpoint': 'settings_resources.list_resources'})
-    if is_staff_user(user) or user.is_kt_contractor:
+    if is_kt_staff(user) or is_contractor(user):
         settings_children.append({'id': 'simulation_outlines', 'label': 'Simulation Outlines', 'endpoint': 'settings_simulations.list_simulations'})
     if can_manage_users(user):
         settings_children.extend([

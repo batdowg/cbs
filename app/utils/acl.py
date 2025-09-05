@@ -10,7 +10,6 @@ from ..constants import (
     ADMIN,
     CONTRACTOR,
     MANAGE_USERS_ROLES,
-    ROLE_ATTRS,
 )
 
 
@@ -38,11 +37,9 @@ def is_contractor(user: Any) -> bool:
     return bool(user and user.has_role(CONTRACTOR))
 
 
-def is_staff_user(user: Any) -> bool:
-    if not user:
-        return False
-    has_any = any(getattr(user, attr, False) for attr in ROLE_ATTRS.values())
-    return bool(has_any and not is_contractor(user))
+def is_kt_staff(user: Any) -> bool:
+    """Return True for any User account that is not a Contractor."""
+    return bool(isinstance(user, User) and not is_contractor(user))
 
 
 def can_demote_to_contractor(actor: User, target: User) -> bool:

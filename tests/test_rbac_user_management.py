@@ -4,7 +4,7 @@ import pytest
 from app.app import create_app, db
 from app.models import User, ParticipantAccount
 from app.utils.nav import build_menu
-from app.utils.acl import is_staff_user
+from app.utils.acl import is_kt_staff
 
 
 @pytest.fixture
@@ -95,7 +95,7 @@ def test_contractor_cannot_be_combined_on_promote(app):
         assert db.session.query(User).filter_by(email="p@example.com").count() == 0
 
 
-def test_staff_user_helper_true_for_non_contractor_roles(app):
+def test_kt_staff_helper_true_for_non_contractor_users(app):
     with app.app_context():
         admin = User(email="a@example.com", is_admin=True)
         contractor = User(email="c@example.com", is_kt_contractor=True)
@@ -105,9 +105,9 @@ def test_staff_user_helper_true_for_non_contractor_roles(app):
         admin_db = db.session.get(User, admin.id)
         contractor_db = db.session.get(User, contractor.id)
         idle_db = db.session.get(User, idle.id)
-        assert is_staff_user(admin_db)
-        assert not is_staff_user(contractor_db)
-        assert not is_staff_user(idle_db)
+        assert is_kt_staff(admin_db)
+        assert not is_kt_staff(contractor_db)
+        assert is_kt_staff(idle_db)
 
 
 def test_nav_hides_user_admin_links_for_non_admin(app):

@@ -88,7 +88,7 @@ Every functional change must update this file **in the same PR**.
 ## 1.4 High-level permissions (delta highlights)
 - **CRM**: full session lifecycle; Materials access; default owner/CRM filters.
 - **Delivery**: operates own sessions; no Materials/Surveys menu.
-- **Contractor**: no Settings/Materials/Surveys; can manage participants like CSA **even after start**; other session fields read-only.
+- **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA **even after start**; cannot change prework settings; other session fields read-only.
 - **CSA**: add/remove participants **before** start only; read-only after; no email sending; no Materials/Settings.
 
 ---
@@ -171,7 +171,8 @@ Two separate tables; a person may exist in **both** with the same email.
 # 5. Prework
 
 - Configured per **Workshop Type** (rich text + questions).  
-- Session **Send Prework** (staff) provisions participant accounts (see defaults in §2.2) and emails access.  
+- Session **Send Prework** (staff) provisions participant accounts (see defaults in §2.2) and emails access.
+  - Allowed roles: Sys Admin, Admin, CRM, Delivery, Contractor.
 - “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.  
 - Participant prework hidden after session starts.
 
