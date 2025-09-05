@@ -46,7 +46,7 @@ def test_delivered_gating(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         sess = Session(title="S1", workshop_type=wt, end_date=date.today() + timedelta(days=1))
         db.session.add_all([admin, wt, sess])
         db.session.commit()
@@ -64,7 +64,7 @@ def test_finalize_gating(app):
     with app.app_context():
         admin = User(email="adm@example.com", is_app_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         sess = Session(title="S1", workshop_type=wt, end_date=date.today())
         db.session.add_all([admin, wt, sess])
         db.session.commit()
@@ -82,7 +82,7 @@ def test_lifecycle_hidden_on_new(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         db.session.add_all([admin, wt])
         db.session.commit()
         admin_id = admin.id
@@ -96,7 +96,7 @@ def test_certificate_name_defaults(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         sess = Session(title="S1", workshop_type=wt, end_date=date.today(), ready_for_delivery=True)
         part = Participant(email="p@example.com", full_name="P One")
         db.session.add_all([admin, wt, sess, part])

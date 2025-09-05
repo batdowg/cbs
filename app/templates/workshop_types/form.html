@@ -14,7 +14,6 @@
   <div><label>Code <input type="text" name="code" value="{{ wt.code }}" readonly></label></div>
   {% endif %}
   <div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
-  <div><label>Short Code <input type="text" name="short_code" value="{{ wt.short_code if wt else '' }}" maxlength="16" pattern="[A-Za-z0-9-]{2,16}" required></label><small>2–16 chars; A–Z, 0–9, dash.</small></div>
   <div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
   <div><label>Badge
     <select name="badge">

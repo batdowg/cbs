@@ -65,7 +65,7 @@ def test_next_redirect_and_dropdown_update(app):
             country="US",
             is_active=False,
         )
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         db.session.add_all([admin, client, wl_active, wl_inactive, sl_inactive, wt])
         db.session.commit()
         admin_id = admin.id
@@ -159,7 +159,7 @@ def test_materials_requires_shipping_location(app):
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
         client = Client(name="C1")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         sess = Session(title="S1", workshop_type=wt, client=client)
         db.session.add_all([admin, client, wt, sess])
         db.session.commit()

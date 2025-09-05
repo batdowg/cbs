@@ -20,7 +20,7 @@ def app():
 
 def _setup(app):
     with app.app_context():
-        wt = WorkshopType(code="WT", short_code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT")
         acc = ParticipantAccount(email="p@example.com", full_name="P", is_active=True)
         sess = Session(
             title="S",

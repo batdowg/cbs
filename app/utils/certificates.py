@@ -122,12 +122,12 @@ def render_certificate(
     year = completion.year
     rel_dir = os.path.join("certificates", str(year), str(session.id))
     ensure_dir(os.path.join("/srv", rel_dir))
-    short_code = (
-        session.workshop_type.short_code
-        if session.workshop_type and session.workshop_type.short_code
+    code = (
+        session.workshop_type.code
+        if session.workshop_type and session.workshop_type.code
         else "WORKSHOP"
     )
-    filename = f"{short_code}_{slug_certificate_name(display_name)}_{completion.strftime('%Y-%m-%d')}.pdf"
+    filename = f"{code}_{slug_certificate_name(display_name)}_{completion.strftime('%Y-%m-%d')}.pdf"
     rel_path = os.path.join(rel_dir, filename)
     with open(os.path.join("/srv", rel_path), "wb") as f:
         writer.write(f)
