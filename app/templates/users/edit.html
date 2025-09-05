@@ -5,6 +5,7 @@
 <form method="post" action="{{ url_for('users.update_user', user_id=user.id) }}">
   <p>Email: <input type="text" name="email" value="{{ user.email }}" readonly style="background:#eee"></p>
   <p>Full name: <input type="text" name="full_name" value="{{ user.full_name }}" maxlength="120" required autocomplete="off"></p>
+  <p>Title: <input type="text" name="title" value="{{ user.title or '' }}" maxlength="255" autocomplete="off"></p>
   <p>Region:
     <select name="region" required autocomplete="off">
       <option value="NA" {% if user.region=='NA' %}selected{% endif %}>NA</option>

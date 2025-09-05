@@ -28,7 +28,7 @@ Every functional change must update this file **in the same PR**.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
 - Certificates: `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (where `workshop_code = workshop_types.code`) and linked in-portal.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
-- One email across **users** and **participant_accounts**; block cross-table duplicates at create-time.
+- Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
 - “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
 
 ## 0.4 App Conventions & PR Hygiene
@@ -96,13 +96,14 @@ Every functional change must update this file **in the same PR**.
 
 # 2. Accounts & Identity
 
-Two separate tables; one email across the system – duplicates across users and participant_accounts are blocked.
+Two separate tables by design; emails unique per table. If both tables hold the same email, the **User** record governs authentication, menus, and profile.
 
 ## 2.1 Users (internal)
-- Table: `users`  
-- Unique: `lower(email)`  
-- Roles: booleans/role map (Sys Admin, Admin, CRM, Delivery, Contractor).  
+- Table: `users`
+- Unique: `lower(email)`
+- Roles: booleans/role map (Sys Admin, Admin, CRM, Delivery, Contractor).
 - Auth: standard password hash.
+- Profile: full_name, **title**, preferred_language, region
 
 ## 2.2 Participant Accounts (learners & CSAs)
 - Table: `participant_accounts`  
@@ -193,6 +194,9 @@ Two separate tables; one email across the system – duplicates across users and
 - **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
 - **Times**: display `HH:MM` only + short timezone.
 - **Profile**: staff `/profile` edits `User.full_name` (syncs to participant if exists); learners edit `ParticipantAccount.full_name` and `certificate_name`.
+- **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
+- **/profile**: staff edit `User.full_name` and `User.title`; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
+- **Session language**: single `workshop_language` field; no duplicate `language` binding.
 - **Materials**: physical components UI:
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
@@ -202,9 +206,10 @@ Two separate tables; one email across the system – duplicates across users and
 
 # 8. Certificates
 
-- Issued post-delivery; paper size is derived from session Region (North America → Letter; other regions → A4). Session language (`workshop_language` single field) selects certificate template. Templates live under `app/assets/` as `fncert_template_{a4|letter}_{lang}.pdf`; missing template errors list available files.
-- Name line at 145 mm italic, auto-shrink 48→32; Letter adds 1 cm inset left/right before fitting. Workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
-- PDF saved to `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
+- Issued post-delivery. Session `workshop_language` picks the template under `app/assets/fncert_template_{a4|letter}_{lang}.pdf` (missing template errors list available files).
+- Paper size derives from session Region (North America → Letter; others → A4). Letter layout insets the name line 1 cm left/right.
+- Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
+- Name line at 145 mm italic, auto-shrink 48→32; workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 
 ---
@@ -243,11 +248,13 @@ Two separate tables; one email across the system – duplicates across users and
   - Detail: `app/templates/session_detail.html`
   - Prework tab (staff): `app/templates/sessions/prework.html`
   - Materials tab (session): `app/templates/sessions/materials.html`
+  - Participant add/import: `/sessions/<id>/participants/add` in `app/routes/sessions.py`
 - **Session language**: field on sessions form/route (`app/templates/sessions/form.html`, `app/routes/sessions.py`); consumed by `app/utils/certificates.py`
 - **Learner**: routes `app/routes/learner.py`
   - My Workshops: `app/templates/my_sessions.html`
   - My Certificates: `app/templates/my_certificates.html`
   - Prework: `app/templates/my_prework.html`, `app/templates/prework_form.html`, `app/templates/prework_download.html`
+  - Profile: `app/templates/profile.html`
 - **CSA**: routes `app/routes/csa.py`, template `app/templates/csa/my_sessions.html`
 - **Workshop Types**: `app/routes/workshop_types.py`, templates under `app/templates/workshop_types/`
   - Prework config: `app/templates/workshop_types/prework.html`

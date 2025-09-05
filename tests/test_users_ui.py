@@ -1,6 +1,9 @@
 import os
 import pytest
 
+import os
+import pytest
+
 from app.app import create_app, db
 from app.models import User, ParticipantAccount
 
@@ -32,7 +35,7 @@ def test_new_user_form_has_no_staff_checkbox(app):
     assert b"KT Staff" not in resp.data
 
 
-def test_create_user_blocked_by_participant(app):
+def test_create_user_allowed_even_if_participant_exists(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_admin=True)
         p = ParticipantAccount(email="p@example.com", full_name="P")
@@ -46,4 +49,6 @@ def test_create_user_blocked_by_participant(app):
         data={"email": "p@example.com", "full_name": "P", "region": "NA"},
         follow_redirects=True,
     )
-    assert b"Email exists as a participant" in resp.data
+    assert b"Email already exists" not in resp.data
+    with app.app_context():
+        assert User.query.filter_by(email="p@example.com").count() == 1

@@ -333,9 +333,8 @@ def profile():
         pref_lang = (request.form.get("preferred_language") or "en")[:10]
         if user_id:
             user.full_name = full_name
+            user.title = (request.form.get("title") or "").strip()[:255]
             user.preferred_language = pref_lang
-            if account:
-                account.full_name = full_name
         else:
             cert_name = (request.form.get("certificate_name") or "").strip()[:200]
             if account:
@@ -351,6 +350,7 @@ def profile():
         full_name=(user.full_name if user_id else account.full_name) if (user or account) else "",
         certificate_name=account.certificate_name if account else "",
         preferred_language=(user.preferred_language if user_id else account.preferred_language) if (user or account) else "en",
+        title=user.title if user_id and user else "",
         is_staff=bool(user_id),
         has_participant=bool(account),
     )

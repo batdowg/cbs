@@ -18,6 +18,7 @@ class User(db.Model):
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255))
     full_name = db.Column(db.String(255))
+    title = db.Column(db.String(255))
     is_app_admin = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_kcrm = db.Column(db.Boolean, default=False)

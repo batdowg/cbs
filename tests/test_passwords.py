@@ -183,7 +183,11 @@ def test_add_staff_user_as_participant(app):
         data={"full_name": "Staff Member", "email": "staff@example.com", "title": "Mr"},
         follow_redirects=True,
     )
-    assert b"Email belongs to a staff user" in resp.data
+    assert resp.status_code == 200
     with app.app_context():
-        participant = Participant.query.filter_by(email="staff@example.com").first()
-        assert participant is None
+        participant = Participant.query.filter_by(email="staff@example.com").one()
+        account = ParticipantAccount.query.filter_by(email="staff@example.com").one()
+        assert participant.full_name == "Staff Member"
+        assert participant.title == "Mr"
+        assert account.full_name == "Staff Member"
+        assert account.certificate_name == "Staff Member"

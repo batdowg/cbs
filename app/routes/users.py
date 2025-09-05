@@ -10,7 +10,7 @@ from flask import (
 from sqlalchemy import or_, func
 
 from ..app import db, User
-from ..models import AuditLog, UserAuditLog, ParticipantAccount
+from ..models import AuditLog, UserAuditLog
 from ..constants import ROLE_ATTRS, SYS_ADMIN
 from ..utils.acl import validate_role_combo, can_demote_to_contractor
 from ..utils.rbac import manage_users_required
@@ -108,11 +108,6 @@ def create_user(current_user):
     if User.query.filter(db.func.lower(User.email) == email).first():
         flash("Email already exists", "error")
         return redirect(url_for("users.new_user"))
-    if ParticipantAccount.query.filter(
-        db.func.lower(ParticipantAccount.email) == email
-    ).first():
-        flash("Email exists as a participant", "error")
-        return redirect(url_for("users.new_user"))
     role_names = []
     for name, attr in ROLE_ATTRS.items():
         if request.form.get(attr):
@@ -131,6 +126,7 @@ def create_user(current_user):
     user = User(
         email=email,
         full_name=request.form.get("full_name"),
+        title=request.form.get("title"),
         region=region,
     )
     for name, attr in ROLE_ATTRS.items():
@@ -175,6 +171,8 @@ def update_user(user_id: int, current_user):
     if not user:
         abort(404)
     full_name = (request.form.get("full_name") or "").strip()
+    title_val = request.form.get("title")
+    title = title_val.strip() if title_val is not None else (user.title or "")
     if not full_name or len(full_name) > 120:
         flash("Full name required", "error")
         return redirect(url_for("users.edit_user", user_id=user.id))
@@ -187,6 +185,9 @@ def update_user(user_id: int, current_user):
     if user.full_name != full_name:
         changes.append(("full_name", user.full_name, full_name))
         user.full_name = full_name
+    if title_val is not None and user.title != title:
+        changes.append(("title", user.title, title))
+        user.title = title
     if user.region != region:
         changes.append(("region", user.region, region))
         user.region = region

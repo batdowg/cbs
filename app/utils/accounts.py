@@ -42,6 +42,12 @@ def ensure_participant_account(
             account.set_password(temp_password)
         return account, temp_password
 
+    user = User.query.filter(func.lower(User.email) == email_norm).first()
+    if user and not participant.full_name:
+        participant.full_name = user.full_name
+    if user and not getattr(participant, "title", None):
+        participant.title = user.title
+
     account = get_participant_account_by_email(email_norm)
     temp_password: Optional[str] = None
     if account:
@@ -56,13 +62,10 @@ def ensure_participant_account(
         if cache is not None:
             cache[email_norm] = account
         return account, temp_password
-
-    if User.query.filter(func.lower(User.email) == email_norm).first():
-        raise ValueError("Email belongs to a staff user")
     account = ParticipantAccount(
         email=email_norm,
-        full_name=participant.full_name or participant.email,
-        certificate_name=participant.full_name or participant.email,
+        full_name=participant.full_name or (user.full_name if user else participant.email),
+        certificate_name=participant.full_name or (user.full_name if user else participant.email),
         is_active=True,
     )
     db.session.add(account)
