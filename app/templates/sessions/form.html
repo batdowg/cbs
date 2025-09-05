@@ -58,7 +58,8 @@
             {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
           </option>
         {% endfor %}
-      </select></label><div>
+      </select></label></div>
+    {% endif %}
     <div><label>Delivery Type*
       <select name="delivery_type" required>
         <option value="">--Select--</option>
@@ -77,7 +78,6 @@
         {% endif %}
       </select>
     </label></div>
-    {% endif %}
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>  
     <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>

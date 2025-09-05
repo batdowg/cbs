@@ -1,5 +1,4 @@
 import os
-from datetime import date
 import pytest
 
 from app.app import create_app, db
@@ -73,3 +72,14 @@ def test_new_session_requires_fields(app):
     assert "/sessions/" in resp.headers["Location"]
     with app.app_context():
         assert Session.query.count() == 1
+
+
+def test_new_session_form_shows_language_and_delivery(app):
+    admin_id, _, _ = _setup(app)
+    client = app.test_client()
+    with client.session_transaction() as sess_tx:
+        sess_tx["user_id"] = admin_id
+    resp = client.get("/sessions/new")
+    assert resp.status_code == 200
+    assert b"Delivery Type" in resp.data
+    assert b"Language" in resp.data
