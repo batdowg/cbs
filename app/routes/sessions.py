@@ -32,7 +32,6 @@ from ..models import (
     WorkshopType,
     AuditLog,
     SessionShipping,
-    Language,
     ClientWorkshopLocation,
     SimulationOutline,
     PreworkTemplate,
@@ -72,6 +71,7 @@ WORKSHOP_LANGUAGES = [
     ("ja", "Japanese"),
     ("de", "German"),
     ("nl", "Dutch"),
+    ("zh", "Chinese"),
 ]
 
 
@@ -227,12 +227,6 @@ def new_session(current_user):
             .order_by(ClientWorkshopLocation.label)
             .all()
         )
-    languages = (
-        Language.query.filter_by(is_active=True)
-        .order_by(Language.sort_order, Language.name)
-        .all()
-    )
-    default_lang = next((l.name for l in languages if l.name == "English"), languages[0].name if languages else None)
     simulation_outlines = SimulationOutline.query.order_by(SimulationOutline.number, SimulationOutline.skill).all()
     if request.method == "POST":
         action = request.form.get("action")
@@ -252,10 +246,9 @@ def new_session(current_user):
         delivery_type = request.form.get("delivery_type")
         if not delivery_type:
             missing.append("Delivery type")
-        language = request.form.get("language")
-        if not language:
-            missing.append("Language")
-        workshop_language = request.form.get("workshop_language")
+        workshop_language = request.form.get("workshop_language") or request.form.get("language")
+        if not workshop_language:
+            missing.append("Workshop language")
         if workshop_language not in [c for c, _ in WORKSHOP_LANGUAGES]:
             workshop_language = "en"
         capacity_str = request.form.get("capacity")
@@ -273,9 +266,6 @@ def new_session(current_user):
         wt = db.session.get(WorkshopType, int(wt_id))
         wl_id = request.form.get("workshop_location_id")
         wl = db.session.get(ClientWorkshopLocation, int(wl_id)) if wl_id else None
-        allowed = [l.name for l in languages]
-        if language not in allowed:
-            language = default_lang
         start_date_val = date.fromisoformat(start_date_str)
         end_date_val = date.fromisoformat(end_date_str)
         daily_start_str = request.form.get("daily_start_time")
@@ -304,7 +294,6 @@ def new_session(current_user):
             location=wl.label if wl else None,
             delivery_type=delivery_type,
             region=region,
-            language=language,
             workshop_language=workshop_language,
             capacity=capacity_val,
             materials_ordered=materials_ordered,
@@ -330,7 +319,6 @@ def new_session(current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
-                    languages=languages,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -355,7 +343,6 @@ def new_session(current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
-                    languages=languages,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -509,7 +496,6 @@ def new_session(current_user):
             title=title_arg,
             daily_start_time=time.fromisoformat("08:00"),
             daily_end_time=time.fromisoformat("17:00"),
-            language=default_lang,
             workshop_language="en",
             timezone=tz,
             capacity=16,
@@ -518,7 +504,6 @@ def new_session(current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
-        languages=languages,
         workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=0,
@@ -566,16 +551,6 @@ def edit_session(session_id: int, current_user):
         if sess.client_id
         else []
     )
-    languages = (
-        Language.query.filter_by(is_active=True)
-        .order_by(Language.sort_order, Language.name)
-        .all()
-    )
-    extra_language = (
-        sess.language
-        if sess.language and sess.language not in [l.name for l in languages]
-        else None
-    )
     if request.method == "POST":
         old_ready = bool(sess.ready_for_delivery)
         ready_present = "ready_for_delivery" in request.form
@@ -613,12 +588,9 @@ def edit_session(session_id: int, current_user):
         )
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
-        wl_val = request.form.get("workshop_language")
+        wl_val = request.form.get("workshop_language") or request.form.get("language")
         if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
             sess.workshop_language = wl_val
-        language = request.form.get("language") or sess.language
-        allowed = [l.name for l in languages] + ([sess.language] if sess.language else [])
-        sess.language = language if language in allowed else sess.language
         sess.capacity = request.form.get("capacity") or None
         if start_date_val and end_date_val and end_date_val < start_date_val:
             flash("End date must be the same day or after the start date.", "error")
@@ -628,8 +600,6 @@ def edit_session(session_id: int, current_user):
                     session=sess,
                     workshop_types=workshop_types,
                     facilitators=facilitators,
-                    languages=languages,
-                    extra_language=extra_language,
                     clients=clients,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
@@ -654,8 +624,6 @@ def edit_session(session_id: int, current_user):
                     session=sess,
                     workshop_types=workshop_types,
                     facilitators=facilitators,
-                    languages=languages,
-                    extra_language=extra_language,
                     clients=clients,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
@@ -866,8 +834,6 @@ def edit_session(session_id: int, current_user):
         session=sess,
         workshop_types=workshop_types,
         facilitators=facilitators,
-        languages=languages,
-        extra_language=extra_language,
         clients=clients,
         workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,

@@ -89,7 +89,6 @@ def test_outline_persists_when_saved_from_session_form(app):
             "region": "NA",
             "workshop_type_id": 1,
             "delivery_type": "Onsite",
-            "language": "English",
             "capacity": "10",
             "start_date": date.today().isoformat(),
             "end_date": date.today().isoformat(),

@@ -40,7 +40,6 @@ def test_new_session_requires_fields(app):
             "region": "NA",
             "workshop_type_id": str(wt_id),
             "delivery_type": "Onsite",
-            "language": "English",
             "workshop_language": "en",
             "capacity": "16",
             "start_date": "2100-01-01",
@@ -62,7 +61,6 @@ def test_new_session_requires_fields(app):
             "region": "NA",
             "workshop_type_id": str(wt_id),
             "delivery_type": "Onsite",
-            "language": "English",
             "workshop_language": "en",
             "capacity": "16",
             "start_date": "2100-01-01",
@@ -84,5 +82,5 @@ def test_new_session_form_shows_language_and_delivery(app):
     resp = client.get("/sessions/new")
     assert resp.status_code == 200
     assert b"Delivery Type" in resp.data
-    assert b"Language" in resp.data
     assert b"Workshop language" in resp.data
+    assert b"<label>Language" not in resp.data

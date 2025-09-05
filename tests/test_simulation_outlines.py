@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.app import create_app, db
-from app.models import User, WorkshopType, Session, SimulationOutline, Client, Language, SessionShipping
+from app.models import User, WorkshopType, Session, SimulationOutline, Client, SessionShipping
 from app.utils.materials import latest_arrival_date
 
 
@@ -30,9 +30,8 @@ def setup_basic(app):
         admin.set_password("x")
         wt = WorkshopType(code="WT", name="WT", simulation_based=True)
         client = Client(name="C1")
-        lang = Language(name="English")
         sim = SimulationOutline(number="123456", skill="Risk", descriptor="Desc", level="Novice")
-        db.session.add_all([admin, wt, client, lang, sim])
+        db.session.add_all([admin, wt, client, sim])
         db.session.commit()
         return admin.id, wt.id, client.id, sim.id
 
@@ -49,7 +48,6 @@ def test_simulation_outline_dropdown_and_save(app):
         "region": "NA",
         "workshop_type_id": str(wt_id),
         "delivery_type": "Onsite",
-        "language": "English",
         "workshop_language": "en",
         "capacity": "10",
         "start_date": future_start.isoformat(),

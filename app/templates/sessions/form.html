@@ -68,16 +68,6 @@
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Language*
-      <select name="language" required>
-        {% for lang in languages %}
-        <option value="{{ lang.name }}" {% if session.language==lang.name %}selected{% endif %}>{{ lang.name }}</option>
-        {% endfor %}
-        {% if extra_language %}
-        <option value="{{ extra_language }}" selected>{{ extra_language }}</option>
-        {% endif %}
-      </select>
-    </label></div>
     <div><label>Workshop language*
       <select name="workshop_language" required>
         {% for code,label in workshop_languages %}

@@ -119,7 +119,7 @@ Two separate tables; a person may exist in **both** with the same email.
 ## 3.1 Catalog & Sessions
 - `workshop_types` (name, **code**, **simulation_based** bool)
 - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
-- `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
+- `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
 - `session_participants` (m:n participant_accounts↔sessions + per-person status)
 
@@ -200,7 +200,7 @@ Two separate tables; a person may exist in **both** with the same email.
 
 # 8. Certificates
 
-- Issued post-delivery; paper size is derived from session Region (North America → Letter; other regions → A4). Language comes from session `workshop_language`. Templates live under `app/assets/` as `fncert_template_{a4|letter}_{lang}.pdf`; missing template errors list available files.
+- Issued post-delivery; paper size is derived from session Region (North America → Letter; other regions → A4). Session language (`workshop_language` single field) selects certificate template. Templates live under `app/assets/` as `fncert_template_{a4|letter}_{lang}.pdf`; missing template errors list available files.
 - Name line at 145 mm italic, auto-shrink 48→32; Letter adds 1 cm inset left/right before fitting. Workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
 - PDF saved to `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
 - Learner sees **My Certificates** only if they own ≥1 certificate.
@@ -241,6 +241,7 @@ Two separate tables; a person may exist in **both** with the same email.
   - Detail: `app/templates/session_detail.html`
   - Prework tab (staff): `app/templates/sessions/prework.html`
   - Materials tab (session): `app/templates/sessions/materials.html`
+- **Session language**: field on sessions form/route (`app/templates/sessions/form.html`, `app/routes/sessions.py`); consumed by `app/utils/certificates.py`
 - **Learner**: routes `app/routes/learner.py`
   - My Workshops: `app/templates/my_sessions.html`
   - My Certificates: `app/templates/my_certificates.html`

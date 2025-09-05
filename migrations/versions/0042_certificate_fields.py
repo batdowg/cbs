@@ -15,7 +15,7 @@ depends_on = None
 
 
 PAPER_ENUM = sa.Enum("A4", "LETTER", name="paper_size")
-LANG_ENUM = sa.Enum("en", "es", "fr", "ja", "de", "nl", name="workshop_language")
+LANG_ENUM = sa.Enum("en", "es", "fr", "ja", "de", "nl", "zh", name="workshop_language")
 
 
 def upgrade() -> None:
