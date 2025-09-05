@@ -22,35 +22,41 @@ from ..models import (
 from .storage import ensure_dir
 
 
-PAPER_TEMPLATES = {
-    "LETTER": {"en", "es"},
-    "A4": {"en", "fr", "es", "ja", "de", "nl"},
-}
-
-
 def slug_certificate_name(name: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9 ]+", "", name or "")
     slug = re.sub(r"\s+", "-", slug.strip()).lower()
     return slug or "name"
 
 
-def _template_name(paper: str, lang: str) -> str:
-    langs = PAPER_TEMPLATES.get(paper)
-    if not langs or lang not in langs:
-        raise FileNotFoundError(f"template for {paper} {lang} not found")
-    key = "letter" if paper == "LETTER" else "a4"
-    return f"fncert_template_{key}_{lang}.pdf"
-
-
 def render_certificate(
     session: Session, participant_account: ParticipantAccount, layout_version: str = "v1"
 ) -> str:
-    paper = session.paper_size or "A4"
+    region_val = (session.region or "").strip().lower()
+    na_regions = {
+        "na",
+        "north america",
+        "us",
+        "usa",
+        "united states",
+        "united states of america",
+        "ca",
+        "canada",
+        "mx",
+        "mexico",
+    }
+    effective_size = "LETTER" if region_val in na_regions else "A4"
     lang = session.workshop_language or "en"
-    template_file = _template_name(paper, lang)
-    template_path = os.path.join(current_app.root_path, "assets", template_file)
+    assets_dir = os.path.join(current_app.root_path, "assets")
+    template_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
+    template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
-        raise FileNotFoundError(template_file)
+        available = sorted(
+            f for f in os.listdir(assets_dir) if f.startswith("fncert_template_")
+        )
+        raise FileNotFoundError(
+            f"{template_file} not found; available: {', '.join(available)}"
+        )
+    current_app.logger.info("Using certificate template: %s", template_path)
 
     participant = (
         db.session.query(Participant)
@@ -96,7 +102,7 @@ def render_certificate(
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=(w, h))
     name_width = w - mm(40)
-    if paper == "LETTER":
+    if effective_size == "LETTER":
         name_width -= mm(20)
     name_pt = fit_text(display_name, "Times-Italic", 48, 32, name_width)
     c.setFont("Times-Italic", name_pt)

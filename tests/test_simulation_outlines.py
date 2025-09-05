@@ -50,7 +50,6 @@ def test_simulation_outline_dropdown_and_save(app):
         "workshop_type_id": str(wt_id),
         "delivery_type": "Onsite",
         "language": "English",
-        "paper_size": "A4",
         "workshop_language": "en",
         "capacity": "10",
         "start_date": future_start.isoformat(),

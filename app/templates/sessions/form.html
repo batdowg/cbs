@@ -78,13 +78,6 @@
         {% endif %}
       </select>
     </label></div>
-    <div><label>Paper size*
-      <select name="paper_size" required>
-        {% for opt in paper_sizes %}
-        <option value="{{ opt }}" {% if session.paper_size==opt %}selected{% endif %}>{{ opt }}</option>
-        {% endfor %}
-      </select>
-    </label></div>
     <div><label>Workshop language*
       <select name="workshop_language" required>
         {% for code,label in workshop_languages %}

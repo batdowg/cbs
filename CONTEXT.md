@@ -200,7 +200,7 @@ Two separate tables; a person may exist in **both** with the same email.
 
 # 8. Certificates
 
-- Issued post-delivery; template chosen by session `paper_size` (A4 or Letter) and `workshop_language` (en, es, fr, ja, de, nl); missing template errors.
+- Issued post-delivery; paper size is derived from session Region (North America → Letter; other regions → A4). Language comes from session `workshop_language`. Templates live under `app/assets/` as `fncert_template_{a4|letter}_{lang}.pdf`; missing template errors list available files.
 - Name line at 145 mm italic, auto-shrink 48→32; Letter adds 1 cm inset left/right before fitting. Workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
 - PDF saved to `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
 - Learner sees **My Certificates** only if they own ≥1 certificate.
@@ -253,7 +253,7 @@ Two separate tables; a person may exist in **both** with the same email.
 - **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
 - **Users & Roles**: `app/routes/users.py`, `app/templates/users/*.html`; matrix `app/routes/settings_roles.py`, `app/templates/settings_roles.html`
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
-- **Certificates**: generator `app/utils/certificates.py`; templates under `app/assets/`
+- **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
 - **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`
 
 ---
