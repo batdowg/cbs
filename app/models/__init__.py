@@ -147,6 +147,7 @@ class WorkshopType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(16), nullable=False)
+    short_code = db.Column(db.String(16), nullable=False)
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
@@ -157,6 +158,11 @@ class WorkshopType(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
+        db.Index(
+            "uix_workshop_types_short_code_upper",
+            db.func.upper(short_code),
+            unique=True,
+        ),
     )
 
     resources = db.relationship(
@@ -167,6 +173,10 @@ class WorkshopType(db.Model):
 
     @validates("code")
     def upper_code(self, key, value):  # pragma: no cover - simple normalizer
+        return (value or "").upper()
+
+    @validates("short_code")
+    def upper_short_code(self, key, value):  # pragma: no cover - simple normalizer
         return (value or "").upper()
 
 
@@ -279,6 +289,18 @@ class Session(db.Model):
     delivery_type = db.Column(db.String(32))
     region = db.Column(db.String(8))
     language = db.Column(db.String(16))
+    paper_size = db.Column(
+        db.Enum("A4", "LETTER", name="paper_size"),
+        nullable=False,
+        default="A4",
+        server_default="A4",
+    )
+    workshop_language = db.Column(
+        db.Enum("en", "es", "fr", "ja", "de", "nl", name="workshop_language"),
+        nullable=False,
+        default="en",
+        server_default="en",
+    )
     capacity = db.Column(db.Integer)
     status = db.Column(
         db.String(16), nullable=False, default="New", server_default="New"

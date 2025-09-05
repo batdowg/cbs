@@ -1,58 +1,89 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import date
 from io import BytesIO
 from typing import Iterable
 
 from flask import current_app
 from PyPDF2 import PdfReader, PdfWriter
-from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from ..app import db
 from ..models import (
     Certificate,
     Participant,
+    ParticipantAccount,
     Session,
     SessionParticipant,
 )
 from .storage import ensure_dir
 
 
-def _output_paths(session: Session, participant: Participant) -> tuple[str, str]:
-    year = (session.end_date or date.today()).year
-    session_folder = session.code or str(session.id)
-    rel_dir = os.path.join("certificates", str(year), session_folder)
-    filename = f"{participant.email}.pdf"
-    rel_path = os.path.join(rel_dir, filename)
-    abs_path = os.path.join("/srv", rel_path)
-    return rel_path, abs_path
+PAPER_TEMPLATES = {
+    "LETTER": {"en", "es"},
+    "A4": {"en", "fr", "es", "ja", "de", "nl"},
+}
 
 
-def generate_certificate(participant: Participant, session: Session) -> str:
-    rel_path, abs_path = _output_paths(session, participant)
+def slug_certificate_name(name: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9 ]+", "", name or "")
+    slug = re.sub(r"\s+", "-", slug.strip()).lower()
+    return slug or "name"
 
-    cert = (
-        db.session.query(Certificate)
+
+def _template_name(paper: str, lang: str) -> str:
+    langs = PAPER_TEMPLATES.get(paper)
+    if not langs or lang not in langs:
+        raise FileNotFoundError(f"template for {paper} {lang} not found")
+    key = "letter" if paper == "LETTER" else "a4"
+    return f"fncert_template_{key}_{lang}.pdf"
+
+
+def render_certificate(
+    session: Session, participant_account: ParticipantAccount, layout_version: str = "v1"
+) -> str:
+    paper = session.paper_size or "A4"
+    lang = session.workshop_language or "en"
+    template_file = _template_name(paper, lang)
+    template_path = os.path.join(current_app.root_path, "assets", template_file)
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(template_file)
+
+    participant = (
+        db.session.query(Participant)
+        .filter(
+            (Participant.account_id == participant_account.id)
+            | (db.func.lower(Participant.email) == participant_account.email.lower())
+        )
+        .first()
+    )
+    if not participant:
+        raise ValueError("participant not found")
+    link = (
+        db.session.query(SessionParticipant)
         .filter_by(session_id=session.id, participant_id=participant.id)
         .one_or_none()
     )
-    workshop = (
-        session.workshop_type.name
-        if session.workshop_type
-        else session.title
-    ) or ""
-    completion = session.end_date or date.today()
+    if not link:
+        raise ValueError("participant not in session")
+    completion = link.completion_date or session.end_date
+    if not completion:
+        raise ValueError("missing completion date")
 
-    template_path = os.path.join(
-        current_app.root_path, "assets", "certificate_template.pdf"
+    workshop = session.workshop_type.name if session.workshop_type else (session.title or "")
+    display_name = (
+        (participant_account.certificate_name or "").strip()
+        or participant_account.full_name
+        or participant_account.email
     )
+
     base_reader = PdfReader(template_path)
     base_page = base_reader.pages[0]
     w = float(base_page.mediabox.width)
     h = float(base_page.mediabox.height)
-
     mm = lambda v: v * 72.0 / 25.4
     center_x = w / 2.0
 
@@ -64,14 +95,10 @@ def generate_certificate(participant: Participant, session: Session) -> str:
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=(w, h))
-
-    display_name = (
-        (participant.account.certificate_name or "").strip()
-        if participant.account
-        else ""
-    ) or participant.full_name or participant.email
-
-    name_pt = fit_text(display_name, "Times-Italic", 48, 32, w - mm(40))
+    name_width = w - mm(40)
+    if paper == "LETTER":
+        name_width -= mm(20)
+    name_pt = fit_text(display_name, "Times-Italic", 48, 32, name_width)
     c.setFont("Times-Italic", name_pt)
     c.setFillGray(0.25)
     c.drawCentredString(center_x, mm(145), display_name)
@@ -83,22 +110,33 @@ def generate_certificate(participant: Participant, session: Session) -> str:
 
     c.setFont("Helvetica", 20)
     c.setFillGray(0.3)
-    c.drawCentredString(
-        center_x, mm(83), completion.strftime("%d %B %Y").lstrip("0")
-    )
+    c.drawCentredString(center_x, mm(83), completion.strftime("%d %B %Y").lstrip("0"))
 
     c.save()
     buffer.seek(0)
-
     overlay_page = PdfReader(buffer).pages[0]
     base_page.merge_page(overlay_page)
-
     writer = PdfWriter()
     writer.add_page(base_page)
-    ensure_dir(os.path.dirname(abs_path))
-    with open(abs_path, "wb") as f:
+
+    year = completion.year
+    rel_dir = os.path.join("certificates", str(year), str(session.id))
+    ensure_dir(os.path.join("/srv", rel_dir))
+    short_code = (
+        session.workshop_type.short_code
+        if session.workshop_type and session.workshop_type.short_code
+        else "WORKSHOP"
+    )
+    filename = f"{short_code}_{slug_certificate_name(display_name)}_{completion.strftime('%Y-%m-%d')}.pdf"
+    rel_path = os.path.join(rel_dir, filename)
+    with open(os.path.join("/srv", rel_path), "wb") as f:
         writer.write(f)
 
+    cert = (
+        db.session.query(Certificate)
+        .filter_by(session_id=session.id, participant_id=participant.id)
+        .one_or_none()
+    )
     if not cert:
         cert = Certificate(session_id=session.id, participant_id=participant.id)
         db.session.add(cert)
@@ -107,21 +145,18 @@ def generate_certificate(participant: Participant, session: Session) -> str:
     cert.workshop_date = completion
     cert.pdf_path = rel_path
     db.session.commit()
-
     current_app.logger.info(
         "[CERT] email=%s session=%s path=%s",
-        participant.email,
-        session.code or session.id,
+        participant_account.email,
+        session.id,
         rel_path,
     )
     return rel_path
 
 
-def generate_for_session(session_id: int, emails: Iterable[str] | None = None):
+def render_for_session(session_id: int, emails: Iterable[str] | None = None):
     session = db.session.get(Session, session_id)
-    if not session:
-        return 0, []
-    if getattr(session, "cancelled", False):
+    if not session or getattr(session, "cancelled", False):
         return 0, []
     q = (
         db.session.query(SessionParticipant)
@@ -135,14 +170,16 @@ def generate_for_session(session_id: int, emails: Iterable[str] | None = None):
     paths: list[str] = []
     for link in q.all():
         participant = db.session.get(Participant, link.participant_id)
-        if not participant:
+        if not participant or not participant.account:
             continue
-        completion = link.completion_date or session.end_date
-        if not completion:
-            continue
-        rel_path = generate_certificate(participant, session)
-        count += 1
-        paths.append(rel_path)
+        try:
+            rel_path = render_certificate(session, participant.account)
+            count += 1
+            paths.append(rel_path)
+        except Exception:
+            current_app.logger.exception(
+                "[CERT-FAIL] email=%s session=%s", participant.email, session.id
+            )
     return count, paths
 
 

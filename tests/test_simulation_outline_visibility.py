@@ -29,7 +29,7 @@ def app():
 def _base_setup(sim_based=False):
     admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
     admin.set_password("x")
-    wt = WorkshopType(code="WT", name="WT", simulation_based=sim_based)
+    wt = WorkshopType(code="WT", short_code="WT", name="WT", simulation_based=sim_based)
     so = SimulationOutline(number="S1", skill="Custom", descriptor="Desc", level="Novice")
     client = Client(name="C1")
     ship = ClientShippingLocation(client=client, contact_name="CN", address_line1="A1", city="City", postal_code="123", country="US")
