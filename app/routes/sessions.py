@@ -65,8 +65,6 @@ from ..utils.acl import (
 )
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
-
-PAPER_SIZES = ["A4", "LETTER"]
 WORKSHOP_LANGUAGES = [
     ("en", "English"),
     ("es", "Spanish"),
@@ -257,9 +255,6 @@ def new_session(current_user):
         language = request.form.get("language")
         if not language:
             missing.append("Language")
-        paper_size = request.form.get("paper_size")
-        if paper_size not in PAPER_SIZES:
-            paper_size = "A4"
         workshop_language = request.form.get("workshop_language")
         if workshop_language not in [c for c, _ in WORKSHOP_LANGUAGES]:
             workshop_language = "en"
@@ -310,7 +305,6 @@ def new_session(current_user):
             delivery_type=delivery_type,
             region=region,
             language=language,
-            paper_size=paper_size,
             workshop_language=workshop_language,
             capacity=capacity_val,
             materials_ordered=materials_ordered,
@@ -337,7 +331,6 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     languages=languages,
-                    paper_sizes=PAPER_SIZES,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -363,7 +356,6 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     languages=languages,
-                    paper_sizes=PAPER_SIZES,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -518,7 +510,6 @@ def new_session(current_user):
             daily_start_time=time.fromisoformat("08:00"),
             daily_end_time=time.fromisoformat("17:00"),
             language=default_lang,
-            paper_size="A4",
             workshop_language="en",
             timezone=tz,
             capacity=16,
@@ -528,7 +519,6 @@ def new_session(current_user):
         facilitators=facilitators,
         clients=clients,
         languages=languages,
-        paper_sizes=PAPER_SIZES,
         workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=0,
@@ -623,9 +613,6 @@ def edit_session(session_id: int, current_user):
         )
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
-        ps_val = request.form.get("paper_size")
-        if ps_val in PAPER_SIZES:
-            sess.paper_size = ps_val
         wl_val = request.form.get("workshop_language")
         if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
             sess.workshop_language = wl_val
@@ -644,7 +631,6 @@ def edit_session(session_id: int, current_user):
                     languages=languages,
                     extra_language=extra_language,
                     clients=clients,
-                    paper_sizes=PAPER_SIZES,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -671,7 +657,6 @@ def edit_session(session_id: int, current_user):
                     languages=languages,
                     extra_language=extra_language,
                     clients=clients,
-                    paper_sizes=PAPER_SIZES,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -884,7 +869,6 @@ def edit_session(session_id: int, current_user):
         languages=languages,
         extra_language=extra_language,
         clients=clients,
-        paper_sizes=PAPER_SIZES,
         workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=participants_count,
