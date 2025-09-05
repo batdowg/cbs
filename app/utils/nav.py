@@ -1,4 +1,6 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+from .acl import can_manage_users
 
 MenuItem = Dict[str, Any]
 
@@ -20,7 +22,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     ]
     items.append({'id': 'profile', 'label': 'My Profile', 'children': profile_children})
     settings_children: List[MenuItem] = []
-    if user.is_app_admin or user.is_admin:
+    if can_manage_users(user):
         settings_children.extend([
             {'id': 'clients', 'label': 'Clients', 'endpoint': 'clients.list_clients'},
             {'id': 'workshop_types', 'label': 'Workshop Types', 'endpoint': 'workshop_types.list_types'},
@@ -37,7 +39,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         settings_children.append({'id': 'resources', 'label': 'Resources', 'endpoint': 'settings_resources.list_resources'})
     if user.is_app_admin or user.is_admin or user.is_kt_staff or user.is_kt_delivery or user.is_kt_contractor:
         settings_children.append({'id': 'simulation_outlines', 'label': 'Simulation Outlines', 'endpoint': 'settings_simulations.list_simulations'})
-    if user.is_app_admin or user.is_admin:
+    if can_manage_users(user):
         settings_children.extend([
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},
             {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},

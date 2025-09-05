@@ -27,6 +27,23 @@ DEFAULT_PARTICIPANT_PASSWORD = "KTRocks!"
 # Default password for newly created Client Session Administrator accounts
 DEFAULT_CSA_PASSWORD = "KTRocks!CSA"
 
+SYS_ADMIN = "app_admin"
+ADMIN = "admin"
+STAFF = "kt_staff"
+CONTRACTOR = "kt_contractor"
+
+ROLE_ATTRS = {
+    SYS_ADMIN: "is_app_admin",
+    ADMIN: "is_admin",
+    "kcrm": "is_kcrm",
+    "kt_delivery": "is_kt_delivery",
+    CONTRACTOR: "is_kt_contractor",
+    STAFF: "is_kt_staff",
+}
+
+MANAGE_USERS_ROLES = {SYS_ADMIN, ADMIN}
+EXCLUSIVE_ROLES = {CONTRACTOR}
+
 ROLES_MATRIX_VERSION = "2024-06-13"
 
 PERMISSIONS_MATRIX = {
