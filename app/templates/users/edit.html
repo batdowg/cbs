@@ -25,4 +25,9 @@
     <a href="{{ url_for('users.list_users') }}">Cancel</a>
   </p>
 </form>
+{% if can_demote %}
+<form method="post" action="{{ url_for('users.demote_contractor', user_id=user.id) }}">
+  <button type="submit">Convert to Contractor</button>
+</form>
+{% endif %}
 {% endblock %}

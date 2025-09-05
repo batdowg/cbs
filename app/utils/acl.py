@@ -45,6 +45,16 @@ def is_staff_user(user: Any) -> bool:
     return bool(has_any and not is_contractor(user))
 
 
+def can_demote_to_contractor(actor: User, target: User) -> bool:
+    if not can_manage_users(actor):
+        return False
+    if is_sys_admin(target):
+        return False
+    if getattr(actor, "id", None) == getattr(target, "id", None):
+        return False
+    return True
+
+
 def is_participant(user: Any) -> bool:
     return isinstance(user, ParticipantAccount)
 

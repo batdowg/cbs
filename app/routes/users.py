@@ -12,7 +12,7 @@ from sqlalchemy import or_, func
 from ..app import db, User
 from ..models import AuditLog, UserAuditLog, ParticipantAccount
 from ..constants import ROLE_ATTRS, SYS_ADMIN
-from ..utils.acl import validate_role_combo
+from ..utils.acl import validate_role_combo, can_demote_to_contractor
 from ..utils.rbac import manage_users_required
 from ..utils.accounts import promote_participant_to_user
 
@@ -32,8 +32,6 @@ def _roles_str(user: User) -> str:
         roles.append("kt_delivery")
     if user.is_kt_contractor:
         roles.append("kt_contractor")
-    if user.is_kt_staff:
-        roles.append("kt_staff")
     return ",".join(roles)
 
 
@@ -111,13 +109,9 @@ def create_user(current_user):
     if User.query.filter(db.func.lower(User.email) == email).first():
         flash("Email already exists", "error")
         return redirect(url_for("users.new_user"))
-    if ParticipantAccount.query.filter(db.func.lower(ParticipantAccount.email) == email).first():
-        flash("That email belongs to a learner account.", "error")
-        return redirect(url_for("users.new_user"))
-    region = request.form.get("region")
-    if region not in ["NA", "EU", "SEA", "Other"]:
-        flash("Region required", "error")
-        return redirect(url_for("users.new_user"))
+    account = ParticipantAccount.query.filter(
+        db.func.lower(ParticipantAccount.email) == email
+    ).first()
     role_names = []
     for name, attr in ROLE_ATTRS.items():
         if request.form.get(attr):
@@ -128,6 +122,17 @@ def create_user(current_user):
         validate_role_combo(role_names)
     except ValueError:
         flash("Invalid role combination", "error")
+        return redirect(url_for("users.new_user"))
+    if account:
+        return render_template(
+            "users/promote.html",
+            email=email,
+            role_names=role_names,
+            account=account,
+        )
+    region = request.form.get("region")
+    if region not in ["NA", "EU", "SEA", "Other"]:
+        flash("Region required", "error")
         return redirect(url_for("users.new_user"))
     user = User(
         email=email,
@@ -165,7 +170,8 @@ def edit_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
         abort(404)
-    return render_template("users/edit.html", user=user)
+    can_demote = can_demote_to_contractor(current_user, user)
+    return render_template("users/edit.html", user=user, can_demote=can_demote)
 
 
 @bp.post("/<int:user_id>/edit")
@@ -230,11 +236,6 @@ def update_user(user_id: int, current_user):
 @manage_users_required
 def promote_user(current_user):
     email = (request.form.get("email") or "").lower()
-    account = ParticipantAccount.query.filter(
-        func.lower(ParticipantAccount.email) == email
-    ).first()
-    if not account:
-        abort(404)
     role_names = []
     for name, attr in ROLE_ATTRS.items():
         if request.form.get(attr):
@@ -242,12 +243,32 @@ def promote_user(current_user):
                 continue
             role_names.append(name)
     try:
-        validate_role_combo(role_names)
+        promote_participant_to_user(email, role_names, current_user)
     except ValueError:
         flash("Invalid role combination", "error")
         return redirect(url_for("users.new_user"))
-    promote_participant_to_user(account, role_names)
     db.session.commit()
     flash("Participant promoted", "success")
     return redirect(url_for("users.list_users"))
+
+
+@bp.post("/<int:user_id>/demote-contractor")
+@manage_users_required
+def demote_contractor(user_id: int, current_user):
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
+    if not can_demote_to_contractor(current_user, user):
+        abort(403)
+    if user.is_admin:
+        remaining = User.query.filter(User.id != user.id, User.is_admin == True).count()
+        if remaining == 0:
+            flash("Cannot remove the last Admin/Sys Admin", "error")
+            return redirect(url_for("users.edit_user", user_id=user.id))
+    from ..utils.accounts import demote_user_to_contractor
+
+    demote_user_to_contractor(user, current_user)
+    db.session.commit()
+    flash("User converted to contractor", "success")
+    return redirect(url_for("users.edit_user", user_id=user.id))
 
