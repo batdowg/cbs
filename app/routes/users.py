@@ -7,11 +7,14 @@ from flask import (
     request,
     url_for,
 )
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from ..app import db, User
 from ..models import AuditLog, UserAuditLog, ParticipantAccount
-from ..utils.rbac import admin_required
+from ..constants import ROLE_ATTRS, SYS_ADMIN
+from ..utils.acl import validate_role_combo
+from ..utils.rbac import manage_users_required
+from ..utils.accounts import promote_participant_to_user
 
 
 bp = Blueprint("users", __name__, url_prefix="/users")
@@ -35,7 +38,7 @@ def _roles_str(user: User) -> str:
 
 
 @bp.get("/")
-@admin_required
+@manage_users_required
 def list_users(current_user):
     q = (request.args.get("q") or "").strip()
     region = request.args.get("region") or ""
@@ -57,18 +60,26 @@ def list_users(current_user):
 
 
 @bp.post("/bulk-update")
-@admin_required
+@manage_users_required
 def bulk_update(current_user):
     users = User.query.order_by(User.id).all()
     updated = 0
     for user in users:
         orig = _roles_str(user)
-        if current_user.is_app_admin:
-            user.is_app_admin = bool(request.form.get(f"is_app_admin_{user.id}"))
-        user.is_admin = bool(request.form.get(f"is_admin_{user.id}"))
-        user.is_kcrm = bool(request.form.get(f"is_kcrm_{user.id}"))
-        user.is_kt_delivery = bool(request.form.get(f"is_kt_delivery_{user.id}"))
-        user.is_kt_contractor = bool(request.form.get(f"is_kt_contractor_{user.id}"))
+        role_names = []
+        for name, attr in ROLE_ATTRS.items():
+            key = f"{attr}_{user.id}"
+            if request.form.get(key):
+                if name == SYS_ADMIN and not current_user.is_app_admin:
+                    continue
+                role_names.append(name)
+        try:
+            validate_role_combo(role_names)
+        except ValueError:
+            flash("Invalid role combination", "error")
+            return redirect(url_for("users.list_users"))
+        for name, attr in ROLE_ATTRS.items():
+            setattr(user, attr, name in role_names)
         new_roles = _roles_str(user)
         if new_roles != orig:
             db.session.add(
@@ -85,13 +96,13 @@ def bulk_update(current_user):
 
 
 @bp.get("/new")
-@admin_required
+@manage_users_required
 def new_user(current_user):
     return render_template("users/form.html", user=None)
 
 
 @bp.post("/new")
-@admin_required
+@manage_users_required
 def create_user(current_user):
     email = (request.form.get("email") or "").lower()
     if not email:
@@ -107,17 +118,24 @@ def create_user(current_user):
     if region not in ["NA", "EU", "SEA", "Other"]:
         flash("Region required", "error")
         return redirect(url_for("users.new_user"))
+    role_names = []
+    for name, attr in ROLE_ATTRS.items():
+        if request.form.get(attr):
+            if name == SYS_ADMIN and not current_user.is_app_admin:
+                continue
+            role_names.append(name)
+    try:
+        validate_role_combo(role_names)
+    except ValueError:
+        flash("Invalid role combination", "error")
+        return redirect(url_for("users.new_user"))
     user = User(
         email=email,
         full_name=request.form.get("full_name"),
         region=region,
-        is_app_admin=bool(request.form.get("is_app_admin")) if current_user.is_app_admin else False,
-        is_admin=bool(request.form.get("is_admin")),
-        is_kcrm=bool(request.form.get("is_kcrm")),
-        is_kt_delivery=bool(request.form.get("is_kt_delivery")),
-        is_kt_contractor=bool(request.form.get("is_kt_contractor")),
-        is_kt_staff=bool(request.form.get("is_kt_staff")),
     )
+    for name, attr in ROLE_ATTRS.items():
+        setattr(user, attr, name in role_names)
     pwd = confirm = ""
     if current_user.is_app_admin:
         pwd = request.form.get("password") or ""
@@ -142,7 +160,7 @@ def create_user(current_user):
 
 
 @bp.get("/<int:user_id>/edit")
-@admin_required
+@manage_users_required
 def edit_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
@@ -151,7 +169,7 @@ def edit_user(user_id: int, current_user):
 
 
 @bp.post("/<int:user_id>/edit")
-@admin_required
+@manage_users_required
 def update_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
@@ -205,5 +223,31 @@ def update_user(user_id: int, current_user):
         flash("User updated.", "success")
     else:
         flash("No changes.", "info")
+    return redirect(url_for("users.list_users"))
+
+
+@bp.post("/promote")
+@manage_users_required
+def promote_user(current_user):
+    email = (request.form.get("email") or "").lower()
+    account = ParticipantAccount.query.filter(
+        func.lower(ParticipantAccount.email) == email
+    ).first()
+    if not account:
+        abort(404)
+    role_names = []
+    for name, attr in ROLE_ATTRS.items():
+        if request.form.get(attr):
+            if name == SYS_ADMIN and not current_user.is_app_admin:
+                continue
+            role_names.append(name)
+    try:
+        validate_role_combo(role_names)
+    except ValueError:
+        flash("Invalid role combination", "error")
+        return redirect(url_for("users.new_user"))
+    promote_participant_to_user(account, role_names)
+    db.session.commit()
+    flash("Participant promoted", "success")
     return redirect(url_for("users.list_users"))
 

@@ -28,13 +28,31 @@ Kepner-Tregoe’s Certs & Badges System (CBS) manages workshops (“Sessions”)
 - Passwords via bcrypt helpers; shared reset flow: `/forgot-password` → token email → `/reset-password`. **[DONE]**
 - Session keys (`user_id` or `participant_account_id`) live side-by-side; `/logout` clears either. **[DONE]**
 - Cross-table uniqueness: new staff cannot reuse learner emails and vice-versa. **[DONE]**
-- Roles (booleans on `users`): SysAdmin, Administrator, CRM, KT Facilitator, Contractor, Staff.  
+- Roles (booleans on `users`): SysAdmin, Administrator, CRM, KT Facilitator, Contractor, Staff.
   Access quick map:
   - **SysAdmin**: everything.
   - **Administrator**: sessions, participants, certificates, clients, materials settings; not app-wide secrets.
   - **CRM**: sessions, materials orders (create/edit), clients/locations (on their clients).
   - **KT Facilitator/Contractor**: view sessions/materials; limited edits where explicitly allowed.
   - **CSA**: manage participants for assigned session until Delivered; can add client locations but not edit materials orders.
+
+Role semantics:
+- **Sys Admin**: full control; can manage users; sees all settings.
+- **Admin**: full control of user accounts and RBAC inside their org scope; can manage users.
+- **Contractor**: user account restricted to contractor-specific functions. **Exclusive** — cannot hold any other staff role concurrently.
+- **Staff (definition)**: any **user** that is **not Contractor**. Learners are not staff; they are participant-only accounts.
+- **Learner/Participant**: portal-only, no user privileges.
+
+User management permissions:
+- Only **Sys Admin** and **Admin** can create, edit, promote, deactivate users and change roles. All others: 403 + hidden UI.
+
+Promotion flow:
+- Only Sys Admin/Admin can promote a participant to a user.
+- Role selection must pass exclusivity rules (e.g., Contractor cannot be combined).
+- Promotion links the participant to the new user and emails temp credentials.
+
+UI visibility:
+- Settings ▸ Users, Roles Matrix, and any user-edit links render only for Sys Admin/Admin.
 
 Staff roles matrix:
 

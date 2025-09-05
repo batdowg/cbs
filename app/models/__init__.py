@@ -6,6 +6,7 @@ from sqlalchemy.orm import validates
 
 from ..app import db
 from ..utils.passwords import hash_password, check_password
+from ..constants import ROLE_ATTRS
 
 from .simulation import SimulationOutline  # noqa: E402,F401
 
@@ -46,6 +47,10 @@ class User(db.Model):
         if not self.password_hash:
             return False
         return check_password(plain, self.password_hash)
+
+    def has_role(self, role: str) -> bool:
+        attr = ROLE_ATTRS.get(role)
+        return bool(attr and getattr(self, attr, False))
 
 
 class ParticipantAccount(db.Model):

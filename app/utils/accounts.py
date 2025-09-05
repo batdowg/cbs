@@ -7,9 +7,10 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..app import db
-from ..models import Participant, ParticipantAccount
+from ..models import Participant, ParticipantAccount, User
 from .strings import normalize_email
-from ..constants import DEFAULT_PARTICIPANT_PASSWORD
+from ..constants import DEFAULT_PARTICIPANT_PASSWORD, ROLE_ATTRS, CONTRACTOR
+from ..utils.acl import validate_role_combo
 
 
 def get_participant_account_by_email(email: str) -> Optional[ParticipantAccount]:
@@ -83,3 +84,22 @@ def ensure_participant_account(
     if cache is not None:
         cache[email_norm] = account
     return account, temp_password
+
+
+def promote_participant_to_user(account: ParticipantAccount, role_names: list[str]) -> User:
+    """Promote a participant account to a staff user."""
+    validate_role_combo(role_names)
+    if CONTRACTOR in role_names and len(role_names) != 1:
+        raise ValueError("Contractor must be exclusive")
+    user = User.query.filter(func.lower(User.email) == account.email.lower()).one_or_none()
+    if user:
+        if user.is_kt_contractor and CONTRACTOR not in role_names:
+            raise ValueError("Contractor cannot receive other roles")
+        if not user.is_kt_contractor and CONTRACTOR in role_names:
+            raise ValueError("Staff user cannot become contractor")
+    else:
+        user = User(email=account.email, full_name=account.full_name, region="NA")
+    for name, attr in ROLE_ATTRS.items():
+        setattr(user, attr, name in role_names)
+    db.session.add(user)
+    return user
