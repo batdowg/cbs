@@ -29,7 +29,7 @@ def test_materials_page_loads(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         mt = MaterialType(name="Kit")
         client = Client(name="C1")
         ship = ClientShippingLocation(
@@ -67,7 +67,7 @@ def test_materials_page_without_client(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         mt = MaterialType(name="Kit")
         mat = Material(material_type_id=mt.id, name="Sample Kit")
         sess = Session(

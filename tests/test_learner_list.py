@@ -29,7 +29,7 @@ def app():
 
 def _setup(app):
     with app.app_context():
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         db.session.add(wt)
         db.session.flush()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")

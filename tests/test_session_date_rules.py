@@ -22,7 +22,7 @@ def _setup(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         client = Client(name="ClientA", status="active")
         db.session.add_all([admin, wt, client])
         db.session.commit()
@@ -42,6 +42,8 @@ def _base_form(client_id, wt_id):
         "workshop_type_id": str(wt_id),
         "delivery_type": "Onsite",
         "language": "English",
+        "paper_size": "A4",
+        "workshop_language": "en",
         "capacity": "16",
         "daily_start_time": "09:00",
         "daily_end_time": "17:00",

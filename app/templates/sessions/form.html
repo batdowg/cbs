@@ -78,6 +78,20 @@
         {% endif %}
       </select>
     </label></div>
+    <div><label>Paper size*
+      <select name="paper_size" required>
+        {% for opt in paper_sizes %}
+        <option value="{{ opt }}" {% if session.paper_size==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Workshop language*
+      <select name="workshop_language" required>
+        {% for code,label in workshop_languages %}
+        <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>  
     <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>

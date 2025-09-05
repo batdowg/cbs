@@ -31,7 +31,7 @@ def app():
 def _setup_data():
     admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
     admin.set_password("x")
-    wt = WorkshopType(code="WT", name="WT")
+    wt = WorkshopType(code="WT", short_code="WT", name="WT")
     mt = MaterialType(name="Kit")
     mat = Material(material_type_id=mt.id, name="Sample Kit")
     client = Client(name="C1")

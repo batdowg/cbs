@@ -20,7 +20,7 @@ def _setup(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         client = Client(name="ClientA", status="active")
         db.session.add_all([admin, wt, client])
         db.session.commit()
@@ -41,6 +41,8 @@ def test_new_session_requires_fields(app):
             "workshop_type_id": str(wt_id),
             "delivery_type": "Onsite",
             "language": "English",
+            "paper_size": "A4",
+            "workshop_language": "en",
             "capacity": "16",
             "start_date": "2100-01-01",
             "end_date": "2100-01-02",
@@ -62,6 +64,8 @@ def test_new_session_requires_fields(app):
             "workshop_type_id": str(wt_id),
             "delivery_type": "Onsite",
             "language": "English",
+            "paper_size": "A4",
+            "workshop_language": "en",
             "capacity": "16",
             "start_date": "2100-01-01",
             "end_date": "2100-01-02",
@@ -83,3 +87,5 @@ def test_new_session_form_shows_language_and_delivery(app):
     assert resp.status_code == 200
     assert b"Delivery Type" in resp.data
     assert b"Language" in resp.data
+    assert b"Paper size" in resp.data
+    assert b"Workshop language" in resp.data

@@ -41,7 +41,11 @@ from ..models import (
 )
 from ..utils.time import now_utc, fmt_time, fmt_dt
 from sqlalchemy import or_, func
-from ..utils.certificates import generate_for_session, remove_session_certificates
+from ..utils.certificates import (
+    render_certificate,
+    render_for_session,
+    remove_session_certificates,
+)
 from ..utils.provisioning import (
     deactivate_orphan_accounts_for_session,
     provision_participant_accounts_for_session,
@@ -61,6 +65,16 @@ from ..utils.acl import (
 )
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
+
+PAPER_SIZES = ["A4", "LETTER"]
+WORKSHOP_LANGUAGES = [
+    ("en", "English"),
+    ("es", "Spanish"),
+    ("fr", "French"),
+    ("ja", "Japanese"),
+    ("de", "German"),
+    ("nl", "Dutch"),
+]
 
 
 def _fmt_offset(delta):
@@ -243,6 +257,12 @@ def new_session(current_user):
         language = request.form.get("language")
         if not language:
             missing.append("Language")
+        paper_size = request.form.get("paper_size")
+        if paper_size not in PAPER_SIZES:
+            paper_size = "A4"
+        workshop_language = request.form.get("workshop_language")
+        if workshop_language not in [c for c, _ in WORKSHOP_LANGUAGES]:
+            workshop_language = "en"
         capacity_str = request.form.get("capacity")
         if not capacity_str:
             missing.append("Capacity")
@@ -290,6 +310,8 @@ def new_session(current_user):
             delivery_type=delivery_type,
             region=region,
             language=language,
+            paper_size=paper_size,
+            workshop_language=workshop_language,
             capacity=capacity_val,
             materials_ordered=materials_ordered,
             ready_for_delivery=ready_for_delivery,
@@ -315,6 +337,8 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     languages=languages,
+                    paper_sizes=PAPER_SIZES,
+                    workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -339,6 +363,8 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     languages=languages,
+                    paper_sizes=PAPER_SIZES,
+                    workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -453,7 +479,7 @@ def new_session(current_user):
             )
             db.session.commit()
         if sess.finalized:
-            generate_for_session(sess.id)
+            render_for_session(sess.id)
         changes = []
         if materials_ordered:
             changes.append("Materials ordered")
@@ -492,6 +518,8 @@ def new_session(current_user):
             daily_start_time=time.fromisoformat("08:00"),
             daily_end_time=time.fromisoformat("17:00"),
             language=default_lang,
+            paper_size="A4",
+            workshop_language="en",
             timezone=tz,
             capacity=16,
             client_id=selected_client_id,
@@ -500,6 +528,8 @@ def new_session(current_user):
         facilitators=facilitators,
         clients=clients,
         languages=languages,
+        paper_sizes=PAPER_SIZES,
+        workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=0,
         today=date.today(),
@@ -593,6 +623,12 @@ def edit_session(session_id: int, current_user):
         )
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
+        ps_val = request.form.get("paper_size")
+        if ps_val in PAPER_SIZES:
+            sess.paper_size = ps_val
+        wl_val = request.form.get("workshop_language")
+        if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
+            sess.workshop_language = wl_val
         language = request.form.get("language") or sess.language
         allowed = [l.name for l in languages] + ([sess.language] if sess.language else [])
         sess.language = language if language in allowed else sess.language
@@ -608,6 +644,8 @@ def edit_session(session_id: int, current_user):
                     languages=languages,
                     extra_language=extra_language,
                     clients=clients,
+                    paper_sizes=PAPER_SIZES,
+                    workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -633,6 +671,8 @@ def edit_session(session_id: int, current_user):
                     languages=languages,
                     extra_language=extra_language,
                     clients=clients,
+                    paper_sizes=PAPER_SIZES,
+                    workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -792,7 +832,7 @@ def edit_session(session_id: int, current_user):
             )
             db.session.commit()
         if finalized and not old_finalized:
-            generate_for_session(sess.id)
+            render_for_session(sess.id)
         if sess.cancelled or sess.on_hold:
             deactivated = deactivate_orphan_accounts_for_session(sess.id)
             if deactivated:
@@ -844,6 +884,8 @@ def edit_session(session_id: int, current_user):
         languages=languages,
         extra_language=extra_language,
         clients=clients,
+        paper_sizes=PAPER_SIZES,
+        workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=participants_count,
         today=date.today(),
@@ -991,7 +1033,7 @@ def finalize_session(session_id: int, current_user):
             )
         )
         db.session.commit()
-        generate_for_session(session_id)
+        render_for_session(session_id)
     flash("Session finalized", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
@@ -1324,8 +1366,11 @@ def generate_single(session_id: int, participant_id: int, current_user):
         db.session.commit()
     if action == "generate":
         participant = db.session.get(Participant, participant_id)
-        generate_for_session(session_id, [participant.email])
-        flash("Certificate generated", "success")
+        if participant and participant.account:
+            render_certificate(sess, participant.account)
+            flash("Certificate generated", "success")
+        else:
+            flash("No participant account", "error")
     else:
         flash("Participant updated", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -1340,7 +1385,7 @@ def generate_bulk(session_id: int, current_user):
     if not sess.delivered or sess.cancelled:
         flash("Delivered required before generating certificates", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
-    count, _ = generate_for_session(session_id)
+    count, _ = render_for_session(session_id)
     flash(f"Generated {count} certificates", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 

@@ -25,7 +25,7 @@ def _setup(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", short_code="WT", name="WT")
         sess = Session(title="S1", workshop_type=wt, start_date=date(2100, 1, 1), end_date=date(2100, 1, 1))
         db.session.add_all([admin, wt, sess])
         db.session.commit()
