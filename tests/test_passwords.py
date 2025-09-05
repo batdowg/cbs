@@ -183,11 +183,7 @@ def test_add_staff_user_as_participant(app):
         data={"full_name": "Staff Member", "email": "staff@example.com", "title": "Mr"},
         follow_redirects=True,
     )
-    assert b"Participant added" in resp.data
+    assert b"Email belongs to a staff user" in resp.data
     with app.app_context():
         participant = Participant.query.filter_by(email="staff@example.com").first()
-        assert participant is not None
-        assert participant.full_name == "Staff Member"
-        assert participant.account_id is None
-        link = SessionParticipant.query.filter_by(session_id=session_id, participant_id=participant.id).first()
-        assert link is not None
+        assert participant is None

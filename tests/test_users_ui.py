@@ -32,7 +32,7 @@ def test_new_user_form_has_no_staff_checkbox(app):
     assert b"KT Staff" not in resp.data
 
 
-def test_promote_interstitial_mentions_participant_CSA(app):
+def test_create_user_blocked_by_participant(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_admin=True)
         p = ParticipantAccount(email="p@example.com", full_name="P")
@@ -44,5 +44,6 @@ def test_promote_interstitial_mentions_participant_CSA(app):
     resp = client.post(
         "/users/new",
         data={"email": "p@example.com", "full_name": "P", "region": "NA"},
+        follow_redirects=True,
     )
-    assert b"Promote to a user account" in resp.data
+    assert b"Email exists as a participant" in resp.data

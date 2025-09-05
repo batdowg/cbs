@@ -293,26 +293,22 @@ def my_certs():
 @bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    if flask_session.get("user_id"):
-        user = db.session.get(User, flask_session.get("user_id"))
+    user_id = flask_session.get("user_id")
+    if user_id:
+        user = db.session.get(User, user_id)
         email = (user.email or "").lower()
-        default_name = user.full_name or ""
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter(func.lower(ParticipantAccount.email) == email)
+            .one_or_none()
+        )
     else:
         account = db.session.get(
             ParticipantAccount, flask_session.get("participant_account_id")
         )
         email = (account.email or "").lower() if account else ""
-        default_name = account.full_name if account else ""
-    account = (
-        db.session.query(ParticipantAccount)
-        .filter(func.lower(ParticipantAccount.email) == email)
-        .one_or_none()
-    )
-    if not account:
-        account = ParticipantAccount(email=email, full_name=default_name, is_active=True)
-        account.certificate_name = default_name
-        db.session.add(account)
-        db.session.commit()
+        user = None
+
     if request.method == "POST":
         form_kind = request.form.get("form")
         if form_kind == "password":
@@ -321,28 +317,42 @@ def profile():
             if not pwd or pwd != confirm:
                 flash("Passwords do not match", "error")
                 return redirect(url_for("learner.profile") + "#password")
-            account.set_password(pwd)
-            account.must_change_password = False
+            target = user if user_id else account
+            target.set_password(pwd)
+            if hasattr(target, "must_change_password"):
+                target.must_change_password = False
             db.session.commit()
             flash("Password updated.", "success")
             return redirect(url_for("learner.profile"))
+        if form_kind == "sync" and user and account:
+            account.full_name = user.full_name
+            db.session.commit()
+            flash("Names synchronized.", "success")
+            return redirect(url_for("learner.profile"))
         full_name = (request.form.get("full_name") or "").strip()[:200]
-        cert_name = (request.form.get("certificate_name") or "").strip()[:200]
         pref_lang = (request.form.get("preferred_language") or "en")[:10]
-        account.full_name = full_name
-        account.certificate_name = cert_name or full_name
-        account.preferred_language = pref_lang
-        if flask_session.get("user_id"):
+        if user_id:
+            user.full_name = full_name
             user.preferred_language = pref_lang
+            if account:
+                account.full_name = full_name
+        else:
+            cert_name = (request.form.get("certificate_name") or "").strip()[:200]
+            if account:
+                account.full_name = full_name
+                account.certificate_name = cert_name or full_name
+                account.preferred_language = pref_lang
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("learner.profile"))
     return render_template(
         "profile.html",
         email=email,
-        full_name=account.full_name or "",
-        certificate_name=account.certificate_name or "",
-        preferred_language=account.preferred_language or "en",
+        full_name=(user.full_name if user_id else account.full_name) if (user or account) else "",
+        certificate_name=account.certificate_name if account else "",
+        preferred_language=(user.preferred_language if user_id else account.preferred_language) if (user or account) else "en",
+        is_staff=bool(user_id),
+        has_participant=bool(account),
     )
 
 

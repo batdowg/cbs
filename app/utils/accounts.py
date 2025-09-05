@@ -57,6 +57,8 @@ def ensure_participant_account(
             cache[email_norm] = account
         return account, temp_password
 
+    if User.query.filter(func.lower(User.email) == email_norm).first():
+        raise ValueError("Email belongs to a staff user")
     account = ParticipantAccount(
         email=email_norm,
         full_name=participant.full_name or participant.email,
