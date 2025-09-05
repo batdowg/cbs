@@ -31,10 +31,10 @@ def app():
 
 def test_workshop_type_code_unique(app):
     with app.app_context():
-        wt1 = WorkshopType(code="abc", short_code="abc", name="One")
+        wt1 = WorkshopType(code="abc", name="One")
         db.session.add(wt1)
         db.session.commit()
-        wt2 = WorkshopType(code="aBc", short_code="aBc", name="Two")
+        wt2 = WorkshopType(code="aBc", name="Two")
         db.session.add(wt2)
         with pytest.raises(Exception):
             db.session.commit()
@@ -42,7 +42,7 @@ def test_workshop_type_code_unique(app):
 
 def test_session_sets_code_from_workshop_type(app):
     with app.app_context():
-        wt = WorkshopType(code="AAA", short_code="AAA", name="Type A")
+        wt = WorkshopType(code="AAA", name="Type A")
         sess = Session(title="S1")
         sess.workshop_type = wt
         db.session.add_all([wt, sess])
@@ -52,7 +52,7 @@ def test_session_sets_code_from_workshop_type(app):
 
 def test_certificate_uses_workshop_type_name(app):
     with app.app_context():
-        wt = WorkshopType(code="BBB", short_code="BBB", name="Type B")
+        wt = WorkshopType(code="BBB", name="Type B")
         sess = Session(title="S2", workshop_type=wt, end_date=date.today(), workshop_language="es")
         acc = ParticipantAccount(email="p@example.com", full_name="P")
         p = Participant(email="p@example.com", full_name="P", account=acc)

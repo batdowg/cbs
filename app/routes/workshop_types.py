@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from ..app import db, User
@@ -46,22 +45,14 @@ def new_type(current_user):
 def create_type(current_user):
     code = (request.form.get('code') or '').strip().upper()
     name = (request.form.get('name') or '').strip()
-    short_code = (request.form.get('short_code') or '').strip().upper()
-    if not code or not name or not short_code:
-        flash('Code, Name, and Short Code required', 'error')
+    if not code or not name:
+        flash('Code and Name required', 'error')
         return redirect(url_for('workshop_types.new_type'))
     if WorkshopType.query.filter(db.func.upper(WorkshopType.code) == code).first():
         flash('Code already exists', 'error')
         return redirect(url_for('workshop_types.new_type'))
-    if not re.fullmatch(r'[A-Z0-9-]{2,16}', short_code):
-        flash('Invalid Short Code', 'error')
-        return redirect(url_for('workshop_types.new_type'))
-    if WorkshopType.query.filter(db.func.upper(WorkshopType.short_code) == short_code).first():
-        flash('Short Code already exists', 'error')
-        return redirect(url_for('workshop_types.new_type'))
     wt = WorkshopType(
         code=code,
-        short_code=short_code,
         name=name,
         status=request.form.get('status') or 'active',
         description=request.form.get('description') or None,
@@ -97,16 +88,6 @@ def update_type(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    short_code = (request.form.get('short_code') or wt.short_code or '').strip().upper()
-    if not re.fullmatch(r'[A-Z0-9-]{2,16}', short_code):
-        flash('Invalid Short Code', 'error')
-        return redirect(url_for('workshop_types.edit_type', type_id=type_id))
-    if (
-        WorkshopType.query.filter(db.func.upper(WorkshopType.short_code) == short_code, WorkshopType.id != type_id).first()
-    ):
-        flash('Short Code already exists', 'error')
-        return redirect(url_for('workshop_types.edit_type', type_id=type_id))
-    wt.short_code = short_code
     wt.name = request.form.get('name') or wt.name
     wt.status = request.form.get('status') or wt.status
     wt.description = request.form.get('description') or None

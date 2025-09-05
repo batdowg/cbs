@@ -28,7 +28,7 @@ def setup_basic(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", short_code="WT", name="WT", simulation_based=True)
+        wt = WorkshopType(code="WT", name="WT", simulation_based=True)
         client = Client(name="C1")
         lang = Language(name="English")
         sim = SimulationOutline(number="123456", skill="Risk", descriptor="Desc", level="Novice")

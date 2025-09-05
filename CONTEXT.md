@@ -26,7 +26,7 @@ Every functional change must update this file **in the same PR**.
 - Do **not** include local PowerShell aliases in docs or code.
 - Business logic stays server-side; small JS for UI only.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
-- Certificates: `/srv/certificates/<year>/<session_id>/<workshop_short_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` and linked in-portal.
+- Certificates: `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (where `workshop_code = workshop_types.code`) and linked in-portal.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
 
@@ -117,7 +117,7 @@ Two separate tables; a person may exist in **both** with the same email.
 # 3. Data Model (summary)
 
 ## 3.1 Catalog & Sessions
-- `workshop_types` (name, **short_code**, **simulation_based** bool)
+- `workshop_types` (name, **code**, **simulation_based** bool)
 - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
 - `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
@@ -135,7 +135,7 @@ Two separate tables; a person may exist in **both** with the same email.
 
 ## 3.4 Certificates
 - `certificates` (session_id, participant_account_id, file_path, issued_at, layout_version; unique pair)
-  Files under `/srv/certificates/<year>/<session_id>/<workshop_short_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
+  Files under `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
 
 ## 3.5 Materials
 - `materials_orders` (session_id, **format** enum: All Physical/All Digital/Mixed/SIM Only; four **physical_components** booleans; **po_number**; **latest_arrival_date**; ship_date; courier; tracking; special_instructions)
@@ -202,7 +202,7 @@ Two separate tables; a person may exist in **both** with the same email.
 
 - Issued post-delivery; template chosen by session `paper_size` (A4 or Letter) and `workshop_language` (en, es, fr, ja, de, nl); missing template errors.
 - Name line at 145 mm italic, auto-shrink 48→32; Letter adds 1 cm inset left/right before fitting. Workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
-- PDF saved to `/srv/certificates/<year>/<session_id>/<workshop_short_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
+- PDF saved to `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 
 ---
@@ -253,7 +253,8 @@ Two separate tables; a person may exist in **both** with the same email.
 - **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
 - **Users & Roles**: `app/routes/users.py`, `app/templates/users/*.html`; matrix `app/routes/settings_roles.py`, `app/templates/settings_roles.html`
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
-- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/certificates.py`
+- **Certificates**: generator `app/utils/certificates.py`; templates under `app/assets/`
+- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`
 
 ---
 

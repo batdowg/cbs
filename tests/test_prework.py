@@ -24,7 +24,7 @@ def test_assignment_completion():
     app = create_app()
     with app.app_context():
         db.create_all()
-        wt = WorkshopType(code="PW", short_code="PW", name="Prework")
+        wt = WorkshopType(code="PW", name="Prework")
         db.session.add(wt)
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -76,7 +76,7 @@ def test_no_prework_toggle_disables_send_prework(monkeypatch):
     with app.app_context():
         db.create_all()
         user = User(email="admin@example.com", is_app_admin=True)
-        wt = WorkshopType(code="NP", short_code="NP", name="NoPrework")
+        wt = WorkshopType(code="NP", name="NoPrework")
         db.session.add_all([user, wt])
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -106,7 +106,7 @@ def test_account_invite_sets_timestamp(monkeypatch):
     with app.app_context():
         db.create_all()
         user = User(email="admin2@example.com", is_app_admin=True)
-        wt = WorkshopType(code="AI", short_code="AI", name="AcctInvite")
+        wt = WorkshopType(code="AI", name="AcctInvite")
         db.session.add_all([user, wt])
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -151,7 +151,7 @@ def test_nav_gating_prework():
     app = create_app()
     with app.app_context():
         db.create_all()
-        wt = WorkshopType(code="PW2", short_code="PW2", name="Prework2")
+        wt = WorkshopType(code="PW2", name="Prework2")
         db.session.add(wt)
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -201,7 +201,7 @@ def test_item_index_unique():
     app = create_app()
     with app.app_context():
         db.create_all()
-        wt = WorkshopType(code="MI", short_code="MI", name="ItemIdx")
+        wt = WorkshopType(code="MI", name="ItemIdx")
         db.session.add(wt)
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -254,7 +254,7 @@ def test_list_question_autosave_and_completion():
     app = create_app()
     with app.app_context():
         db.create_all()
-        wt = WorkshopType(code="LQ", short_code="LQ", name="ListQ")
+        wt = WorkshopType(code="LQ", name="ListQ")
         db.session.add(wt)
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -325,7 +325,7 @@ def test_prework_download_route():
     app = create_app()
     with app.app_context():
         db.create_all()
-        wt = WorkshopType(code="DL", short_code="DL", name="Download")
+        wt = WorkshopType(code="DL", name="Download")
         db.session.add(wt)
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -371,7 +371,7 @@ def test_staff_send_flows_run(monkeypatch):
     with app.app_context():
         db.create_all()
         user = User(email="staff@example.com", is_app_admin=True)
-        wt = WorkshopType(code="SF", short_code="SF", name="SendFlow")
+        wt = WorkshopType(code="SF", name="SendFlow")
         db.session.add_all([user, wt])
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
@@ -402,7 +402,7 @@ def test_contractor_can_send_prework(monkeypatch):
     with app.app_context():
         db.create_all()
         user = User(email="cont@example.com", is_kt_contractor=True)
-        wt = WorkshopType(code="CT", short_code="CT", name="Contractor")
+        wt = WorkshopType(code="CT", name="Contractor")
         db.session.add_all([user, wt])
         db.session.commit()
         tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
