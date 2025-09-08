@@ -41,7 +41,7 @@ def test_resource_validation_and_slug(app):
 
 def test_my_resources_view(app):
     with app.app_context():
-        wt = WorkshopType(code="ABC", name="Type A")
+        wt = WorkshopType(code="ABC", name="Type A", cert_series="fn")
         sess = Session(title="S1", workshop_type=wt)
         p = Participant(email="p@example.com", full_name="P")
         db.session.add_all([wt, sess, p])

@@ -159,7 +159,7 @@ class WorkshopType(db.Model):
         db.JSON, nullable=False, default=lambda: ["en"]
     )
     cert_series = db.Column(
-        db.String(16), nullable=False, default="fn"
+        db.String(16), nullable=False
     )
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (

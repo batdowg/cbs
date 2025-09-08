@@ -3,7 +3,13 @@ from __future__ import annotations
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from ..app import db, User
-from ..models import WorkshopType, AuditLog, PreworkTemplate, PreworkQuestion
+from ..models import (
+    WorkshopType,
+    AuditLog,
+    PreworkTemplate,
+    PreworkQuestion,
+    CertificateTemplateSeries,
+)
 from ..constants import BADGE_CHOICES
 from ..utils.html import sanitize_html
 from ..utils.languages import get_language_options
@@ -38,7 +44,18 @@ def list_types(current_user):
 @bp.get('/new')
 @staff_required
 def new_type(current_user):
-    return render_template('workshop_types/form.html', wt=None, badge_choices=BADGE_CHOICES, language_options=get_language_options())
+    series = (
+        CertificateTemplateSeries.query.filter_by(is_active=True)
+        .order_by(CertificateTemplateSeries.code)
+        .all()
+    )
+    return render_template(
+        'workshop_types/form.html',
+        wt=None,
+        badge_choices=BADGE_CHOICES,
+        language_options=get_language_options(),
+        series=series,
+    )
 
 
 @bp.post('/new')
@@ -52,6 +69,13 @@ def create_type(current_user):
     if WorkshopType.query.filter(db.func.upper(WorkshopType.code) == code).first():
         flash('Code already exists', 'error')
         return redirect(url_for('workshop_types.new_type'))
+    series_code = (request.form.get('cert_series') or '').strip()
+    if not series_code:
+        flash('Certificate series required', 'error')
+        return redirect(url_for('workshop_types.new_type'))
+    if not CertificateTemplateSeries.query.filter_by(code=series_code, is_active=True).first():
+        flash('Invalid certificate series', 'error')
+        return redirect(url_for('workshop_types.new_type'))
     langs = request.form.getlist('supported_languages')
     wt = WorkshopType(
         code=code,
@@ -61,7 +85,7 @@ def create_type(current_user):
         badge=request.form.get('badge') or None,
         simulation_based=bool(request.form.get('simulation_based')),
         supported_languages=langs or ['en'],
-        cert_series=(request.form.get('cert_series') or 'fn').strip() or 'fn',
+        cert_series=series_code,
     )
     db.session.add(wt)
     db.session.flush()
@@ -83,7 +107,18 @@ def edit_type(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    return render_template('workshop_types/form.html', wt=wt, badge_choices=BADGE_CHOICES, language_options=get_language_options())
+    series = (
+        CertificateTemplateSeries.query.filter_by(is_active=True)
+        .order_by(CertificateTemplateSeries.code)
+        .all()
+    )
+    return render_template(
+        'workshop_types/form.html',
+        wt=wt,
+        badge_choices=BADGE_CHOICES,
+        language_options=get_language_options(),
+        series=series,
+    )
 
 
 @bp.post('/<int:type_id>/edit')
@@ -99,7 +134,14 @@ def update_type(type_id: int, current_user):
     wt.simulation_based = bool(request.form.get('simulation_based'))
     langs = request.form.getlist('supported_languages')
     wt.supported_languages = langs or ['en']
-    wt.cert_series = (request.form.get('cert_series') or 'fn').strip() or 'fn'
+    series_code = (request.form.get('cert_series') or '').strip()
+    if not series_code:
+        flash('Certificate series required', 'error')
+        return redirect(url_for('workshop_types.edit_type', type_id=wt.id))
+    if not CertificateTemplateSeries.query.filter_by(code=series_code, is_active=True).first():
+        flash('Invalid certificate series', 'error')
+        return redirect(url_for('workshop_types.edit_type', type_id=wt.id))
+    wt.cert_series = series_code
     db.session.add(
         AuditLog(
             user_id=current_user.id,

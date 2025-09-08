@@ -28,7 +28,7 @@ def test_sessions_index_uses_computed_status(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True, region="NA")
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="Workshop")
+        wt = WorkshopType(code="WT", name="Workshop", cert_series="fn")
         sess = Session(
             title="Sess",
             workshop_type=wt,
