@@ -62,7 +62,7 @@ from ..utils.acl import (
     csa_can_manage_participants,
     session_start_dt_utc,
 )
-from ..utils.languages import get_language_options, code_to_label
+from ..utils.languages import get_language_options
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -940,7 +940,6 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         current_user=current_user,
         csa_can_manage=can_manage,
         session_start_dt=start_dt_utc,
-        code_to_label=code_to_label,
     )
 
 
