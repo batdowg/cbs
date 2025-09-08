@@ -53,7 +53,7 @@
   </tr>
   {% for row in rows %}
   <tr>
-    <td><a href="{{ url_for('sessions.session_detail', session_id=row.session_id) }}">{{ row.title }}/materials</a></td>
+    <td><a href="{{ url_for('sessions.session_detail', session_id=row.session_id), "/materials" }}">{{ row.title }}</a></td>
     <td>{{ row.client }}</td>
     <td>{{ row.workshop_type }}</td>
     <td>{{ row.arrival_date }}</td>
