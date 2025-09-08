@@ -47,15 +47,31 @@ def render_certificate(
     effective_size = "LETTER" if region_val in na_regions else "A4"
     lang = session.workshop_language or "en"
     assets_dir = os.path.join(current_app.root_path, "assets")
-    template_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
+    series = (
+        session.workshop_type.cert_series
+        if session.workshop_type and session.workshop_type.cert_series
+        else "fn"
+    )
+    template_file = f"{series}cert_template_{effective_size.lower()}_{lang}.pdf"
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
-        available = sorted(
-            f for f in os.listdir(assets_dir) if f.startswith("fncert_template_")
+        fallback_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
+        fallback_path = os.path.join(assets_dir, fallback_file)
+        current_app.logger.warning(
+            "Missing certificate template %s, falling back to %s",
+            template_file,
+            fallback_file,
         )
-        raise FileNotFoundError(
-            f"{template_file} not found; available: {', '.join(available)}"
-        )
+        template_file = fallback_file
+        template_path = fallback_path
+        if not os.path.exists(template_path):
+            available = sorted(
+                f for f in os.listdir(assets_dir)
+                if f.startswith("fncert_template_")
+            )
+            raise FileNotFoundError(
+                f"{template_file} not found; available: {', '.join(available)}"
+            )
     current_app.logger.info("Using certificate template: %s", template_path)
 
     participant = (

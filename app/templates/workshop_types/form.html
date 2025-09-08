@@ -23,6 +23,8 @@
     </select>
   </label></div>
   <div><label><input type="checkbox" name="simulation_based" {% if wt and wt.simulation_based %}checked{% endif %}> Simulation based</label></div>
+  <div><label>Supported languages <input type="text" name="supported_languages" value="{{ wt.supported_languages | join(',') if wt and wt.supported_languages else '' }}"></label></div>
+  <div><label>Certificate series <input type="text" name="cert_series" value="{{ wt.cert_series if wt and wt.cert_series else 'fn' }}"></label></div>
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
   <button type="submit">Save</button>
 </form>

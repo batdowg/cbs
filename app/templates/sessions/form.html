@@ -40,11 +40,18 @@
   </fieldset>
   <fieldset>
     <legend>Details</legend>
+    <div><label>Workshop language*
+      <select name="workshop_language" required>
+        {% for code,label in workshop_languages %}
+        <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
     <div><label>Workshop Type*
       <select name="workshop_type_id" required>
         <option value="">--Select--</option>
         {% for wt in workshop_types %}
-        <option value="{{ wt.id }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
+        <option value="{{ wt.id }}" data-langs="{{ wt.supported_languages|join(' ') if wt.supported_languages else '' }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
         {% endfor %}
       </select>
     </label></div>
@@ -65,13 +72,6 @@
         <option value="">--Select--</option>
         {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
         <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
-        {% endfor %}
-      </select>
-    </label></div>
-    <div><label>Workshop language*
-      <select name="workshop_language" required>
-        {% for code,label in workshop_languages %}
-        <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label></div>
@@ -203,6 +203,21 @@
   </form>
 </dialog>
 <script>
+  var langSelect = document.querySelector('select[name="workshop_language"]');
+  var typeSelect = document.querySelector('select[name="workshop_type_id"]');
+  function filterTypes(){
+    if(!langSelect || !typeSelect){ return; }
+    var lang = langSelect.value;
+    Array.from(typeSelect.options).forEach(function(opt){
+      if(!opt.value){ return; }
+      var langs = (opt.dataset.langs || '').split(' ');
+      var show = langs.indexOf(lang) !== -1;
+      opt.hidden = !show;
+      if(!show && opt.selected){ opt.selected = false; }
+    });
+  }
+  filterTypes();
+  if(langSelect){ langSelect.addEventListener('change', filterTypes); }
   var startField = document.getElementById('start-date');
   var endField = document.getElementById('end-date');
   var ackField = document.getElementById('ack-past');
