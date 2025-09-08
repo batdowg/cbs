@@ -107,7 +107,7 @@ def my_resources():
         )
         email = (account.email or "").lower() if account else ""
     today = date.today()
-    wtypes = (
+    wt_query = (
         db.session.query(WorkshopType)
         .join(Session, Session.workshop_type_id == WorkshopType.id)
         .join(
@@ -117,10 +117,15 @@ def my_resources():
         .join(Participant, SessionParticipant.participant_id == Participant.id)
         .filter(func.lower(Participant.email) == email)
         .filter(Session.start_date != None, Session.start_date <= today)
-        .distinct()
         .order_by(WorkshopType.name)
         .all()
     )
+    seen_ids: set[int] = set()
+    wtypes = []
+    for wt in wt_query:
+        if wt.id not in seen_ids:
+            wtypes.append(wt)
+            seen_ids.add(wt.id)
     grouped = []
     for wt in wtypes:
         try:

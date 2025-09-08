@@ -14,6 +14,7 @@ from app.models import (
     SessionParticipant,
     ParticipantAccount,
     Resource,
+    User,
 )
 from app.forms.resource_forms import slugify_filename
 
@@ -67,3 +68,18 @@ def test_my_resources_view(app):
     assert "Type A" in html
     assert "LinkR" in html and "https://kt.com" in html
     assert "/resources/doc.pdf" in html
+
+
+def test_my_resources_staff_empty(app):
+    with app.app_context():
+        staff = User(email="staff@example.com", is_admin=True)
+        db.session.add(staff)
+        db.session.commit()
+        user_id = staff.id
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+    resp = client.get("/my-resources")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "No resources available." in html
