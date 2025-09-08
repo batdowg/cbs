@@ -38,6 +38,7 @@ from .constants import LANGUAGE_NAMES
 from .utils.time import fmt_dt, fmt_time, fmt_time_range_with_tz
 from .utils.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .utils.nav import build_menu
+from .utils.languages import code_to_label
 
 
 def create_app():
@@ -49,6 +50,7 @@ def create_app():
     app.jinja_env.filters["fmt_dt"] = fmt_dt
     app.jinja_env.filters["fmt_time"] = fmt_time
     app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
+    app.jinja_env.filters["lang_label"] = code_to_label
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")

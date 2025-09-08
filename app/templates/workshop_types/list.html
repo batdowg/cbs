@@ -11,7 +11,7 @@
     <td>{{ wt.name }}</td>
     <td>{{ wt.status }}</td>
     <td>{{ wt.badge or '—' }}</td>
-    <td>{% if wt.supported_languages %}{{ wt.supported_languages | map(code_to_label) | join(', ') }}{% else %}—{% endif %}</td>
+    <td>{% if wt.supported_languages %}{{ wt.supported_languages | map('lang_label') | join(', ') }}{% else %}—{% endif %}</td>
     <td>{{ wt.cert_series or 'fn' }}</td>
     <td>{{ wt.description }}</td>
     <td><a href="{{ url_for('workshop_types.edit_type', type_id=wt.id) }}">Edit</a></td>

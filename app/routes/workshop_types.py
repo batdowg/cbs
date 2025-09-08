@@ -6,7 +6,7 @@ from ..app import db, User
 from ..models import WorkshopType, AuditLog, PreworkTemplate, PreworkQuestion
 from ..constants import BADGE_CHOICES
 from ..utils.html import sanitize_html
-from ..utils.languages import get_language_options, code_to_label
+from ..utils.languages import get_language_options
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
 
@@ -32,7 +32,7 @@ def staff_required(fn):
 @staff_required
 def list_types(current_user):
     types = WorkshopType.query.order_by(WorkshopType.code).all()
-    return render_template('workshop_types/list.html', types=types, code_to_label=code_to_label)
+    return render_template('workshop_types/list.html', types=types)
 
 
 @bp.get('/new')

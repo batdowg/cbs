@@ -199,7 +199,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
 - **/profile**: staff edit `User.full_name`, `User.title`, and Certificate Name; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
 - **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
-- **Sessions & Settings**: all language pickers and labels show human names; database stores codes; deactivated languages are not selectable; sort by configured order.
+- **Sessions & Settings**: all language pickers and labels show human names; templates use global `lang_label` helper to render codes; database stores codes; deactivated languages are not selectable; sort by configured order.
 - **Materials**: physical components UI:
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
@@ -268,7 +268,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Users & Roles**: `app/routes/users.py`, `app/templates/users/*.html`; matrix `app/routes/settings_roles.py`, `app/templates/settings_roles.html`
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
-- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py`
+- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py` (`code_to_label` powering global `lang_label` filter)
 - **Ops CLI**: `manage.py account_dupes`
 
 ---
