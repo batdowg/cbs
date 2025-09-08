@@ -26,15 +26,7 @@
         {% endfor %}
       </select>
     </label>  
-    <label>Workshop Location
-      <select name="workshop_location_id" id="workshop-location-select">
-        <option value=""></option>
-        {% for loc in workshop_locations %}
-        <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
-        {% endfor %}
-      </select>
-      <a href="#" id="add-workshop-location">Add</a>
-    </label></div><br>
+
     <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label>  
     <label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
   </fieldset>
@@ -75,6 +67,15 @@
         {% endfor %}
       </select>
     </label></div>
+    <label>Workshop Location
+      <select name="workshop_location_id" id="workshop-location-select">
+        <option value=""></option>
+        {% for loc in workshop_locations %}
+        <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
+        {% endfor %}
+      </select>
+      <a href="#" id="add-workshop-location">Add</a>
+    </label></div><br>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
     <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
