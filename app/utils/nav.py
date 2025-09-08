@@ -33,7 +33,6 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         settings_children.extend([
             {'id': 'clients', 'label': 'Clients', 'endpoint': 'clients.list_clients'},
             {'id': 'workshop_types', 'label': 'Workshop Types', 'endpoint': 'workshop_types.list_types'},
-            {'id': 'languages', 'label': 'Languages', 'endpoint': 'settings_languages.list_langs'},
             {'id': 'materials_settings', 'label': 'Material settings', 'children': [
                 {'id': 'standard', 'label': 'Standard', 'endpoint': 'settings_materials.list_options', 'args': {'slug': 'standard'}},
                 {'id': 'modular', 'label': 'Modular', 'endpoint': 'settings_materials.list_options', 'args': {'slug': 'modular'}},
@@ -41,6 +40,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                 {'id': 'bulk', 'label': 'Bulk Order', 'endpoint': 'settings_materials.list_options', 'args': {'slug': 'bulk'}},
                 {'id': 'simulation', 'label': 'Simulation', 'endpoint': 'settings_materials.list_options', 'args': {'slug': 'simulation'}},
             ]},
+            {'id': 'languages', 'label': 'Languages', 'endpoint': 'settings_languages.list_langs'},
         ])
     if is_admin(user) or is_delivery(user) or getattr(user, 'is_kt_facilitator', False) or is_contractor(user):
         settings_children.append({'id': 'resources', 'label': 'Resources', 'endpoint': 'settings_resources.list_resources'})
@@ -49,8 +49,8 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     if can_manage_users(user):
         settings_children.extend([
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},
-            {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},
             {'id': 'roles', 'label': 'Roles Matrix', 'endpoint': 'settings_roles.roles_matrix'},
+            {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},
         ])
     if settings_children:
         items.append({'id': 'settings', 'label': 'Settings', 'children': settings_children})
