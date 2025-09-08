@@ -43,7 +43,7 @@ def test_staff_profile_uses_user_fields(app):
     assert b"Staff Name" in resp.data
     assert b"Learner Name" not in resp.data
     assert b"Title" in resp.data
-    assert b"Certificate Name" not in resp.data
+    assert b"Certificate Name" in resp.data
 
 
 def test_learner_profile_uses_participant_fields(app):
@@ -59,3 +59,29 @@ def test_learner_profile_uses_participant_fields(app):
     assert b"Learner One" in resp.data
     assert b"Certificate Name" in resp.data
     assert b"Title" not in resp.data
+
+
+def test_staff_profile_sets_certificate_name(app):
+    with app.app_context():
+        u = User(email="x@example.com", full_name="Staff", title="Boss")
+        u.set_password("x")
+        db.session.add(u)
+        db.session.commit()
+        uid = u.id
+    client = app.test_client()
+    login_user(client, uid)
+    resp = client.post(
+        "/profile",
+        data={
+            "form": "profile",
+            "full_name": "Staff",
+            "certificate_name": "Cert Staff",
+            "preferred_language": "en",
+            "title": "Boss",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        pa = ParticipantAccount.query.filter_by(email="x@example.com").one()
+        assert pa.certificate_name == "Cert Staff"

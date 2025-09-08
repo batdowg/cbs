@@ -31,6 +31,7 @@ from ..models import (
 )
 from ..models import Resource, WorkshopType
 from ..models import resource_workshop_types
+from ..utils.languages import get_language_options
 
 import time
 
@@ -331,12 +332,25 @@ def profile():
             return redirect(url_for("learner.profile"))
         full_name = (request.form.get("full_name") or "").strip()[:200]
         pref_lang = (request.form.get("preferred_language") or "en")[:10]
+        cert_name = (request.form.get("certificate_name") or "").strip()[:200]
         if user_id:
             user.full_name = full_name
             user.title = (request.form.get("title") or "").strip()[:255]
             user.preferred_language = pref_lang
+            cert_value = cert_name or full_name
+            if account:
+                account.certificate_name = cert_value
+                account.preferred_language = pref_lang
+            else:
+                account = ParticipantAccount(
+                    email=email,
+                    full_name=full_name,
+                    certificate_name=cert_value,
+                    preferred_language=pref_lang,
+                    is_active=True,
+                )
+                db.session.add(account)
         else:
-            cert_name = (request.form.get("certificate_name") or "").strip()[:200]
             if account:
                 account.full_name = full_name
                 account.certificate_name = cert_name or full_name
@@ -348,11 +362,12 @@ def profile():
         "profile.html",
         email=email,
         full_name=(user.full_name if user_id else account.full_name) if (user or account) else "",
-        certificate_name=account.certificate_name if account else "",
+        certificate_name=(account.certificate_name if account else (user.full_name if user_id and user else "")),
         preferred_language=(user.preferred_language if user_id else account.preferred_language) if (user or account) else "en",
         title=user.title if user_id and user else "",
         is_staff=bool(user_id),
         has_participant=bool(account),
+        language_options=get_language_options(),
     )
 
 

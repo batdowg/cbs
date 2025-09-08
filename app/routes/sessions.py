@@ -62,17 +62,9 @@ from ..utils.acl import (
     csa_can_manage_participants,
     session_start_dt_utc,
 )
+from ..utils.languages import get_language_options, code_to_label
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
-WORKSHOP_LANGUAGES = [
-    ("en", "English"),
-    ("es", "Spanish"),
-    ("fr", "French"),
-    ("ja", "Japanese"),
-    ("de", "German"),
-    ("nl", "Dutch"),
-    ("zh", "Chinese"),
-]
 
 
 def _fmt_offset(delta):
@@ -250,7 +242,7 @@ def new_session(current_user):
         workshop_language = request.form.get("workshop_language")
         if not workshop_language:
             missing.append("Workshop language")
-        if workshop_language not in [c for c, _ in WORKSHOP_LANGUAGES]:
+        if workshop_language not in [c for c, _ in get_language_options()]:
             workshop_language = "en"
         capacity_str = request.form.get("capacity")
         if not capacity_str:
@@ -320,7 +312,7 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     users=users,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=0,
                     today=date.today(),
@@ -347,7 +339,7 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     users=users,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -372,7 +364,7 @@ def new_session(current_user):
                     facilitators=facilitators,
                     clients=clients,
                     users=users,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -537,7 +529,7 @@ def new_session(current_user):
         facilitators=facilitators,
         clients=clients,
         users=users,
-        workshop_languages=WORKSHOP_LANGUAGES,
+        workshop_languages=get_language_options(),
         include_all_facilitators=include_all,
         participants_count=0,
         today=date.today(),
@@ -624,7 +616,7 @@ def edit_session(session_id: int, current_user):
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
         wl_val = request.form.get("workshop_language")
-        if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
+        if wl_val in [c for c, _ in get_language_options()]:
             sess.workshop_language = wl_val
         if sess.workshop_type and sess.workshop_language not in (sess.workshop_type.supported_languages or []):
             flash("Selected workshop type does not support chosen language.", "error")
@@ -635,7 +627,7 @@ def edit_session(session_id: int, current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -661,7 +653,7 @@ def edit_session(session_id: int, current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -685,7 +677,7 @@ def edit_session(session_id: int, current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
-                    workshop_languages=WORKSHOP_LANGUAGES,
+                    workshop_languages=get_language_options(),
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
                     today=date.today(),
@@ -898,7 +890,7 @@ def edit_session(session_id: int, current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
-        workshop_languages=WORKSHOP_LANGUAGES,
+        workshop_languages=get_language_options(),
         include_all_facilitators=include_all,
         participants_count=participants_count,
         today=date.today(),
@@ -948,6 +940,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         current_user=current_user,
         csa_can_manage=can_manage,
         session_start_dt=start_dt_utc,
+        code_to_label=code_to_label,
     )
 
 

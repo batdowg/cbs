@@ -17,13 +17,11 @@
   {% if is_staff %}
   <div><label>Title <input type="text" name="title" value="{{ title }}" maxlength="255" autocomplete="off"></label></div>
   {% endif %}
-  {% if not is_staff %}
   <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
-  {% endif %}
   <div><label>Language
     <select name="preferred_language">
-      {% for code in ['en','es','fr','de','ja','zh'] %}
-      <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ code }}</option>
+      {% for code,label in language_options %}
+      <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
   </label></div>
