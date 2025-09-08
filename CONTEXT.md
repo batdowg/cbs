@@ -191,7 +191,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 7. Validation & Forms
 
 - **Dates**: `end_date >= start_date` (one-day workshops allowed).
-- **New Session inline adds**: Add Client, Location, and Shipping within dialogs on the form; saving selects the new item and keeps all other fields intact.
+- **New Session inline adds**: Add Client, Location, and Shipping within dialogs on the form. These dialogs mirror the full-page create forms (same fields and validation), show field-level errors inline, and saving selects the new item while preserving all other inputs.
 - **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
   - Prompt appears immediately when Start Date changes to a past value and stores acknowledgment for that exact date. Changing the date again clears prior ack and re-prompts only if the new value is also in the past.
 - **Times**: display `HH:MM` only + short timezone.

@@ -152,7 +152,31 @@
 </form>
 <dialog id="client-dialog">
   <form id="client-inline-form">
-    <label>Name* <input type="text" name="name" required></label>
+    <div><label>Name <input type="text" name="name" required></label></div>
+    <div><label>SFC Link <input type="url" name="sfc_link"></label></div>
+    <div><label>CRM
+      <select name="crm_user_id">
+        <option value=""></option>
+        {% for u in users %}
+        <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Data Region
+      <select name="data_region">
+        <option value=""></option>
+        {% for opt in ['NA','EU','SEA','Other'] %}
+        <option value="{{ opt }}">{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Status
+      <select name="status">
+        {% for opt in ['active','inactive'] %}
+        <option value="{{ opt }}" {% if opt=='active' %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
     <div style="margin-top:8px;">
       <button type="button" id="client-cancel">Cancel</button>
       <button type="submit">Save</button>
@@ -161,8 +185,17 @@
 </dialog>
 <dialog id="location-dialog">
   <form id="location-inline-form">
-    <label>Label* <input type="text" name="label" required></label>
-    <label>Address <input type="text" name="address_line1"></label>
+    <div><label>Label <input type="text" name="label" required></label></div>
+    <div><label>Virtual <input type="checkbox" name="is_virtual" value="1"></label></div>
+    <div id="loc-platform-field"><label>Platform <input type="text" name="platform"></label></div>
+    <div><label>Location access notes <input type="text" name="access_notes"></label></div>
+    <div class="loc-address-field"><label>Address line 1 <input type="text" name="address_line1"></label></div>
+    <div class="loc-address-field"><label>Address line 2 <input type="text" name="address_line2"></label></div>
+    <div class="loc-address-field"><label>City <input type="text" name="city"></label></div>
+    <div class="loc-address-field"><label>State <input type="text" name="state"></label></div>
+    <div class="loc-address-field"><label>Postal Code <input type="text" name="postal_code"></label></div>
+    <div class="loc-address-field"><label>Country <input type="text" name="country"></label></div>
+    <div><label>Active <input type="checkbox" name="is_active" value="1" checked></label></div>
     <div style="margin-top:8px;">
       <button type="button" id="location-cancel">Cancel</button>
       <button type="submit">Save</button>
@@ -315,52 +348,85 @@
     else{ url.searchParams.delete('include_all_facilitators'); }
     window.location = url.toString();
   });
+  function clearErrors(form){
+    form.querySelectorAll('.error').forEach(el=>el.remove());
+  }
+  function showErrors(form, errors){
+    for(var k in errors){
+      var field=form.querySelector('[name="'+k+'"]');
+      if(field){
+        var div=document.createElement('div');
+        div.className='error';
+        div.textContent=errors[k];
+        field.insertAdjacentElement('afterend', div);
+      }
+    }
+  }
   var clientDialog = document.getElementById('client-dialog');
+  var clientForm = document.getElementById('client-inline-form');
   document.getElementById('add-client').addEventListener('click', function(e){
     e.preventDefault();
-    document.getElementById('client-inline-form').reset();
+    clientForm.reset();
+    clearErrors(clientForm);
     clientDialog.showModal();
   });
   document.getElementById('client-cancel').addEventListener('click', function(){ clientDialog.close(); });
-  document.getElementById('client-inline-form').addEventListener('submit', function(e){
+  clientForm.addEventListener('submit', function(e){
     e.preventDefault();
-    var fd=new FormData(this);
+    clearErrors(clientForm);
+    var fd=new FormData(clientForm);
     fetch('/clients/inline-new', {method:'POST', body:fd})
-      .then(r=>r.json())
-      .then(data=>{
-        if(data.id){
+      .then(r=>r.json().then(data=>[r.status,data]))
+      .then(([status,data])=>{
+        if(status==200 && data.id){
           var o=document.createElement('option');
-          o.value=data.id; o.textContent=data.name;
+          o.value=data.id; o.textContent=data.name; if(data.crm){ o.dataset.crm=data.crm; }
           clientSel.appendChild(o);
           clientSel.value=data.id;
           clientDialog.close();
           clientSel.dispatchEvent(new Event('change'));
-        }else if(data.error){ alert(data.error); }
+        }else if(data.errors){
+          showErrors(clientForm, data.errors);
+        }
       });
   });
   var locDialog = document.getElementById('location-dialog');
+  var locForm = document.getElementById('location-inline-form');
+  function toggleLocVirtual(){
+    var cb = locForm.querySelector('input[name="is_virtual"]');
+    var show = cb.checked;
+    document.getElementById('loc-platform-field').style.display = show ? 'block' : 'none';
+    locForm.querySelectorAll('.loc-address-field').forEach(function(el){ el.style.display = show ? 'none' : 'block'; });
+  }
+  locForm.querySelector('input[name="is_virtual"]').addEventListener('change', toggleLocVirtual);
   document.getElementById('add-workshop-location').addEventListener('click', function(e){
     e.preventDefault();
     if(!clientSel.value){ alert('Select client first'); return; }
-    document.getElementById('location-inline-form').reset();
+    locForm.reset();
+    clearErrors(locForm);
+    toggleLocVirtual();
     locDialog.showModal();
   });
   document.getElementById('location-cancel').addEventListener('click', function(){ locDialog.close(); });
-  document.getElementById('location-inline-form').addEventListener('submit', function(e){
+  locForm.addEventListener('submit', function(e){
     e.preventDefault();
+    clearErrors(locForm);
     var cid=clientSel.value;
-    var fd=new FormData(this);
+    var fd=new FormData(locForm);
     fetch('/clients/'+cid+'/inline-workshop-location', {method:'POST', body:fd})
-      .then(r=>r.json())
-      .then(data=>{
-        if(data.id){
+      .then(r=>r.json().then(data=>[r.status,data]))
+      .then(([status,data])=>{
+        if(status==200 && data.id){
           var sel=document.getElementById('workshop-location-select');
           var o=document.createElement('option');
           o.value=data.id; o.textContent=data.label; sel.appendChild(o); sel.value=data.id;
           locDialog.close();
-        }else if(data.error){ alert(data.error); }
+        }else if(data.errors){
+          showErrors(locForm, data.errors);
+        }
       });
   });
+  toggleLocVirtual();
 </script>
 <script src="{{ url_for('static', filename='js/form_state.js') }}"></script>
 {% endblock %}

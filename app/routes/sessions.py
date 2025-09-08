@@ -214,6 +214,7 @@ def new_session(current_user):
             fac_query = fac_query.filter(User.region == req_region)
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
+    users = User.query.order_by(User.email).all()
     cid_arg = request.args.get("client_id")
     title_arg = request.args.get("title")
     workshop_locations: list[ClientWorkshopLocation] = []
@@ -319,6 +320,7 @@ def new_session(current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
+                    users=users,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -343,6 +345,7 @@ def new_session(current_user):
                     workshop_types=workshop_types,
                     facilitators=facilitators,
                     clients=clients,
+                    users=users,
                     workshop_languages=WORKSHOP_LANGUAGES,
                     include_all_facilitators=include_all,
                     participants_count=participants_count,
@@ -507,6 +510,7 @@ def new_session(current_user):
         workshop_types=workshop_types,
         facilitators=facilitators,
         clients=clients,
+        users=users,
         workshop_languages=WORKSHOP_LANGUAGES,
         include_all_facilitators=include_all,
         participants_count=0,

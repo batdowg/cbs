@@ -250,36 +250,54 @@ def delete_client(client_id, current_user):
 @admin_required
 def inline_new_client(current_user):
     name = (request.form.get("name") or "").strip()
+    errors: dict[str, str] = {}
     if not name:
-        return {"error": "Name required"}, 400
+        errors["name"] = "Name required"
     exists = (
         db.session.query(Client)
         .filter(db.func.lower(Client.name) == name.lower())
         .first()
     )
     if exists:
-        return {"error": "Client name must be unique"}, 400
-    client = Client(name=name)
+        errors["name"] = "Client name must be unique"
+    if errors:
+        return {"errors": errors}, 400
+    client = Client(
+        name=name,
+        sfc_link=request.form.get("sfc_link") or None,
+        crm_user_id=request.form.get("crm_user_id") or None,
+        data_region=request.form.get("data_region") or None,
+        status=request.form.get("status") or "active",
+    )
     db.session.add(client)
     db.session.commit()
     ensure_virtual_workshop_locations(client.id)
-    return {"id": client.id, "name": client.name}
+    crm_display = ""
+    if client.crm:
+        crm_display = client.crm.full_name or client.crm.email
+    return {"id": client.id, "name": client.name, "crm": crm_display}
 
 
 @bp.post("/<int:client_id>/inline-workshop-location")
 @client_edit_required
 def inline_workshop_location(client_id, current_user, csa_account):
     label = (request.form.get("label") or "").strip()
+    errors: dict[str, str] = {}
     if not label:
-        return {"error": "Label required"}, 400
+        errors["label"] = "Label required"
+    if errors:
+        return {"errors": errors}, 400
     loc = ClientWorkshopLocation(client_id=client_id, label=label)
     loc.is_virtual = request.form.get("is_virtual") in {"1", "on", "true"}
+    loc.platform = request.form.get("platform") or None
+    loc.access_notes = request.form.get("access_notes") or None
     loc.address_line1 = request.form.get("address_line1") or None
     loc.address_line2 = request.form.get("address_line2") or None
     loc.city = request.form.get("city") or None
     loc.state = request.form.get("state") or None
     loc.postal_code = request.form.get("postal_code") or None
     loc.country = request.form.get("country") or None
+    loc.is_active = request.form.get("is_active") in {"1", "on", "true"}
     db.session.add(loc)
     db.session.commit()
     return {"id": loc.id, "label": loc.label}
@@ -300,8 +318,11 @@ def list_inline_workshop_locations(client_id, current_user, csa_account):
 @client_edit_required
 def inline_shipping_location(client_id, current_user, csa_account):
     address_line1 = (request.form.get("address_line1") or "").strip()
+    errors: dict[str, str] = {}
     if not address_line1:
-        return {"error": "Address required"}, 400
+        errors["address_line1"] = "Address required"
+    if errors:
+        return {"errors": errors}, 400
     loc = ClientShippingLocation(client_id=client_id)
     loc.contact_name = request.form.get("contact_name") or None
     loc.contact_phone = request.form.get("contact_phone") or None
@@ -313,6 +334,7 @@ def inline_shipping_location(client_id, current_user, csa_account):
     loc.postal_code = request.form.get("postal_code") or None
     loc.country = request.form.get("country") or None
     loc.notes = request.form.get("notes") or None
+    loc.is_active = request.form.get("is_active") in {"1", "on", "true"}
     db.session.add(loc)
     db.session.commit()
     return {"id": loc.id, "display": loc.display_name()}
