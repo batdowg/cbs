@@ -116,6 +116,16 @@ Every functional change must update this file **in the same PR**.
 
 *CSA applies only to sessions they are assigned to.
 
+## 1.6 Route Permission Mapping
+
+| Route | Method | Roles | Session Status | Notes |
+|-------|--------|-------|----------------|-------|
+| `/sessions/<id>/prework` | GET/POST | SysAdmin, Admin, CRM, Delivery, Contractor | Any | Staff access only |
+| `/sessions/<id>/participants/add` | POST | CSA (assigned) | Until Ready for Delivery | Uses `csa_can_manage_participants` |
+| `/sessions/<id>/generate` | POST | SysAdmin, Admin, CRM, Delivery, Contractor | Delivered | Generates certificates |
+| `/sessions/<id>/delete` | POST | SysAdmin | Cancelled | SysAdmin-only deletion |
+| `/learner/prework/<assignment_id>` | POST | Learner | Until Delivered | Locked after delivery |
+
 ---
 
 # 2. Accounts & Identity

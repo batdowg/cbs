@@ -172,6 +172,9 @@ def prework_form(assignment_id: int):
     assignment = db.session.get(PreworkAssignment, assignment_id)
     if not assignment or assignment.participant_account_id != account_id:
         abort(404)
+    if assignment.session and assignment.session.delivered:
+        flash("Prework closed after delivery", "error")
+        return redirect(url_for("learner.my_prework"))
     questions = assignment.snapshot_json.get("questions", [])
     answers: dict[int, dict[int, str]] = {}
     for ans in assignment.answers:
@@ -222,6 +225,8 @@ def prework_autosave(assignment_id: int):
         account_id != assignment.participant_account_id and not user_id
     ):
         abort(404)
+    if assignment.session and assignment.session.delivered:
+        abort(403)
     now = time.time()
     hits = autosave_hits.get(assignment_id, [])
     hits = [t for t in hits if now - t < 10]

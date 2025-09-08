@@ -58,6 +58,7 @@ from ..utils.acl import (
     is_kcrm,
     is_delivery,
     is_contractor,
+    is_sys_admin,
     is_csa_for_session,
     csa_can_manage_participants,
     session_start_dt_utc,
@@ -1060,6 +1061,8 @@ def finalize_session(session_id: int, current_user):
 @bp.post("/<int:session_id>/delete")
 @staff_required
 def delete_session(session_id: int, current_user):
+    if not is_sys_admin(current_user):
+        abort(403)
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
