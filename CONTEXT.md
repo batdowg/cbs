@@ -209,9 +209,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 8. Certificates
 
 - Issued post-delivery. Template name: `<cert_series>cert_template_{a4|letter}_{lang}.pdf` (falls back to `fncert_template_*` if missing, logging a warning). Stored under `app/assets/`.
-- Paper size derives from session Region (North America → Letter; others → A4). Letter layout insets the name line 1 cm left/right.
+- Paper size derives from session Region (North America → Letter; others → A4).
+- Name text box: base box same as A4. On **Letter**, apply an additional **2.5 cm inset on the left and 2.5 cm on the right** (total horizontal reduction = 5.0 cm).
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
-- Name line at 145 mm italic, auto-shrink 48→32; workshop line at 102 mm; date at 83 mm in `d Month YYYY`.
+- Name line at 145 mm (centered; italic; auto-shrink 48→32); workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 
 ---

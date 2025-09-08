@@ -22,6 +22,9 @@ from ..models import (
 from .storage import ensure_dir
 
 
+LETTER_NAME_INSET_MM = 25
+
+
 def slug_certificate_name(name: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9 ]+", "", name or "")
     slug = re.sub(r"\s+", "-", slug.strip()).lower()
@@ -117,9 +120,10 @@ def render_certificate(
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=(w, h))
-    name_width = w - mm(40)
+    base_name_width = w - mm(40)
+    name_width = base_name_width
     if effective_size == "LETTER":
-        name_width -= mm(20)
+        name_width -= mm(2 * LETTER_NAME_INSET_MM)
     name_pt = fit_text(display_name, "Times-Italic", 48, 32, name_width)
     c.setFont("Times-Italic", name_pt)
     c.setFillGray(0.25)
