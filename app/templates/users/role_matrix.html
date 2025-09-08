@@ -3,20 +3,35 @@
     <button id="role-matrix-close" style="float:right;">Close</button>
     <h2>Role Matrix</h2>
     <table border="1" cellpadding="4" cellspacing="0">
-      <tr><th>Action</th><th>Sys Admin</th><th>Admin</th><th>CRM</th><th>Delivery</th><th>Contractor</th><th>CSA*</th></tr>
-      <tr><td>System Settings (SMTP, etc)</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Manage Users (create/edit/remove)</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Toggle Sys Admin</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Workshop Types CRUD</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Clients CRUD</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Create</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Edit</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Delete</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Participants Add/Edit/Remove</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (assigned sessions only)</td></tr>
-      <tr><td>Confirm Delivery Complete</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Generate Certificates**</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr>
+        <th>Action / Capability</th>
+        <th>SysAdmin</th>
+        <th>Admin</th>
+        <th>CRM</th>
+        <th>Delivery</th>
+        <th>Contractor</th>
+        <th>CSA*</th>
+        <th>Learner</th>
+      </tr>
+      <tr><td>Settings – System settings</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Settings – Certificate Templates</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Settings – Languages / Workshop Types / Matrix</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Users – Create/Edit/Disable</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Users – Toggle SysAdmin</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Clients – CRUD</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>view</td><td>view</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Sessions – View (list/detail)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>assigned</td><td>own</td></tr>
+      <tr><td>Sessions – Create</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Sessions – Edit (non-participant fields)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>read-only</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Sessions – Delete</td><td><strong>&#10003;</strong></td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Sessions – Mark Delivered / Confirm complete</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><strong>&#10003;</strong></td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Participants – Add/Remove</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><strong>assigned until Ready for Delivery</strong></td><td>&ndash;</td></tr>
+      <tr><td>Session Prework – access</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>view</td><td>assigned view</td><td>&ndash;</td></tr>
+      <tr><td>Prework – Complete (participant action)</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td><strong>until Delivered</strong></td></tr>
+      <tr><td>Materials Order – configure/place</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>view</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Certificates – Generate (when Delivered)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><strong>&#10003;</strong></td><td>&ndash;</td><td>&ndash;</td></tr>
+      <tr><td>Certificates – See (when Delivered)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><strong>assigned sessions</strong></td><td>own</td></tr>
     </table>
-    <p>*CSA can add/remove participants for assigned sessions until Delivered.<br>**Only when “Delivered” is checked.</p>
+    <p>*CSA applies only to sessions they are assigned to.</p>
   </div>
 </div>
 <script>

@@ -94,16 +94,21 @@
     </ul>
   </div>
   {% endif %}
-  {% elif session_start_dt %}
-  <p>Participant changes closed (workshop started).</p>
+  {% elif not csa_can_manage %}
+  <p>Participant changes closed.</p>
   {% endif %}
   <table border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Actions</th></tr>
+    <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Certificate</th><th>Actions</th></tr>
     {% for row in participants %}
     <tr>
       <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
       <td>{{ row.participant.email }}</td>
       <td>{{ row.participant.title }}</td>
+      <td>
+        {% if row.certificate %}
+          <a href="{{ url_for('learner.download_certificate', cert_id=row.certificate.id) }}">Download Certificate</a>
+        {% endif %}
+      </td>
       <td>
     {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
     <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>

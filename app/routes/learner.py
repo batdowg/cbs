@@ -15,6 +15,7 @@ from flask import (
 )
 
 import os
+from datetime import date
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -105,6 +106,7 @@ def my_resources():
             ParticipantAccount, flask_session.get("participant_account_id")
         )
         email = (account.email or "").lower() if account else ""
+    today = date.today()
     wtypes = (
         db.session.query(WorkshopType)
         .join(Session, Session.workshop_type_id == WorkshopType.id)
@@ -114,19 +116,23 @@ def my_resources():
         )
         .join(Participant, SessionParticipant.participant_id == Participant.id)
         .filter(func.lower(Participant.email) == email)
+        .filter(Session.start_date != None, Session.start_date <= today)
         .distinct()
         .order_by(WorkshopType.name)
         .all()
     )
     grouped = []
     for wt in wtypes:
-        items = (
-            Resource.query.filter(Resource.active == True)
-            .join(resource_workshop_types)
-            .filter(resource_workshop_types.c.workshop_type_id == wt.id)
-            .order_by(Resource.name)
-            .all()
-        )
+        try:
+            items = (
+                Resource.query.filter(Resource.active == True)
+                .join(resource_workshop_types)
+                .filter(resource_workshop_types.c.workshop_type_id == wt.id)
+                .order_by(Resource.name)
+                .all()
+            )
+        except Exception:
+            items = []
         if items:
             grouped.append((wt, items))
     return render_template(

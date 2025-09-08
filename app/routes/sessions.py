@@ -174,7 +174,12 @@ def staff_required(fn):
         if not user_id:
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
-        if not user or not (user.is_app_admin or user.is_admin):
+        if not user or not (
+            is_admin(user)
+            or is_kcrm(user)
+            or is_delivery(user)
+            or is_contractor(user)
+        ):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
@@ -195,6 +200,8 @@ def list_sessions(current_user):
 @bp.route("/new", methods=["GET", "POST"])
 @staff_required
 def new_session(current_user):
+    if is_contractor(current_user):
+        abort(403)
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
     include_all = request.args.get("include_all_facilitators") == "1"
     fac_query = User.query.filter(
@@ -551,6 +558,8 @@ def edit_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    if is_contractor(current_user):
+        abort(403)
     workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
     include_all = request.args.get("include_all_facilitators") == "1"
     fac_query = User.query.filter(
@@ -930,7 +939,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     can_manage = False
     start_dt_utc = session_start_dt_utc(sess)
     if csa_account:
-        can_manage = csa_can_manage_participants(csa_account, sess, now_utc())
+        can_manage = csa_can_manage_participants(csa_account, sess)
     return render_template(
         "session_detail.html",
         session=sess,
@@ -1067,7 +1076,6 @@ def delete_session(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/add")
 @csa_allowed_for_session
 def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
-    now = now_utc()
     allowed = False
     if current_user and (
         is_admin(current_user)
@@ -1076,7 +1084,7 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         or is_contractor(current_user)
     ):
         allowed = True
-    elif csa_can_manage_participants(csa_account, sess, now):
+    elif csa_can_manage_participants(csa_account, sess):
         current_app.logger.info(
             f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
         )
@@ -1084,7 +1092,7 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
     else:
         if is_csa_for_session(csa_account, sess):
             current_app.logger.info(
-                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+                f"[CSA] manage-participants blocked-after-ready user={csa_account.id} session={sess.id}"
             )
         abort(403)
     if sess.participants_locked():
@@ -1183,7 +1191,6 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
 @bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
 @csa_allowed_for_session
 def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
-    now = now_utc()
     if not (
         current_user
         and (
@@ -1192,7 +1199,7 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
             or is_delivery(current_user)
             or is_contractor(current_user)
         )
-        or csa_can_manage_participants(csa_account, sess, now)
+        or csa_can_manage_participants(csa_account, sess)
     ):
         abort(403)
     if sess.participants_locked():
@@ -1222,7 +1229,6 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
 @csa_allowed_for_session
 def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
-    now = now_utc()
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
@@ -1230,14 +1236,14 @@ def remove_participant(session_id: int, participant_id: int, sess, current_user,
         or is_contractor(current_user)
     ):
         pass
-    elif csa_can_manage_participants(csa_account, sess, now):
+    elif csa_can_manage_participants(csa_account, sess):
         current_app.logger.info(
             f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
         )
     else:
         if is_csa_for_session(csa_account, sess):
             current_app.logger.info(
-                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+                f"[CSA] manage-participants blocked-after-ready user={csa_account.id} session={sess.id}"
             )
         abort(403)
     if sess.participants_locked():
@@ -1271,7 +1277,6 @@ def sample_csv(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/import-csv")
 @csa_allowed_for_session
 def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
-    now = now_utc()
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
@@ -1279,14 +1284,14 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
         or is_contractor(current_user)
     ):
         pass
-    elif csa_can_manage_participants(csa_account, sess, now):
+    elif csa_can_manage_participants(csa_account, sess):
         current_app.logger.info(
             f"[CSA] manage-participants allowed user={csa_account.id} session={sess.id}"
         )
     else:
         if is_csa_for_session(csa_account, sess):
             current_app.logger.info(
-                f"[CSA] manage-participants blocked-after-start user={csa_account.id} session={sess.id} now={now.isoformat()} start={session_start_dt_utc(sess).isoformat()}"
+                f"[CSA] manage-participants blocked-after-ready user={csa_account.id} session={sess.id}"
             )
         abort(403)
     if sess.participants_locked():
