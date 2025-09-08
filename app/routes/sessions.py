@@ -58,6 +58,7 @@ from ..utils.acl import (
     is_kcrm,
     is_delivery,
     is_contractor,
+    is_kt_staff,
     is_sys_admin,
     is_csa_for_session,
     csa_can_manage_participants,
@@ -1423,19 +1424,22 @@ def session_prework(session_id: int):
         abort(404)
     user_id = flask_session.get("user_id")
     account_id = flask_session.get("participant_account_id")
-    if account_id:
+    if account_id and not user_id:
         if sess.csa_account_id == int(account_id):
             flash("CSA cannot send prework", "error")
         return Response("", 403)
     if not user_id:
         return redirect(url_for("auth.login"))
     current_user = db.session.get(User, user_id)
-    if not current_user or not (
-        is_admin(current_user)
-        or is_kcrm(current_user)
-        or is_delivery(current_user)
-        or is_contractor(current_user)
-    ):
+    if not current_user:
+        abort(403)
+    if is_contractor(current_user):
+        if not (
+            sess.lead_facilitator_id == current_user.id
+            or any(f.id == current_user.id for f in sess.facilitators)
+        ):
+            abort(403)
+    elif not is_kt_staff(current_user):
         abort(403)
     template = PreworkTemplate.query.filter_by(
         workshop_type_id=sess.workshop_type_id, is_active=True
