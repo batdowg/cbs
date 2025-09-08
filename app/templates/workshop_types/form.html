@@ -30,7 +30,13 @@
       {% endfor %}
     </select>
   </label></div>
-  <div><label>Certificate series <input type="text" name="cert_series" value="{{ wt.cert_series if wt and wt.cert_series else 'fn' }}"></label></div>
+  <div><label>Certificate series
+    <select name="cert_series" required>
+      {% for s in series %}
+      <option value="{{ s.code }}"{% if wt and wt.cert_series==s.code %} selected{% endif %}>{{ s.code }} &ndash; {{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
   <button type="submit">Save</button>
 </form>

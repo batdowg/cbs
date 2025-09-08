@@ -52,11 +52,9 @@ def render_certificate(
     effective_size = "LETTER" if region_val in na_regions else "A4"
     lang = session.workshop_language or "en"
     assets_dir = os.path.join(current_app.root_path, "assets")
-    series_code = (
-        session.workshop_type.cert_series
-        if session.workshop_type and session.workshop_type.cert_series
-        else "fn"
-    )
+    if not session.workshop_type or not session.workshop_type.cert_series:
+        raise ValueError("Workshop type missing certificate series")
+    series_code = session.workshop_type.cert_series
     mapping = (
         db.session.query(CertificateTemplate)
         .join(CertificateTemplateSeries)
@@ -67,17 +65,11 @@ def render_certificate(
         )
         .one_or_none()
     )
-    if mapping:
-        template_file = mapping.filename
-    else:
-        template_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
-        current_app.logger.warning(
-            "Missing certificate template mapping for series=%s lang=%s size=%s; falling back to %s",
-            series_code,
-            lang,
-            effective_size,
-            template_file,
+    if not mapping:
+        raise ValueError(
+            f"Missing certificate template mapping for series={series_code} lang={lang} size={effective_size}"
         )
+    template_file = mapping.filename
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
         available = sorted(

@@ -45,7 +45,7 @@ def test_session_form_shows_client_crm(app):
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
         crm = User(email="crm@example.com")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT", cert_series="fn")
         client = Client(name="ClientA", status="active", crm=crm)
         db.session.add_all([admin, crm, wt, client])
         db.session.commit()
@@ -65,7 +65,7 @@ def test_csa_add_remove_participants(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True)
         admin.set_password("x")
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT", cert_series="fn")
         sess = Session(title="S1", workshop_type=wt, end_date=date.today())
         db.session.add_all([admin, wt, sess])
         db.session.commit()
@@ -121,7 +121,7 @@ def test_smtp_test_route(app, monkeypatch):
 
 def test_session_detail_redirects_when_not_logged_in(app):
     with app.app_context():
-        wt = WorkshopType(code="WT", name="WT")
+        wt = WorkshopType(code="WT", name="WT", cert_series="fn")
         sess = Session(
             title="S1",
             workshop_type=wt,

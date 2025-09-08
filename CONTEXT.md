@@ -119,8 +119,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 3. Data Model (summary)
 
 ## 3.1 Catalog & Sessions
-- `workshop_types` (name, **code**, **simulation_based** bool, **supported_languages** list, **cert_series** string)
-- `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
+ - `workshop_types` (name, **code**, **simulation_based** bool, **supported_languages** list, **cert_series** code referencing an active certificate series)
+ - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
 - `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
 - `session_participants` (m:n participant_accounts↔sessions + per-person status)
@@ -210,7 +210,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 8. Certificates
 
-- Issued post-delivery. Templates are configured under **Settings → Certificate Templates** with per-series mappings of (language, A4/Letter) → PDF; language options show human names and size options follow the region-derived A4/Letter rule. Generation resolves the mapping for the session's workshop type series and language/size; if missing, it falls back to `fncert_template_{a4|letter}_{lang}.pdf` and logs a warning. Files live under `app/assets/`.
+- Issued post-delivery. Templates are configured under **Settings → Certificate Templates**, where admins define series and map (language, A4/Letter) → PDF. Workshop Types must select one active series. Generation resolves the mapping for the session's type series and language/size; if any mapping or file is missing, rendering aborts with a clear error (no auto-fallback). Files live under `app/assets/`.
 - Paper size derives from session Region (North America → Letter; others → A4).
 - Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
