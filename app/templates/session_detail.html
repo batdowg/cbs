@@ -3,16 +3,15 @@
 {% block content %}
 <h1>{{ session.title }}</h1>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
+{% set facs = [] %}
+{% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
+{% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
 {% if csa_view %}
 <div>
   Client:         {% if session.client %}{{ session.client.name }}{% endif %};   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
+  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
   Workshop Type:  {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Simulation:     {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Facilitator(s): 
-  {% set facs = [] %}
-  {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
-  {% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
-  {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
   Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
   Workshop language: {{ session.workshop_language | lang_label }}<br>
   Delivery Type: {{ session.delivery_type }}<br>
@@ -28,6 +27,7 @@
 {% else %}
 <div>
   Client:        {% if session.client %}{{ session.client.name }}{% endif %}  -  CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
+  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
   Workshop Type: {% if session.workshop_type %}{{ session.workshop_type.code }}: {{ session.workshop_type.name }}{% endif %}<br>
   Simulation:    {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
   Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
