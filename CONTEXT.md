@@ -191,7 +191,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 7. Validation & Forms
 
 - **Dates**: `end_date >= start_date` (one-day workshops allowed).
+- **New Session inline adds**: Add Client, Location, and Shipping within dialogs on the form; saving selects the new item and keeps all other fields intact.
 - **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
+  - Prompt appears immediately when Start Date changes to a past value and stores acknowledgment for that exact date. Changing the date again clears prior ack and re-prompts only if the new value is also in the past.
 - **Times**: display `HH:MM` only + short timezone.
 - **Profile**: staff `/profile` edits `User.full_name` (syncs to participant if exists); learners edit `ParticipantAccount.full_name` and `certificate_name`.
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.

@@ -335,7 +335,7 @@ def new_session(current_user):
                 ),
                 400,
             )
-        if start_date_val < date.today() and request.form.get("ack_past") != "true":
+        if start_date_val < date.today() and request.form.get("ack_past") != start_date_str:
             return (
                 render_template(
                     "sessions/form.html",
@@ -620,7 +620,7 @@ def edit_session(session_id: int, current_user):
                 ),
                 400,
             )
-        if start_date_val and start_date_val < date.today() and request.form.get("ack_past") != "true":
+        if start_date_val and start_date_val < date.today() and request.form.get("ack_past") != start_date_str:
             return (
                 render_template(
                     "sessions/form.html",
