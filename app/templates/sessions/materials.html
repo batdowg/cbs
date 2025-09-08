@@ -166,10 +166,17 @@
 </form>
 <dialog id="shipping-dialog">
   <form id="shipping-inline-form">
-    <label>Contact <input type="text" name="contact_name"></label>
-    <label>Address* <input type="text" name="address_line1" required></label>
-    <label>City <input type="text" name="city"></label>
-    <label>Country <input type="text" name="country"></label>
+    <div><label>Contact Name <input type="text" name="contact_name"></label></div>
+    <div><label>Contact Phone <input type="text" name="contact_phone"></label></div>
+    <div><label>Contact Email <input type="email" name="contact_email"></label></div>
+    <div><label>Shipping Notes <input type="text" name="notes"></label></div>
+    <div><label>Address line 1 <input type="text" name="address_line1" required></label></div>
+    <div><label>Address line 2 <input type="text" name="address_line2"></label></div>
+    <div><label>City <input type="text" name="city"></label></div>
+    <div><label>State <input type="text" name="state"></label></div>
+    <div><label>Postal Code <input type="text" name="postal_code"></label></div>
+    <div><label>Country <input type="text" name="country"></label></div>
+    <div><label>Active <input type="checkbox" name="is_active" value="1" checked></label></div>
     <div style="margin-top:8px;">
       <button type="button" id="shipping-cancel">Cancel</button>
       <button type="submit">Save</button>
@@ -194,24 +201,37 @@
     var shipDialog = document.getElementById('shipping-dialog');
     var shipForm = document.getElementById('shipping-inline-form');
     var shipSel = document.getElementById('shipping-location-select');
+    function clearShipErrors(){ shipForm.querySelectorAll('.error').forEach(el=>el.remove()); }
     shipBtn.addEventListener('click', function(e){
       e.preventDefault();
       shipForm.reset();
+      clearShipErrors();
       shipDialog.showModal();
     });
     document.getElementById('shipping-cancel').addEventListener('click', function(){ shipDialog.close(); });
     shipForm.addEventListener('submit', function(e){
       e.preventDefault();
+      clearShipErrors();
       var fd=new FormData(shipForm);
       fetch('/clients/'+clientId+'/inline-shipping-location', {method:'POST', body:fd})
-        .then(r=>r.json())
-        .then(data=>{
-          if(data.id){
+        .then(r=>r.json().then(data=>[r.status,data]))
+        .then(([status,data])=>{
+          if(status==200 && data.id){
             var o=document.createElement('option');
             o.value=data.id; o.textContent=data.display;
             shipSel.appendChild(o); shipSel.value=data.id;
             shipDialog.close();
-          }else if(data.error){ alert(data.error); }
+          }else if(data.errors){
+            for(var k in data.errors){
+              var field=shipForm.querySelector('[name="'+k+'"]');
+              if(field){
+                var div=document.createElement('div');
+                div.className='error';
+                div.textContent=data.errors[k];
+                field.insertAdjacentElement('afterend', div);
+              }
+            }
+          }
         });
     });
   }
