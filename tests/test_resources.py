@@ -83,3 +83,38 @@ def test_my_resources_staff_empty(app):
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "No resources available." in html
+
+
+def test_staff_nav_hides_my_resources_without_session(app):
+    with app.app_context():
+        staff = User(email="navstaff@example.com", is_admin=True)
+        db.session.add(staff)
+        db.session.commit()
+        user_id = staff.id
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+    resp = client.get("/home")
+    assert b"My Resources" not in resp.data
+
+
+def test_staff_nav_shows_my_resources_with_session(app):
+    with app.app_context():
+        staff = User(email="navfac@example.com", is_admin=True)
+        wt = WorkshopType(code="NAV", name="Nav", cert_series="fn")
+        today = date.today()
+        sess = Session(
+            title="S1",
+            workshop_type=wt,
+            start_date=today,
+            end_date=today,
+            lead_facilitator=staff,
+        )
+        db.session.add_all([staff, wt, sess])
+        db.session.commit()
+        user_id = staff.id
+    client = app.test_client()
+    with client.session_transaction() as sess_data:
+        sess_data["user_id"] = user_id
+    resp = client.get("/home")
+    assert b"My Resources" in resp.data
