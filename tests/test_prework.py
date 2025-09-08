@@ -83,7 +83,12 @@ def test_no_prework_toggle_disables_send_prework(monkeypatch):
         db.session.add(tpl)
         db.session.flush()
         db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
-        sess = Session(title="S", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        sess = Session(
+            title="S",
+            workshop_type_id=wt.id,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+        )
         part = Participant(email="p@example.com", full_name="P")
         db.session.add_all([sess, part])
         db.session.flush()
@@ -378,7 +383,13 @@ def test_staff_send_flows_run(monkeypatch):
         db.session.add(tpl)
         db.session.flush()
         db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
-        sess = Session(title="S", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        sess = Session(
+            title="S",
+            workshop_type_id=wt.id,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            lead_facilitator_id=user.id,
+        )
         part = Participant(email="sf@example.com", full_name="SF")
         db.session.add_all([sess, part])
         db.session.flush()
@@ -409,7 +420,13 @@ def test_contractor_can_send_prework(monkeypatch):
         db.session.add(tpl)
         db.session.flush()
         db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
-        sess = Session(title="S", workshop_type_id=wt.id, start_date=date.today(), daily_start_time=time(8, 0))
+        sess = Session(
+            title="S",
+            workshop_type_id=wt.id,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            lead_facilitator_id=user.id,
+        )
         part = Participant(email="ct@example.com", full_name="CT")
         db.session.add_all([sess, part])
         db.session.flush()
@@ -425,3 +442,66 @@ def test_contractor_can_send_prework(monkeypatch):
     with app.app_context():
         assert ParticipantAccount.query.count() == 1
         assert PreworkAssignment.query.count() == 1
+
+
+def test_contractor_unassigned_forbidden():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        user = User(email="cont2@example.com", is_kt_contractor=True)
+        wt = WorkshopType(code="CT2", name="Contractor2", cert_series="fn")
+        db.session.add_all([user, wt])
+        db.session.commit()
+        tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add(tpl)
+        db.session.flush()
+        db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
+        sess = Session(
+            title="S2",
+            workshop_type_id=wt.id,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+        )
+        db.session.add(sess)
+        db.session.commit()
+        sess_id = sess.id
+        user_id = user.id
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = user_id
+        resp = c.get(f"/sessions/{sess_id}/prework")
+        assert resp.status_code == 403
+
+
+def test_admin_access_with_participant_account():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        admin = User(email="admin3@example.com", is_app_admin=True)
+        wt = WorkshopType(code="AD", name="Admin", cert_series="fn")
+        csa = ParticipantAccount(email="csa@example.com", full_name="CSA")
+        tpl = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add_all([admin, wt, csa, tpl])
+        db.session.flush()
+        db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q", kind="TEXT"))
+        sess = Session(
+            title="S3",
+            workshop_type_id=wt.id,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            csa_account_id=csa.id,
+        )
+        part = Participant(email="p@example.com", full_name="P")
+        db.session.add_all([sess, part])
+        db.session.flush()
+        db.session.add(SessionParticipant(session_id=sess.id, participant_id=part.id))
+        db.session.commit()
+        sess_id = sess.id
+        admin_id = admin.id
+        csa_id = csa.id
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = admin_id
+            s["participant_account_id"] = csa_id
+        resp = c.get(f"/sessions/{sess_id}/prework")
+        assert resp.status_code == 200

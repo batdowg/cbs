@@ -47,7 +47,7 @@ Every functional change must update this file **in the same PR**.
 - **Admin** — staff-level admin incl. user management.
 - **CRM (Client Relationship Manager)** — owns session setup, client comms; can create/edit sessions, assign facilitators, manage participants, send prework/invites, finalize.
 - **Delivery (Facilitator)** — sees and works own assigned sessions; delivery-centric UX.
-- **Contractor** — limited internal user; no settings; see §1.4 for exact capabilities.
+- **Contractor** — limited internal user; access restricted to assigned sessions; no settings; see §1.4 for exact capabilities.
 
 > **CSA** and **Participant/Learner** are **not user roles**; they are **participant accounts** (see §2).
 
@@ -68,9 +68,9 @@ Every functional change must update this file **in the same PR**.
   `Home • My Sessions • My Resources • My Profile • Logout`  
   (No Materials or Surveys in menu.)
 
-- **Contractor** (default view: Admin-lite)  
-  `Home • My Sessions • Sessions (read-only) • My Resources • My Profile • Logout`  
-  - No Materials/Surveys/Settings in menu.  
+- **Contractor** (default view: Admin-lite)
+  `Home • My Sessions • Sessions (read-only; assigned only) • My Resources • My Profile • Logout`
+  - No Materials/Surveys/Settings in menu.
   - Can add/remove participants similar to CSA **including during session**; other session fields are read-only.
 
 - **CSA (Session Admin)** — **participant account**, not a user  
@@ -89,7 +89,7 @@ Every functional change must update this file **in the same PR**.
 ## 1.4 High-level permissions (delta highlights)
 - **CRM**: full session lifecycle; Materials access; default owner/CRM filters.
 - **Delivery**: operates own sessions; no Materials/Surveys menu.
-- **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA even after start; cannot change prework settings; other session fields read-only.
+- **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA even after start; cannot change prework settings; other session fields read-only; access limited to assigned sessions.
 - **CSA**: add/remove participants **until Ready for Delivery**; read-only after; no email sending; no Materials/Settings.
 
 ## 1.5 Detailed Permissions Matrix
@@ -120,7 +120,7 @@ Every functional change must update this file **in the same PR**.
 
 | Route | Method | Roles | Session Status | Notes |
 |-------|--------|-------|----------------|-------|
-| `/sessions/<id>/prework` | GET/POST | SysAdmin, Admin, CRM, Delivery, Contractor | Any | Staff access only |
+| `/sessions/<id>/prework` | GET/POST | SysAdmin, Admin, CRM, Delivery, Contractor (assigned) | Any | Staff access only |
 | `/sessions/<id>/participants/add` | POST | CSA (assigned) | Until Ready for Delivery | Uses `csa_can_manage_participants` |
 | `/sessions/<id>/generate` | POST | SysAdmin, Admin, CRM, Delivery, Contractor | Delivered | Generates certificates |
 | `/sessions/<id>/delete` | POST | SysAdmin | Cancelled | SysAdmin-only deletion |
