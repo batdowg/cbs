@@ -1,0 +1,47 @@
+[
+  {
+    "route": "/sessions/<id>/prework",
+    "method": "GET",
+    "role": "Admin",
+    "session_status": "Any",
+    "expected": "allow",
+    "actual": "allow",
+    "source": null
+  },
+  {
+    "route": "/sessions/<id>/participants/add",
+    "method": "POST",
+    "role": "CSA",
+    "session_status": "Ready for Delivery",
+    "expected": "deny",
+    "actual": "deny",
+    "source": "csa_can_manage_participants"
+  },
+  {
+    "route": "/sessions/<id>/generate",
+    "method": "POST",
+    "role": "Contractor",
+    "session_status": "Delivered",
+    "expected": "allow",
+    "actual": "allow",
+    "source": null
+  },
+  {
+    "route": "/sessions/<id>/delete",
+    "method": "POST",
+    "role": "Admin",
+    "session_status": "Cancelled",
+    "expected": "deny",
+    "actual": "deny",
+    "source": "is_sys_admin check"
+  },
+  {
+    "route": "/learner/prework/<assignment_id>",
+    "method": "POST",
+    "role": "Learner",
+    "session_status": "Delivered",
+    "expected": "deny",
+    "actual": "deny",
+    "source": "session.delivered"
+  }
+]
