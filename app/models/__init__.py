@@ -450,6 +450,35 @@ class SessionParticipant(db.Model):
     )
 
 
+class CertificateTemplateSeries(db.Model):
+    __tablename__ = "certificate_template_series"
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(16), unique=True, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+
+class CertificateTemplate(db.Model):
+    __tablename__ = "certificate_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    series_id = db.Column(
+        db.Integer,
+        db.ForeignKey("certificate_template_series.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    language = db.Column(db.String(8), nullable=False)
+    size = db.Column(db.String(10), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint(
+            "series_id", "language", "size", name="uix_cert_template_series_lang_size"
+        ),
+    )
+    series = db.relationship("CertificateTemplateSeries", backref="templates")
+
+
 class Certificate(db.Model):
     __tablename__ = "certificates"
 

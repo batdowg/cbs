@@ -45,37 +45,6 @@
 </table>
 <p><button type="submit">Save changes</button></p>
 </form>
-
-<div id="role-matrix-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
-  <div class="modal-content" style="background:#fff;margin:10% auto;padding:1rem;max-width:800px;overflow:auto;">
-    <button id="role-matrix-close" style="float:right;">Close</button>
-    <h2>Role Matrix</h2>
-    <table border="1" cellpadding="4" cellspacing="0">
-      <tr><th>Action</th><th>SysAdmin</th><th>Administrator</th><th>CRM</th><th>KT Facilitator</th><th>Contractor</th><th>CSA*</th></tr>
-      <tr><td>System Settings (SMTP, etc)</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Manage Users (create/edit/remove)</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Toggle SysAdmin</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Workshop Types CRUD</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Clients CRUD</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Create</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Edit</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td></tr>
-      <tr><td>Sessions Delete</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
-      <tr><td>Participants Add/Edit/Remove</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (assigned sessions only)</td></tr>
-      <tr><td>Confirm Delivery Complete</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td></tr>
-      <tr><td>Generate Certificates**</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&ndash;</td></tr>
-    </table>
-    <p>*CSA can add/remove participants for assigned sessions until Delivered.<br>**Only when “Delivered” is checked.</p>
-  </div>
-</div>
-
-<script>
-document.getElementById('role-matrix-link').addEventListener('click', function(ev){
-  ev.preventDefault();
-  document.getElementById('role-matrix-modal').style.display = 'block';
-});
-document.getElementById('role-matrix-close').addEventListener('click', function(){
-  document.getElementById('role-matrix-modal').style.display = 'none';
-});
-</script>
+{% include 'users/role_matrix.html' %}
 {% endblock %}
 

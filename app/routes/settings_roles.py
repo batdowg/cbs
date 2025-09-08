@@ -1,11 +1,17 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, redirect, url_for
 
-from ..constants import PERMISSIONS_MATRIX, ROLES_MATRIX_VERSION
 from ..utils.rbac import manage_users_required
 
 bp = Blueprint("settings_roles", __name__, url_prefix="/settings")
 
+
 @bp.get("/roles")
 @manage_users_required
 def roles_matrix(current_user):
-    return render_template("settings_roles.html", matrix=PERMISSIONS_MATRIX, version=ROLES_MATRIX_VERSION)
+    """Legacy redirect for the removed Roles Matrix page.
+
+    The Role Matrix now lives as a view-only modal on the Users page.
+    Navigating to the old `/settings/roles` URL simply redirects to the
+    Users listing where the matrix can be opened.
+    """
+    return redirect(url_for("users.list_users"))

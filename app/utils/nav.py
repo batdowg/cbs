@@ -49,7 +49,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     if can_manage_users(user):
         settings_children.extend([
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},
-            {'id': 'roles', 'label': 'Roles Matrix', 'endpoint': 'settings_roles.roles_matrix'},
+            {'id': 'certificate_templates', 'label': 'Certificate Templates', 'endpoint': 'settings_cert_templates.list_series'},
             {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},
         ])
     if settings_children:
