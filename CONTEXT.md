@@ -208,6 +208,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 - Managed at **Settings → Resources**; mapped to Workshop Types.  
 - Learner/CSA **My Resources** shows only workshop types associated with sessions for that participant **whose start date has passed**.
+- Staff see the “My Resources” navigation link only if they're assigned to at least one session; they may still visit `/my-resources` directly without participant records, and the page returns HTTP 200 with an empty state when no resources apply.
+- Workshop types are de-duplicated by ID in application code to avoid SQL `DISTINCT` on JSON columns such as `supported_languages`.
 - `/my-resources` gracefully renders an empty state when no resources are available (never 500s).
 - Files under `/resources/<title-as-filename>`; links download directly.
 

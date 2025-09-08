@@ -28,6 +28,7 @@ from .models import (
     Language,
     Participant,
     SessionParticipant,
+    SessionFacilitator,
     Certificate,
     PreworkAssignment,
 )
@@ -93,7 +94,20 @@ def create_app():
         user_id = session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
-            show_resources_nav = True
+            show_resources_nav = (
+                db.session.query(Session.id)
+                .outerjoin(
+                    SessionFacilitator,
+                    SessionFacilitator.session_id == Session.id,
+                )
+                .filter(
+                    (Session.lead_facilitator_id == user_id)
+                    | (SessionFacilitator.user_id == user_id)
+                )
+                .filter(Session.start_date <= datetime.utcnow().date())
+                .first()
+                is not None
+            )
             show_certificates_nav = True
         account_id = session.get("participant_account_id")
         account = None
@@ -115,7 +129,7 @@ def create_app():
                 .first()
                 is not None
             )
-            show_resources_nav = (
+            show_resources_nav = show_resources_nav or (
                 db.session.query(Session.id)
                 .join(SessionParticipant, SessionParticipant.session_id == Session.id)
                 .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -124,7 +138,7 @@ def create_app():
                 .first()
                 is not None
             )
-            show_certificates_nav = (
+            show_certificates_nav = show_certificates_nav or (
                 db.session.query(Certificate.id)
                 .join(Participant, Certificate.participant_id == Participant.id)
                 .filter(func.lower(Participant.email) == email)
