@@ -76,8 +76,9 @@ def session_start_dt_utc(session: Session) -> datetime:
     return dt.astimezone(ZoneInfo("UTC"))
 
 
-def csa_can_manage_participants(user: Any, session: Session, now_utc: datetime) -> bool:
-    return is_csa_for_session(user, session) and now_utc < session_start_dt_utc(session)
+def csa_can_manage_participants(user: Any, session: Session) -> bool:
+    """CSA may manage participants until session is marked Ready for Delivery."""
+    return is_csa_for_session(user, session) and not getattr(session, "ready_for_delivery", False)
 
 
 def validate_role_combo(role_names: list[str]) -> None:

@@ -17,4 +17,4 @@ Environment variables:
 Authenticate as ktbooks@kepner-tregoe.com; default From is certificates@kepner-tregoe.com via settings.
 
 ## CSA helpers
-RBAC helpers live in `app/utils/acl.py`. `session_start_dt_utc` combines a session's start date, daily start time, and timezone to gate CSA participant management. CSAs may add or remove participants only before this computed UTC start time.
+RBAC helpers live in `app/utils/acl.py`. CSAs may add or remove participants only until a session is marked Ready for Delivery.

@@ -89,8 +89,32 @@ Every functional change must update this file **in the same PR**.
 ## 1.4 High-level permissions (delta highlights)
 - **CRM**: full session lifecycle; Materials access; default owner/CRM filters.
 - **Delivery**: operates own sessions; no Materials/Surveys menu.
-- **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA **even after start**; cannot change prework settings; other session fields read-only.
-- **CSA**: add/remove participants **before** start only; read-only after; no email sending; no Materials/Settings.
+- **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA even after start; cannot change prework settings; other session fields read-only.
+- **CSA**: add/remove participants **until Ready for Delivery**; read-only after; no email sending; no Materials/Settings.
+
+## 1.5 Detailed Permissions Matrix
+
+| Action / Capability                                   | SysAdmin | Admin | CRM | Delivery | Contractor | CSA*                              | Learner                    |
+|-------------------------------------------------------|:-------:|:-----:|:---:|:--------:|:----------:|:---------------------------------:|:--------------------------:|
+| Settings – System settings                            |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
+| Settings – Certificate Templates                      |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
+| Settings – Languages / Workshop Types / Matrix        |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
+| Users – Create/Edit/Disable                           |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
+| Users – Toggle SysAdmin                               |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
+| Clients – CRUD                                        |   ✓     |   ✓   |  ✓  |   view   |    view    |                –                  |            –               |
+| Sessions – View (list/detail)                         |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      |             assigned              |            own             |
+| Sessions – Create                                     |   ✓     |   ✓   |  ✓  |    ✓     |     –      |                –                  |            –               |
+| Sessions – Edit (non-participant fields)              |   ✓     |   ✓   |  ✓  |    ✓     |  read-only |                –                  |            –               |
+| Sessions – Delete                                     | **✓**   |   –   |  –  |    –     |     –      |                –                  |            –               |
+| Sessions – Mark Delivered / Confirm complete          |   ✓     |   ✓   |  ✓  |    ✓     |    **✓**   |                –                  |            –               |
+| Participants – Add/Remove                             |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      | **assigned until Ready for Delivery** |            –           |
+| Session Prework – access                              |   ✓     |   ✓   |  ✓  |    ✓     |    view    |            assigned view           |            –               |
+| Prework – Complete (participant action)               |   –     |   –   |  –  |    –     |     –      |                –                  | **until Delivered**        |
+| Materials Order – configure/place                     |   ✓     |   ✓   |  ✓  |   view   |     –      |                –                  |            –               |
+| Certificates – Generate (when Delivered)              |   ✓     |   ✓   |  ✓  |    ✓     |    **✓**   |                –                  |            –               |
+| Certificates – See (when Delivered)                   |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      |        **assigned sessions**       |   own (via My Certificates) |
+
+*CSA applies only to sessions they are assigned to.
 
 ---
 
@@ -160,7 +184,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 4.2 CSA (participant)
 - **My Sessions**: only sessions where this participant account is CSA; link opens participant management.  
-- Add/remove participants **until start**; read-only after.
+- Add/remove participants **until Ready for Delivery**; read-only after.
 
 ## 4.3 Delivery (facilitator)
 - **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes).
@@ -183,7 +207,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 6. Resources
 
 - Managed at **Settings → Resources**; mapped to Workshop Types.  
-- Learner/CSA **My Resources** shows only workshop types associated with sessions for that participant **whose start date has passed**.  
+- Learner/CSA **My Resources** shows only workshop types associated with sessions for that participant **whose start date has passed**.
+- `/my-resources` gracefully renders an empty state when no resources are available (never 500s).
 - Files under `/resources/<title-as-filename>`; links download directly.
 
 ---
