@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Template Mapping{% endblock %}
+{% block content %}
+<h1>Template Mapping for {{ series.name }} ({{ series.code }})</h1>
+<form method="post">
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr><th>Language</th><th>A4</th><th>Letter</th></tr>
+    {% for code, name in languages %}
+    <tr>
+      <td>{{ name }}</td>
+      {% for size in ['A4','LETTER'] %}
+      <td>
+        <select name="{{ code }}_{{ size }}">
+          <option value=""></option>
+          {% for file in files %}
+            <option value="{{ file }}" {% if mapping.get((code, size)) == file %}selected{% endif %}>{{ file }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+  <p><button type="submit">Save</button></p>
+</form>
+{% endblock %}

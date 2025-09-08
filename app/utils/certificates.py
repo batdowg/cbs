@@ -14,6 +14,8 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from ..app import db
 from ..models import (
     Certificate,
+    CertificateTemplate,
+    CertificateTemplateSeries,
     Participant,
     ParticipantAccount,
     Session,
@@ -50,31 +52,41 @@ def render_certificate(
     effective_size = "LETTER" if region_val in na_regions else "A4"
     lang = session.workshop_language or "en"
     assets_dir = os.path.join(current_app.root_path, "assets")
-    series = (
+    series_code = (
         session.workshop_type.cert_series
         if session.workshop_type and session.workshop_type.cert_series
         else "fn"
     )
-    template_file = f"{series}cert_template_{effective_size.lower()}_{lang}.pdf"
+    mapping = (
+        db.session.query(CertificateTemplate)
+        .join(CertificateTemplateSeries)
+        .filter(
+            CertificateTemplateSeries.code == series_code,
+            CertificateTemplate.language == lang,
+            CertificateTemplate.size == effective_size,
+        )
+        .one_or_none()
+    )
+    if mapping:
+        template_file = mapping.filename
+    else:
+        template_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
+        current_app.logger.warning(
+            "Missing certificate template mapping for series=%s lang=%s size=%s; falling back to %s",
+            series_code,
+            lang,
+            effective_size,
+            template_file,
+        )
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
-        fallback_file = f"fncert_template_{effective_size.lower()}_{lang}.pdf"
-        fallback_path = os.path.join(assets_dir, fallback_file)
-        current_app.logger.warning(
-            "Missing certificate template %s, falling back to %s",
-            template_file,
-            fallback_file,
+        available = sorted(
+            f for f in os.listdir(assets_dir)
+            if f.startswith("fncert_template_")
         )
-        template_file = fallback_file
-        template_path = fallback_path
-        if not os.path.exists(template_path):
-            available = sorted(
-                f for f in os.listdir(assets_dir)
-                if f.startswith("fncert_template_")
-            )
-            raise FileNotFoundError(
-                f"{template_file} not found; available: {', '.join(available)}"
-            )
+        raise FileNotFoundError(
+            f"{template_file} not found; available: {', '.join(available)}"
+        )
     current_app.logger.info("Using certificate template: %s", template_path)
 
     participant = (
