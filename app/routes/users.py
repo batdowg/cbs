@@ -11,7 +11,12 @@ from sqlalchemy import or_, func
 
 from ..app import db, User
 from ..models import AuditLog, UserAuditLog
-from ..constants import ROLE_ATTRS, SYS_ADMIN
+from ..constants import (
+    ROLE_ATTRS,
+    SYS_ADMIN,
+    PERMISSIONS_MATRIX,
+    ROLES_MATRIX_VERSION,
+)
 from ..utils.acl import validate_role_combo, can_demote_to_contractor
 from ..utils.rbac import manage_users_required
 
@@ -52,7 +57,12 @@ def list_users(current_user):
         )
     users = query.order_by(User.created_at.desc()).all()
     return render_template(
-        "users/list.html", users=users, q=q, region=region
+        "users/list.html",
+        users=users,
+        q=q,
+        region=region,
+        matrix=PERMISSIONS_MATRIX,
+        version=ROLES_MATRIX_VERSION,
     )
 
 

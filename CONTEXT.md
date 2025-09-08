@@ -53,9 +53,9 @@ Every functional change must update this file **in the same PR**.
 
 ## 1.2 Menus by Audience (explicit; no bundling)
 
-- **Sys Admin** (default view: Admin)  
-  `Home • My Sessions • Sessions • Materials • Surveys • My Resources • Settings ▾ • My Profile • Logout`  
-  **Settings ▾**: `Users • Roles Matrix • Workshop Types • Resources • Simulation Outlines`
+- **Sys Admin** (default view: Admin)
+  `Home • My Sessions • Sessions • Materials • Surveys • My Resources • Settings ▾ • My Profile • Logout`
+  **Settings ▾**: `Users • Certificate Templates • Workshop Types • Resources • Simulation Outlines`
 
 - **Admin** (default view: Admin)  
   Same as Sys Admin. (System-wide toggles reserved for Sys Admin if any.)
@@ -204,12 +204,13 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
   - **All Digital / SIM Only** → 4 visible, disabled
+- **Role Matrix**: view-only modal launched from `/users`; standalone `/settings/roles` page removed.
 
 ---
 
 # 8. Certificates
 
-- Issued post-delivery. Template name: `<cert_series>cert_template_{a4|letter}_{lang}.pdf` (falls back to `fncert_template_*` if missing, logging a warning). Stored under `app/assets/`.
+- Issued post-delivery. Templates are configured under **Settings → Certificate Templates** with per-series mappings of (language, A4/Letter) → PDF; language options show human names and size options follow the region-derived A4/Letter rule. Generation resolves the mapping for the session's workshop type series and language/size; if missing, it falls back to `fncert_template_{a4|letter}_{lang}.pdf` and logs a warning. Files live under `app/assets/`.
 - Paper size derives from session Region (North America → Letter; others → A4).
 - Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
@@ -264,8 +265,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - Prework config: `app/templates/workshop_types/prework.html`
 - **Resources (settings)**: `app/routes/settings_resources.py`, `app/templates/settings_resources/*.html`
 - **Simulation Outlines**: `app/routes/settings_simulations.py`, `app/templates/settings_simulations/*.html`
+- **Certificate Templates**: `app/routes/settings_cert_templates.py`, `app/templates/settings_cert_templates/*.html`
 - **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
-- **Users & Roles**: `app/routes/users.py`, `app/templates/users/*.html`; matrix `app/routes/settings_roles.py`, `app/templates/settings_roles.html`
+- **Users & Role Matrix**: `app/routes/users.py`, `app/templates/users/*.html` (matrix modal `app/templates/users/role_matrix.html`)
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
 - **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py` (`code_to_label` powering global `lang_label` filter)

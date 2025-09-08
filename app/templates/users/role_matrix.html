@@ -1,0 +1,34 @@
+<div id="role-matrix-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+  <div class="modal-content" style="background:#fff;margin:10% auto;padding:1rem;max-width:800px;overflow:auto;">
+    <button id="role-matrix-close" style="float:right;">Close</button>
+    <h2>Role Matrix</h2>
+    <table border="1" cellspacing="0" cellpadding="4">
+      <tr>
+        <th>Function</th>
+        {% for role in matrix['columns'] %}
+        <th>{{ role }}</th>
+        {% endfor %}
+      </tr>
+      {% for row, perms in matrix['rows'].items() %}
+      <tr>
+        <td>{{ row }}</td>
+        {% for role in matrix['columns'] %}
+        <td>{{ perms.get(role, '—') }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    <p><small>Legend: V=view, E=edit, D=delete, A=action.</small></p>
+    <p><small><strong>CSA (Client Session Administrator)</strong> is session-scoped: may view assigned sessions and add/remove participants until the session start time. CSA has no prework, materials, certificates, or session-field edit permissions.</small></p>
+    <p><small>Matrix version {{ version }}</small></p>
+  </div>
+</div>
+<script>
+document.getElementById('role-matrix-link').addEventListener('click', function(ev){
+  ev.preventDefault();
+  document.getElementById('role-matrix-modal').style.display = 'block';
+});
+document.getElementById('role-matrix-close').addEventListener('click', function(){
+  document.getElementById('role-matrix-modal').style.display = 'none';
+});
+</script>
