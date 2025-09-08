@@ -6,6 +6,7 @@ from ..app import db, User
 from ..models import WorkshopType, AuditLog, PreworkTemplate, PreworkQuestion
 from ..constants import BADGE_CHOICES
 from ..utils.html import sanitize_html
+from ..utils.languages import get_language_options, code_to_label
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
 
@@ -31,13 +32,13 @@ def staff_required(fn):
 @staff_required
 def list_types(current_user):
     types = WorkshopType.query.order_by(WorkshopType.code).all()
-    return render_template('workshop_types/list.html', types=types)
+    return render_template('workshop_types/list.html', types=types, code_to_label=code_to_label)
 
 
 @bp.get('/new')
 @staff_required
 def new_type(current_user):
-    return render_template('workshop_types/form.html', wt=None, badge_choices=BADGE_CHOICES)
+    return render_template('workshop_types/form.html', wt=None, badge_choices=BADGE_CHOICES, language_options=get_language_options())
 
 
 @bp.post('/new')
@@ -51,8 +52,7 @@ def create_type(current_user):
     if WorkshopType.query.filter(db.func.upper(WorkshopType.code) == code).first():
         flash('Code already exists', 'error')
         return redirect(url_for('workshop_types.new_type'))
-    langs_raw = request.form.get('supported_languages') or ''
-    langs = [s.strip() for s in langs_raw.split(',') if s.strip()]
+    langs = request.form.getlist('supported_languages')
     wt = WorkshopType(
         code=code,
         name=name,
@@ -83,7 +83,7 @@ def edit_type(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    return render_template('workshop_types/form.html', wt=wt, badge_choices=BADGE_CHOICES)
+    return render_template('workshop_types/form.html', wt=wt, badge_choices=BADGE_CHOICES, language_options=get_language_options())
 
 
 @bp.post('/<int:type_id>/edit')
@@ -97,8 +97,7 @@ def update_type(type_id: int, current_user):
     wt.description = request.form.get('description') or None
     wt.badge = request.form.get('badge') or None
     wt.simulation_based = bool(request.form.get('simulation_based'))
-    langs_raw = request.form.get('supported_languages') or ''
-    langs = [s.strip() for s in langs_raw.split(',') if s.strip()]
+    langs = request.form.getlist('supported_languages')
     wt.supported_languages = langs or ['en']
     wt.cert_series = (request.form.get('cert_series') or 'fn').strip() or 'fn'
     db.session.add(

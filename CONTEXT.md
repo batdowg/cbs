@@ -195,10 +195,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
   - Prompt appears immediately when Start Date changes to a past value and stores acknowledgment for that exact date. Changing the date again clears prior ack and re-prompts only if the new value is also in the past.
 - **Times**: display `HH:MM` only + short timezone.
-- **Profile**: staff `/profile` edits `User.full_name` (syncs to participant if exists); learners edit `ParticipantAccount.full_name` and `certificate_name`.
+- **Profile**: staff `/profile` shows **Certificate Name**; saving sets the participant `certificate_name` for the same email (creating the participant if missing). Learners edit `ParticipantAccount.full_name` and `certificate_name`.
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
-- **/profile**: staff edit `User.full_name` and `User.title`; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
+- **/profile**: staff edit `User.full_name`, `User.title`, and Certificate Name; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
 - **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
+- **Sessions & Settings**: all language pickers and labels show human names; database stores codes; deactivated languages are not selectable; sort by configured order.
 - **Materials**: physical components UI:
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
@@ -210,9 +211,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 - Issued post-delivery. Template name: `<cert_series>cert_template_{a4|letter}_{lang}.pdf` (falls back to `fncert_template_*` if missing, logging a warning). Stored under `app/assets/`.
 - Paper size derives from session Region (North America → Letter; others → A4).
-- Name text box: base box same as A4. On **Letter**, apply an additional **2.5 cm inset on the left and 2.5 cm on the right** (total horizontal reduction = 5.0 cm).
+- Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
-- Name line at 145 mm (centered; italic; auto-shrink 48→32); workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
+- Workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 
 ---
@@ -257,7 +258,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - My Workshops: `app/templates/my_sessions.html`
   - My Certificates: `app/templates/my_certificates.html`
   - Prework: `app/templates/my_prework.html`, `app/templates/prework_form.html`, `app/templates/prework_download.html`
-  - Profile: `app/templates/profile.html`
+  - Profile (Certificate Name): `app/routes/learner.py`, `app/templates/profile.html`
 - **CSA**: routes `app/routes/csa.py`, template `app/templates/csa/my_sessions.html`
 - **Workshop Types**: `app/routes/workshop_types.py`, templates under `app/templates/workshop_types/`
   - Prework config: `app/templates/workshop_types/prework.html`
@@ -267,7 +268,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Users & Roles**: `app/routes/users.py`, `app/templates/users/*.html`; matrix `app/routes/settings_roles.py`, `app/templates/settings_roles.html`
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
-- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`
+- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py`
 - **Ops CLI**: `manage.py account_dupes`
 
 ---
