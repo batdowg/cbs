@@ -48,6 +48,24 @@ def _base_form(client_id, wt_id):
     }
 
 
+def _make_session(app, client_id, wt_id, start, end):
+    with app.app_context():
+        sess = Session(
+            title="S1",
+            client_id=client_id,
+            region="NA",
+            workshop_type_id=wt_id,
+            workshop_language="en",
+            delivery_type="Onsite",
+            capacity=16,
+            start_date=start,
+            end_date=end,
+        )
+        db.session.add(sess)
+        db.session.commit()
+        return sess.id
+
+
 def test_end_date_rule(app):
     admin_id, wt_id, client_id = _setup(app)
     client = app.test_client()
@@ -97,4 +115,51 @@ def test_times_preserved_on_error(app):
     assert resp.status_code == 400
     assert b'value="09:30"' in resp.data
     assert b'value="17:15"' in resp.data
+
+
+def test_future_start_no_ack(app):
+    admin_id, wt_id, client_id = _setup(app)
+    client = app.test_client()
+    _login(client, admin_id)
+    form = _base_form(client_id, wt_id)
+    form.update({"start_date": "2100-01-01", "end_date": "2100-01-02"})
+    resp = client.post("/sessions/new", data=form, follow_redirects=False)
+    assert resp.status_code == 302
+
+
+def test_edit_past_change_requires_ack(app):
+    admin_id, wt_id, client_id = _setup(app)
+    sess_id = _make_session(app, client_id, wt_id, date(2100, 1, 2), date(2100, 1, 3))
+    client = app.test_client()
+    _login(client, admin_id)
+    form = _base_form(client_id, wt_id)
+    form.update({"start_date": "2000-01-01", "end_date": "2000-01-02"})
+    resp = client.post(f"/sessions/{sess_id}/edit", data=form)
+    assert resp.status_code == 400
+    assert b"The selected start date is in the past" in resp.data
+    form["ack_past"] = "2000-01-01"
+    resp = client.post(f"/sessions/{sess_id}/edit", data=form, follow_redirects=False)
+    assert resp.status_code == 302
+
+
+def test_edit_past_unchanged_no_ack(app):
+    admin_id, wt_id, client_id = _setup(app)
+    sess_id = _make_session(app, client_id, wt_id, date(2000, 1, 1), date(2000, 1, 2))
+    client = app.test_client()
+    _login(client, admin_id)
+    form = _base_form(client_id, wt_id)
+    form.update({"start_date": "2000-01-01", "end_date": "2000-01-02"})
+    resp = client.post(f"/sessions/{sess_id}/edit", data=form, follow_redirects=False)
+    assert resp.status_code == 302
+
+
+def test_edit_change_future_no_ack(app):
+    admin_id, wt_id, client_id = _setup(app)
+    sess_id = _make_session(app, client_id, wt_id, date(2000, 1, 1), date(2000, 1, 2))
+    client = app.test_client()
+    _login(client, admin_id)
+    form = _base_form(client_id, wt_id)
+    form.update({"start_date": "2100-01-01", "end_date": "2100-01-02"})
+    resp = client.post(f"/sessions/{sess_id}/edit", data=form, follow_redirects=False)
+    assert resp.status_code == 302
 

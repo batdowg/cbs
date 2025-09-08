@@ -229,8 +229,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 - **Dates**: `end_date >= start_date` (one-day workshops allowed).
 - **New Session inline adds**: Add Client, Location, and Shipping within dialogs on the form. These dialogs mirror the full-page create forms (same fields and validation), show field-level errors inline, and saving selects the new item while preserving all other inputs.
-- **Past-start acknowledgment**: required **only when the start date is changed in this save** and becomes a past date.
-  - Prompt appears immediately when Start Date changes to a past value and stores acknowledgment for that exact date. Changing the date again clears prior ack and re-prompts only if the new value is also in the past.
+- **Past-start acknowledgment**: triggers immediately when the **Start Date** field value is changed to a past date. Saving does not prompt unless the submitted value is past and unacknowledged. Changing the Start Date clears prior acknowledgment.
 - **Times**: display `HH:MM` only + short timezone.
 - **Profile**: staff `/profile` shows **Certificate Name**; saving sets the participant `certificate_name` for the same email (creating the participant if missing). Learners edit `ParticipantAccount.full_name` and `certificate_name`.
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.

@@ -607,6 +607,7 @@ def edit_session(session_id: int, current_user):
         sess.title = request.form.get("title")
         start_date_str = request.form.get("start_date")
         start_date_val = date.fromisoformat(start_date_str) if start_date_str else None
+        old_start = sess.start_date
         sess.start_date = start_date_val
         end_date_str = request.form.get("end_date")
         end_date_val = date.fromisoformat(end_date_str) if end_date_str else None
@@ -680,7 +681,12 @@ def edit_session(session_id: int, current_user):
                 ),
                 400,
             )
-        if start_date_val and start_date_val < date.today() and request.form.get("ack_past") != start_date_str:
+        if (
+            start_date_val
+            and start_date_val < date.today()
+            and (not old_start or start_date_val != old_start)
+            and request.form.get("ack_past") != start_date_str
+        ):
             return (
                 render_template(
                     "sessions/form.html",
