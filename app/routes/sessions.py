@@ -310,6 +310,32 @@ def new_session(current_user):
             workshop_location=wl,
         )
         sess.workshop_type = wt
+        if wt and workshop_language not in (wt.supported_languages or []):
+            flash("Selected workshop type does not support chosen language.", "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    users=users,
+                    workshop_languages=WORKSHOP_LANGUAGES,
+                    include_all_facilitators=include_all,
+                    participants_count=0,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=wt,
+                    form=request.form,
+                ),
+                400,
+            )
         participants_count = 0
         if end_date_val < start_date_val:
             flash("End date must be the same day or after the start date.", "error")
@@ -567,6 +593,8 @@ def edit_session(session_id: int, current_user):
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
+        else:
+            sess.workshop_type = None
         old_delivered = sess.delivered
         old_materials = sess.materials_ordered
         old_info = sess.info_sent
@@ -598,6 +626,31 @@ def edit_session(session_id: int, current_user):
         wl_val = request.form.get("workshop_language")
         if wl_val in [c for c, _ in WORKSHOP_LANGUAGES]:
             sess.workshop_language = wl_val
+        if sess.workshop_type and sess.workshop_language not in (sess.workshop_type.supported_languages or []):
+            flash("Selected workshop type does not support chosen language.", "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    workshop_languages=WORKSHOP_LANGUAGES,
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=sess.workshop_type,
+                    form=request.form,
+                ),
+                400,
+            )
         sess.capacity = request.form.get("capacity") or None
         if start_date_val and end_date_val and end_date_val < start_date_val:
             flash("End date must be the same day or after the start date.", "error")

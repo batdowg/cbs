@@ -119,7 +119,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 3. Data Model (summary)
 
 ## 3.1 Catalog & Sessions
-- `workshop_types` (name, **code**, **simulation_based** bool)
+- `workshop_types` (name, **code**, **simulation_based** bool, **supported_languages** list, **cert_series** string)
 - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
 - `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
@@ -198,7 +198,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Profile**: staff `/profile` edits `User.full_name` (syncs to participant if exists); learners edit `ParticipantAccount.full_name` and `certificate_name`.
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
 - **/profile**: staff edit `User.full_name` and `User.title`; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
-- **Session language**: single `workshop_language` field; no duplicate `language` binding.
+- **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
 - **Materials**: physical components UI:
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
@@ -208,7 +208,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 8. Certificates
 
-- Issued post-delivery. Session `workshop_language` picks the template under `app/assets/fncert_template_{a4|letter}_{lang}.pdf` (missing template errors list available files).
+- Issued post-delivery. Template name: `<cert_series>cert_template_{a4|letter}_{lang}.pdf` (falls back to `fncert_template_*` if missing, logging a warning). Stored under `app/assets/`.
 - Paper size derives from session Region (North America → Letter; others → A4). Letter layout insets the name line 1 cm left/right.
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
 - Name line at 145 mm italic, auto-shrink 48→32; workshop line at 102 mm; date at 83 mm in `d Month YYYY`.

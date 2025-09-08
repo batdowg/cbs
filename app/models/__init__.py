@@ -155,6 +155,12 @@ class WorkshopType(db.Model):
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    supported_languages = db.Column(
+        db.JSON, nullable=False, default=lambda: ["en"]
+    )
+    cert_series = db.Column(
+        db.String(16), nullable=False, default="fn"
+    )
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),

@@ -51,6 +51,8 @@ def create_type(current_user):
     if WorkshopType.query.filter(db.func.upper(WorkshopType.code) == code).first():
         flash('Code already exists', 'error')
         return redirect(url_for('workshop_types.new_type'))
+    langs_raw = request.form.get('supported_languages') or ''
+    langs = [s.strip() for s in langs_raw.split(',') if s.strip()]
     wt = WorkshopType(
         code=code,
         name=name,
@@ -58,6 +60,8 @@ def create_type(current_user):
         description=request.form.get('description') or None,
         badge=request.form.get('badge') or None,
         simulation_based=bool(request.form.get('simulation_based')),
+        supported_languages=langs or ['en'],
+        cert_series=(request.form.get('cert_series') or 'fn').strip() or 'fn',
     )
     db.session.add(wt)
     db.session.flush()
@@ -93,6 +97,10 @@ def update_type(type_id: int, current_user):
     wt.description = request.form.get('description') or None
     wt.badge = request.form.get('badge') or None
     wt.simulation_based = bool(request.form.get('simulation_based'))
+    langs_raw = request.form.get('supported_languages') or ''
+    langs = [s.strip() for s in langs_raw.split(',') if s.strip()]
+    wt.supported_languages = langs or ['en']
+    wt.cert_series = (request.form.get('cert_series') or 'fn').strip() or 'fn'
     db.session.add(
         AuditLog(
             user_id=current_user.id,
