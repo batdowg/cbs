@@ -76,10 +76,11 @@
       </select>
     </label></div>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
-    <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>  
+    <div><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
+    <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
     <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label><small>End date must be the same day or after the start date.</small></div>
     {% if past_warning %}
-    <div style="color:red;"><label><input type="checkbox" name="ack_past" value="true" required> The selected start date is in the past. I'm sure.</label></div>
+    <div style="color:red;"><label><input type="checkbox" id="ack-past-check" required> The selected start date is in the past. I'm sure.</label></div>
     {% endif %}
     <div><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label>  
     <label>End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label></div>
@@ -149,15 +150,56 @@
   <button type="submit">Save</button>
   {% endif %}
 </form>
+<dialog id="client-dialog">
+  <form id="client-inline-form">
+    <label>Name* <input type="text" name="name" required></label>
+    <div style="margin-top:8px;">
+      <button type="button" id="client-cancel">Cancel</button>
+      <button type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="location-dialog">
+  <form id="location-inline-form">
+    <label>Label* <input type="text" name="label" required></label>
+    <label>Address <input type="text" name="address_line1"></label>
+    <div style="margin-top:8px;">
+      <button type="button" id="location-cancel">Cancel</button>
+      <button type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
 <script>
   var startField = document.getElementById('start-date');
   var endField = document.getElementById('end-date');
+  var ackField = document.getElementById('ack-past');
+  var prevStart = startField ? startField.value : '';
   function syncEndMin(){
     if(endField && startField){ endField.min = startField.value; }
   }
   if(startField && endField){
     syncEndMin();
-    startField.addEventListener('change', syncEndMin);
+    startField.addEventListener('change', function(){
+      syncEndMin();
+      ackField.value = '';
+      var today = new Date().toISOString().slice(0,10);
+      if(this.value && this.value < today){
+        if(confirm('The selected start date is in the past. Continue?')){
+          ackField.value = this.value;
+        }else{
+          this.value = prevStart;
+          syncEndMin();
+          return;
+        }
+      }
+      prevStart = this.value;
+    });
+  }
+  var ackCheck = document.getElementById('ack-past-check');
+  if(ackCheck){
+    ackCheck.addEventListener('change', function(){
+      ackField.value = this.checked ? startField.value : '';
+    });
   }
   var delivered = document.querySelector('input[name="delivered"]');
   var ready = document.querySelector('input[name="ready_for_delivery"]');
@@ -253,12 +295,19 @@
   updateCRM();
   clientSel.addEventListener('change', function(){
     updateCRM();
-    var url = new URL(window.location.href);
-    url.searchParams.set('client_id', this.value);
-    var titleVal = document.querySelector('input[name="title"]').value;
-    if(titleVal){ url.searchParams.set('title', titleVal); }
-    else{ url.searchParams.delete('title'); }
-    window.location = url.toString();
+    var cid = this.value;
+    var locSel = document.getElementById('workshop-location-select');
+    locSel.innerHTML = '<option value=""></option>';
+    if(cid){
+      fetch('/clients/'+cid+'/inline-workshop-locations')
+        .then(r=>r.json())
+        .then(data=>{
+          data.locations.forEach(function(loc){
+            var o=document.createElement('option');
+            o.value=loc.id; o.textContent=loc.label; locSel.appendChild(o);
+          });
+        });
+    }
   });
   document.getElementById('include-all-fac').addEventListener('change', function(){
     var url = new URL(window.location.href);
@@ -266,23 +315,51 @@
     else{ url.searchParams.delete('include_all_facilitators'); }
     window.location = url.toString();
   });
-  function nextUrl(){
-    {% if session.id %}
-    return '/sessions/{{ session.id }}/edit';
-    {% else %}
-    var cid = document.getElementById('client-select').value;
-    return '/sessions/new?client_id='+cid;
-    {% endif %}
-  }
-  document.getElementById('add-workshop-location').addEventListener('click', function(e){
-    e.preventDefault();
-    var cid = document.getElementById('client-select').value;
-    if(!cid){ alert('Select client first'); return; }
-    window.location = '/clients/'+cid+'/edit?section=workshop&next='+encodeURIComponent(nextUrl());
-  });
+  var clientDialog = document.getElementById('client-dialog');
   document.getElementById('add-client').addEventListener('click', function(e){
     e.preventDefault();
-    window.location = '/clients/new?next='+encodeURIComponent(nextUrl());
+    document.getElementById('client-inline-form').reset();
+    clientDialog.showModal();
+  });
+  document.getElementById('client-cancel').addEventListener('click', function(){ clientDialog.close(); });
+  document.getElementById('client-inline-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd=new FormData(this);
+    fetch('/clients/inline-new', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.id){
+          var o=document.createElement('option');
+          o.value=data.id; o.textContent=data.name;
+          clientSel.appendChild(o);
+          clientSel.value=data.id;
+          clientDialog.close();
+          clientSel.dispatchEvent(new Event('change'));
+        }else if(data.error){ alert(data.error); }
+      });
+  });
+  var locDialog = document.getElementById('location-dialog');
+  document.getElementById('add-workshop-location').addEventListener('click', function(e){
+    e.preventDefault();
+    if(!clientSel.value){ alert('Select client first'); return; }
+    document.getElementById('location-inline-form').reset();
+    locDialog.showModal();
+  });
+  document.getElementById('location-cancel').addEventListener('click', function(){ locDialog.close(); });
+  document.getElementById('location-inline-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var cid=clientSel.value;
+    var fd=new FormData(this);
+    fetch('/clients/'+cid+'/inline-workshop-location', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.id){
+          var sel=document.getElementById('workshop-location-select');
+          var o=document.createElement('option');
+          o.value=data.id; o.textContent=data.label; sel.appendChild(o); sel.value=data.id;
+          locDialog.close();
+        }else if(data.error){ alert(data.error); }
+      });
   });
 </script>
 <script src="{{ url_for('static', filename='js/form_state.js') }}"></script>

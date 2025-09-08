@@ -77,7 +77,7 @@ def test_past_start_requires_ack(app):
     resp = client.post("/sessions/new", data=form)
     assert resp.status_code == 400
     assert b"The selected start date is in the past" in resp.data
-    form["ack_past"] = "true"
+    form["ack_past"] = "2000-01-01"
     resp = client.post("/sessions/new", data=form, follow_redirects=False)
     assert resp.status_code == 302
 

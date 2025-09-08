@@ -244,3 +244,75 @@ def delete_client(client_id, current_user):
     db.session.delete(client)
     db.session.commit()
     return redirect(url_for("clients.list_clients"))
+
+
+@bp.post("/inline-new")
+@admin_required
+def inline_new_client(current_user):
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        return {"error": "Name required"}, 400
+    exists = (
+        db.session.query(Client)
+        .filter(db.func.lower(Client.name) == name.lower())
+        .first()
+    )
+    if exists:
+        return {"error": "Client name must be unique"}, 400
+    client = Client(name=name)
+    db.session.add(client)
+    db.session.commit()
+    ensure_virtual_workshop_locations(client.id)
+    return {"id": client.id, "name": client.name}
+
+
+@bp.post("/<int:client_id>/inline-workshop-location")
+@client_edit_required
+def inline_workshop_location(client_id, current_user, csa_account):
+    label = (request.form.get("label") or "").strip()
+    if not label:
+        return {"error": "Label required"}, 400
+    loc = ClientWorkshopLocation(client_id=client_id, label=label)
+    loc.is_virtual = request.form.get("is_virtual") in {"1", "on", "true"}
+    loc.address_line1 = request.form.get("address_line1") or None
+    loc.address_line2 = request.form.get("address_line2") or None
+    loc.city = request.form.get("city") or None
+    loc.state = request.form.get("state") or None
+    loc.postal_code = request.form.get("postal_code") or None
+    loc.country = request.form.get("country") or None
+    db.session.add(loc)
+    db.session.commit()
+    return {"id": loc.id, "label": loc.label}
+
+
+@bp.get("/<int:client_id>/inline-workshop-locations")
+@client_edit_required
+def list_inline_workshop_locations(client_id, current_user, csa_account):
+    locs = (
+        ClientWorkshopLocation.query.filter_by(client_id=client_id, is_active=True)
+        .order_by(ClientWorkshopLocation.label)
+        .all()
+    )
+    return {"locations": [{"id": l.id, "label": l.label} for l in locs]}
+
+
+@bp.post("/<int:client_id>/inline-shipping-location")
+@client_edit_required
+def inline_shipping_location(client_id, current_user, csa_account):
+    address_line1 = (request.form.get("address_line1") or "").strip()
+    if not address_line1:
+        return {"error": "Address required"}, 400
+    loc = ClientShippingLocation(client_id=client_id)
+    loc.contact_name = request.form.get("contact_name") or None
+    loc.contact_phone = request.form.get("contact_phone") or None
+    loc.contact_email = request.form.get("contact_email") or None
+    loc.address_line1 = address_line1
+    loc.address_line2 = request.form.get("address_line2") or None
+    loc.city = request.form.get("city") or None
+    loc.state = request.form.get("state") or None
+    loc.postal_code = request.form.get("postal_code") or None
+    loc.country = request.form.get("country") or None
+    loc.notes = request.form.get("notes") or None
+    db.session.add(loc)
+    db.session.commit()
+    return {"id": loc.id, "display": loc.display_name()}
