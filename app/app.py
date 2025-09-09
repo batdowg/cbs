@@ -40,7 +40,6 @@ from .utils.time import fmt_dt, fmt_time, fmt_time_range_with_tz
 from .utils.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .utils.nav import build_menu
 from .utils.languages import code_to_label
-from .utils.regions import code_to_label as region_label, get_region_options
 
 
 def create_app():
@@ -53,8 +52,6 @@ def create_app():
     app.jinja_env.filters["fmt_time"] = fmt_time
     app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
     app.jinja_env.filters["lang_label"] = code_to_label
-    app.jinja_env.filters["region_label"] = region_label
-    app.jinja_env.globals["region_options"] = get_region_options
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -343,7 +340,6 @@ def create_app():
     from .routes.settings_resources import bp as settings_resources_bp
     from .routes.settings_roles import bp as settings_roles_bp
     from .routes.settings_cert_templates import bp as settings_cert_templates_bp
-    from .routes.settings_sitemap import bp as settings_sitemap_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -365,7 +361,6 @@ def create_app():
     app.register_blueprint(settings_resources_bp)
     app.register_blueprint(settings_roles_bp)
     app.register_blueprint(settings_cert_templates_bp)
-    app.register_blueprint(settings_sitemap_bp)
 
     @app.get("/surveys")
     def surveys():

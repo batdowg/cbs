@@ -33,7 +33,7 @@
   <tr>
     <td>{{ u.email }}</td>
     <td>{{ u.full_name }}</td>
-    <td>{{ u.region|region_label }}</td>
+    <td>{{ u.region }}</td>
     <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
     <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>

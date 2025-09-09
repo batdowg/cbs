@@ -9,8 +9,7 @@
       </ul>
     </details>
   {% else %}
-    {% set active = request.endpoint == item.endpoint %}
-    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}" class="{% if active %}active{% endif %}">{{ item.label }}</a>
+    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}">{{ item.label }}</a>
   {% endif %}
 {% endmacro %}
 <nav>

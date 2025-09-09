@@ -19,8 +19,8 @@
   <div><label>Region
     <select name="region" required>
       <option value="">--Select--</option>
-      {% for code,label in region_options() %}
-      <option value="{{ code }}" {% if user and user.region==code %}selected{% endif %}>{{ label }}</option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if user and user.region==opt %}selected{% endif %}>{{ opt }}</option>
       {% endfor %}
     </select>
   </label></div>
