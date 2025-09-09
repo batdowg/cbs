@@ -394,14 +394,8 @@ def create_app():
     with app.app_context():
         if not os.getenv("FLASK_SKIP_SEED"):
             seed_initial_user_safely()
+        if os.getenv("SEED_LANGUAGES"):
             seed_languages_safely()
-
-    if not os.getenv("FLASK_SKIP_SEED"):
-        @app.before_request
-        def _seed_langs() -> None:
-            if not getattr(app, "_langs_seeded", False):
-                seed_languages_safely()
-                app._langs_seeded = True
 
     return app
 
@@ -472,13 +466,18 @@ def seed_languages_safely() -> None:
         insp = inspect(db.engine)
         if "languages" not in insp.get_table_names():
             return
+
         if db.session.query(Language).count() > 0:
+            logging.info("Languages already present — skipping.")
             return
-        for name in LANGUAGE_NAMES:
-            db.session.add(Language(name=name))
+
+        for idx, name in enumerate(LANGUAGE_NAMES, start=1):
+            db.session.add(Language(name=name, sort_order=idx))
         db.session.commit()
-    except Exception:
-        logging.exception("seed_languages_safely failed")
+        logging.info("Seeded %d languages.", len(LANGUAGE_NAMES))
+    except Exception as exc:  # pragma: no cover - defensive
+        db.session.rollback()
+        logging.error("Language seed failed: %s", exc)
 
 
 app = create_app()

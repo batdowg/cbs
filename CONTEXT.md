@@ -11,6 +11,7 @@ Every functional change must update this file **in the same PR**.
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
 - **Health**: `GET /healthz` must respond `OK`
+- **Language seeding**: optional `SEED_LANGUAGES=1` at boot inserts the default language set when the table is empty. Idempotent and safe — if languages exist it logs `Languages already present — skipping.`; on insert it logs `Seeded N languages.`; errors log `Language seed failed: <err>`.
 
 ## 0.2 Deploy & Migrations (no local aliases)
 - **Deploy on VPS** (`~/cbs`):  

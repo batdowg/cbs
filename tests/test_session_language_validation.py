@@ -1,6 +1,6 @@
 import os
 import pytest
-from app.app import create_app, db
+from app.app import create_app, db, seed_languages_safely
 from app.models import User, Client, WorkshopType, Session
 
 
@@ -11,6 +11,7 @@ def app():
     app = create_app()
     with app.app_context():
         db.create_all()
+        seed_languages_safely()
         yield app
         db.session.remove()
 
