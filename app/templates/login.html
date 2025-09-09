@@ -1,0 +1,12 @@
+<!doctype html>
+<title>Login</title>
+{% with msgs=get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+{% endwith %}
+<form method="post">
+  <p><input type="email" name="email" placeholder="Email" required></p>
+  <p><input type="password" name="password" placeholder="Password" required></p>
+  <p><button type="submit">Sign in</button></p>
+</form>
+<p><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+<p style="font-size:0.9em;color:#555">We'll direct you to the right place after sign-in.</p>
