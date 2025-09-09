@@ -163,6 +163,13 @@ def materials_view(
         shipment.postal_code = sess.shipping_location.postal_code
         shipment.country = sess.shipping_location.country
     db.session.commit()
+    if (
+        shipment.materials_option_id is None
+        and sess.workshop_type
+        and sess.workshop_type.default_materials_option_id
+    ):
+        shipment.materials_option_id = sess.workshop_type.default_materials_option_id
+        db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
     fmt = shipment.materials_format or "ALL_DIGITAL"
     selected_components = shipment.materials_components or []
@@ -255,6 +262,8 @@ def materials_view(
                 shipment.country = None
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
+            if shipment.order_type == "Simulation":
+                shipment.materials_format = "SIM_ONLY"
             if errors:
                 db.session.rollback()
                 form = request.form.to_dict(flat=True)
