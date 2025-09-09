@@ -10,7 +10,7 @@
 {% if csa_view %}
 <div>
   Client:         {% if session.client %}{{ session.client.name }}{% endif %};   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br>
+  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br><br>
   Workshop Type:  {% if session.workshop_type %}{{ session.workshop_type.code }} - {{ session.workshop_type.name }}{% endif %}<br>
   Simulation:     {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
   Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
