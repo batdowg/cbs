@@ -163,12 +163,19 @@ def materials_view(
         shipment.postal_code = sess.shipping_location.postal_code
         shipment.country = sess.shipping_location.country
     db.session.commit()
+    if shipment.order_type is None:
+        shipment.order_type = "KT-Run Standard materials"
+        db.session.commit()
     if (
         shipment.materials_option_id is None
         and sess.workshop_type
         and sess.workshop_type.default_materials_option_id
     ):
         shipment.materials_option_id = sess.workshop_type.default_materials_option_id
+        if shipment.order_type == "KT-Run Modular materials":
+            opt = db.session.get(MaterialsOption, shipment.materials_option_id)
+            if opt:
+                shipment.materials_options = [opt]
         db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
     fmt = shipment.materials_format or "ALL_DIGITAL"
@@ -213,12 +220,22 @@ def materials_view(
             }
             original_order_type = shipment.order_type
             for field in fields:
+                if field == "materials_option_id" and shipment.order_type == "KT-Run Modular materials":
+                    ids = [int(v) for v in request.form.getlist("materials_option_id") if v]
+                    shipment.materials_options = (
+                        MaterialsOption.query.filter(MaterialsOption.id.in_(ids)).all()
+                        if ids
+                        else []
+                    )
+                    shipment.materials_option_id = ids[0] if ids else None
+                    continue
                 val = request.form.get(field)
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
                 if field in {"ship_date", "arrival_date"}:
                     setattr(shipment, field, _parse_date(val))
                 elif field == "materials_option_id":
+                    shipment.materials_options = []
                     setattr(shipment, field, int(val) if val else None)
                 elif field == "materials_format":
                     setattr(shipment, field, val or None)
@@ -262,11 +279,12 @@ def materials_view(
                 shipment.country = None
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
+                shipment.materials_options = []
             if shipment.order_type == "Simulation":
                 shipment.materials_format = "SIM_ONLY"
             if errors:
                 db.session.rollback()
-                form = request.form.to_dict(flat=True)
+                form = request.form
                 status = "Draft"
                 if shipment.delivered_at:
                     status = "Delivered"
@@ -285,6 +303,7 @@ def materials_view(
                     if shipment.materials_option_id
                     else None
                 )
+                selected_options = shipment.materials_options
                 return (
                     render_template(
                         "sessions/materials.html",
@@ -294,6 +313,7 @@ def materials_view(
                         materials=materials,
                         materials_options=materials_options,
                         selected_option=selected_option,
+                        selected_options=selected_options,
                         order_types=ORDER_TYPES,
                         csa_view=csa_view,
                         readonly=readonly,
@@ -386,6 +406,7 @@ def materials_view(
         if shipment.materials_option_id
         else None
     )
+    selected_options = shipment.materials_options
     return render_template(
         "sessions/materials.html",
         sess=sess,
@@ -394,6 +415,7 @@ def materials_view(
         materials=materials,
         materials_options=materials_options,
         selected_option=selected_option,
+        selected_options=selected_options,
         order_types=ORDER_TYPES,
         csa_view=csa_view,
         readonly=readonly,

@@ -192,11 +192,122 @@ def staff_required(fn):
 @staff_required
 def list_sessions(current_user):
     show_global = request.args.get("global") == "1"
-    query = db.session.query(Session).order_by(Session.start_date)
+    params = request.args.to_dict(flat=True)
+    base_params = dict(params)
+    base_params.pop("sort", None)
+    base_params.pop("dir", None)
+    flask_session["sessions_list_args"] = params
+
+    query = (
+        db.session.query(Session)
+        .outerjoin(Client)
+        .outerjoin(WorkshopType)
+    )
     if not show_global and current_user.region:
         query = query.filter(Session.region == current_user.region)
-    sessions = query.all()
-    return render_template("sessions.html", sessions=sessions, show_global=show_global)
+
+    q = request.args.get("q")
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Session.title.ilike(like),
+                Session.location.ilike(like),
+                Client.name.ilike(like),
+            )
+        )
+
+    status = request.args.get("status")
+    if status == "Cancelled":
+        query = query.filter(Session.cancelled.is_(True))
+    elif status == "On Hold":
+        query = query.filter(Session.on_hold.is_(True))
+    elif status == "Finalized":
+        query = query.filter(Session.finalized.is_(True))
+    elif status == "Delivered":
+        query = query.filter(Session.delivered.is_(True))
+    elif status == "Ready for Delivery":
+        query = query.filter(
+            Session.ready_for_delivery.is_(True),
+            Session.delivered.is_(False),
+            Session.finalized.is_(False),
+            Session.on_hold.is_(False),
+            Session.cancelled.is_(False),
+        )
+    elif status == "In Progress":
+        query = query.filter(
+            or_(Session.materials_ordered.is_(True), Session.info_sent.is_(True)),
+            Session.ready_for_delivery.is_(False),
+            Session.delivered.is_(False),
+            Session.finalized.is_(False),
+            Session.on_hold.is_(False),
+            Session.cancelled.is_(False),
+        )
+    elif status == "New":
+        query = query.filter(
+            Session.materials_ordered.is_(False),
+            Session.info_sent.is_(False),
+            Session.ready_for_delivery.is_(False),
+            Session.delivered.is_(False),
+            Session.finalized.is_(False),
+            Session.on_hold.is_(False),
+            Session.cancelled.is_(False),
+        )
+
+    region = request.args.get("region")
+    if region:
+        query = query.filter(Session.region == region)
+    delivery_type = request.args.get("delivery_type")
+    if delivery_type:
+        query = query.filter(Session.delivery_type == delivery_type)
+    start_from = request.args.get("start_from")
+    if start_from:
+        try:
+            dt = datetime.strptime(start_from, "%Y-%m-%d").date()
+            query = query.filter(Session.start_date >= dt)
+        except ValueError:
+            pass
+    start_to = request.args.get("start_to")
+    if start_to:
+        try:
+            dt = datetime.strptime(start_to, "%Y-%m-%d").date()
+            query = query.filter(Session.start_date <= dt)
+        except ValueError:
+            pass
+
+    sort = request.args.get("sort", "start_date")
+    direction = request.args.get("dir", "asc")
+    columns = {
+        "title": Session.title,
+        "client": Client.name,
+        "location": Session.location,
+        "workshop_type": WorkshopType.name,
+        "start_date": Session.start_date,
+        "status": None,
+        "region": Session.region,
+    }
+    if sort == "status":
+        sessions = query.all()
+        sessions.sort(key=lambda s: s.computed_status)
+        if direction == "desc":
+            sessions.reverse()
+    else:
+        col = columns.get(sort) or Session.start_date
+        if direction == "desc":
+            query = query.order_by(col.desc())
+        else:
+            query = query.order_by(col.asc())
+        sessions = query.all()
+
+    return render_template(
+        "sessions.html",
+        sessions=sessions,
+        show_global=show_global,
+        params=params,
+        base_params=base_params,
+        sort=sort,
+        direction=direction,
+    )
 
 
 @bp.route("/new", methods=["GET", "POST"])
@@ -948,6 +1059,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     start_dt_utc = session_start_dt_utc(sess)
     if csa_account:
         can_manage = csa_can_manage_participants(csa_account, sess)
+    back_params = flask_session.get("sessions_list_args", {})
     return render_template(
         "session_detail.html",
         session=sess,
@@ -957,6 +1069,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         current_user=current_user,
         csa_can_manage=can_manage,
         session_start_dt=start_dt_utc,
+        back_params=back_params,
     )
 
 

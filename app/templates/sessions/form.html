@@ -47,7 +47,7 @@
         {% endfor %}
       </select>
     </label></div>
-    <div id="sim-outline" {% if not (workshop_type and workshop_type.simulation_based) %}style="display:none"{% endif %}><label>{% if workshop_type and workshop_type.simulation_based %}Simulation outline{% endif %}
+    <div id="sim-outline" {% if not (workshop_type and workshop_type.simulation_based) %}style="display:none"{% endif %}><label>{% if workshop_type and workshop_type.simulation_based %}Simulation Outline{% endif %}
       <select name="simulation_outline_id">
         <option value="">— select —</option>
         {% for o in simulation_outlines %}

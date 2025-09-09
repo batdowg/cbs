@@ -4,16 +4,21 @@
   var materialsDiv = document.getElementById('materials-type');
   var materialsSelect = document.getElementById('materials-option');
   var materialsInfo = document.getElementById('materials-option-info');
+  function updateMaterialsInfo(){
+    if(!materialsSelect || !materialsInfo) return;
+    var labels = Array.from(materialsSelect.selectedOptions).map(o=>o.textContent);
+    materialsInfo.textContent = labels.join(', ');
+  }
   if(orderType && materialsSelect){
-    orderType.addEventListener('change', function(){
-      var ot = this.value;
-      materialsSelect.innerHTML = '<option value=""></option>';
-      if(materialsInfo){ materialsInfo.innerHTML = ''; }
-      if(!ot){
-        if(materialsDiv){ materialsDiv.style.display = "none"; }
-        return;
+    function loadOptions(ot){
+      materialsSelect.innerHTML = '';
+      materialsSelect.multiple = (ot === 'KT-Run Modular materials');
+      if(ot !== 'KT-Run Modular materials'){
+        var empty = document.createElement('option');
+        empty.value = '';
+        materialsSelect.appendChild(empty);
       }
-      fetch(this.dataset.optionsUrl + '?order_type=' + encodeURIComponent(ot))
+      fetch(orderType.dataset.optionsUrl + '?order_type=' + encodeURIComponent(ot))
         .then(r => r.json())
         .then(data => {
           data.options.forEach(function(opt){
@@ -22,9 +27,15 @@
             o.textContent = opt.title;
             materialsSelect.appendChild(o);
           });
-          if(materialsDiv){ materialsDiv.style.display = "block"; }
+          if(materialsDiv){ materialsDiv.style.display = ot ? "block" : "none"; }
+          updateMaterialsInfo();
         });
+    }
+    orderType.addEventListener('change', function(){
+      loadOptions(this.value);
     });
+    materialsSelect.addEventListener('change', updateMaterialsInfo);
+    updateMaterialsInfo();
   }
 </script>
 {% endblock %}
@@ -81,21 +92,32 @@
   </div>
   <div id="materials-type" {% if not (form.get('order_type') if form else shipment.order_type) %}style="display:none"{% endif %}>Materials type:
     {% if can_edit_materials_header('materials_option_id', current_user, shipment) and not readonly %}
-      {% set opt_val = form.get('materials_option_id') if form else shipment.materials_option_id %}
-      <select name="materials_option_id" id="materials-option">
-        <option value=""></option>
+      {% set opt_vals = [] %}
+      {% if form %}
+        {% set opt_vals = form.getlist('materials_option_id')|map('int')|list %}
+      {% elif selected_options %}
+        {% set opt_vals = selected_options|map(attribute='id')|list %}
+      {% elif shipment.materials_option_id %}
+        {% set opt_vals = [shipment.materials_option_id] %}
+      {% endif %}
+      <select name="materials_option_id" id="materials-option" {% if shipment.order_type=='KT-Run Modular materials' %}multiple{% endif %}>
+        {% if shipment.order_type!='KT-Run Modular materials' %}<option value=""></option>{% endif %}
         {% for opt in materials_options %}
-          <option value="{{ opt.id }}" {% if opt_val and opt_val|int==opt.id %}selected{% endif %}>{{ opt.title }}</option>
+          <option value="{{ opt.id }}" {% if opt.id in opt_vals %}selected{% endif %}>{{ opt.title }}</option>
         {% endfor %}
       </select>
-    {% else %}{{ shipment.materials_option.title | default('', true) }}{% endif %}
-    {% if selected_option %}
-    <div id="materials-option-info"><small>{{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}</small></div>
-    {% else %}<div id="materials-option-info"></div>{% endif %}
+    {% else %}{{ selected_options|map(attribute='title')|join(', ') or shipment.materials_option.title | default('', true) }}{% endif %}
+    <div id="materials-option-info"><small>
+      {% if shipment.order_type=='KT-Run Modular materials' %}
+        {{ selected_options|map(attribute='title')|join(', ') }}
+      {% elif selected_option %}
+        {{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}
+      {% endif %}
+    </small></div>
   </div>
   {% if show_sim_outline %}
   <div>
-    <label>Simulation outline
+    <label>Simulation Outline
       <select name="simulation_outline_id">
         <option value="">— select —</option>
         {% for o in simulation_outlines %}

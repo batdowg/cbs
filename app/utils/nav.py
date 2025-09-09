@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from flask import session as flask_session, has_request_context
+
 from .acl import (
     can_manage_users,
     is_admin,
@@ -17,7 +19,8 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items.append({'id': 'home', 'label': 'Home', 'endpoint': 'home'})
     items.append({'id': 'my_sessions', 'label': 'My Sessions', 'endpoint': 'my_sessions.list_my_sessions'})
     if is_admin(user):
-        items.append({'id': 'sessions', 'label': 'Sessions', 'endpoint': 'sessions.list_sessions'})
+        sess_args = flask_session.get('sessions_list_args') if has_request_context() else None
+        items.append({'id': 'sessions', 'label': 'Sessions', 'endpoint': 'sessions.list_sessions', 'args': sess_args})
     if is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user):
         items.append({'id': 'materials', 'label': 'Materials', 'endpoint': 'materials_orders.list_orders'})
     items.append({'id': 'surveys', 'label': 'Surveys', 'endpoint': 'surveys'})

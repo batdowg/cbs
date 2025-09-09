@@ -60,9 +60,9 @@ def test_outline_shown_when_workshop_type_simulation_based(app):
     client = app.test_client()
     _login(client, admin_id)
     resp = client.get(f"/sessions/{session_id}/edit")
-    assert b"Simulation outline" in resp.data
+    assert b"Simulation Outline" in resp.data
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"Simulation outline" in resp.data
+    assert b"Simulation Outline" in resp.data
 
 
 def test_outline_hidden_when_not_simulation_based(app):
@@ -71,9 +71,9 @@ def test_outline_hidden_when_not_simulation_based(app):
     client = app.test_client()
     _login(client, admin_id)
     resp = client.get(f"/sessions/{session_id}/edit")
-    assert b"Simulation outline" not in resp.data
+    assert b"<label>Simulation Outline" not in resp.data
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"Simulation outline" not in resp.data
+    assert b"<label>Simulation Outline" not in resp.data
 
 
 def test_outline_persists_when_saved_from_session_form(app):

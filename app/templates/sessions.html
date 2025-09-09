@@ -8,8 +8,56 @@
 {% else %}
 <p><a href="{{ url_for('sessions.list_sessions', global=1) }}">Show Global Sessions</a></p>
 {% endif %}
+
+<form method="get">
+  <input type="text" name="q" placeholder="Search" value="{{ params.get('q','') }}">
+  <label>Status
+    <select name="status">
+      <option value="" {% if not params.get('status') %}selected{% endif %}></option>
+      {% for opt in ['New','In Progress','Ready for Delivery','Delivered','Finalized','On Hold','Cancelled'] %}
+      <option value="{{ opt }}" {% if params.get('status')==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Region
+    <select name="region">
+      <option value="" {% if not params.get('region') %}selected{% endif %}></option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if params.get('region')==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Delivery Type
+    <select name="delivery_type">
+      <option value="" {% if not params.get('delivery_type') %}selected{% endif %}></option>
+      {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
+      <option value="{{ opt }}" {% if params.get('delivery_type')==opt %}selected{% endif %}>{{ opt }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Start from <input type="date" name="start_from" value="{{ params.get('start_from','') }}"></label>
+  <label>to <input type="date" name="start_to" value="{{ params.get('start_to','') }}"></label>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="dir" value="{{ direction }}">
+  <button type="submit">Filter</button>
+  <a href="{{ url_for('sessions.list_sessions') }}">Clear</a>
+</form>
+
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Title</th><th>Client</th><th>Location</th><th>Workshop Type</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr>
+  <tr>
+    {% macro sort_link(label, field) -%}
+      {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
+      <a href="{{ url_for('sessions.list_sessions', sort=field, dir=dir, **base_params) }}">{{ label }}</a>
+    {%- endmacro %}
+    <th>{{ sort_link('Title','title') }}</th>
+    <th>{{ sort_link('Client','client') }}</th>
+    <th>{{ sort_link('Location','location') }}</th>
+    <th>{{ sort_link('Workshop Type','workshop_type') }}</th>
+    <th>{{ sort_link('Start Date','start_date') }}</th>
+    <th>{{ sort_link('Status','status') }}</th>
+    <th>{{ sort_link('Region','region') }}</th>
+    <th>Actions</th>
+  </tr>
   {% for s in sessions %}
   <tr>
     <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a></td>
@@ -17,8 +65,8 @@
     <td>{{ s.location }}</td>
     <td>{% if s.workshop_type %}{{ s.workshop_type.code }} — {{ s.workshop_type.name }}{% endif %}</td>
     <td>{{ s.start_date }}</td>
-    <td>{{ s.end_date }}</td>
     <td>{{ s.computed_status }}</td>
+    <td>{{ s.region }}</td>
     <td>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
         <a href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
