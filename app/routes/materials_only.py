@@ -19,6 +19,7 @@ from ..models import (
     Client,
     ClientShippingLocation,
     MaterialsOption,
+    SimulationOutline,
     Session,
     SessionShipping,
     WorkshopType,
@@ -71,11 +72,13 @@ def create():
         materials_option_ids = request.form.getlist("materials_option_id")
         material_format = request.form.get("materials_format") or None
         components = request.form.getlist("components")
+        order_date = _parse_date(request.form.get("order_date")) or date.today()
         arrival_date = _parse_date(request.form.get("arrival_date"))
         ship_date = _parse_date(request.form.get("ship_date"))
         material_sets = request.form.get("material_sets", type=int)
         credits = request.form.get("credits", type=int)
         po_number = request.form.get("materials_po_number") or None
+        sim_outline_id = request.form.get("simulation_outline_id", type=int)
         if not title or not client_id or not workshop_type_id:
             flash("Title, Client, and Workshop Type required", "error")
         else:
@@ -85,6 +88,7 @@ def create():
                 region=region,
                 workshop_language=language,
                 workshop_type_id=workshop_type_id,
+                simulation_outline_id=sim_outline_id,
                 delivery_type="Material Order",
                 start_date=date.today(),
                 end_date=date.today(),
@@ -102,6 +106,7 @@ def create():
                 materials_format=material_format
                 or ("SIM_ONLY" if order_type == "Simulation" else None),
                 materials_po_number=po_number,
+                order_date=order_date,
                 ship_date=ship_date,
                 arrival_date=arrival_date,
             )
@@ -139,11 +144,15 @@ def create():
             return redirect(url_for("materials_only.create"))
     clients = Client.query.order_by(Client.name).all()
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
+    users = User.query.order_by(User.full_name).all()
     shipping_locations = (
         ClientShippingLocation.query.filter_by(is_active=True)
         .order_by(ClientShippingLocation.client_id)
         .all()
     )
+    sim_outlines = SimulationOutline.query.order_by(
+        SimulationOutline.number, SimulationOutline.skill
+    ).all()
     return render_template(
         "materials_only.html",
         clients=clients,
@@ -154,4 +163,7 @@ def create():
         material_formats=material_format_choices(),
         physical_components=PHYSICAL_COMPONENTS,
         shipping_locations=shipping_locations,
+        simulation_outlines=sim_outlines,
+        today=date.today().isoformat(),
+        users=users,
     )

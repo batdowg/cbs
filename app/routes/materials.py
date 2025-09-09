@@ -157,6 +157,7 @@ def materials_view(
             session_id=session_id,
             created_by=current_user.id if current_user else None,
             name="Main Shipment",
+            order_date=date.today(),
         )
         db.session.add(shipment)
         db.session.commit()
@@ -201,10 +202,14 @@ def materials_view(
     simulation_outlines = SimulationOutline.query.order_by(
         SimulationOutline.number, SimulationOutline.skill
     ).all()
-    show_sim_outline = bool(sess.workshop_type and sess.workshop_type.simulation_based)
+    sim_base = bool(sess.workshop_type and sess.workshop_type.simulation_based)
+    show_sim_outline = shipment.order_type == "Simulation" or sim_base
     status = shipment.status
-    show_credits = (
-        shipment.order_type == "Simulation" or show_sim_outline
+    show_credits = shipment.order_type == "Simulation" or sim_base
+    order_date_val = (
+        shipment.order_date.isoformat()
+        if shipment.order_date
+        else date.today().isoformat()
     )
     if request.method == "POST":
         if readonly:
@@ -230,6 +235,7 @@ def materials_view(
                 "tracking",
                 "ship_date",
                 "special_instructions",
+                "order_date",
                 "order_type",
                 "materials_option_id",
                 "materials_format",
@@ -253,7 +259,7 @@ def materials_view(
                 val = request.form.get(field)
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
-                if field in {"ship_date", "arrival_date"}:
+                if field in {"ship_date", "arrival_date", "order_date"}:
                     setattr(shipment, field, _parse_date(val))
                 elif field == "materials_option_id":
                     shipment.materials_options = []
@@ -271,6 +277,8 @@ def materials_view(
                         setattr(shipment, field, val)
                 else:
                     setattr(shipment, field, val or None)
+            show_sim_outline = shipment.order_type == "Simulation" or sim_base
+            show_credits = shipment.order_type == "Simulation" or sim_base
             errors: dict[str, str] = {}
             selected_components = request.form.getlist("components")
             fmt = shipment.materials_format or (
@@ -366,6 +374,8 @@ def materials_view(
                         fmt=fmt,
                         show_sim_outline=show_sim_outline,
                         show_credits=show_credits,
+                        sim_base=sim_base,
+                        order_date_val=order_date_val,
                         simulation_outlines=simulation_outlines,
                         form=form,
                         errors=errors,
@@ -465,6 +475,8 @@ def materials_view(
         fmt=fmt,
         show_sim_outline=show_sim_outline,
         show_credits=show_credits,
+        sim_base=sim_base,
+        order_date_val=order_date_val,
         simulation_outlines=simulation_outlines,
         form=None,
         errors={},

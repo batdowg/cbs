@@ -11,9 +11,12 @@
   }
   var materialSetsDiv = document.getElementById('material-sets');
   var creditsDiv = document.getElementById('credits-field');
+  var simDiv = document.getElementById('sim-outline');
+  var simBase = creditsDiv ? creditsDiv.dataset.sim === '1' : false;
   function toggleExtras(ot){
     if(materialSetsDiv){ materialSetsDiv.style.display = (ot === 'Simulation') ? 'none' : 'block'; }
-    if(creditsDiv){ var showC = (ot === 'Simulation') || creditsDiv.dataset.sim === '1'; creditsDiv.style.display = showC ? 'block' : 'none'; }
+    if(creditsDiv){ var showC = (ot === 'Simulation') || simBase; creditsDiv.style.display = showC ? 'block' : 'none'; }
+    if(simDiv){ var showS = (ot === 'Simulation') || simBase; simDiv.style.display = showS ? 'block' : 'none'; }
   }
   if(orderType && materialsSelect){
     function loadOptions(ot){
@@ -117,8 +120,7 @@
     {% else %}{{ selected_options|map(attribute='title')|join(', ') or shipment.materials_option.title | default('', true) }}{% endif %}
 
   </div>
-  {% if show_sim_outline %}
-  <div>
+  <div id="sim-outline" {% if not show_sim_outline %}style="display:none"{% endif %}>
     <label>Simulation Outline
       <select name="simulation_outline_id">
         <option value="">— select —</option>
@@ -131,7 +133,6 @@
       </select>
     </label>
   </div>
-  {% endif %}
   <div>
     <label>Material format
       {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
@@ -157,8 +158,13 @@
     {% endfor %}
     {% if components_required and errors.get('components') %}
       <div class="error">Select physical components</div>
-    {% endif %}
+  {% endif %}
   </fieldset>
+  <div>Order date:
+    {% if can_edit_materials_header('order_date', current_user, shipment) and not readonly %}
+      <input type="date" name="order_date" value="{{ form.get('order_date') if form else order_date_val }}">
+    {% else %}{{ shipment.order_date|default('', true) }}{% endif %}
+  </div>
   <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
       <input type="date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
@@ -174,7 +180,7 @@
       <input type="number" name="material_sets" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">
     </label>
   </div>
-  <div id="credits-field" data-sim="{{ 1 if show_credits else 0 }}" {% if not show_credits %}style="display:none"{% endif %}>
+  <div id="credits-field" data-sim="{{ 1 if sim_base else 0 }}" {% if not show_credits %}style="display:none"{% endif %}>
     <label># of credits (2 teams per credit)
       <input type="number" name="credits" min="0" value="{{ form.get('credits') if form else (shipment.credits or 2) }}">
     </label>
