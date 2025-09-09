@@ -2,39 +2,7 @@
 <html>
 <head>
   <title>{% block title %}CBS{% endblock %}</title>
-  <style>
-    body {
-      margin:0;
-      font-family:"Segoe UI", Arial, sans-serif;
-      display:flex;
-      min-height:100vh;
-    }
-    .sidebar {
-      width:220px;
-      background:#f0f0f0;
-      padding:1rem;
-      flex-shrink:0;
-    }
-    .sidebar a,
-    .sidebar .nav-link {
-      display:block;
-      margin:0.5rem 0;
-      text-decoration:none;
-      color:#4B2E83;
-    }
-    .content {
-      flex:1;
-      padding:1rem;
-    }
-    .view-banner {
-      background:#ffe9a1;
-      padding:0.5rem 1rem;
-      margin-bottom:1rem;
-      border:1px solid #f0c36d;
-    }
-    .flashes li.error { color:#b00020; font-weight:700; }
-    .flashes li.success { color:#155724; font-weight:600; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/kt-theme.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
 <body>

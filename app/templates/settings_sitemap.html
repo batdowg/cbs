@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Sitemap{% endblock %}
+{% block content %}
+<h1>Sitemap</h1>
+<form method="get">
+  <input type="text" name="q" placeholder="Search" value="{{ q }}">
+  <label>Role
+    <select name="role">
+      <option value="">All</option>
+      {% for r in ['Sys Admin','Admin','CRM','Delivery','Contractor','CSA','Participant'] %}
+      <option value="{{ r }}" {% if role==r %}selected{% endif %}>{{ r }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Area
+    <select name="area">
+      <option value="">All</option>
+      {% for a in ['Admin','Staff','Participant','Public'] %}
+      <option value="{{ a }}" {% if area==a %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Filter</button>
+  <a href="{{ url_for('settings_sitemap.sitemap') }}">Clear</a>
+  <a class="button secondary" href="{{ url_for('settings_sitemap.sitemap', q=q, role=role, area=area, export='csv') }}">Export</a>
+</form>
+<p>
+  <form method="post" action="{{ url_for('settings_sitemap.write_snapshot') }}" style="display:inline;">
+    <button class="button secondary" type="submit">Write snapshot</button>
+  </form>
+  <a href="{{ url_for('settings_sitemap.snapshot_file') }}">SITE_MAP.md</a>
+</p>
+<table>
+  <tr><th>Path</th><th>Methods</th><th>Endpoint</th><th>Menu</th><th>Roles</th><th>Template</th><th>Notes</th><th>Link</th></tr>
+  {% for r in routes %}
+  <tr>
+    <td>{{ r.path }}</td>
+    <td>{{ r.methods }}</td>
+    <td>{{ r.endpoint }}</td>
+    <td>{{ r.menu_label }}</td>
+    <td>{{ r.roles }}</td>
+    <td>{{ r.template }}</td>
+    <td>{{ r.notes }}</td>
+    <td>{% if r.link %}<a href="{{ r.link }}">Open</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
