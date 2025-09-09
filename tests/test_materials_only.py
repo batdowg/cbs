@@ -1,10 +1,9 @@
 import os
 from datetime import date
 
-import os
-from datetime import date
-
 import pytest
+
+pytestmark = pytest.mark.smoke
 
 from app.app import create_app, db
 from app.models import User, WorkshopType, Session, SessionShipping, Client

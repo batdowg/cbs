@@ -5,6 +5,8 @@ import pytest
 from itsdangerous import URLSafeTimedSerializer
 from datetime import date
 
+pytestmark = pytest.mark.slow
+
 from app.app import create_app, db
 from app.models import (
     User,

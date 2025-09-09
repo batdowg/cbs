@@ -41,6 +41,7 @@ def _count_logs(caplog):
     return sum(1 for r in caplog.records if "csa-assign" in r.getMessage())
 
 
+@pytest.mark.slow
 def test_csa_assign_email_logs(app, monkeypatch, caplog):
     admin_id, sess_id = _setup(app)
     client = app.test_client()
@@ -64,6 +65,7 @@ def test_csa_assign_email_logs(app, monkeypatch, caplog):
     assert _count_logs(caplog) == 1
 
 
+@pytest.mark.slow
 def test_assign_csa_creates_account_with_password(app, monkeypatch):
     admin_id, sess_id = _setup(app)
     client = app.test_client()
@@ -92,6 +94,7 @@ def test_assign_csa_creates_account_with_password(app, monkeypatch):
     assert DEFAULT_CSA_PASSWORD in sent["body"]
 
 
+@pytest.mark.slow
 def test_assign_csa_existing_account_password_unchanged(app, monkeypatch):
     admin_id, sess_id = _setup(app)
     client = app.test_client()

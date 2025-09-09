@@ -3,6 +3,8 @@ import sys
 import pytest
 from datetime import date, timedelta
 
+pytestmark = pytest.mark.smoke
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.app import create_app, db
