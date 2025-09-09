@@ -70,6 +70,8 @@
         </select>
       </label>
     </div>
+    <div id="material-sets"><label>Material Sets <input type="number" name="material_sets" min="0" value="0"></label></div>
+    <div id="credits-field" style="display:none"><label># of credits (2 teams per credit) <input type="number" name="credits" min="0" value="2"></label></div>
     <fieldset class="components">
       <legend>Physical components</legend>
       {% for key,label in physical_components %}
@@ -79,8 +81,7 @@
     <div>Latest arrival date: <input type="date" name="arrival_date"></div>
     <div>Ship date: <input type="date" name="ship_date"></div>
     <div>PO Number: <input type="text" name="materials_po_number"></div>
-    <div id="material-sets"><label>Material Sets <input type="number" name="material_sets" min="0" value="0"></label></div>
-    <div id="credits-field" style="display:none"><label># of credits (2 teams per credit) <input type="number" name="credits" min="0" value="2"></label></div>
+
   </fieldset>
   <button type="submit">Save</button>
 </form>
