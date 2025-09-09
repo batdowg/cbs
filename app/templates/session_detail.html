@@ -2,6 +2,7 @@
 {% block title %}Session {{ session.title }}{% endblock %}
 {% block content %}
 <h1>{{ session.title }}</h1>
+<p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
 {% set facs = [] %}
 {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}

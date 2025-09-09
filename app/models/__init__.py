@@ -551,6 +551,22 @@ materials_option_languages = db.Table(
     ),
 )
 
+session_shipping_materials_options = db.Table(
+    "session_shipping_materials_options",
+    db.Column(
+        "session_shipping_id",
+        db.Integer,
+        db.ForeignKey("session_shipping.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "materials_option_id",
+        db.Integer,
+        db.ForeignKey("materials_options.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 
 class MaterialsOption(db.Model):
     __tablename__ = "materials_options"
@@ -589,6 +605,9 @@ class SessionShipping(db.Model):
         db.Integer, db.ForeignKey("materials_options.id", ondelete="SET NULL"), nullable=True
     )
     materials_option = db.relationship("MaterialsOption")
+    materials_options = db.relationship(
+        "MaterialsOption", secondary="session_shipping_materials_options"
+    )
     client_shipping_location_id = db.Column(
         db.Integer,
         db.ForeignKey("client_shipping_locations.id", ondelete="SET NULL"),
