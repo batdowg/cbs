@@ -1,0 +1,111 @@
+:root {
+  --kt-blue: #0060AC;
+  --kt-blue-600: #005494;
+  --kt-lightblue: #00A2DD;
+  --kt-orange: #F6932D;
+  --kt-red: #E94737;
+  --kt-yellow: #F4E501;
+  --kt-green: #A9D168;
+  --kt-text: #111111;
+  --kt-muted: #4B5563;
+  --kt-border: #E5E7EB;
+  --kt-bg: #FFFFFF;
+  --kt-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+body {
+  font-family: var(--kt-font-family);
+  color: var(--kt-text);
+  background: var(--kt-bg);
+  font-size: 16px;
+}
+
+h1 { font-size: 32px; margin-bottom: 16px; }
+h2 { font-size: 24px; margin: 24px 0 12px; }
+h3 { font-size: 20px; margin: 20px 0 8px; }
+
+button, .button {
+  background: var(--kt-blue);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button.secondary, .button.secondary {
+  background: var(--kt-lightblue);
+  color: var(--kt-text);
+}
+
+button:hover, .button:hover {
+  background: var(--kt-blue-600);
+}
+
+button.secondary:hover, .button.secondary:hover {
+  background: var(--kt-lightblue);
+  opacity: 0.9;
+}
+
+a {
+  color: var(--kt-blue);
+}
+
+a:hover {
+  text-decoration: underline;
+  color: var(--kt-blue-600);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--kt-bg);
+  margin: 16px 0;
+}
+
+th, td {
+  border: 1px solid var(--kt-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+form {
+  background: var(--kt-bg);
+  border: 1px solid var(--kt-border);
+  padding: 16px;
+  border-radius: 6px;
+  margin: 16px 0;
+}
+
+form > div {
+  margin-bottom: 12px;
+}
+
+.sidebar a,
+.sidebar .nav-link {
+  display: block;
+  margin: 4px 0;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--kt-muted);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.sidebar a:hover,
+.sidebar a.active,
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: var(--kt-blue);
+  color: #fff;
+}
+
+.view-banner {
+  background: var(--kt-yellow);
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--kt-border);
+}
+
+.flashes li.error { color: var(--kt-red); font-weight:700; }
+.flashes li.success { color: var(--kt-green); font-weight:600; }
