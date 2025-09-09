@@ -18,8 +18,8 @@
   <div><label>Data Region
     <select name="data_region">
       <option value=""></option>
-      {% for code,label in region_options() %}
-      <option value="{{ code }}" {% if client.data_region==code %}selected{% endif %}>{{ label }}</option>
+      {% for opt in ['NA','EU','SEA','Other'] %}
+      <option value="{{ opt }}" {% if client.data_region==opt %}selected{% endif %}>{{ opt }}</option>
       {% endfor %}
     </select>
   </label></div>
