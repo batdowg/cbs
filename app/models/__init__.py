@@ -627,6 +627,7 @@ class SessionShipping(db.Model):
     country = db.Column(db.String(100))
     courier = db.Column(db.String(255))
     tracking = db.Column(db.String(255))
+    order_date = db.Column(db.Date)
     ship_date = db.Column(db.Date)
     special_instructions = db.Column(db.Text)
     arrival_date = db.Column(db.Date)

@@ -53,7 +53,7 @@ def _setup_data():
     )
     db.session.add_all([admin, wt, mt, mat, client, ship, sess])
     db.session.commit()
-    shipping = SessionShipping(session_id=sess.id, name="Main")
+    shipping = SessionShipping(session_id=sess.id, name="Main", order_date=date.today())
     db.session.add(shipping)
     db.session.commit()
     return admin.id, sess.id
@@ -189,3 +189,25 @@ def test_sticky_values_on_error(app):
     assert b"PO123" in resp.data
     assert b"2024-01-01" in resp.data
     assert b"Select physical components" in resp.data
+
+
+def test_order_date_field_and_save(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert b"Order date" in resp.data
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={
+            "action": "update_header",
+            "materials_format": "ALL_DIGITAL",
+            "order_date": "2025-01-02",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+        assert shipment.order_date == date(2025, 1, 2)

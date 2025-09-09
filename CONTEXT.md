@@ -243,14 +243,17 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
-- Region and Language are selects showing human-readable labels while storing codes. Changing Language filters Workshop Type options immediately, and the full Materials form renders on first load (no pre-save gating).
+- Region and Language are selects with human labels; changing Language immediately filters Workshop Type options by supported languages. Workshop Type codes display without names on `/materials-only`, and the full Materials form renders on first load.
+- Client select supports inline **Add Client**; Shipping location offers **Add** and **Edit locations** dialogs without clearing other inputs.
+- Simulation Outline appears when Order Type = Simulation or the Workshop Type is simulation-based; hides otherwise but retains any value.
+- Order Date input above Latest arrival date defaults to today for new orders.
 - When `materials_only = true`, Training-session features (participants, prework, certificates) are hidden/denied.
 - Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
 - **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
 - Materials orders have global statuses: **New, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
-- **Simulation outline** selector appears only when the chosen Workshop Type is simulation-based.
+- **Simulation Outline** shown when Order Type = Simulation or the Workshop Type is simulation-based.
 - Material format is always visible. If **Order Type** = “Simulation” and no value is set, default to **SIM Only**. Non-editable roles see the value read-only.
 - **Order Type** = “KT-Run Modular materials” → **Materials Type** becomes multi-select and all selected modules are shown; other order types remain single-select.
 - On first Materials view for a new session, unset **Order Type** defaults to **KT-Run Standard materials** then **Materials Type** defaults from the Workshop Type (if defined).

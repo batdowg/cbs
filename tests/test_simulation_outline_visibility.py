@@ -73,7 +73,19 @@ def test_outline_hidden_when_not_simulation_based(app):
     resp = client.get(f"/sessions/{session_id}/edit")
     assert b"<label>Simulation Outline" not in resp.data
     resp = client.get(f"/sessions/{session_id}/materials")
-    assert b"<label>Simulation Outline" not in resp.data
+    assert b'id="sim-outline" style="display:none"' in resp.data
+
+
+def test_outline_shown_when_order_type_simulation(app):
+    with app.app_context():
+        admin_id, session_id, _ = _base_setup(sim_based=False)
+        ship = SessionShipping.query.filter_by(session_id=session_id).first()
+        ship.order_type = "Simulation"
+        db.session.commit()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert b"Simulation Outline" in resp.data
 
 
 def test_outline_persists_when_saved_from_session_form(app):
