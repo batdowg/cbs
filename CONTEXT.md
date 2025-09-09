@@ -293,6 +293,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Paper size derives from session Region (North America → Letter; others → A4).
 - Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
 - Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
+- Output root configurable via `SITE_ROOT` (default `/srv`); PDFs live under `SITE_ROOT/certificates/<year>/<session_id>/`.
+- Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
+- `--dry-run` lists candidate paths and a summary without deleting.
+- In production, set `ALLOW_CERT_PURGE=1` to enable deletions.
 - Workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 

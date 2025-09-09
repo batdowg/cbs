@@ -66,13 +66,14 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 
+    site_root = os.getenv("SITE_ROOT", "/srv")
+    app.config["SITE_ROOT"] = site_root
+
     db.init_app(app)
 
     @app.route("/logo.png")
     def logo_passthrough():
-        return send_from_directory(
-            os.path.join(app.root_path, "static"), "ktlogo1.png"
-        )
+        return send_from_directory(os.path.join(app.root_path, "static"), "ktlogo1.png")
 
     @app.get("/badges/<slug>.webp")
     def badge_file(slug: str):
@@ -217,6 +218,7 @@ def create_app():
     @login_required
     def dashboard():
         return redirect(url_for("home"))
+
     @app.route("/settings/password", methods=["GET", "POST"])
     @login_required
     def settings_password():
@@ -240,9 +242,12 @@ def create_app():
         allowed = STAFF_VIEWS if session.get("user_id") else ["LEARNER"]
         if not session.get("user_id"):
             account_id = session.get("participant_account_id")
-            if account_id and db.session.query(Session.id).filter(
-                Session.csa_account_id == account_id
-            ).first():
+            if (
+                account_id
+                and db.session.query(Session.id)
+                .filter(Session.csa_account_id == account_id)
+                .first()
+            ):
                 allowed = CSA_VIEWS
         if view in allowed:
             resp.set_cookie("active_view", view, samesite="Lax")
@@ -268,11 +273,11 @@ def create_app():
             flash("Please set a new password to continue.", "error")
             return redirect(url_for("learner.profile") + "#password")
 
-
     @app.get("/admin/test-mail")
     @app_admin_required
     def admin_test_mail(current_user):
         from . import emailer
+
         mailer_logger = logging.getLogger("cbs.mailer")
 
         result = emailer.send(
@@ -280,9 +285,7 @@ def create_app():
             "CBS test mail",
             "This is a test from CBS",
         )
-        mailer_logger.info(
-            f"[MAIL-OUT] route_result={result['ok']}/{result['detail']}"
-        )
+        mailer_logger.info(f"[MAIL-OUT] route_result={result['ok']}/{result['detail']}")
         return jsonify(result)
 
     @app.get("/admin/mail-whoami")
@@ -291,14 +294,30 @@ def create_app():
         from .models import Settings
 
         settings = Settings.get()
-        host = settings.smtp_host if settings and settings.smtp_host else os.getenv("SMTP_HOST")
-        port = settings.smtp_port if settings and settings.smtp_port else os.getenv("SMTP_PORT")
-        user = settings.smtp_user if settings and settings.smtp_user else os.getenv("SMTP_USER")
+        host = (
+            settings.smtp_host
+            if settings and settings.smtp_host
+            else os.getenv("SMTP_HOST")
+        )
+        port = (
+            settings.smtp_port
+            if settings and settings.smtp_port
+            else os.getenv("SMTP_PORT")
+        )
+        user = (
+            settings.smtp_user
+            if settings and settings.smtp_user
+            else os.getenv("SMTP_USER")
+        )
         from_default = (
-            settings.smtp_from_default if settings and settings.smtp_from_default else os.getenv("SMTP_FROM_DEFAULT")
+            settings.smtp_from_default
+            if settings and settings.smtp_from_default
+            else os.getenv("SMTP_FROM_DEFAULT")
         )
         from_name = (
-            settings.smtp_from_name if settings and settings.smtp_from_name else os.getenv("SMTP_FROM_NAME")
+            settings.smtp_from_name
+            if settings and settings.smtp_from_name
+            else os.getenv("SMTP_FROM_NAME")
         )
         mode = "real" if host and port and from_default else "stub"
 
@@ -384,9 +403,9 @@ def create_app():
             {
                 "ok": True,
                 "workshop_name": cert.workshop_name,
-                "completion_date": cert.workshop_date.isoformat()
-                if cert.workshop_date
-                else None,
+                "completion_date": (
+                    cert.workshop_date.isoformat() if cert.workshop_date else None
+                ),
                 "participant": masked,
             }
         )
@@ -481,6 +500,3 @@ def seed_languages_safely() -> None:
 
 
 app = create_app()
-
-
-

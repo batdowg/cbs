@@ -34,7 +34,9 @@ def slug_certificate_name(name: str) -> str:
 
 
 def render_certificate(
-    session: Session, participant_account: ParticipantAccount, layout_version: str = "v1"
+    session: Session,
+    participant_account: ParticipantAccount,
+    layout_version: str = "v1",
 ) -> str:
     region_val = (session.region or "").strip().lower()
     na_regions = {
@@ -73,8 +75,7 @@ def render_certificate(
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
         available = sorted(
-            f for f in os.listdir(assets_dir)
-            if f.startswith("fncert_template_")
+            f for f in os.listdir(assets_dir) if f.startswith("fncert_template_")
         )
         raise FileNotFoundError(
             f"{template_file} not found; available: {', '.join(available)}"
@@ -102,7 +103,9 @@ def render_certificate(
     if not completion:
         raise ValueError("missing completion date")
 
-    workshop = session.workshop_type.name if session.workshop_type else (session.title or "")
+    workshop = (
+        session.workshop_type.name if session.workshop_type else (session.title or "")
+    )
     display_name = (
         (participant_account.certificate_name or "").strip()
         or participant_account.full_name
@@ -116,7 +119,9 @@ def render_certificate(
     mm = lambda v: v * 72.0 / 25.4
     center_x = w / 2.0
 
-    def fit_text(text: str, font_name: str, max_pt: int, min_pt: int, max_width: float) -> int:
+    def fit_text(
+        text: str, font_name: str, max_pt: int, min_pt: int, max_width: float
+    ) -> int:
         pt = max_pt
         while pt > min_pt and stringWidth(text, font_name, pt) > max_width:
             pt -= 1
@@ -151,7 +156,8 @@ def render_certificate(
 
     year = completion.year
     rel_dir = os.path.join("certificates", str(year), str(session.id))
-    ensure_dir(os.path.join("/srv", rel_dir))
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    ensure_dir(os.path.join(site_root, rel_dir))
     code = (
         session.workshop_type.code
         if session.workshop_type and session.workshop_type.code
@@ -159,7 +165,7 @@ def render_certificate(
     )
     filename = f"{code}_{slug_certificate_name(display_name)}_{completion.strftime('%Y-%m-%d')}.pdf"
     rel_path = os.path.join(rel_dir, filename)
-    with open(os.path.join("/srv", rel_path), "wb") as f:
+    with open(os.path.join(site_root, rel_path), "wb") as f:
         writer.write(f)
 
     cert = (
@@ -215,7 +221,8 @@ def render_for_session(session_id: int, emails: Iterable[str] | None = None):
 
 def remove_session_certificates(session_id: int, end_date: date) -> int:
     year = (end_date or date.today()).year
-    base_dir = os.path.join("/srv", "certificates", str(year), str(session_id))
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    base_dir = os.path.join(site_root, "certificates", str(year), str(session_id))
     removed = 0
     if os.path.isdir(base_dir):
         for name in os.listdir(base_dir):
