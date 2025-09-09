@@ -107,13 +107,7 @@
         {% endfor %}
       </select>
     {% else %}{{ selected_options|map(attribute='title')|join(', ') or shipment.materials_option.title | default('', true) }}{% endif %}
-    <div id="materials-option-info"><small>
-      {% if shipment.order_type=='KT-Run Modular materials' %}
-        {{ selected_options|map(attribute='title')|join(', ') }}
-      {% elif selected_option %}
-        {{ selected_option.title }}{% if selected_option.languages %} — {{ selected_option.languages | map(attribute='name') | join(', ') }}{% endif %}{% if selected_option.formats %} ({{ selected_option.formats|join(', ') }}){% endif %}
-      {% endif %}
-    </small></div>
+
   </div>
   {% if show_sim_outline %}
   <div>
