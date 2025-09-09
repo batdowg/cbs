@@ -354,7 +354,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 15. KT Theme & Sitemap
 
-KT theme stylesheet is served from Flask static (`/static/css/kt-theme.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Sitemap is admin-only.
+KT theme stylesheet is served from Flask static (`/static/css/kt-theme.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Base layout rules live in `/static/kt.css` (body flex, `.sidebar`, `.content`); missing these caused an unstyled left nav and pages. Brand CSS must layer on top of the existing site CSS, not replace it. Sitemap is admin-only.
 
 ## 15.1 Theme tokens
 
