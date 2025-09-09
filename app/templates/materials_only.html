@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Material Only Order{% endblock %}
+{% block content %}
+<h1>Material Only Order</h1>
+<form method="post">
+  <div><label>Title <input type="text" name="title" required></label></div>
+  <div><label>Client
+    <select name="client_id" required>
+      <option value=""></option>
+      {% for c in clients %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div><label>Region <input type="text" name="region"></label></div>
+  <div><label>Language <input type="text" name="language" value="en"></label></div>
+  <div><label>Workshop Type
+    <select name="workshop_type_id" required>
+      <option value=""></option>
+      {% for wt in workshop_types %}
+        <option value="{{ wt.id }}">{{ wt.name }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
+  <div>Delivery Type: Material Order</div>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

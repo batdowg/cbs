@@ -20,9 +20,11 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items.append({'id': 'my_sessions', 'label': 'My Sessions', 'endpoint': 'my_sessions.list_my_sessions'})
     if is_admin(user):
         sess_args = flask_session.get('sessions_list_args') if has_request_context() else None
-        items.append({'id': 'sessions', 'label': 'Sessions', 'endpoint': 'sessions.list_sessions', 'args': sess_args})
+        items.append({'id': 'sessions', 'label': 'Training Sessions', 'endpoint': 'sessions.list_sessions', 'args': sess_args})
+    if is_admin(user) or is_kcrm(user):
+        items.append({'id': 'materials_only', 'label': 'Material Only Order', 'endpoint': 'materials_only.create'})
     if is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user):
-        items.append({'id': 'materials', 'label': 'Materials', 'endpoint': 'materials_orders.list_orders'})
+        items.append({'id': 'materials', 'label': 'Material Dashboard', 'endpoint': 'materials_orders.list_orders'})
     items.append({'id': 'surveys', 'label': 'Surveys', 'endpoint': 'surveys'})
     if show_resources:
         items.append({'id': 'my_resources', 'label': 'My Resources', 'endpoint': 'learner.my_resources'})
@@ -77,9 +79,9 @@ def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
 
 
 VIEW_FILTERS = {
-    'ADMIN': {'home', 'my_sessions', 'sessions', 'materials', 'surveys', 'my_resources', 'profile', 'settings', 'logout'},
-    'SESSION_MANAGER': {'home', 'my_sessions', 'sessions', 'surveys', 'my_resources', 'profile', 'logout'},
-    'MATERIALS': {'home', 'my_sessions', 'materials', 'surveys', 'my_resources', 'profile', 'settings', 'logout'},
+    'ADMIN': {'home', 'my_sessions', 'sessions', 'materials_only', 'materials', 'surveys', 'my_resources', 'profile', 'settings', 'logout'},
+    'SESSION_MANAGER': {'home', 'my_sessions', 'sessions', 'materials_only', 'surveys', 'my_resources', 'profile', 'logout'},
+    'MATERIALS': {'home', 'my_sessions', 'materials_only', 'materials', 'surveys', 'my_resources', 'profile', 'settings', 'logout'},
     'DELIVERY': {'home', 'my_sessions', 'surveys', 'my_resources', 'profile', 'logout'},
     'LEARNER': {'home', 'my_workshops', 'my_resources', 'profile', 'logout'},
     'CSA': {'home', 'my_sessions', 'my_workshops', 'my_resources', 'profile', 'logout'},
