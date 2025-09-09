@@ -73,6 +73,15 @@ def test_always_renders_components_box(app):
     assert b"Physical components" in resp.data
 
 
+def test_material_format_always_visible(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert b"Material format" in resp.data
+
+
 def test_components_required_for_physical_and_mixed_only(app):
     with app.app_context():
         admin_id, session_id = _setup_data()
@@ -147,6 +156,19 @@ def test_digital_and_sim_only_disable_components(app):
     resp = client.get(f"/sessions/{session_id}/materials")
     assert re.search(b'value="WORKSHOP_LEARNER"[^>]*disabled', resp.data)
     assert not re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
+
+
+def test_simulation_defaults_to_sim_only(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+        shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+        shipment.order_type = "Simulation"
+        shipment.materials_format = None
+        db.session.commit()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert re.search(b'<option value="SIM_ONLY"[^>]*selected', resp.data)
 
 
 def test_sticky_values_on_error(app):
