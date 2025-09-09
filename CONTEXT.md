@@ -327,6 +327,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
 - **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py` (`code_to_label` powering global `lang_label` filter)
 - **Ops CLI**: `manage.py account_dupes`
+- **Theme**: `app/static/css/kt-theme.css` appended after existing CSS in `app/templates/base.html`; new brand CSS must not remove prior includes
 
 ---
 
@@ -353,7 +354,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 15. KT Theme & Sitemap
 
-KT theme stylesheet is served from Flask static (`/static/kt.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Sitemap is admin-only.
+KT theme stylesheet is served from Flask static (`/static/css/kt-theme.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Sitemap is admin-only.
 
 ## 15.1 Theme tokens
 
