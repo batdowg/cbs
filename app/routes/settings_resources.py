@@ -18,7 +18,7 @@ from sqlalchemy import func
 from ..app import db, User
 from ..models import Resource, WorkshopType, AuditLog
 from ..forms.resource_forms import slugify_filename, validate_resource_form
-from ..utils.storage import ensure_dir
+from ..shared.storage import ensure_dir
 
 bp = Blueprint("settings_resources", __name__, url_prefix="/settings/resources")
 

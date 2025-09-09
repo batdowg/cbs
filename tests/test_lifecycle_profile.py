@@ -16,7 +16,7 @@ from app.models import (
     ParticipantAccount,
 )
 from app.routes.sessions import _cb
-from app.utils.provisioning import provision_participant_accounts_for_session
+from app.shared.provisioning import provision_participant_accounts_for_session
 
 
 @pytest.fixture

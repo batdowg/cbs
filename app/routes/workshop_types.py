@@ -11,9 +11,9 @@ from ..models import (
     CertificateTemplateSeries,
     MaterialsOption,
 )
-from ..constants import BADGE_CHOICES
-from ..utils.html import sanitize_html
-from ..utils.languages import get_language_options
+from ..shared.constants import BADGE_CHOICES
+from ..shared.html import sanitize_html
+from ..shared.languages import get_language_options
 
 bp = Blueprint('workshop_types', __name__, url_prefix='/workshop-types')
 

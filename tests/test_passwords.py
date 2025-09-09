@@ -16,9 +16,9 @@ from app.models import (
     SessionParticipant,
     AuditLog,
 )
-from app.utils.provisioning import provision_participant_accounts_for_session
-from app.utils import accounts as acct_utils
-from app.constants import DEFAULT_PARTICIPANT_PASSWORD
+from app.shared.provisioning import provision_participant_accounts_for_session
+from app.shared import accounts as acct_utils
+from app.shared.constants import DEFAULT_PARTICIPANT_PASSWORD
 
 
 @pytest.fixture

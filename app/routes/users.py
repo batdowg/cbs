@@ -11,9 +11,9 @@ from sqlalchemy import or_, func
 
 from ..app import db, User
 from ..models import AuditLog, UserAuditLog
-from ..constants import ROLE_ATTRS, SYS_ADMIN
-from ..utils.acl import validate_role_combo, can_demote_to_contractor
-from ..utils.rbac import manage_users_required
+from ..shared.constants import ROLE_ATTRS, SYS_ADMIN
+from ..shared.acl import validate_role_combo, can_demote_to_contractor
+from ..shared.rbac import manage_users_required
 
 
 bp = Blueprint("users", __name__, url_prefix="/users")
@@ -241,7 +241,7 @@ def demote_contractor(user_id: int, current_user):
         if remaining == 0:
             flash("Cannot remove the last Admin/Sys Admin", "error")
             return redirect(url_for("users.edit_user", user_id=user.id))
-    from ..utils.accounts import demote_user_to_contractor
+    from ..shared.accounts import demote_user_to_contractor
 
     demote_user_to_contractor(user, current_user)
     db.session.commit()

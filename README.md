@@ -17,4 +17,4 @@ Environment variables:
 Authenticate as ktbooks@kepner-tregoe.com; default From is certificates@kepner-tregoe.com via settings.
 
 ## CSA helpers
-RBAC helpers live in `app/utils/acl.py`. CSAs may add or remove participants only until a session is marked Ready for Delivery.
+RBAC helpers live in `app/shared/acl.py`. CSAs may add or remove participants only until a session is marked Ready for Delivery.

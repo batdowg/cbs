@@ -5,8 +5,8 @@ from flask import current_app
 from sqlalchemy.orm import validates
 
 from ..app import db
-from ..utils.passwords import hash_password, check_password
-from ..constants import ROLE_ATTRS
+from ..shared.passwords import hash_password, check_password
+from ..shared.constants import ROLE_ATTRS
 
 from .simulation import SimulationOutline  # noqa: E402,F401
 

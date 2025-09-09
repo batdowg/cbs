@@ -7,7 +7,7 @@ import pytest
 from app.app import create_app, db
 from app.models import User, WorkshopType, Session, ParticipantAccount
 from app import emailer
-from app.constants import DEFAULT_CSA_PASSWORD
+from app.shared.constants import DEFAULT_CSA_PASSWORD
 
 
 @pytest.fixture

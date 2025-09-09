@@ -3,7 +3,7 @@ from flask_migrate import Migrate
 from flask.cli import FlaskGroup
 import click
 from sqlalchemy import func
-from app.utils.certificates import render_certificate
+from app.shared.certificates import render_certificate
 from app.models import Session, ParticipantAccount, User
 
 

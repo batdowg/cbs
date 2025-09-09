@@ -31,6 +31,7 @@ Every functional change must update this file **in the same PR**.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
 - “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
+- Experimental features must register in `shared.flags` and be disabled by default.
 
 ## 0.4 App Conventions & PR Hygiene
 - Keep migrations idempotent and reversible; guard enum/DDL changes carefully.
@@ -38,6 +39,7 @@ Every functional change must update this file **in the same PR**.
 - Update **this file** with any behavior or permission change.
 - Include “Where code lives” pointers in PR descriptions for new pages.
 - Tests: prefer integration tests that hit route + template path for core flows.
+- Formatting: Black-compatible; imports grouped as stdlib, third-party, local with blank lines between groups.
 
 ## 0.5 Test Strategy
 - **Buckets**:
@@ -323,34 +325,29 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 12. Where Code Lives (pointers)
 
-- **Nav & Menus**: `app/templates/nav.html`, helpers `app/utils/nav.py`, view prefs `app/utils/views.py`
-- **Home**: `app/templates/home.html` (+ role/view partials)
-- **Sessions**: routes `app/routes/sessions.py`
-  - List: `app/templates/sessions.html`
-  - Form: `app/templates/sessions/form.html`
-  - Detail: `app/templates/session_detail.html`
-  - Prework tab (staff): `app/templates/sessions/prework.html`
-  - Materials tab (session): `app/templates/sessions/materials.html`
-  - Participant add/import: `/sessions/<id>/participants/add` in `app/routes/sessions.py`
-- **Session language**: field on sessions form/route (`app/templates/sessions/form.html`, `app/routes/sessions.py`); consumed by `app/utils/certificates.py`
-- **Learner**: routes `app/routes/learner.py`
-  - My Workshops: `app/templates/my_sessions.html`
-  - My Certificates: `app/templates/my_certificates.html`
-  - Prework: `app/templates/my_prework.html`, `app/templates/prework_form.html`, `app/templates/prework_download.html`
-  - Profile (Certificate Name): `app/routes/learner.py`, `app/templates/profile.html`
-- **CSA**: routes `app/routes/csa.py`, template `app/templates/csa/my_sessions.html`
-- **Workshop Types**: `app/routes/workshop_types.py`, templates under `app/templates/workshop_types/`
-  - Prework config: `app/templates/workshop_types/prework.html`
-- **Resources (settings)**: `app/routes/settings_resources.py`, `app/templates/settings_resources/*.html`
-- **Simulation Outlines**: `app/routes/settings_simulations.py`, `app/templates/settings_simulations/*.html`
-- **Certificate Templates**: `app/routes/settings_cert_templates.py`, `app/templates/settings_cert_templates/*.html`
-- **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
-- **Material Only Order**: `app/routes/materials_only.py`, template `app/templates/materials_only.html`
-- **Users & Role Matrix**: `app/routes/users.py`, `app/templates/users/*.html` (matrix modal `app/templates/users/role_matrix.html`)
-- **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
-- **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
-- **Utils**: `app/utils/materials.py` (arrival logic), `app/utils/time.py`, `app/utils/acl.py`, `app/utils/languages.py` (`code_to_label` powering global `lang_label` filter)
-- **Ops CLI**: `manage.py account_dupes`
+The repo is organized **feature-first**. Top-level packages:
+
+- `accounts/`
+- `sessions/`
+- `materials/`
+- `certificates/`
+- `surveys/`
+- `settings/`
+- `admin/`
+- `shared/` – cross-cutting concerns (see below)
+
+Each feature package contains `routes/`, `models/`, `services/` (business rules), `forms/`, `templates/`, and a `README.md` noting scope and owner.
+
+`shared/` contains common infrastructure and is imported via `from app.shared`:
+
+- `permissions.py` – single decision point for all role/permission checks used by routes and templates.
+- `labels.py` – registry mapping codes → human-readable labels for languages, regions, etc.
+- `constants.py` – roles, statuses, regions, order types, material formats, certificate series.
+- `dates.py` – date/time helpers and validation rules (start/end, past-date acknowledgement).
+- `ui/partials/` – base layout, nav, common table filters, form controls, and modal shell.
+- `flags.py` – simple feature-flag registry for experimental work.
+
+Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and lists each route, owning module, and required permission.
 
 ---
 

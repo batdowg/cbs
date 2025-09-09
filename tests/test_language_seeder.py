@@ -4,7 +4,7 @@ import pytest
 
 from app.app import create_app, db, seed_languages_safely
 from app.models import Language
-from app.constants import LANGUAGE_NAMES
+from app.shared.constants import LANGUAGE_NAMES
 
 
 @pytest.fixture

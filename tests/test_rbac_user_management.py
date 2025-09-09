@@ -3,8 +3,8 @@ import pytest
 
 from app.app import create_app, db
 from app.models import User
-from app.utils.nav import build_menu
-from app.utils.acl import is_kt_staff
+from app.shared.nav import build_menu
+from app.shared.acl import is_kt_staff
 
 
 @pytest.fixture

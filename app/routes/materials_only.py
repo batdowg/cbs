@@ -24,9 +24,9 @@ from ..models import (
     SessionShipping,
     WorkshopType,
 )
-from ..utils.languages import get_language_options
-from ..utils.materials import PHYSICAL_COMPONENTS, material_format_choices
-from ..utils.regions import get_region_options
+from ..shared.languages import get_language_options
+from ..shared.materials import PHYSICAL_COMPONENTS, material_format_choices
+from ..shared.regions import get_region_options
 from .materials import ORDER_TYPES
 
 bp = Blueprint("materials_only", __name__)

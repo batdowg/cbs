@@ -23,14 +23,14 @@ from ..models import (
     PreworkEmailLog,
     Session,
 )
-from ..utils.auth_bridge import lookup_identity, verify_password, login_identity
-from ..utils.time import now_utc
+from ..shared.auth_bridge import lookup_identity, verify_password, login_identity
+from ..shared.time import now_utc
 from .. import emailer
 import hashlib
 import hmac
 import secrets
 from datetime import timedelta, timezone
-from ..constants import MAGIC_LINK_TTL_DAYS
+from ..shared.constants import MAGIC_LINK_TTL_DAYS
 
 bp = Blueprint("auth", __name__)
 

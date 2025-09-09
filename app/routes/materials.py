@@ -25,7 +25,7 @@ from ..models import (
     ClientShippingLocation,
     SimulationOutline,
 )
-from ..utils.materials import (
+from ..shared.materials import (
     PHYSICAL_COMPONENTS,
     material_format_choices,
 )

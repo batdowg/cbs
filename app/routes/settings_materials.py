@@ -2,7 +2,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from ..app import db
 from ..models import MaterialsOption, Language
-from ..utils.rbac import admin_required
+from ..shared.rbac import admin_required
 
 bp = Blueprint('settings_materials', __name__, url_prefix='/settings/materials')
 

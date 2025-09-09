@@ -6,7 +6,7 @@ import pytest
 
 from app.app import create_app, db
 from app.models import User, WorkshopType, Session, SimulationOutline, Client, SessionShipping
-from app.utils.materials import latest_arrival_date
+from app.shared.materials import latest_arrival_date
 
 
 @pytest.fixture

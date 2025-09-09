@@ -5,8 +5,8 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from ..app import db
 from ..models import CertificateTemplateSeries, CertificateTemplate
-from ..utils.rbac import manage_users_required
-from ..utils.languages import get_language_options
+from ..shared.rbac import manage_users_required
+from ..shared.languages import get_language_options
 
 bp = Blueprint("settings_cert_templates", __name__, url_prefix="/settings/cert-templates")
 
