@@ -160,8 +160,8 @@ def create_app():
             "view_options": view_opts,
         }
 
-    @app.get("/healthz")
-    def healthz():  # pragma: no cover - simple healthcheck
+    @app.get("/health")
+    def health():  # pragma: no cover - simple healthcheck
         return "OK", 200
 
     @app.get("/home", endpoint="home")
