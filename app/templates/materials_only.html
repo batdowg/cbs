@@ -3,26 +3,192 @@
 {% block content %}
 <h1>Material Only Order</h1>
 <form method="post">
-  <div><label>Title <input type="text" name="title" required></label></div>
-  <div><label>Client
-    <select name="client_id" required>
-      <option value=""></option>
-      {% for c in clients %}
-        <option value="{{ c.id }}">{{ c.name }}</option>
+  <fieldset>
+    <legend>Session Info</legend>
+    <div><label>Title <input type="text" name="title" required></label></div>
+    <div><label>Client
+      <select name="client_id" id="client-select" required>
+        <option value=""></option>
+        {% for c in clients %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Region
+      <select name="region" required>
+        <option value=""></option>
+        {% for code,label in regions %}
+          <option value="{{ code }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Language
+      <select name="language" id="lang-select" required>
+        {% for code,label in languages %}
+          <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Workshop Type
+      <select name="workshop_type_id" id="wt-select" required>
+        <option value=""></option>
+        {% for wt in workshop_types %}
+          <option value="{{ wt.id }}" data-langs="{{ wt.supported_languages|join(' ') if wt.supported_languages else '' }}" data-sim="{{ 1 if wt.simulation_based else 0 }}" data-default-material="{{ wt.default_materials_option_id or '' }}">{{ wt.name }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div>Delivery Type: Material Order</div>
+  </fieldset>
+  <fieldset>
+    <legend>Materials</legend>
+    <div><label>Shipping location
+      <select name="shipping_location_id" id="shipping-location-select">
+        <option value=""></option>
+        {% for loc in shipping_locations %}
+          <option value="{{ loc.id }}" data-client="{{ loc.client_id }}">{{ loc.display_name() }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div><label>Order Type
+      <select name="order_type" data-options-url="{{ url_for('materials_only.options') }}">
+        {% for ot in order_types %}
+          <option value="{{ ot }}" {% if ot=='Client-run Bulk order' %}selected{% endif %}>{{ ot }}</option>
+        {% endfor %}
+      </select>
+    </label></div>
+    <div id="materials-type" style="display:none">Materials type:
+      <select name="materials_option_id" id="materials-option"></select>
+      <div id="materials-option-info" style="font-size:smaller"></div>
+    </div>
+    <div>
+      <label>Material format
+        <select name="materials_format" id="materials-format">
+          <option value=""></option>
+          {% for key,label in material_formats %}
+            <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <fieldset class="components">
+      <legend>Physical components</legend>
+      {% for key,label in physical_components %}
+        <label><input type="checkbox" name="components" value="{{ key }}"> {{ label }}</label><br>
       {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Region <input type="text" name="region"></label></div>
-  <div><label>Language <input type="text" name="language" value="en"></label></div>
-  <div><label>Workshop Type
-    <select name="workshop_type_id" required>
-      <option value=""></option>
-      {% for wt in workshop_types %}
-        <option value="{{ wt.id }}">{{ wt.name }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div>Delivery Type: Material Order</div>
+    </fieldset>
+    <div>Latest arrival date: <input type="date" name="arrival_date"></div>
+    <div>Ship date: <input type="date" name="ship_date"></div>
+    <div>PO Number: <input type="text" name="materials_po_number"></div>
+    <div id="material-sets"><label>Material Sets <input type="number" name="material_sets" min="0" value="0"></label></div>
+    <div id="credits-field" style="display:none"><label># of credits (2 teams per credit) <input type="number" name="credits" min="0" value="2"></label></div>
+  </fieldset>
   <button type="submit">Save</button>
 </form>
+<script>
+  var langSelect = document.getElementById('lang-select');
+  var typeSelect = document.getElementById('wt-select');
+  function filterTypes(){
+    if(!langSelect || !typeSelect) return;
+    var lang = langSelect.value;
+    Array.from(typeSelect.options).forEach(function(opt){
+      if(!opt.value) return;
+      var langs = (opt.dataset.langs || '').split(' ');
+      var show = langs.indexOf(lang) !== -1;
+      opt.hidden = !show;
+      if(!show && opt.selected){ opt.selected = false; }
+    });
+    updateCreditsVisibility(orderType.value);
+  }
+  langSelect && langSelect.addEventListener('change', filterTypes);
+  var clientSelect = document.getElementById('client-select');
+  var shipSelect = document.getElementById('shipping-location-select');
+  function filterLocations(){
+    if(!clientSelect || !shipSelect) return;
+    var cid = clientSelect.value;
+    Array.from(shipSelect.options).forEach(function(opt){
+      if(!opt.value) return;
+      var show = !cid || opt.dataset.client === cid;
+      opt.hidden = !show;
+      if(!show && opt.selected){ opt.selected = false; }
+    });
+  }
+  clientSelect && clientSelect.addEventListener('change', filterLocations);
+  var orderType = document.querySelector('select[name="order_type"]');
+  var materialsDiv = document.getElementById('materials-type');
+  var materialsSelect = document.getElementById('materials-option');
+  var materialsInfo = document.getElementById('materials-option-info');
+  var defaultMaterials = {};
+  Array.from(typeSelect.options).forEach(function(opt){ defaultMaterials[opt.value] = opt.dataset.defaultMaterial || ''; });
+  function updateMaterialsInfo(){
+    if(!materialsSelect || !materialsInfo) return;
+    var labels = Array.from(materialsSelect.selectedOptions).map(o=>o.textContent);
+    materialsInfo.textContent = labels.join(', ');
+  }
+  function applyDefaultMaterial(){
+    if(materialsSelect.dataset.touched) return;
+    var wtId = typeSelect.value;
+    var def = defaultMaterials[wtId];
+    if(def){
+      var opt = Array.from(materialsSelect.options).find(o => o.value == def);
+      if(opt) opt.selected = true;
+    }
+    updateMaterialsInfo();
+  }
+  var materialSetsDiv = document.getElementById('material-sets');
+  var creditsDiv = document.getElementById('credits-field');
+  function updateCreditsVisibility(ot){
+    if(!creditsDiv) return;
+    var opt = typeSelect.options[typeSelect.selectedIndex];
+    var isSimType = opt && opt.dataset.sim === '1';
+    var show = (ot === 'Simulation') || isSimType;
+    creditsDiv.style.display = show ? 'block' : 'none';
+  }
+  function toggleExtras(ot){
+    if(materialSetsDiv){ materialSetsDiv.style.display = (ot === 'Simulation') ? 'none' : 'block'; }
+    updateCreditsVisibility(ot);
+  }
+  function loadOptions(ot){
+    if(!materialsSelect) return;
+    materialsSelect.innerHTML = '';
+    materialsSelect.multiple = (ot === 'KT-Run Modular materials');
+    if(ot !== 'KT-Run Modular materials'){
+      var empty = document.createElement('option'); empty.value=''; materialsSelect.appendChild(empty);
+    }
+    fetch(orderType.dataset.optionsUrl + '?order_type=' + encodeURIComponent(ot))
+      .then(r => r.json())
+      .then(data => {
+        data.options.forEach(function(opt){
+          var o = document.createElement('option');
+          o.value = opt.id; o.textContent = opt.title;
+          materialsSelect.appendChild(o);
+        });
+        if(materialsDiv){ materialsDiv.style.display = ot ? 'block' : 'none'; }
+        applyDefaultMaterial();
+        updateMaterialsInfo();
+      });
+    toggleExtras(ot);
+  }
+  materialsSelect && materialsSelect.addEventListener('change', function(){ this.dataset.touched='1'; updateMaterialsInfo(); });
+  typeSelect && typeSelect.addEventListener('change', function(){ applyDefaultMaterial(); updateCreditsVisibility(orderType.value); });
+  orderType && orderType.addEventListener('change', function(){ loadOptions(this.value); });
+  var fmtSel = document.getElementById('materials-format');
+  var boxes = Array.from(document.querySelectorAll('input[name="components"]'));
+  function applyComponentState(){
+    var fmt = fmtSel.value;
+    var disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
+    boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
+    if(fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
+  }
+  function applyAutoFormat(){
+    if(orderType.value === 'Simulation' && !fmtSel.value){ fmtSel.value = 'SIM_ONLY'; }
+    applyComponentState();
+  }
+  fmtSel && fmtSel.addEventListener('change', applyComponentState);
+  orderType && orderType.addEventListener('change', applyAutoFormat);
+  filterTypes();
+  filterLocations();
+  loadOptions(orderType.value);
+  applyAutoFormat();
+  updateCreditsVisibility(orderType.value);
+</script>
 {% endblock %}
