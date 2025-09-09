@@ -243,6 +243,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
+- Region and Language are selects showing human-readable labels while storing codes. Changing Language filters Workshop Type options immediately, and the full Materials form renders on first load (no pre-save gating).
 - When `materials_only = true`, Training-session features (participants, prework, certificates) are hidden/denied.
 - Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
