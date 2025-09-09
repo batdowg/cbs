@@ -39,6 +39,29 @@ Every functional change must update this file **in the same PR**.
 - Include “Where code lives” pointers in PR descriptions for new pages.
 - Tests: prefer integration tests that hit route + template path for core flows.
 
+## 0.5 Test Strategy
+- **Buckets**:
+  - **Smoke** – fast, deterministic core flows.
+  - **Full** – all tests except `slow` and `quarantine`.
+  - **Slow** – long-running tests executed nightly.
+  - **Quarantine** – flaky tests excluded until stabilized.
+- **Run policy**:
+
+| Context         | Buckets                     |
+|-----------------|-----------------------------|
+| Local / PR      | Smoke                       |
+| CI push / merge | Full (parallel)             |
+| Nightly         | Full + Slow + static checks |
+
+- **Running**: use the marker name (`smoke`, `full`, `slow`, `quarantine`) to select buckets.
+- **Timing (top 5 tests, seconds)**:
+  - `test_passwords::test_manual_participant_create_login` – 0.91
+  - `test_passwords::test_forgot_password_flow` – 0.83
+  - `test_passwords::test_admin_set_password_logs` – 0.83
+  - `test_csa_assign_email::test_csa_assign_email_logs` – 0.81
+  - `test_passwords::test_add_staff_user_as_participant` – 0.81
+- **Quarantined tests**: none
+
 ---
 
 # 1. Roles & Menus

@@ -1,6 +1,8 @@
 import os
 import pytest
 
+pytestmark = pytest.mark.smoke
+
 from app.app import create_app, db
 from app.models import User, ParticipantAccount, AuditLog
 

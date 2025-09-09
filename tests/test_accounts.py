@@ -2,6 +2,9 @@ import pathlib
 import sys
 
 import os
+import pytest
+
+pytestmark = pytest.mark.smoke
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
