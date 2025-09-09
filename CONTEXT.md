@@ -240,6 +240,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - **All Physical** → 4 checkboxes visible and auto-checked (editable)
   - **Mixed** → 4 visible, unchecked
   - **All Digital / SIM Only** → 4 visible, disabled
+- Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
+- **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
+- **Simulation outline** selector appears only when the chosen Workshop Type is simulation-based.
+- **Order Type** = “Simulation” auto-sets **Material Format** to **SIM Only**.
 - **Role Matrix**: view-only modal launched from `/users`; standalone `/settings/roles` page removed.
 
 ---
@@ -285,6 +289,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Nav & Menus**: `app/templates/nav.html`, helpers `app/utils/nav.py`, view prefs `app/utils/views.py`
 - **Home**: `app/templates/home.html` (+ role/view partials)
 - **Sessions**: routes `app/routes/sessions.py`
+  - List: `app/templates/sessions.html`
   - Form: `app/templates/sessions/form.html`
   - Detail: `app/templates/session_detail.html`
   - Prework tab (staff): `app/templates/sessions/prework.html`

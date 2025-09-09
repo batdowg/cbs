@@ -30,6 +30,14 @@
       {% endfor %}
     </select>
   </label></div>
+  <div><label>Default Materials Type
+    <select name="default_materials_option_id">
+      <option value=""></option>
+      {% for opt in materials_options %}
+      <option value="{{ opt.id }}" {% if wt and wt.default_materials_option_id==opt.id %}selected{% endif %}>{{ opt.title }}</option>
+      {% endfor %}
+    </select>
+  </label></div>
   <div><label>Certificate series
     <select name="cert_series" required>
       {% for s in series %}

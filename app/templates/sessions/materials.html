@@ -65,6 +65,9 @@
       {{ sess.shipping_location.country|default('', true) }}
     {% endif %}
   </div><br>
+  <div>Workshop Type: {% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %}</div>
+  <div>Delivery Type: {{ sess.delivery_type|default('', true) }}</div>
+  <br>
   <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
       {% set ot_val = form.get('order_type') if form else shipment.order_type %}
@@ -186,6 +189,7 @@
 <script>
   (function(){
     const fmtSel = document.querySelector('select[name="materials_format"]');
+    const orderSel = document.querySelector('select[name="order_type"]');
     const boxes = [...document.querySelectorAll('input[name="components"]')];
     function applyState(){
       const fmt = fmtSel?.value || '';
@@ -193,7 +197,18 @@
       boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
       if(fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
     }
-    fmtSel && (fmtSel.addEventListener('change', applyState), applyState());
+    function applyAutoFormat(){
+      if(!fmtSel) return;
+      if(orderSel?.value === 'Simulation'){
+        fmtSel.value = 'SIM_ONLY';
+      }else if(fmtSel.value === 'SIM_ONLY'){
+        fmtSel.value = '';
+      }
+      applyState();
+    }
+    fmtSel && fmtSel.addEventListener('change', applyState);
+    orderSel && orderSel.addEventListener('change', applyAutoFormat);
+    applyAutoFormat();
   })();
   var shipBtn = document.getElementById('add-shipping-location');
   var clientId = {{ sess.client_id or 'null' }};

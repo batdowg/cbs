@@ -9,6 +9,7 @@ from ..models import (
     PreworkTemplate,
     PreworkQuestion,
     CertificateTemplateSeries,
+    MaterialsOption,
 )
 from ..constants import BADGE_CHOICES
 from ..utils.html import sanitize_html
@@ -49,12 +50,18 @@ def new_type(current_user):
         .order_by(CertificateTemplateSeries.code)
         .all()
     )
+    materials_options = (
+        MaterialsOption.query.filter_by(is_active=True)
+        .order_by(MaterialsOption.title)
+        .all()
+    )
     return render_template(
         'workshop_types/form.html',
         wt=None,
         badge_choices=BADGE_CHOICES,
         language_options=get_language_options(),
         series=series,
+        materials_options=materials_options,
     )
 
 
@@ -87,6 +94,8 @@ def create_type(current_user):
         supported_languages=langs or ['en'],
         cert_series=series_code,
     )
+    dmo = request.form.get('default_materials_option_id')
+    wt.default_materials_option_id = int(dmo) if dmo else None
     db.session.add(wt)
     db.session.flush()
     db.session.add(
@@ -112,12 +121,18 @@ def edit_type(type_id: int, current_user):
         .order_by(CertificateTemplateSeries.code)
         .all()
     )
+    materials_options = (
+        MaterialsOption.query.filter_by(is_active=True)
+        .order_by(MaterialsOption.title)
+        .all()
+    )
     return render_template(
         'workshop_types/form.html',
         wt=wt,
         badge_choices=BADGE_CHOICES,
         language_options=get_language_options(),
         series=series,
+        materials_options=materials_options,
     )
 
 
@@ -134,6 +149,8 @@ def update_type(type_id: int, current_user):
     wt.simulation_based = bool(request.form.get('simulation_based'))
     langs = request.form.getlist('supported_languages')
     wt.supported_languages = langs or ['en']
+    dmo = request.form.get('default_materials_option_id')
+    wt.default_materials_option_id = int(dmo) if dmo else None
     series_code = (request.form.get('cert_series') or '').strip()
     if not series_code:
         flash('Certificate series required', 'error')
