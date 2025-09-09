@@ -12,6 +12,7 @@ from flask import (
     url_for,
     request,
     flash,
+    current_app,
 )
 
 import os
@@ -44,7 +45,10 @@ autosave_hits: dict[int, list[float]] = {}
 def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        if "user_id" not in flask_session and "participant_account_id" not in flask_session:
+        if (
+            "user_id" not in flask_session
+            and "participant_account_id" not in flask_session
+        ):
             return redirect(url_for("auth.login"))
         return fn(*args, **kwargs)
 
@@ -65,11 +69,9 @@ def my_workshops():
     elif user_id:
         user = db.session.get(User, user_id)
         email = (user.email or "").lower()
-        account = (
-            ParticipantAccount.query.filter(
-                func.lower(ParticipantAccount.email) == email
-            ).first()
-        )
+        account = ParticipantAccount.query.filter(
+            func.lower(ParticipantAccount.email) == email
+        ).first()
         account_id = account.id if account else None
     else:
         return redirect(url_for("auth.login"))
@@ -285,7 +287,8 @@ def prework_download(assignment_id: int):
         questions=questions,
         answers=answers,
     )
-    
+
+
 @bp.get("/my-certificates")
 @login_required
 def my_certs():
@@ -377,9 +380,21 @@ def profile():
     return render_template(
         "profile.html",
         email=email,
-        full_name=(user.full_name if user_id else account.full_name) if (user or account) else "",
-        certificate_name=(account.certificate_name if account else (user.full_name if user_id and user else "")),
-        preferred_language=(user.preferred_language if user_id else account.preferred_language) if (user or account) else "en",
+        full_name=(
+            (user.full_name if user_id else account.full_name)
+            if (user or account)
+            else ""
+        ),
+        certificate_name=(
+            account.certificate_name
+            if account
+            else (user.full_name if user_id and user else "")
+        ),
+        preferred_language=(
+            (user.preferred_language if user_id else account.preferred_language)
+            if (user or account)
+            else "en"
+        ),
         title=user.title if user_id and user else "",
         is_staff=bool(user_id),
         has_participant=bool(account),
@@ -411,4 +426,5 @@ def download_certificate(cert_id: int):
         allowed = staff
     if not allowed:
         abort(403)
-    return send_file(os.path.join("/srv", cert.pdf_path), as_attachment=True)
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    return send_file(os.path.join(site_root, cert.pdf_path), as_attachment=True)
