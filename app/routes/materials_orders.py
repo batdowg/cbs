@@ -7,7 +7,7 @@ from flask import Blueprint, abort, redirect, render_template, request, session 
 from ..app import db, User
 from ..models import Session, SessionShipping, Client, WorkshopType
 from .materials import ORDER_TYPES, ORDER_STATUSES, can_manage_shipment, is_view_only
-from app.utils.materials import latest_arrival_date
+from app.shared.materials import latest_arrival_date
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
 

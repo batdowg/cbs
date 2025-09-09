@@ -32,7 +32,7 @@ from ..models import (
 )
 from ..models import Resource, WorkshopType
 from ..models import resource_workshop_types
-from ..utils.languages import get_language_options
+from ..shared.languages import get_language_options
 
 import time
 

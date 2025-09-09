@@ -38,22 +38,22 @@ from ..models import (
     PreworkAssignment,
     PreworkEmailLog,
 )
-from ..utils.time import now_utc, fmt_time, fmt_dt
+from ..shared.time import now_utc, fmt_time, fmt_dt
 from sqlalchemy import or_, func
-from ..utils.certificates import (
+from ..shared.certificates import (
     render_certificate,
     render_for_session,
     remove_session_certificates,
 )
-from ..utils.provisioning import (
+from ..shared.provisioning import (
     deactivate_orphan_accounts_for_session,
     provision_participant_accounts_for_session,
 )
-from ..constants import MAGIC_LINK_TTL_DAYS, DEFAULT_CSA_PASSWORD
+from ..shared.constants import MAGIC_LINK_TTL_DAYS, DEFAULT_CSA_PASSWORD
 from .. import emailer
-from ..utils.rbac import csa_allowed_for_session
-from ..utils.accounts import ensure_participant_account
-from ..utils.acl import (
+from ..shared.rbac import csa_allowed_for_session
+from ..shared.accounts import ensure_participant_account
+from ..shared.acl import (
     is_admin,
     is_kcrm,
     is_delivery,
@@ -64,7 +64,7 @@ from ..utils.acl import (
     csa_can_manage_participants,
     session_start_dt_utc,
 )
-from ..utils.languages import get_language_options
+from ..shared.languages import get_language_options
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 

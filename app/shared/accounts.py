@@ -10,8 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from ..app import db
 from ..models import Participant, ParticipantAccount, User, AuditLog
 from .strings import normalize_email
-from ..constants import DEFAULT_PARTICIPANT_PASSWORD, ROLE_ATTRS, CONTRACTOR
-from ..utils.acl import validate_role_combo, can_demote_to_contractor
+from .constants import DEFAULT_PARTICIPANT_PASSWORD, ROLE_ATTRS, CONTRACTOR
+from .acl import validate_role_combo, can_demote_to_contractor
 
 
 def get_participant_account_by_email(email: str) -> Optional[ParticipantAccount]:

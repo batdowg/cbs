@@ -17,7 +17,7 @@ from app.models import (
     CertificateTemplateSeries,
     CertificateTemplate,
 )
-from app.utils.certificates import render_for_session
+from app.shared.certificates import render_for_session
 
 
 @pytest.fixture

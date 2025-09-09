@@ -12,8 +12,8 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from app.app import create_app, db
 from app.models import Participant, ParticipantAccount
-from app.utils import accounts as acct_utils
-from app.constants import DEFAULT_PARTICIPANT_PASSWORD
+from app.shared import accounts as acct_utils
+from app.shared.constants import DEFAULT_PARTICIPANT_PASSWORD
 
 
 def test_ensure_account_case_insensitive_reuse():

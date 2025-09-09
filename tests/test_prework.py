@@ -3,7 +3,7 @@ import secrets
 
 from app.app import create_app, db
 from app import emailer
-from app.constants import DEFAULT_PARTICIPANT_PASSWORD
+from app.shared.constants import DEFAULT_PARTICIPANT_PASSWORD
 from app.models import (
     User,
     WorkshopType,

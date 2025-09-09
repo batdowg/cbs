@@ -5,7 +5,7 @@ from typing import Dict
 from sqlalchemy import func
 
 from ..app import db, User
-from ..constants import DEFAULT_PARTICIPANT_PASSWORD
+from .constants import DEFAULT_PARTICIPANT_PASSWORD
 from ..models import Participant, ParticipantAccount, SessionParticipant, Session
 
 

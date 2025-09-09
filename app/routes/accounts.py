@@ -3,7 +3,7 @@ from sqlalchemy import func
 
 from ..app import db
 from ..models import ParticipantAccount, Participant, AuditLog
-from ..utils.rbac import admin_required
+from ..shared.rbac import admin_required
 
 bp = Blueprint("accounts", __name__, url_prefix="/accounts")
 

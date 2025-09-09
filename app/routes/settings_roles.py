@@ -1,6 +1,6 @@
 from flask import Blueprint, redirect, url_for
 
-from ..utils.rbac import manage_users_required
+from ..shared.rbac import manage_users_required
 
 bp = Blueprint("settings_roles", __name__, url_prefix="/settings")
 

@@ -5,7 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from ..app import db
 from ..models import Settings
-from ..utils.rbac import app_admin_required
+from ..shared.rbac import app_admin_required
 from ..emailer import send
 
 bp = Blueprint("settings_mail", __name__)

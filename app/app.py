@@ -33,13 +33,13 @@ from .models import (
     PreworkAssignment,
 )
 from .models import resource  # ensures app/models/resource.py is imported
-from .utils.badges import best_badge_url, slug_for_badge
-from .utils.rbac import app_admin_required
-from .constants import LANGUAGE_NAMES
-from .utils.time import fmt_dt, fmt_time, fmt_time_range_with_tz
-from .utils.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
-from .utils.nav import build_menu
-from .utils.languages import code_to_label
+from .shared.badges import best_badge_url, slug_for_badge
+from .shared.rbac import app_admin_required
+from .shared.constants import LANGUAGE_NAMES
+from .shared.time import fmt_dt, fmt_time, fmt_time_range_with_tz
+from .shared.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
+from .shared.nav import build_menu
+from .shared.languages import code_to_label
 
 
 def create_app():

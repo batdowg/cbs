@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from ..app import db, User
 from ..models import SimulationOutline, AuditLog
-from ..utils.acl import is_kt_staff, is_delivery, is_contractor
+from ..shared.acl import is_kt_staff, is_delivery, is_contractor
 
 bp = Blueprint("settings_simulations", __name__, url_prefix="/settings/simulations")
 
