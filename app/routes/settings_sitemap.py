@@ -157,6 +157,5 @@ def write_snapshot() -> Response:
 
 @bp.get("/snapshot")
 def snapshot_file() -> Response:
-    _current_user()
     root = Path(current_app.root_path).parent
     return send_from_directory(root, "SITE_MAP.md", as_attachment=False)
