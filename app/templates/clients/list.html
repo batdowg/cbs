@@ -9,7 +9,7 @@
   <tr>
     <td><a href="{{ url_for('clients.edit_client', client_id=c.id) }}">{{ c.name }}</a></td>
     <td>{{ c.status }}</td>
-    <td>{{ c.data_region }}</td>
+    <td>{{ c.data_region|region_label }}</td>
     <td>{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}</td>
     <td>
       <form action="{{ url_for('clients.delete_client', client_id=c.id) }}" method="post" style="display:inline">

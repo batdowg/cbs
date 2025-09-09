@@ -56,6 +56,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},
             {'id': 'certificate_templates', 'label': 'Certificate Templates', 'endpoint': 'settings_cert_templates.list_series'},
             {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},
+            {'id': 'sitemap', 'label': 'Sitemap', 'endpoint': 'settings_sitemap.sitemap'},
         ])
     if settings_children:
         items.append({'id': 'settings', 'label': 'Settings', 'children': settings_children})

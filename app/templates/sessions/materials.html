@@ -56,7 +56,7 @@
 <form method="post">
   <input type="hidden" name="action" value="update_header">
   <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}</div>
-  <div>Delivery region: {{ sess.region|default('', true) }}</div>
+  <div>Delivery region: {{ sess.region|region_label }}</div>
   <div>Workshop start date: {{ sess.start_date|default('', true) }}</div>
   <div>SFC Project link:
     {% if sess.client and sess.client.sfc_link %}

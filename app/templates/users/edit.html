@@ -8,10 +8,9 @@
   <p>Title: <input type="text" name="title" value="{{ user.title or '' }}" maxlength="255" autocomplete="off"></p>
   <p>Region:
     <select name="region" required autocomplete="off">
-      <option value="NA" {% if user.region=='NA' %}selected{% endif %}>NA</option>
-      <option value="EU" {% if user.region=='EU' %}selected{% endif %}>EU</option>
-      <option value="SEA" {% if user.region=='SEA' %}selected{% endif %}>SEA</option>
-      <option value="Other" {% if user.region=='Other' %}selected{% endif %}>Other</option>
+      {% for code,label in region_options() %}
+      <option value="{{ code }}" {% if user.region==code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
     </select>
   </p>
   {% if current_user.is_app_admin %}

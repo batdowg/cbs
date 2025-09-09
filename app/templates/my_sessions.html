@@ -23,7 +23,7 @@
       <td>{{ s.location }}</td>
       <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
       <td>{{ s.start_date }} to {{ s.end_date }}; {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
-      <td>{{ s.region }}</td>
+      <td>{{ s.region|region_label }}</td>
       <td>{{ s.delivery_type }}</td>
       <td>{{ s.computed_status }}</td>
       <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>

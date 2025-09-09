@@ -21,11 +21,11 @@
     <div><label>Region*
       <select name="region" required>
         <option value="">--Select--</option>
-        {% for opt in ['NA','EU','SEA','Other'] %}
-        <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
+        {% for code,label in region_options() %}
+        <option value="{{ code }}" {% if session and session.region==code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-    </label>  
+    </label>
 
     <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label>  
     <label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
@@ -164,8 +164,8 @@
     <div><label>Data Region
       <select name="data_region">
         <option value=""></option>
-        {% for opt in ['NA','EU','SEA','Other'] %}
-        <option value="{{ opt }}">{{ opt }}</option>
+        {% for code,label in region_options() %}
+        <option value="{{ code }}">{{ label }}</option>
         {% endfor %}
       </select>
     </label></div>

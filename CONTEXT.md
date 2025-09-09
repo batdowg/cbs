@@ -348,3 +348,34 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
 - Contractor menu/capabilities updated per §1.2/§1.4.  
 - Materials dashboard documented to current behavior.
+
+---
+
+# 15. KT Theme & Sitemap
+
+## 15.1 Theme tokens
+
+CSS tokens live in `app/static/css/kt-theme.css` and are included via `app/templates/base.html`.
+
+| Token | Purpose |
+|-------|---------|
+| `--kt-blue` | Primary actions / links |
+| `--kt-blue-600` | Primary hover |
+| `--kt-lightblue` | Secondary/info chips |
+| `--kt-orange` | Accent |
+| `--kt-red` | Errors |
+| `--kt-yellow` | Notices/banners |
+| `--kt-green` | Success |
+| `--kt-text` | Body text |
+| `--kt-muted` | Muted text |
+| `--kt-border` | Table/form borders |
+| `--kt-bg` | Page/card backgrounds |
+| `--kt-font-family` | `Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif` |
+
+Typography: body 16px; `h1` 32px, `h2` 24px, `h3` 20px.
+
+Buttons use kt-blue with white text (hover kt-blue-600); `.secondary` buttons use kt-lightblue with dark text. Links are kt-blue with underline on hover. Tables and forms use white backgrounds, kt-border rules, 4–6px radius, and 8/12/16px spacing. Left-nav active links highlight with kt-blue background. Ensure contrast: use dark text on orange/red/yellow/green accents.
+
+## 15.2 Sitemap & Page Inventory
+
+Admin-only page at `/settings/sitemap` (`settings_sitemap` blueprint, template `settings_sitemap.html`). Lists path, methods, endpoint, menu label, roles, template, notes, and link for each route. Filters: keyword, role, area (Admin/Staff/Participant/Public). `Export` downloads CSV of current view. `Write snapshot` creates/updates `SITE_MAP.md` at repo root; file served at `/settings/sitemap/snapshot` and linked from the page. Nav item registered in `app/utils/nav.py`.
