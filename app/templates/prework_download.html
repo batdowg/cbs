@@ -1,14 +1,7 @@
-{% extends "base.html" %}
-{% block title %}Prework{% endblock %}
-{% block body_class %}print-page{% endblock %}
-{% block extra_head %}
-<style>
-  body.print-page { justify-content:flex-start; }
-  body.print-page .sidebar { display:none; }
-  body.print-page .content { flex:1; }
-</style>
-{% endblock %}
-{% block content %}
+<!doctype html>
+<html>
+<head><title>Prework</title></head>
+<body>
 <h1>Prework for {{ assignment.session.title if assignment.session else '' }}</h1>
 {% for q in questions %}
 <div>
@@ -25,4 +18,5 @@
 </div>
 {% endfor %}
 <script>window.print()</script>
-{% endblock %}
+</body>
+</html>

@@ -322,7 +322,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Certificate Templates**: `app/routes/settings_cert_templates.py`, `app/templates/settings_cert_templates/*.html`
 - **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
 - **Material Only Order**: `app/routes/materials_only.py`, template `app/templates/materials_only.html`
-- **Settings – Password**: route `/settings/password` in `app/app.py`, template `app/templates/password.html`
 - **Users & Role Matrix**: `app/routes/users.py`, `app/templates/users/*.html` (matrix modal `app/templates/users/role_matrix.html`)
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
@@ -355,7 +354,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 15. KT Theme & Sitemap
 
-KT theme stylesheet is served from Flask static (`/static/css/kt-theme.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Base layout rules live in `/static/kt.css` (body flex, `.sidebar`, `.content`); a missing file once returned 404 and left pages unstyled. Restoring `app/static/kt.css` and ensuring every template extends `base.html` makes `/static/kt.css` load before `/static/css/kt-theme.css` on all pages. Brand CSS must layer on top of the existing site CSS, not replace it. Sitemap is admin-only.
+KT theme stylesheet is served from Flask static (`/static/css/kt-theme.css`) and linked in `app/templates/base.html` after existing styles; do not remove prior CSS. Base layout rules live in `/static/kt.css` (body flex, `.sidebar`, `.content`); missing these caused an unstyled left nav and pages. Brand CSS must layer on top of the existing site CSS, not replace it. Sitemap is admin-only.
 
 `app/templates/base.html` provides a `body_class` block so pages can scope layout tweaks. A legacy standalone `login.html` bypassed the base template and was removed; the remaining login template sets `body_class="login-page"` and scopes its CSS to that class to avoid global overrides.
 
