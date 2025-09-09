@@ -6,7 +6,7 @@ from flask import Blueprint, abort, redirect, render_template, request, session 
 
 from ..app import db, User
 from ..models import Session, SessionShipping, Client, WorkshopType
-from .materials import ORDER_TYPES, can_manage_shipment, is_view_only
+from .materials import ORDER_TYPES, ORDER_STATUSES, can_manage_shipment, is_view_only
 from app.utils.materials import latest_arrival_date
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
@@ -42,22 +42,14 @@ def list_orders():
         query = query.filter(Session.client_id == client_id)
     if order_type:
         query = query.filter(SessionShipping.order_type == order_type)
-    if status == "Draft":
-        query = query.filter(SessionShipping.ship_date.is_(None), SessionShipping.delivered_at.is_(None))
-    elif status == "Shipped":
-        query = query.filter(SessionShipping.ship_date.is_not(None), SessionShipping.delivered_at.is_(None))
-    elif status == "Delivered":
-        query = query.filter(SessionShipping.delivered_at.is_not(None))
+    if status:
+        query = query.filter(SessionShipping.status == status)
 
     shipments = query.all()
 
     rows = []
     for sh, sess, client, wt in shipments:
-        mstatus = "Draft"
-        if sh.delivered_at:
-            mstatus = "Delivered"
-        elif sh.ship_date:
-            mstatus = "Shipped"
+        mstatus = sh.status
         rows.append(
             {
                 "client": client.name if client else "",
@@ -88,6 +80,7 @@ def list_orders():
         rows=rows,
         clients=clients,
         order_types=ORDER_TYPES,
+        statuses=ORDER_STATUSES,
         client_id=client_id,
         order_type=order_type,
         status=status,

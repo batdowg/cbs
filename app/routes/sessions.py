@@ -203,6 +203,7 @@ def list_sessions(current_user):
         .outerjoin(Client)
         .outerjoin(WorkshopType)
     )
+    query = query.filter(Session.materials_only.is_(False))
     if not show_global and current_user.region:
         query = query.filter(Session.region == current_user.region)
 

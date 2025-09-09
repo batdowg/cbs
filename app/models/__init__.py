@@ -331,6 +331,9 @@ class Session(db.Model):
     no_material_order = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    materials_only = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     no_prework = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
@@ -628,6 +631,15 @@ class SessionShipping(db.Model):
     special_instructions = db.Column(db.Text)
     arrival_date = db.Column(db.Date)
     order_type = db.Column(db.Text)
+    status = db.Column(
+        db.String(16), nullable=False, default="New", server_default="New"
+    )
+    material_sets = db.Column(
+        db.Integer, nullable=False, default=0, server_default="0"
+    )
+    credits = db.Column(
+        db.Integer, nullable=False, default=2, server_default="2"
+    )
     materials_format = db.Column(
         db.Enum(
             "ALL_PHYSICAL",

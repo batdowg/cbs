@@ -40,6 +40,15 @@ ORDER_TYPES = [
     "Simulation",
 ]
 
+ORDER_STATUSES = [
+    "New",
+    "Ordered",
+    "Shipped",
+    "Delivered",
+    "Cancelled",
+    "On hold",
+]
+
 
 def can_manage_shipment(user: User | None) -> bool:
     return bool(
@@ -164,7 +173,9 @@ def materials_view(
         shipment.country = sess.shipping_location.country
     db.session.commit()
     if shipment.order_type is None:
-        shipment.order_type = "KT-Run Standard materials"
+        shipment.order_type = (
+            "Client-run Bulk order" if sess.materials_only else "KT-Run Standard materials"
+        )
         db.session.commit()
     if (
         shipment.materials_option_id is None
@@ -191,6 +202,10 @@ def materials_view(
         SimulationOutline.number, SimulationOutline.skill
     ).all()
     show_sim_outline = bool(sess.workshop_type and sess.workshop_type.simulation_based)
+    status = shipment.status
+    show_credits = (
+        shipment.order_type == "Simulation" or show_sim_outline
+    )
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -219,8 +234,12 @@ def materials_view(
                 "materials_option_id",
                 "materials_format",
                 "materials_po_number",
+                "material_sets",
+                "credits",
+                "status",
             }
             original_order_type = shipment.order_type
+            original_status = shipment.status
             for field in fields:
                 if field == "materials_option_id" and shipment.order_type == "KT-Run Modular materials":
                     ids = [int(v) for v in request.form.getlist("materials_option_id") if v]
@@ -241,6 +260,15 @@ def materials_view(
                     setattr(shipment, field, int(val) if val else None)
                 elif field == "materials_format":
                     setattr(shipment, field, val or None)
+                elif field in {"material_sets", "credits"}:
+                    try:
+                        num_val = int(val) if val else 0
+                    except ValueError:
+                        num_val = 0
+                    setattr(shipment, field, max(0, num_val))
+                elif field == "status":
+                    if val:
+                        setattr(shipment, field, val)
                 else:
                     setattr(shipment, field, val or None)
             errors: dict[str, str] = {}
@@ -286,14 +314,18 @@ def materials_view(
                 shipment.materials_options = []
             if shipment.order_type == "Simulation" and not shipment.materials_format:
                 shipment.materials_format = "SIM_ONLY"
+            if original_status != shipment.status:
+                if shipment.status == "Ordered":
+                    sess.ready_for_delivery = True
+                    sess.ready_at = datetime.utcnow()
+                if shipment.status == "Delivered":
+                    sess.status = "Finalized"
+                    sess.finalized = True
+                    sess.finalized_at = datetime.utcnow()
             if errors:
                 db.session.rollback()
                 form = request.form
-                status = "Draft"
-                if shipment.delivered_at:
-                    status = "Delivered"
-                elif shipment.ship_date:
-                    status = "Shipped"
+                status = shipment.status
                 materials = Material.query.order_by(Material.name).all() if not view_only else []
                 materials_options = (
                     MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
@@ -319,6 +351,7 @@ def materials_view(
                         selected_option=selected_option,
                         selected_options=selected_options,
                         order_types=ORDER_TYPES,
+                        order_statuses=ORDER_STATUSES,
                         csa_view=csa_view,
                         readonly=readonly,
                         current_user=current_user,
@@ -332,6 +365,7 @@ def materials_view(
                         selected_components=selected_components,
                         fmt=fmt,
                         show_sim_outline=show_sim_outline,
+                        show_credits=show_credits,
                         simulation_outlines=simulation_outlines,
                         form=form,
                         errors=errors,
@@ -391,12 +425,7 @@ def materials_view(
                 db.session.delete(shipment)
                 db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
-    status = "Draft"
-    if shipment:
-        if shipment.delivered_at:
-            status = "Delivered"
-        elif shipment.ship_date:
-            status = "Shipped"
+    status = shipment.status
     materials = Material.query.order_by(Material.name).all() if not view_only else []
     materials_options = (
         MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
@@ -421,6 +450,7 @@ def materials_view(
         selected_option=selected_option,
         selected_options=selected_options,
         order_types=ORDER_TYPES,
+        order_statuses=ORDER_STATUSES,
         csa_view=csa_view,
         readonly=readonly,
         current_user=current_user,
@@ -434,6 +464,7 @@ def materials_view(
         selected_components=selected_components,
         fmt=fmt,
         show_sim_outline=show_sim_outline,
+        show_credits=show_credits,
         simulation_outlines=simulation_outlines,
         form=None,
         errors={},

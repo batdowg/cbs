@@ -22,9 +22,9 @@
   <label>Status
     <select name="status">
       <option value="">All</option>
-      <option value="Draft" {% if status=='Draft' %}selected{% endif %}>Draft</option>
-      <option value="Shipped" {% if status=='Shipped' %}selected{% endif %}>Shipped</option>
-      <option value="Delivered" {% if status=='Delivered' %}selected{% endif %}>Delivered</option>
+      {% for st in statuses %}
+        <option value="{{ st }}" {% if status==st %}selected{% endif %}>{{ st }}</option>
+      {% endfor %}
     </select>
   </label>
   <button type="submit">Filter</button>

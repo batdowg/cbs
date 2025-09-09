@@ -54,14 +54,14 @@ Every functional change must update this file **in the same PR**.
 ## 1.2 Menus by Audience (explicit; no bundling)
 
 - **Sys Admin** (default view: Admin)
-  `Home • My Sessions • Sessions • Materials • Surveys • My Resources • Settings ▾ • My Profile • Logout`
+  `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • Settings ▾ • My Profile • Logout`
   **Settings ▾**: `Users • Certificate Templates • Workshop Types • Resources • Simulation Outlines`
 
 - **Admin** (default view: Admin)  
   Same as Sys Admin. (System-wide toggles reserved for Sys Admin if any.)
 
 - **CRM** (default view: Session Manager)  
-  `Home • My Sessions • Sessions • Materials • Surveys • My Resources • My Profile • Logout`  
+  `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • My Profile • Logout`
   **Default filters**: “My Sessions” = sessions I own / I’m assigned CRM on the client (if model supports client CRM; else owner fallback).
 
 - **Delivery / Facilitator** (default view: Delivery)  
@@ -69,7 +69,7 @@ Every functional change must update this file **in the same PR**.
   (No Materials or Surveys in menu.)
 
 - **Contractor** (default view: Admin-lite)
-  `Home • My Sessions • Sessions (read-only; assigned only) • My Resources • My Profile • Logout`
+  `Home • My Sessions • Training Sessions (read-only; assigned only) • My Resources • My Profile • Logout`
   - No Materials/Surveys/Settings in menu.
   - Can add/remove participants similar to CSA **including during session**; other session fields are read-only.
 
@@ -242,6 +242,12 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - **All Digital / SIM Only** → 4 visible, disabled
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
+- **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
+- When `materials_only = true`, Training-session features (participants, prework, certificates) are hidden/denied.
+- Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
+- **Material Sets** integer field (hidden only when Order Type = Simulation).
+- **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
+- Materials orders have global statuses: **New, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
 - **Simulation outline** selector appears only when the chosen Workshop Type is simulation-based.
 - Material format is always visible. If **Order Type** = “Simulation” and no value is set, default to **SIM Only**. Non-editable roles see the value read-only.
@@ -311,6 +317,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Simulation Outlines**: `app/routes/settings_simulations.py`, `app/templates/settings_simulations/*.html`
 - **Certificate Templates**: `app/routes/settings_cert_templates.py`, `app/templates/settings_cert_templates/*.html`
 - **Materials (dashboard & orders)**: `app/routes/materials.py`, `app/routes/materials_orders.py`, templates `app/templates/materials/*.html`, `app/templates/materials_orders.html`
+- **Material Only Order**: `app/routes/materials_only.py`, template `app/templates/materials_only.html`
 - **Users & Role Matrix**: `app/routes/users.py`, `app/templates/users/*.html` (matrix modal `app/templates/users/role_matrix.html`)
 - **Email**: `app/emailer.py`, `app/templates/email/*.html|.txt`
 - **Certificates**: generator `app/utils/certificates.py` (region→paper mapping, explicit asset path); templates under `app/assets/`
