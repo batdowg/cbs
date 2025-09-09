@@ -244,7 +244,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
 - **Simulation outline** selector appears only when the chosen Workshop Type is simulation-based.
-- **Order Type** = “Simulation” auto-sets **Material Format** to **SIM Only**.
+- Material format is always visible. If **Order Type** = “Simulation” and no value is set, default to **SIM Only**. Non-editable roles see the value read-only.
 - **Order Type** = “KT-Run Modular materials” → **Materials Type** becomes multi-select and all selected modules are shown; other order types remain single-select.
 - On first Materials view for a new session, unset **Order Type** defaults to **KT-Run Standard materials** then **Materials Type** defaults from the Workshop Type (if defined).
 - **Role Matrix**: view-only modal launched from `/users`; standalone `/settings/roles` page removed.

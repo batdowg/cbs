@@ -123,19 +123,20 @@
       </select>
     </label>
   </div>
-  <div>Material format:
-    {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
-      {% set fmt_val = form.get('materials_format') if form else fmt %}
-      <select name="materials_format" id="materials-format">
-        <option value=""></option>
-        {% for key, label in material_formats %}
-          <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    {% else %}{{ fmt|default('', true) }}{% endif %}
-  </div>
-
   {% endif %}
+  <div>
+    <label>Material format
+      {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
+        {% set fmt_val = form.get('materials_format') if form else fmt %}
+        <select name="materials_format" id="materials-format">
+          <option value=""></option>
+          {% for key, label in material_formats %}
+            <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      {% else %}{{ fmt|default('', true) }}{% endif %}
+    </label>
+  </div>
   <fieldset class="components">
     <legend>Physical components</legend>
     {% for key,label in physical_components %}
@@ -215,10 +216,8 @@
     }
     function applyAutoFormat(){
       if(!fmtSel) return;
-      if(orderSel?.value === 'Simulation'){
+      if(orderSel?.value === 'Simulation' && !fmtSel.value){
         fmtSel.value = 'SIM_ONLY';
-      }else if(fmtSel.value === 'SIM_ONLY'){
-        fmtSel.value = '';
       }
       applyState();
     }

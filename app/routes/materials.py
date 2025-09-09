@@ -178,7 +178,9 @@ def materials_view(
                 shipment.materials_options = [opt]
         db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
-    fmt = shipment.materials_format or "ALL_DIGITAL"
+    fmt = shipment.materials_format or (
+        "SIM_ONLY" if shipment.order_type == "Simulation" else ""
+    )
     selected_components = shipment.materials_components or []
     if fmt in {"ALL_DIGITAL", "SIM_ONLY"}:
         selected_components = []
@@ -243,7 +245,9 @@ def materials_view(
                     setattr(shipment, field, val or None)
             errors: dict[str, str] = {}
             selected_components = request.form.getlist("components")
-            fmt = shipment.materials_format or "ALL_DIGITAL"
+            fmt = shipment.materials_format or (
+                "SIM_ONLY" if shipment.order_type == "Simulation" else ""
+            )
             components_required = fmt in {"ALL_PHYSICAL", "MIXED"}
             if components_required:
                 if not selected_components:
@@ -280,7 +284,7 @@ def materials_view(
             if original_order_type != shipment.order_type:
                 shipment.materials_option_id = None
                 shipment.materials_options = []
-            if shipment.order_type == "Simulation":
+            if shipment.order_type == "Simulation" and not shipment.materials_format:
                 shipment.materials_format = "SIM_ONLY"
             if errors:
                 db.session.rollback()
