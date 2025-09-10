@@ -34,7 +34,7 @@ Routes and Code Pages
 
 - **Settings → Materials Options** – Configure materials choices. File: `app/routes/settings_materials.py`. Requires `admin_required`【F:app/routes/settings_materials.py†L27-L65】
 
-- **Settings → Certificate Templates** – Configure certificate series and templates. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】
+- **Settings → Certificate Templates** – Configure certificate series, template PDFs, and badge images per language. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】
 
 - **Settings → Mail Settings** – SMTP configuration and test send. File: `app/routes/settings_mail.py`. Requires `app_admin_required`【F:app/routes/settings_mail.py†L14-L50】
 

@@ -151,7 +151,9 @@ class WorkshopType(db.Model):
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
-    badge = db.Column(db.String(50), nullable=True)  # one of allowed set; NULL means none
+    badge = db.Column(
+        db.String(50), nullable=True
+    )  # one of allowed set; NULL means none
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
@@ -160,12 +162,8 @@ class WorkshopType(db.Model):
         db.ForeignKey("materials_options.id", ondelete="SET NULL"),
     )
     default_materials_option = db.relationship("MaterialsOption")
-    supported_languages = db.Column(
-        db.JSON, nullable=False, default=lambda: ["en"]
-    )
-    cert_series = db.Column(
-        db.String(16), nullable=False
-    )
+    supported_languages = db.Column(db.JSON, nullable=False, default=lambda: ["en"])
+    cert_series = db.Column(db.String(16), nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     __table_args__ = (
         db.Index("uix_workshop_types_code_upper", db.func.upper(code), unique=True),
@@ -270,6 +268,7 @@ class ClientWorkshopLocation(db.Model):
         ),
     )
 
+
 class Session(db.Model):
     __tablename__ = "sessions"
 
@@ -280,12 +279,8 @@ class Session(db.Model):
     client_owner = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    daily_start_time = db.Column(
-        db.Time, server_default="08:00:00"
-    )
-    daily_end_time = db.Column(
-        db.Time, server_default="17:00:00"
-    )
+    daily_start_time = db.Column(db.Time, server_default="08:00:00")
+    daily_end_time = db.Column(db.Time, server_default="17:00:00")
     timezone = db.Column(db.String(64))
     location = db.Column(db.String(255))
     delivery_type = db.Column(db.String(32))
@@ -351,7 +346,9 @@ class Session(db.Model):
     notes = db.Column(db.Text)
     simulation_outline_text = db.Column("simulation_outline", db.Text)
     simulation_outline_id = db.Column(
-        db.Integer, db.ForeignKey("simulation_outlines.id", ondelete="SET NULL"), nullable=True
+        db.Integer,
+        db.ForeignKey("simulation_outlines.id", ondelete="SET NULL"),
+        nullable=True,
     )
     simulation_outline = db.relationship("SimulationOutline")
     workshop_type_id = db.Column(
@@ -385,9 +382,7 @@ class Session(db.Model):
     csa_account_id = db.Column(
         db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
     )
-    csa_account = db.relationship(
-        "ParticipantAccount", foreign_keys=[csa_account_id]
-    )
+    csa_account = db.relationship("ParticipantAccount", foreign_keys=[csa_account_id])
     csa_notified_account_id = db.Column(
         db.Integer, db.ForeignKey("participant_accounts.id", ondelete="SET NULL")
     )
@@ -446,15 +441,15 @@ class SessionParticipant(db.Model):
     __tablename__ = "session_participants"
 
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(
-        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
-    )
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     participant_id = db.Column(
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
     completion_date = db.Column(db.Date)
     __table_args__ = (
-        db.UniqueConstraint("session_id", "participant_id", name="uix_session_participant"),
+        db.UniqueConstraint(
+            "session_id", "participant_id", name="uix_session_participant"
+        ),
     )
 
 
@@ -465,6 +460,15 @@ class CertificateTemplateSeries(db.Model):
     code = db.Column(db.String(16), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+
+class BadgeImage(db.Model):
+    __tablename__ = "badge_images"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    language = db.Column(db.String(8), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
 
 
 class CertificateTemplate(db.Model):
@@ -479,12 +483,16 @@ class CertificateTemplate(db.Model):
     language = db.Column(db.String(8), nullable=False)
     size = db.Column(db.String(10), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
+    badge_image_id = db.Column(
+        db.Integer, db.ForeignKey("badge_images.id"), nullable=True
+    )
     __table_args__ = (
         db.UniqueConstraint(
             "series_id", "language", "size", name="uix_cert_template_series_lang_size"
         ),
     )
     series = db.relationship("CertificateTemplateSeries", backref="templates")
+    badge_image = db.relationship("BadgeImage")
 
 
 class Certificate(db.Model):
@@ -494,9 +502,7 @@ class Certificate(db.Model):
     participant_id = db.Column(
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
-    session_id = db.Column(
-        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
-    )
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     certificate_name = db.Column(db.String(255))
     workshop_name = db.Column(db.String(255))
     workshop_date = db.Column(db.Date)
@@ -515,9 +521,7 @@ class Certificate(db.Model):
 class SessionFacilitator(db.Model):
     __tablename__ = "session_facilitators"
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(
-        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE")
-    )
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
@@ -605,7 +609,9 @@ class SessionShipping(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
     name = db.Column(db.String(120), nullable=False, default="Main Shipment")
     materials_option_id = db.Column(
-        db.Integer, db.ForeignKey("materials_options.id", ondelete="SET NULL"), nullable=True
+        db.Integer,
+        db.ForeignKey("materials_options.id", ondelete="SET NULL"),
+        nullable=True,
     )
     materials_option = db.relationship("MaterialsOption")
     materials_options = db.relationship(
@@ -635,12 +641,8 @@ class SessionShipping(db.Model):
     status = db.Column(
         db.String(16), nullable=False, default="New", server_default="New"
     )
-    material_sets = db.Column(
-        db.Integer, nullable=False, default=0, server_default="0"
-    )
-    credits = db.Column(
-        db.Integer, nullable=False, default=2, server_default="2"
-    )
+    material_sets = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    credits = db.Column(db.Integer, nullable=False, default=2, server_default="2")
     materials_format = db.Column(
         db.Enum(
             "ALL_PHYSICAL",
