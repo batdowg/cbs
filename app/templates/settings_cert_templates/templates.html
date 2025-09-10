@@ -16,8 +16,6 @@
             <option value="{{ file }}" {% if mapping.get((code, size)) == file %}selected{% endif %}>{{ file }}</option>
           {% endfor %}
         </select>
-        <button type="button" class="upload-trigger" data-target="file_{{ code }}_{{ size }}">Upload {{ 'A4 PDF' if size == 'A4' else 'Letter PDF' }}</button>
-        <input type="file" accept="application/pdf" id="file_{{ code }}_{{ size }}" class="upload-input" data-lang="{{ code }}" data-size="{{ size }}" style="display:none">
       </td>
       {% endfor %}
       <td>
@@ -27,64 +25,14 @@
             <option value="{{ badge }}" {% if badge_mapping.get(code) == badge %}selected{% endif %}>{{ badge }}</option>
           {% endfor %}
         </select>
-        <button type="button" class="upload-trigger" data-target="file_badge_{{ code }}">Upload Badge WEBP</button>
-        <input type="file" accept="image/webp" id="file_badge_{{ code }}" class="upload-input" data-lang="{{ code }}" data-type="badge" style="display:none">
-        <span id="badge-link-wrapper-{{ code }}">
         {% set current_badge = badge_mapping.get(code) %}
         {% if current_badge %}
-          <br><small><a id="badge-link-{{ code }}" href="/badges/{{ current_badge }}">Current file</a></small>
+          <br><small><a href="/badges/{{ current_badge }}">Current file</a></small>
         {% endif %}
-        </span>
       </td>
     </tr>
     {% endfor %}
   </table>
   <p><button type="submit">Save</button></p>
 </form>
-<script>
-document.querySelectorAll('.upload-trigger').forEach(btn=>{
-  btn.addEventListener('click', function(){
-    const target=document.getElementById(this.dataset.target);
-    if(target){target.click();}
-  });
-});
-document.querySelectorAll('.upload-input').forEach(inp=>{
-  inp.addEventListener('change', function(){
-    if(!this.files.length){return;}
-    const lang=this.dataset.lang;
-    const type=this.dataset.type;
-    const size=this.dataset.size;
-    const fd=new FormData();
-    fd.append('language', lang);
-    fd.append('file', this.files[0]);
-    let url='';
-    if(type==='badge'){
-      url='{{ url_for("settings_cert_templates.upload_badge", series_id=series.id) }}';
-    }else{
-      fd.append('size', size);
-      url='{{ url_for("settings_cert_templates.upload_template", series_id=series.id) }}';
-    }
-    fetch(url,{method:'POST',body:fd}).then(r=>r.json()).then(data=>{
-      if(data.status==='ok'){
-        if(type==='badge'){
-          const sel=document.querySelector('select[name="badge_'+lang+'"]');
-          let opt=[...sel.options].find(o=>o.value===data.filename);
-          if(!opt){opt=new Option(data.filename,data.filename);sel.add(opt);} 
-          sel.value=data.filename;
-          const wrap=document.getElementById('badge-link-wrapper-'+lang);
-          wrap.innerHTML='<br><small><a id="badge-link-'+lang+'" href="/badges/'+data.filename+'">Current file</a></small>';
-          alert('Badge uploaded');
-        }else{
-          const sel=document.querySelector('select[name="'+lang+'_'+size+'"]');
-          let opt=[...sel.options].find(o=>o.value===data.filename);
-          if(!opt){opt=new Option(data.filename,data.filename);sel.add(opt);} 
-          sel.value=data.filename;
-          alert('Template uploaded');
-        }
-      }else{alert(data.error||'Upload failed');}
-      this.value='';
-    });
-  });
-});
-</script>
 {% endblock %}

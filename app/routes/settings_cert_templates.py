@@ -10,21 +10,16 @@ from flask import (
     request,
     url_for,
     current_app,
-    jsonify,
 )
 
 from ..app import db
-from ..forms.resource_forms import slugify_filename
 from ..models import CertificateTemplateSeries, CertificateTemplate
 from ..shared.rbac import manage_users_required
 from ..shared.languages import get_language_options
-from ..shared.storage import ensure_dir
 
 bp = Blueprint(
     "settings_cert_templates", __name__, url_prefix="/settings/cert-templates"
 )
-
-MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 @bp.get("/")
@@ -162,92 +157,3 @@ def update_templates(series_id: int, current_user):
     return redirect(
         url_for("settings_cert_templates.edit_templates", series_id=series.id)
     )
-
-
-@bp.post("/<int:series_id>/upload-template")
-@manage_users_required
-def upload_template(series_id: int, current_user):
-    series = db.session.get(CertificateTemplateSeries, series_id)
-    if not series:
-        abort(404)
-    lang = (request.form.get("language") or "").strip()
-    size = (request.form.get("size") or "").strip().upper()
-    file = request.files.get("file")
-    if size not in {"A4", "LETTER"} or not lang or not file:
-        return jsonify({"error": "Invalid input"}), 400
-    _, ext = os.path.splitext(file.filename)
-    if ext.lower() != ".pdf":
-        return jsonify({"error": "PDF required"}), 400
-    file.stream.seek(0, os.SEEK_END)
-    if file.stream.tell() > MAX_UPLOAD_SIZE:
-        return jsonify({"error": "File too large"}), 400
-    file.stream.seek(0)
-    filename = slugify_filename(os.path.splitext(file.filename)[0], file.filename)
-    assets_dir = os.path.join(current_app.root_path, "assets")
-    ensure_dir(assets_dir)
-    file.save(os.path.join(assets_dir, filename))
-    tmpl = CertificateTemplate.query.filter_by(
-        series_id=series.id, language=lang, size=size
-    ).one_or_none()
-    if tmpl:
-        tmpl.filename = filename
-    else:
-        db.session.add(
-            CertificateTemplate(
-                series_id=series.id,
-                language=lang,
-                size=size,
-                filename=filename,
-            )
-        )
-    db.session.commit()
-    current_app.logger.info(
-        "[CERT-TEMPLATE-UPLOAD] %s uploaded %s for %s %s",
-        getattr(current_user, "email", "?"),
-        filename,
-        lang,
-        size,
-    )
-    return jsonify({"status": "ok", "filename": filename})
-
-
-@bp.post("/<int:series_id>/upload-badge")
-@manage_users_required
-def upload_badge(series_id: int, current_user):
-    series = db.session.get(CertificateTemplateSeries, series_id)
-    if not series:
-        abort(404)
-    lang = (request.form.get("language") or "").strip()
-    file = request.files.get("file")
-    if not lang or not file:
-        return jsonify({"error": "Invalid input"}), 400
-    _, ext = os.path.splitext(file.filename)
-    if ext.lower() != ".webp":
-        return jsonify({"error": "WEBP required"}), 400
-    file.stream.seek(0, os.SEEK_END)
-    if file.stream.tell() > MAX_UPLOAD_SIZE:
-        return jsonify({"error": "File too large"}), 400
-    file.stream.seek(0)
-    filename = slugify_filename(os.path.splitext(file.filename)[0], file.filename)
-    badge_dir = os.path.join(current_app.root_path, "assets", "badges")
-    ensure_dir(badge_dir)
-    path_assets = os.path.join(badge_dir, filename)
-    file.save(path_assets)
-    file.stream.seek(0)
-    site_dir = "/srv/badges"
-    ensure_dir(site_dir)
-    file.save(os.path.join(site_dir, filename))
-    for size in ["A4", "LETTER"]:
-        tmpl = CertificateTemplate.query.filter_by(
-            series_id=series.id, language=lang, size=size
-        ).one_or_none()
-        if tmpl:
-            tmpl.badge_filename = filename
-    db.session.commit()
-    current_app.logger.info(
-        "[BADGE-UPLOAD] %s uploaded %s for %s",
-        getattr(current_user, "email", "?"),
-        filename,
-        lang,
-    )
-    return jsonify({"status": "ok", "filename": filename})
