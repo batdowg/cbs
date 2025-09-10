@@ -11,7 +11,6 @@ from ..models import (
     CertificateTemplateSeries,
     MaterialsOption,
 )
-from ..shared.constants import BADGE_CHOICES
 from ..shared.html import sanitize_html
 from ..shared.languages import get_language_options
 
@@ -58,7 +57,6 @@ def new_type(current_user):
     return render_template(
         'workshop_types/form.html',
         wt=None,
-        badge_choices=BADGE_CHOICES,
         language_options=get_language_options(),
         series=series,
         materials_options=materials_options,
@@ -89,7 +87,6 @@ def create_type(current_user):
         name=name,
         status=request.form.get('status') or 'active',
         description=request.form.get('description') or None,
-        badge=request.form.get('badge') or None,
         simulation_based=bool(request.form.get('simulation_based')),
         supported_languages=langs or ['en'],
         cert_series=series_code,
@@ -129,7 +126,6 @@ def edit_type(type_id: int, current_user):
     return render_template(
         'workshop_types/form.html',
         wt=wt,
-        badge_choices=BADGE_CHOICES,
         language_options=get_language_options(),
         series=series,
         materials_options=materials_options,
@@ -145,7 +141,6 @@ def update_type(type_id: int, current_user):
     wt.name = request.form.get('name') or wt.name
     wt.status = request.form.get('status') or wt.status
     wt.description = request.form.get('description') or None
-    wt.badge = request.form.get('badge') or None
     wt.simulation_based = bool(request.form.get('simulation_based'))
     langs = request.form.getlist('supported_languages')
     wt.supported_languages = langs or ['en']
