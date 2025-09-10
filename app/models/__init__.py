@@ -151,9 +151,6 @@ class WorkshopType(db.Model):
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
-    badge = db.Column(
-        db.String(50), nullable=True
-    )  # one of allowed set; NULL means none
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )

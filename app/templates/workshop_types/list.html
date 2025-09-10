@@ -4,13 +4,12 @@
 <h1>Workshop Types</h1>
 <p><a href="{{ url_for('workshop_types.new_type') }}">New Workshop Type</a></p>
 <table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Code</th><th>Name</th><th>Status</th><th>Badge</th><th>Supported languages</th><th>Certificate series</th><th>Description</th><th></th></tr>
+  <tr><th>Code</th><th>Name</th><th>Status</th><th>Supported languages</th><th>Certificate series</th><th>Description</th><th></th></tr>
   {% for wt in types %}
   <tr>
     <td>{{ wt.code }}</td>
     <td>{{ wt.name }}</td>
     <td>{{ wt.status }}</td>
-    <td>{{ wt.badge or '—' }}</td>
     <td>{% if wt.supported_languages %}{{ wt.supported_languages | map('lang_label') | join(', ') }}{% else %}—{% endif %}</td>
     <td>{{ wt.cert_series }}</td>
     <td>{{ wt.description }}</td>
