@@ -81,7 +81,7 @@ Every functional change must update this file **in the same PR**.
 
 - **Sys Admin** (default view: Admin)
   `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • Settings ▾ • My Profile • Logout`
-  **Settings ▾**: `Users • Certificate Templates • Workshop Types • Resources • Simulation Outlines`
+  **Settings ▾**: `Users • Certificate Templates • Badges • Workshop Types • Resources • Simulation Outlines • Mail Settings`
 
 - **Admin** (default view: Admin)  
   Same as Sys Admin. (System-wide toggles reserved for Sys Admin if any.)
@@ -343,6 +343,8 @@ The repo is organized **feature-first**. Top-level packages:
 - `settings/`
 - `admin/`
 - `shared/` – cross-cutting concerns (see below)
+
+Badge images and their management UI live under `routes/settings_badges.py` with templates in `templates/settings_badges/`. Uploaded badge files are stored in `app/assets/badges` and copied to `/srv/badges` on first use so they can be served from `/badges/<slug>.<ext>`.
 
 Each feature package contains `routes/`, `models/`, `services/` (business rules), `forms/`, `templates/`, and a `README.md` noting scope and owner.
 

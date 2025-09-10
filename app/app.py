@@ -75,15 +75,17 @@ def create_app():
     def logo_passthrough():
         return send_from_directory(os.path.join(app.root_path, "static"), "ktlogo1.png")
 
-    @app.get("/badges/<slug>.webp")
-    def badge_file(slug: str):
-        filename = f"{slug}.webp"
+    @app.get("/badges/<slug>.<ext>")
+    def badge_file(slug: str, ext: str):
+        if ext not in ("webp", "png"):
+            abort(404)
+        filename = f"{slug}.{ext}"
         site_dir = "/srv/badges"
         asset_dir = os.path.join(app.root_path, "assets", "badges")
         site_path = os.path.join(site_dir, filename)
         if os.path.isfile(site_path):
-            return send_from_directory(site_dir, filename, as_attachment=True)
-        return send_from_directory(asset_dir, filename, as_attachment=True)
+            return send_from_directory(site_dir, filename)
+        return send_from_directory(asset_dir, filename)
 
     @app.context_processor
     def inject_user():
@@ -359,6 +361,7 @@ def create_app():
     from .routes.settings_resources import bp as settings_resources_bp
     from .routes.settings_roles import bp as settings_roles_bp
     from .routes.settings_cert_templates import bp as settings_cert_templates_bp
+    from .routes.settings_badges import bp as settings_badges_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -380,6 +383,7 @@ def create_app():
     app.register_blueprint(settings_resources_bp)
     app.register_blueprint(settings_roles_bp)
     app.register_blueprint(settings_cert_templates_bp)
+    app.register_blueprint(settings_badges_bp)
 
     @app.get("/surveys")
     def surveys():
