@@ -216,7 +216,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - If prework enabled → sees **Prework** for that workshop.  
   - **My Resources** hidden (unless prior workshops started).  
 - **From start → before delivered**: **My Resources** visible for that session (plus any past sessions).  
-- **After delivered/finalized**: **My Certificates** section/link appears if ≥1 cert exists.
+ - **After delivered/finalized**: **My Certificates** section/link appears if ≥1 cert exists. Certificates are listed by joining `certificates.participant_id` → `participants.id` for the signed-in account, and each link uses the stored `pdf_path` under `/certificates/<YYYY>/<session_id>/<file>.pdf`.
 
 ## 4.2 CSA (participant)
 - **My Sessions**: only sessions where this participant account is CSA; link opens participant management.  
@@ -295,6 +295,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Certificates are written to `<certs_root>/<YYYY>/<session_id>/` where `<certs_root>` = `SITE_ROOT/certificates` (default `/srv/certificates`). `YYYY` uses the session start-date year; if missing, use the current year.
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
+- Learner page lists certificates by joining `certificates.participant_id` → `participants.id`; links render `/certificates/<pdf_path>`.
 - Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
 - Older builds used `YYYY/<workshop_code>/…`; these paths are legacy.
 - Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
@@ -345,7 +346,7 @@ The repo is organized **feature-first**. Top-level packages:
 - `shared/` – cross-cutting concerns (see below)
 
 
-Badge images and their management UI live under `routes/settings_badges.py` with templates in `templates/settings_badges/`. Uploaded badge files are stored in `app/assets/badges` and copied to `SITE_ROOT/badges` (default `/srv/badges`) on first use so they can be served from `/badges/<slug>.<ext>`.
+Badge images and their management UI live under `routes/settings_badges.py` with templates in `templates/settings_badges/`. Uploaded badge files are stored in `app/assets/badges` and copied to `SITE_ROOT/badges` (default `/srv/badges`) on first use so they can be served from `/badges/<slug>.<ext>` by a static handle (not `handle_path`).
 
 Each feature package contains `routes/`, `models/`, `services/` (business rules), `forms/`, `templates/`, and a `README.md` noting scope and owner.
 
