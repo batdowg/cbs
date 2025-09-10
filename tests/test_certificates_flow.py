@@ -57,7 +57,9 @@ def _setup_cert(app):
         db.session.add(link)
         db.session.commit()
         render_certificate(sess, acct)
-        cert = Certificate.query.filter_by(session_id=sess.id, participant_id=part.id).one()
+        cert = Certificate.query.filter_by(
+            session_id=sess.id, participant_id=part.id
+        ).one()
         return sess, part, acct, cert, admin.id
 
 
@@ -107,3 +109,17 @@ def test_badge_hidden_when_missing(app):
     resp = client.get(f"/sessions/{sess.id}")
     html = resp.data.decode()
     assert '<img src="/badges/' not in html
+
+
+def test_certificate_link_hidden_when_missing(app):
+    sess, part, acct, cert, admin_id = _setup_cert(app)
+    # remove certificate record to simulate missing certificate
+    with app.app_context():
+        db.session.delete(cert)
+        db.session.commit()
+    client = app.test_client()
+    with client.session_transaction() as s:
+        s["user_id"] = admin_id
+    resp = client.get(f"/sessions/{sess.id}")
+    html = resp.data.decode()
+    assert 'href="/certificates/' not in html
