@@ -21,7 +21,7 @@ from ..models import (
     Session,
     SessionParticipant,
 )
-from .storage import ensure_dir
+from .storage import ensure_dir, write_atomic
 
 
 LETTER_NAME_INSET_MM = 25
@@ -154,10 +154,11 @@ def render_certificate(
     writer = PdfWriter()
     writer.add_page(base_page)
 
-    year = completion.year
-    rel_dir = os.path.join("certificates", str(year), str(session.id))
+    year = (session.start_date or date.today()).year
     site_root = current_app.config.get("SITE_ROOT", "/srv")
-    ensure_dir(os.path.join(site_root, rel_dir))
+    cert_root = os.path.join(site_root, "certificates")
+    rel_dir = os.path.join(str(year), str(session.id))
+    ensure_dir(os.path.join(cert_root, rel_dir))
     code = (
         session.workshop_type.code
         if session.workshop_type and session.workshop_type.code
@@ -165,8 +166,10 @@ def render_certificate(
     )
     filename = f"{code}_{slug_certificate_name(display_name)}_{completion.strftime('%Y-%m-%d')}.pdf"
     rel_path = os.path.join(rel_dir, filename)
-    with open(os.path.join(site_root, rel_path), "wb") as f:
-        writer.write(f)
+    full_path = os.path.join(cert_root, rel_path)
+    out_buf = BytesIO()
+    writer.write(out_buf)
+    write_atomic(full_path, out_buf.getvalue())
 
     cert = (
         db.session.query(Certificate)
