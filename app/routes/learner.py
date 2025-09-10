@@ -428,11 +428,20 @@ def download_certificate(cert_id: int):
         abort(403)
     site_root = current_app.config.get("SITE_ROOT", "/srv")
     cert_root = os.path.join(site_root, "certificates")
-    rel_path = (cert.pdf_path or "").lstrip("/")
-    if rel_path.startswith("certificates/"):
-        rel_path = rel_path.split("/", 1)[1]
-    full_path = os.path.join(cert_root, rel_path)
+    pdf_path = cert.pdf_path or ""
+    if os.path.isabs(pdf_path):
+        full_path = pdf_path
+    else:
+        rel_path = pdf_path.lstrip("/")
+        if rel_path.startswith("certificates/"):
+            rel_path = rel_path.split("/", 1)[1]
+        full_path = os.path.join(cert_root, rel_path)
     if not os.path.isfile(full_path):
         current_app.logger.warning("[CERT-MISSING] id=%s path=%s", cert.id, full_path)
         abort(404)
-    return send_file(full_path, as_attachment=True, mimetype="application/pdf")
+    return send_file(
+        full_path,
+        as_attachment=True,
+        mimetype="application/pdf",
+        download_name=os.path.basename(full_path),
+    )
