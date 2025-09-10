@@ -16,7 +16,7 @@ from flask import (
     abort,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_, text, func, exists
+from sqlalchemy import or_, text, func
 
 db = SQLAlchemy()
 
@@ -144,18 +144,12 @@ def create_app():
                 .first()
                 is not None
             )
-            participant_filter = (
-                Participant.account_id == account_id
-                if account_id
-                else func.lower(Participant.email) == email
-            )
             show_certificates_nav = show_certificates_nav or (
-                db.session.query(
-                    exists().where(
-                        (Certificate.participant_id == Participant.id)
-                        & participant_filter
-                    )
-                ).scalar()
+                db.session.query(Certificate.id)
+                .join(Participant, Certificate.participant_id == Participant.id)
+                .filter(func.lower(Participant.email) == email)
+                .first()
+                is not None
             )
         active_view = get_active_view(user, request, is_csa)
         nav_menu = build_menu(user, active_view, show_resources_nav, is_csa)

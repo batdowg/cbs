@@ -7,8 +7,7 @@ cbs.ktapps.net {
     handle_path /certificates/* {
         file_server
     }
-    handle /badges/* {
-        root * /srv
+    handle_path /badges/* {
         file_server
     }
     @health path /healthz
