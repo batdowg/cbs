@@ -1,20 +1,33 @@
 from __future__ import annotations
 
 import os
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, current_app
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+    current_app,
+)
 
 from ..app import db
-from ..models import CertificateTemplateSeries, CertificateTemplate
+from ..models import CertificateTemplateSeries, CertificateTemplate, BadgeImage
 from ..shared.rbac import manage_users_required
 from ..shared.languages import get_language_options
 
-bp = Blueprint("settings_cert_templates", __name__, url_prefix="/settings/cert-templates")
+bp = Blueprint(
+    "settings_cert_templates", __name__, url_prefix="/settings/cert-templates"
+)
 
 
 @bp.get("/")
 @manage_users_required
 def list_series(current_user):
-    series = CertificateTemplateSeries.query.order_by(CertificateTemplateSeries.code).all()
+    series = CertificateTemplateSeries.query.order_by(
+        CertificateTemplateSeries.code
+    ).all()
     return render_template("settings_cert_templates/list.html", series=series)
 
 
@@ -32,11 +45,15 @@ def create_series(current_user):
     if not code or not name:
         flash("Code and name required", "error")
         return redirect(url_for("settings_cert_templates.new_series"))
-    existing = CertificateTemplateSeries.query.filter(db.func.lower(CertificateTemplateSeries.code) == code).first()
+    existing = CertificateTemplateSeries.query.filter(
+        db.func.lower(CertificateTemplateSeries.code) == code
+    ).first()
     if existing:
         flash("Code already exists", "error")
         return redirect(url_for("settings_cert_templates.new_series"))
-    series = CertificateTemplateSeries(code=code, name=name, is_active=bool(request.form.get("is_active")))
+    series = CertificateTemplateSeries(
+        code=code, name=name, is_active=bool(request.form.get("is_active"))
+    )
     db.session.add(series)
     db.session.commit()
     flash("Series created", "success")
@@ -61,7 +78,9 @@ def update_series(series_id: int, current_user):
     name = (request.form.get("name") or "").strip()
     if not name:
         flash("Name required", "error")
-        return redirect(url_for("settings_cert_templates.edit_series", series_id=series.id))
+        return redirect(
+            url_for("settings_cert_templates.edit_series", series_id=series.id)
+        )
     series.name = name
     series.is_active = bool(request.form.get("is_active"))
     db.session.commit()
@@ -77,14 +96,21 @@ def edit_templates(series_id: int, current_user):
         abort(404)
     languages = get_language_options()
     mapping = {(t.language, t.size): t.filename for t in series.templates}
+    badge_mapping = {}
+    for t in series.templates:
+        if t.badge_image and t.language not in badge_mapping:
+            badge_mapping[t.language] = t.badge_image
     assets_dir = os.path.join(current_app.root_path, "assets")
     files = sorted([f for f in os.listdir(assets_dir) if f.lower().endswith(".pdf")])
+    badges = BadgeImage.query.order_by(BadgeImage.name).all()
     return render_template(
         "settings_cert_templates/templates.html",
         series=series,
         languages=languages,
         mapping=mapping,
         files=files,
+        badges=badges,
+        badge_mapping=badge_mapping,
     )
 
 
@@ -96,17 +122,32 @@ def update_templates(series_id: int, current_user):
         abort(404)
     languages = get_language_options()
     for code, _ in languages:
+        badge_val = request.form.get(f"badge_{code}")
+        badge_id = int(badge_val) if badge_val else None
         for size in ["A4", "LETTER"]:
             key = f"{code}_{size}"
             filename = (request.form.get(key) or "").strip()
-            tmpl = CertificateTemplate.query.filter_by(series_id=series.id, language=code, size=size).one_or_none()
+            tmpl = CertificateTemplate.query.filter_by(
+                series_id=series.id, language=code, size=size
+            ).one_or_none()
             if filename:
                 if tmpl:
                     tmpl.filename = filename
+                    tmpl.badge_image_id = badge_id
                 else:
-                    db.session.add(CertificateTemplate(series_id=series.id, language=code, size=size, filename=filename))
+                    db.session.add(
+                        CertificateTemplate(
+                            series_id=series.id,
+                            language=code,
+                            size=size,
+                            filename=filename,
+                            badge_image_id=badge_id,
+                        )
+                    )
             elif tmpl:
                 db.session.delete(tmpl)
     db.session.commit()
     flash("Template mappings updated", "success")
-    return redirect(url_for("settings_cert_templates.edit_templates", series_id=series.id))
+    return redirect(
+        url_for("settings_cert_templates.edit_templates", series_id=series.id)
+    )

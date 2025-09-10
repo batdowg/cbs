@@ -4,7 +4,7 @@
 <h1>Template Mapping for {{ series.name }} ({{ series.code }})</h1>
 <form method="post">
   <table border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Language</th><th>A4</th><th>Letter</th></tr>
+    <tr><th>Language</th><th>A4</th><th>Letter</th><th>Badge</th></tr>
     {% for code, name in languages %}
     <tr>
       <td>{{ name }}</td>
@@ -18,6 +18,21 @@
         </select>
       </td>
       {% endfor %}
+      <td>
+        <select name="badge_{{ code }}">
+          <option value="">— None —</option>
+          {% for badge in badges %}
+            <option value="{{ badge.id }}" {% if badge_mapping.get(code) and badge_mapping.get(code).id == badge.id %}selected{% endif %}>{{ badge.name }}</option>
+          {% endfor %}
+        </select>
+        {% set current_badge = badge_mapping.get(code) %}
+        {% if current_badge %}
+          {% set badge_url = best_badge_url(current_badge.name) %}
+          {% if badge_url %}
+            <br><small><a href="{{ badge_url }}">Current file</a></small>
+          {% endif %}
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </table>
