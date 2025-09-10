@@ -290,7 +290,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 ---
 
 # 8. Certificates
-
 - Issued post-delivery. Templates are configured under **Settings → Certificate Templates**, where admins define series and map (language, A4/Letter) → PDF and optional badge **filename**. Workshop Types must select one active series and no longer store any badge value. Generation resolves the mapping for the session's type series and language/size; badges reference files under `app/assets/badges`. If any mapping or file is missing, rendering aborts with a clear error (no auto-fallback).
 - Paper size derives from session Region (North America → Letter; others → A4).
 - Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
