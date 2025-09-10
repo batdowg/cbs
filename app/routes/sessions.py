@@ -44,6 +44,7 @@ from ..shared.certificates import (
     render_certificate,
     render_for_session,
     remove_session_certificates,
+    get_template_mapping,
 )
 from ..shared.provisioning import (
     deactivate_orphan_accounts_for_session,
@@ -1061,6 +1062,10 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     if csa_account:
         can_manage = csa_can_manage_participants(csa_account, sess)
     back_params = flask_session.get("sessions_list_args", {})
+    badge_filename = None
+    mapping, _ = get_template_mapping(sess)
+    if mapping:
+        badge_filename = mapping.badge_filename
     return render_template(
         "session_detail.html",
         session=sess,
@@ -1071,6 +1076,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         csa_can_manage=can_manage,
         session_start_dt=start_dt_utc,
         back_params=back_params,
+        badge_filename=badge_filename,
     )
 
 

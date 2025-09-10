@@ -22,15 +22,12 @@
         <select name="badge_{{ code }}">
           <option value="">— None —</option>
           {% for badge in badges %}
-            <option value="{{ badge.id }}" {% if badge_mapping.get(code) and badge_mapping.get(code).id == badge.id %}selected{% endif %}>{{ badge.name }}</option>
+            <option value="{{ badge }}" {% if badge_mapping.get(code) == badge %}selected{% endif %}>{{ badge }}</option>
           {% endfor %}
         </select>
         {% set current_badge = badge_mapping.get(code) %}
         {% if current_badge %}
-          {% set badge_url = best_badge_url(current_badge.name) %}
-          {% if badge_url %}
-            <br><small><a href="{{ badge_url }}">Current file</a></small>
-          {% endif %}
+          <br><small><a href="/badges/{{ current_badge }}">Current file</a></small>
         {% endif %}
       </td>
     </tr>

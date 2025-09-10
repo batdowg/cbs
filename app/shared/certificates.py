@@ -33,11 +33,7 @@ def slug_certificate_name(name: str) -> str:
     return slug or "name"
 
 
-def render_certificate(
-    session: Session,
-    participant_account: ParticipantAccount,
-    layout_version: str = "v1",
-) -> str:
+def get_template_mapping(session: Session) -> tuple[CertificateTemplate | None, str]:
     region_val = (session.region or "").strip().lower()
     na_regions = {
         "na",
@@ -53,9 +49,8 @@ def render_certificate(
     }
     effective_size = "LETTER" if region_val in na_regions else "A4"
     lang = session.workshop_language or "en"
-    assets_dir = os.path.join(current_app.root_path, "assets")
     if not session.workshop_type or not session.workshop_type.cert_series:
-        raise ValueError("Workshop type missing certificate series")
+        return None, effective_size
     series_code = session.workshop_type.cert_series
     mapping = (
         db.session.query(CertificateTemplate)
@@ -67,10 +62,18 @@ def render_certificate(
         )
         .one_or_none()
     )
+    return mapping, effective_size
+
+
+def render_certificate(
+    session: Session,
+    participant_account: ParticipantAccount,
+    layout_version: str = "v1",
+) -> str:
+    assets_dir = os.path.join(current_app.root_path, "assets")
+    mapping, effective_size = get_template_mapping(session)
     if not mapping:
-        raise ValueError(
-            f"Missing certificate template mapping for series={series_code} lang={lang} size={effective_size}"
-        )
+        raise ValueError("Missing certificate template mapping for session")
     template_file = mapping.filename
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
