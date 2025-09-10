@@ -106,13 +106,13 @@
       <td>{{ row.participant.email }}</td>
       <td>{{ row.participant.title }}</td>
       <td>
-        {% if row.certificate %}
+        {% if row.pdf_path %}
           {% if badge_filename %}
             {% set badge_url = '/badges/' ~ badge_filename %}
             <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
             <a href="{{ badge_url }}" download>Badge</a>
           {% endif %}
-          <a href="/certificates/{{ row.certificate.pdf_path }}">Certificate</a>
+          <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
         {% endif %}
       </td>
       <td>
@@ -167,13 +167,13 @@
         </form>
       </td>
       <td>
-        {% if row.certificate %}
+        {% if row.pdf_path %}
           {% if badge_filename %}
             {% set badge_url = '/badges/' ~ badge_filename %}
             <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
             <a href="{{ badge_url }}" download>Badge</a>
           {% endif %}
-          <a href="/certificates/{{ row.certificate.pdf_path }}">Certificate</a>
+          <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
         {% endif %}
       </td>
       <td>

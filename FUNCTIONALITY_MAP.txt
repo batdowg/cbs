@@ -22,7 +22,7 @@ Routes and Code Pages
 
 - **Learner Portal** – Participant workshop lists, resources, prework, certificates, profile. File: `app/routes/learner.py`. All endpoints require `login_required`【F:app/routes/learner.py†L45-L60】
 
-- **Sessions** – Staff session listing, creation, editing, participants, prework, certificate generation. File: `app/routes/sessions.py`. Protected by `staff_required` (Admin, CRM, Delivery, Contractor)【F:app/routes/sessions.py†L172-L186】
+- **Sessions** – Staff session listing, creation, editing, participants, prework, certificate generation. Participant list links to stored certificate PDFs when available. File: `app/routes/sessions.py`. Protected by `staff_required` (Admin, CRM, Delivery, Contractor)【F:app/routes/sessions.py†L172-L186】
 
 - **Certificates** – Staff landing for certificate tools. File: `app/routes/certificates.py`. Protected by `staff_required`【F:app/routes/certificates.py†L8-L10】
 

@@ -145,12 +145,8 @@ def _maybe_send_csa_assign(sess: Session, password: str | None = None) -> None:
         f"Assigned to Workshop: {sess.workshop_type.name if sess.workshop_type else sess.code}"
         f" ({fmt_dt(sess.start_date)})"
     )
-    body = render_template(
-        "email/csa_assigned.txt", session=sess, password=password
-    )
-    html = render_template(
-        "email/csa_assigned.html", session=sess, password=password
-    )
+    body = render_template("email/csa_assigned.txt", session=sess, password=password)
+    html = render_template("email/csa_assigned.html", session=sess, password=password)
     try:
         result = emailer.send(account.email, subject, body, html)
         if result.get("ok"):
@@ -166,7 +162,7 @@ def _maybe_send_csa_assign(sess: Session, password: str | None = None) -> None:
             )
     except Exception as e:  # pragma: no cover - unexpected send error
         current_app.logger.info(
-            f"[MAIL-FAIL] csa-assign session={sess.id} user={account.id} to={account.email} error=\"{e}\""
+            f'[MAIL-FAIL] csa-assign session={sess.id} user={account.id} to={account.email} error="{e}"'
         )
 
 
@@ -178,10 +174,7 @@ def staff_required(fn):
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
         if not user or not (
-            is_admin(user)
-            or is_kcrm(user)
-            or is_delivery(user)
-            or is_contractor(user)
+            is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user)
         ):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
@@ -199,11 +192,7 @@ def list_sessions(current_user):
     base_params.pop("dir", None)
     flask_session["sessions_list_args"] = params
 
-    query = (
-        db.session.query(Session)
-        .outerjoin(Client)
-        .outerjoin(WorkshopType)
-    )
+    query = db.session.query(Session).outerjoin(Client).outerjoin(WorkshopType)
     query = query.filter(Session.materials_only.is_(False))
     if not show_global and current_user.region:
         query = query.filter(Session.region == current_user.region)
@@ -342,7 +331,9 @@ def new_session(current_user):
             .order_by(ClientWorkshopLocation.label)
             .all()
         )
-    simulation_outlines = SimulationOutline.query.order_by(SimulationOutline.number, SimulationOutline.skill).all()
+    simulation_outlines = SimulationOutline.query.order_by(
+        SimulationOutline.number, SimulationOutline.skill
+    ).all()
     if request.method == "POST":
         action = request.form.get("action")
         missing = []
@@ -385,7 +376,9 @@ def new_session(current_user):
         end_date_val = date.fromisoformat(end_date_str)
         daily_start_str = request.form.get("daily_start_time")
         daily_end_str = request.form.get("daily_end_time")
-        daily_start_val = time.fromisoformat(daily_start_str) if daily_start_str else None
+        daily_start_val = (
+            time.fromisoformat(daily_start_str) if daily_start_str else None
+        )
         daily_end_val = time.fromisoformat(daily_end_str) if daily_end_str else None
         capacity_val = int(capacity_str)
         materials_ordered = _cb(request.form.get("materials_ordered"))
@@ -477,7 +470,10 @@ def new_session(current_user):
                 ),
                 400,
             )
-        if start_date_val < date.today() and request.form.get("ack_past") != start_date_str:
+        if (
+            start_date_val < date.today()
+            and request.form.get("ack_past") != start_date_str
+        ):
             return (
                 render_template(
                     "sessions/form.html",
@@ -583,7 +579,9 @@ def new_session(current_user):
         _maybe_send_csa_assign(sess, password=csa_password)
         if sess.ready_for_delivery:
             summary = provision_participant_accounts_for_session(sess.id)
-            total = summary["created"] + summary["reactivated"] + summary["already_active"]
+            total = (
+                summary["created"] + summary["reactivated"] + summary["already_active"]
+            )
             flash(
                 "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
@@ -685,16 +683,14 @@ def edit_session(session_id: int, current_user):
     facilitators = fac_query.order_by(User.full_name).all()
     clients = Client.query.order_by(Client.name).all()
     title_arg = request.args.get("title")
-    simulation_outlines = SimulationOutline.query.order_by(SimulationOutline.number, SimulationOutline.skill).all()
+    simulation_outlines = SimulationOutline.query.order_by(
+        SimulationOutline.number, SimulationOutline.skill
+    ).all()
     participants_count = (
-        db.session.query(SessionParticipant)
-        .filter_by(session_id=sess.id)
-        .count()
+        db.session.query(SessionParticipant).filter_by(session_id=sess.id).count()
     )
     workshop_locations = (
-        ClientWorkshopLocation.query.filter_by(
-            client_id=sess.client_id, is_active=True
-        )
+        ClientWorkshopLocation.query.filter_by(client_id=sess.client_id, is_active=True)
         .order_by(ClientWorkshopLocation.label)
         .all()
         if sess.client_id
@@ -727,23 +723,27 @@ def edit_session(session_id: int, current_user):
         sess.end_date = end_date_val
         daily_start_str = request.form.get("daily_start_time")
         daily_end_str = request.form.get("daily_end_time")
-        sess.daily_start_time = time.fromisoformat(daily_start_str) if daily_start_str else None
-        sess.daily_end_time = time.fromisoformat(daily_end_str) if daily_end_str else None
+        sess.daily_start_time = (
+            time.fromisoformat(daily_start_str) if daily_start_str else None
+        )
+        sess.daily_end_time = (
+            time.fromisoformat(daily_end_str) if daily_end_str else None
+        )
         sess.timezone = request.form.get("timezone") or None
         sess.workshop_location_id = (
             int(request.form.get("workshop_location_id"))
             if request.form.get("workshop_location_id")
             else None
         )
-        sess.location = (
-            sess.workshop_location.label if sess.workshop_location else None
-        )
+        sess.location = sess.workshop_location.label if sess.workshop_location else None
         sess.delivery_type = request.form.get("delivery_type") or None
         sess.region = request.form.get("region") or None
         wl_val = request.form.get("workshop_language")
         if wl_val in [c for c, _ in get_language_options()]:
             sess.workshop_language = wl_val
-        if sess.workshop_type and sess.workshop_language not in (sess.workshop_type.supported_languages or []):
+        if sess.workshop_type and sess.workshop_language not in (
+            sess.workshop_type.supported_languages or []
+        ):
             flash("Selected workshop type does not support chosen language.", "error")
             return (
                 render_template(
@@ -823,11 +823,31 @@ def edit_session(session_id: int, current_user):
                 ),
                 400,
             )
-        materials_ordered = _cb(request.form.get("materials_ordered")) if "materials_ordered" in request.form else old_materials
-        info_sent = _cb(request.form.get("info_sent")) if "info_sent" in request.form else old_info
-        delivered = _cb(request.form.get("delivered")) if "delivered" in request.form else old_delivered
-        finalized = _cb(request.form.get("finalized")) if "finalized" in request.form else old_finalized
-        on_hold = _cb(request.form.get("on_hold")) if "on_hold" in request.form else old_on_hold
+        materials_ordered = (
+            _cb(request.form.get("materials_ordered"))
+            if "materials_ordered" in request.form
+            else old_materials
+        )
+        info_sent = (
+            _cb(request.form.get("info_sent"))
+            if "info_sent" in request.form
+            else old_info
+        )
+        delivered = (
+            _cb(request.form.get("delivered"))
+            if "delivered" in request.form
+            else old_delivered
+        )
+        finalized = (
+            _cb(request.form.get("finalized"))
+            if "finalized" in request.form
+            else old_finalized
+        )
+        on_hold = (
+            _cb(request.form.get("on_hold"))
+            if "on_hold" in request.form
+            else old_on_hold
+        )
         no_material_order = (
             _cb(request.form.get("no_material_order"))
             if "no_material_order" in request.form
@@ -949,7 +969,9 @@ def edit_session(session_id: int, current_user):
         _maybe_send_csa_assign(sess, password=csa_password)
         if new_ready and not old_ready:
             summary = provision_participant_accounts_for_session(sess.id)
-            total = summary["created"] + summary["reactivated"] + summary["already_active"]
+            total = (
+                summary["created"] + summary["reactivated"] + summary["already_active"]
+            )
             flash(
                 "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
                     total=total, **summary
@@ -989,13 +1011,9 @@ def edit_session(session_id: int, current_user):
                 "Materials ordered " + ("on" if materials_ordered else "off")
             )
         if new_ready != old_ready:
-            changes.append(
-                "Ready for delivery " + ("on" if new_ready else "off")
-            )
+            changes.append("Ready for delivery " + ("on" if new_ready else "off"))
         if info_sent != old_info:
-            changes.append(
-                "Workshop info sent " + ("on" if info_sent else "off")
-            )
+            changes.append("Workshop info sent " + ("on" if info_sent else "off"))
         if delivered != old_delivered:
             changes.append("Delivered " + ("on" if delivered else "off"))
         if finalized != old_finalized:
@@ -1041,21 +1059,19 @@ def edit_session(session_id: int, current_user):
 def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     view_csa = csa_view or request.args.get("view") == "csa"
     rows = (
-        db.session.query(SessionParticipant, Participant, Certificate)
+        db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
         .outerjoin(
             Certificate,
-            (
-                (Certificate.session_id == SessionParticipant.session_id)
-                & (Certificate.participant_id == SessionParticipant.participant_id)
-            ),
+            (Certificate.session_id == session_id)
+            & (Certificate.participant_id == Participant.id),
         )
         .filter(SessionParticipant.session_id == session_id)
         .all()
     )
     participants = [
-        {"participant": participant, "link": link, "certificate": cert}
-        for link, participant, cert in rows
+        {"participant": participant, "link": link, "pdf_path": pdf_path}
+        for link, participant, pdf_path in rows
     ]
     import_errors = flask_session.pop("import_errors", None)
     can_manage = False
@@ -1319,9 +1335,13 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
     return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 
-@bp.route("/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"])
+@bp.route(
+    "/<int:session_id>/participants/<int:participant_id>/edit", methods=["GET", "POST"]
+)
 @csa_allowed_for_session
-def edit_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
+def edit_participant(
+    session_id: int, participant_id: int, sess, current_user, csa_view, csa_account
+):
     if not (
         current_user
         and (
@@ -1359,7 +1379,9 @@ def edit_participant(session_id: int, participant_id: int, sess, current_user, c
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/remove")
 @csa_allowed_for_session
-def remove_participant(session_id: int, participant_id: int, sess, current_user, csa_view, csa_account):
+def remove_participant(
+    session_id: int, participant_id: int, sess, current_user, csa_view, csa_account
+):
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
@@ -1477,9 +1499,11 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
             user_id=current_user.id if current_user else None,
             session_id=session_id,
             action="participant_import",
-            details="CSA added {n} participants".format(n=imported)
-            if current_user is None
-            else None,
+            details=(
+                "CSA added {n} participants".format(n=imported)
+                if current_user is None
+                else None
+            ),
         )
     )
     db.session.commit()
@@ -1675,7 +1699,7 @@ def session_prework(session_id: int):
                     )
                 )
                 current_app.logger.info(
-                    f"[MAIL-OUT] prework session={sess.id} pa={account.id} to={account.email} subject=\"{subject}\""
+                    f'[MAIL-OUT] prework session={sess.id} pa={account.id} to={account.email} subject="{subject}"'
                 )
                 return True
             current_app.logger.info(
@@ -1700,9 +1724,11 @@ def session_prework(session_id: int):
                 f"[SESS] no_prework={sess.no_prework} session={sess.id}"
             )
             flash(
-                "Prework disabled for this workshop"
-                if sess.no_prework
-                else "Prework enabled",
+                (
+                    "Prework disabled for this workshop"
+                    if sess.no_prework
+                    else "Prework enabled"
+                ),
                 "info",
             )
             return redirect(url_for("sessions.session_prework", session_id=session_id))
@@ -1711,7 +1737,9 @@ def session_prework(session_id: int):
             any_fail = False
             for p, _ in participants:
                 try:
-                    account, temp_password = ensure_participant_account(p, account_cache)
+                    account, temp_password = ensure_participant_account(
+                        p, account_cache
+                    )
                 except ValueError:
                     continue
                 assignment = prepare_assignment(account)
@@ -1767,11 +1795,15 @@ def session_prework(session_id: int):
         if action == "resend":
             pid = int(request.form.get("participant_id"))
             participant = db.session.get(Participant, pid)
-            account, temp_password = ensure_participant_account(participant, account_cache)
+            account, temp_password = ensure_participant_account(
+                participant, account_cache
+            )
             assignment = prepare_assignment(account)
             if assignment and assignment.status == "WAIVED":
                 flash("Participant is waived", "error")
-                return redirect(url_for("sessions.session_prework", session_id=session_id))
+                return redirect(
+                    url_for("sessions.session_prework", session_id=session_id)
+                )
             if assignment:
                 send_mail(assignment, account, temp_password)
             db.session.commit()
@@ -1780,14 +1812,20 @@ def session_prework(session_id: int):
         if action == "send_all":
             if sess.no_prework:
                 flash("Prework disabled for this workshop", "error")
-                return redirect(url_for("sessions.session_prework", session_id=session_id))
+                return redirect(
+                    url_for("sessions.session_prework", session_id=session_id)
+                )
             if not template:
                 flash("No active prework template", "error")
-                return redirect(url_for("sessions.session_prework", session_id=session_id))
+                return redirect(
+                    url_for("sessions.session_prework", session_id=session_id)
+                )
             any_fail = False
             for p, _ in participants:
                 try:
-                    account, temp_password = ensure_participant_account(p, account_cache)
+                    account, temp_password = ensure_participant_account(
+                        p, account_cache
+                    )
                 except ValueError:
                     continue
                 assignment = prepare_assignment(account)
