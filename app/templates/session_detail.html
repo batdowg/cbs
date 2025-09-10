@@ -117,7 +117,7 @@
               Badge
             {% endif %}
           {% endif %}
-          {% set cert_url = url_for('learner.download_certificate', cert_id=row.certificate.id) %}
+          {% set cert_url = '/certificates/' + row.certificate.pdf_path %}
           <a href="{{ cert_url }}" download>Certificate</a>
         {% endif %}
       </td>
@@ -184,7 +184,7 @@
               Badge
             {% endif %}
           {% endif %}
-          {% set cert_url = url_for('learner.download_certificate', cert_id=row.certificate.id) %}
+          {% set cert_url = '/certificates/' + row.certificate.pdf_path %}
           <a href="{{ cert_url }}" download>Certificate</a>
         {% endif %}
       </td>
