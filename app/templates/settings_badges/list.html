@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Badges{% endblock %}
+{% block content %}
+<h1>Badges</h1>
+<table>
+  <tr><th>Name</th><th>Language</th><th>File</th><th></th></tr>
+  {% for b in badges %}
+  <tr>
+    <td>{{ b.name }}</td>
+    <td>{{ b.language }}</td>
+    <td>{{ b.filename }}</td>
+    <td><a href="{{ url_for('settings_badges.edit_badge', badge_id=b.id) }}">Edit</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

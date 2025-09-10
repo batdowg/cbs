@@ -10,8 +10,8 @@ from ..models import (
     PreworkQuestion,
     CertificateTemplateSeries,
     MaterialsOption,
+    BadgeImage,
 )
-from ..shared.constants import BADGE_CHOICES
 from ..shared.html import sanitize_html
 from ..shared.languages import get_language_options
 
@@ -58,7 +58,7 @@ def new_type(current_user):
     return render_template(
         'workshop_types/form.html',
         wt=None,
-        badge_choices=BADGE_CHOICES,
+        badge_choices=[(b.name, b.name) for b in BadgeImage.query.order_by(BadgeImage.name).all()],
         language_options=get_language_options(),
         series=series,
         materials_options=materials_options,
@@ -129,7 +129,7 @@ def edit_type(type_id: int, current_user):
     return render_template(
         'workshop_types/form.html',
         wt=wt,
-        badge_choices=BADGE_CHOICES,
+        badge_choices=[(b.name, b.name) for b in BadgeImage.query.order_by(BadgeImage.name).all()],
         language_options=get_language_options(),
         series=series,
         materials_options=materials_options,
