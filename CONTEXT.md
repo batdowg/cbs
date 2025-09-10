@@ -299,6 +299,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
 - Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
+- Staff session detail pages link directly to `/certificates/<pdf_path>` for each participant's certificate (no id-based proxy).
 - Older builds used `YYYY/<workshop_code>/…`; these paths are legacy.
 - Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
 - `--dry-run` lists candidate paths and a summary without deleting.

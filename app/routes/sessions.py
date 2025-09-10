@@ -1040,22 +1040,23 @@ def edit_session(session_id: int, current_user):
 @csa_allowed_for_session(allow_delivered_view=True)
 def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     view_csa = csa_view or request.args.get("view") == "csa"
-    links = (
-        db.session.query(SessionParticipant)
-        .filter_by(session_id=session_id)
+    rows = (
+        db.session.query(SessionParticipant, Participant, Certificate)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
+        .outerjoin(
+            Certificate,
+            (
+                (Certificate.session_id == SessionParticipant.session_id)
+                & (Certificate.participant_id == SessionParticipant.participant_id)
+            ),
+        )
+        .filter(SessionParticipant.session_id == session_id)
         .all()
     )
-    participants = []
-    for link in links:
-        participant = db.session.get(Participant, link.participant_id)
-        cert = (
-            db.session.query(Certificate)
-            .filter_by(session_id=session_id, participant_id=link.participant_id)
-            .one_or_none()
-        )
-        if participant:
-            participants.append({"participant": participant, "link": link, "certificate": cert})
+    participants = [
+        {"participant": participant, "link": link, "certificate": cert}
+        for link, participant, cert in rows
+    ]
     import_errors = flask_session.pop("import_errors", None)
     can_manage = False
     start_dt_utc = session_start_dt_utc(sess)
