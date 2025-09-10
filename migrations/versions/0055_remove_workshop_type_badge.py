@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '0055_remove_workshop_type_badge'
-down_revision = '0054_cert_template_badge_file'
+down_revision = '0054_cert_template_badge_filename'
 branch_labels = None
 depends_on = None
 
