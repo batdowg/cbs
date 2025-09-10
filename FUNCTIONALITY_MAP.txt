@@ -21,6 +21,7 @@ Routes and Code Pages
 - **My Sessions** – Personalized session list for staff or participants. File: `app/routes/my_sessions.py`. Uses learner `login_required`【F:app/routes/my_sessions.py†L29-L31】
 
 - **Learner Portal** – Participant workshop lists, resources, prework, certificates, profile. File: `app/routes/learner.py`. All endpoints require `login_required`【F:app/routes/learner.py†L45-L60】
+- **My Certificates** – Lists and links certificate PDFs for the current account. Route: `app/routes/learner.py::my_certs`. Requires `login_required`【F:app/routes/learner.py†L293-L313】
 
 - **Sessions** – Staff session listing, creation, editing, participants, prework, certificate generation. Participant list links to stored certificate PDFs when available. File: `app/routes/sessions.py`. Protected by `staff_required` (Admin, CRM, Delivery, Contractor)【F:app/routes/sessions.py†L172-L186】
 

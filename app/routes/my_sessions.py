@@ -8,7 +8,7 @@ from flask import (
     session as flask_session,
     url_for,
 )
-from sqlalchemy import or_, func
+from sqlalchemy import or_
 from datetime import date
 
 from ..app import db, User
@@ -36,7 +36,9 @@ def list_my_sessions():
     account_id = flask_session.get("participant_account_id")
     if user_id:
         if not show_all:
-            query = query.filter(Session.finalized.is_(False), Session.cancelled.is_(False))
+            query = query.filter(
+                Session.finalized.is_(False), Session.cancelled.is_(False)
+            )
         user = db.session.get(User, user_id)
         sessions = (
             query.filter(
@@ -54,25 +56,26 @@ def list_my_sessions():
         account = db.session.get(ParticipantAccount, account_id)
         if not account:
             return redirect(url_for("auth.login"))
-        email = (account.email or "").lower()
         sessions = (
             db.session.query(Session)
             .join(SessionParticipant, SessionParticipant.session_id == Session.id)
             .join(Participant, SessionParticipant.participant_id == Participant.id)
-            .filter(func.lower(Participant.email) == email)
+            .filter(Participant.account_id == account_id)
             .filter(Session.materials_only.is_(False))
             .order_by(Session.start_date)
             .all()
         )
         assignments = {
             a.session_id: a
-            for a in PreworkAssignment.query.filter_by(participant_account_id=account_id).all()
+            for a in PreworkAssignment.query.filter_by(
+                participant_account_id=account_id
+            ).all()
         }
         certs = {
             c.session_id: c
             for c in db.session.query(Certificate)
             .join(Participant, Certificate.participant_id == Participant.id)
-            .filter(func.lower(Participant.email) == email)
+            .filter(Participant.account_id == account_id)
             .all()
         }
         return render_template(

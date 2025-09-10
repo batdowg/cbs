@@ -89,8 +89,23 @@ def create_app():
         show_resources_nav = False
         show_certificates_nav = False
         user_id = session.get("user_id")
+        account_id = session.get("participant_account_id")
+        user = None
+        account = None
         if user_id:
             user = db.session.get(User, user_id)
+            if not account_id:
+                account = (
+                    db.session.query(ParticipantAccount)
+                    .filter(
+                        func.lower(ParticipantAccount.email)
+                        == (user.email or "").lower()
+                    )
+                    .one_or_none()
+                )
+                account_id = account.id if account else None
+            else:
+                account = db.session.get(ParticipantAccount, account_id)
             show_resources_nav = (
                 db.session.query(Session.id)
                 .outerjoin(
@@ -105,18 +120,8 @@ def create_app():
                 .first()
                 is not None
             )
-            show_certificates_nav = True
-        account_id = session.get("participant_account_id")
-        account = None
-        if account_id:
-            is_csa = (
-                db.session.query(Session.id)
-                .filter(Session.csa_account_id == account_id)
-                .first()
-                is not None
-            )
+        elif account_id:
             account = db.session.get(ParticipantAccount, account_id)
-            email = (account.email or "").lower() if account else ""
             show_prework_nav = (
                 db.session.query(PreworkAssignment.id)
                 .filter(
@@ -126,19 +131,26 @@ def create_app():
                 .first()
                 is not None
             )
-            show_resources_nav = show_resources_nav or (
+            show_resources_nav = (
                 db.session.query(Session.id)
                 .join(SessionParticipant, SessionParticipant.session_id == Session.id)
                 .join(Participant, SessionParticipant.participant_id == Participant.id)
-                .filter(func.lower(Participant.email) == email)
+                .filter(Participant.account_id == account_id)
                 .filter(Session.start_date <= datetime.utcnow().date())
                 .first()
                 is not None
             )
-            show_certificates_nav = show_certificates_nav or (
+        if account_id:
+            is_csa = (
+                db.session.query(Session.id)
+                .filter(Session.csa_account_id == account_id)
+                .first()
+                is not None
+            )
+            show_certificates_nav = (
                 db.session.query(Certificate.id)
                 .join(Participant, Certificate.participant_id == Participant.id)
-                .filter(func.lower(Participant.email) == email)
+                .filter(Participant.account_id == account_id)
                 .first()
                 is not None
             )
