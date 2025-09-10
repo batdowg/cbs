@@ -27,7 +27,7 @@ Every functional change must update this file **in the same PR**.
 - Do **not** include local PowerShell aliases in docs or code.
 - Business logic stays server-side; small JS for UI only.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
-- Certificates: `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (where `workshop_code = workshop_types.code`) and linked in-portal.
+- Certificates: `<certs_root>/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (`<certs_root>` = `SITE_ROOT/certificates`, default `/srv/certificates`); `pdf_path` in DB is stored relative to `<certs_root>`.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
 - “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
@@ -292,11 +292,15 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Issued post-delivery. Templates are configured under **Settings → Certificate Templates**, where admins define series and map (language, A4/Letter) → PDF. Workshop Types must select one active series. Generation resolves the mapping for the session's type series and language/size; if any mapping or file is missing, rendering aborts with a clear error (no auto-fallback). Files live under `app/assets/`.
 - Paper size derives from session Region (North America → Letter; others → A4).
 - Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
-- Filename rule: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` saved under `/srv/certificates/<year>/<session_id>/`.
-- Output root configurable via `SITE_ROOT` (default `/srv`); PDFs live under `SITE_ROOT/certificates/<year>/<session_id>/`.
+- Certificates are written to `<certs_root>/<YYYY>/<session_id>/` where `<certs_root>` = `SITE_ROOT/certificates` (default `/srv/certificates`). `YYYY` uses the session start-date year; if missing, use the current year.
+- Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
+- `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
+- Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
+- Older builds used `YYYY/<workshop_code>/…`; these paths are legacy.
 - Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
 - `--dry-run` lists candidate paths and a summary without deleting.
 - In production, set `ALLOW_CERT_PURGE=1` to enable deletions.
+- One-off CLI `backfill_cert_paths` (run: `python manage.py backfill_cert_paths`) updates legacy `YYYY/<workshop_code>/…` rows when a `YYYY/session_id/…` file exists. Safe to skip if not needed.
 - Workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
 - Learner sees **My Certificates** only if they own ≥1 certificate.
 

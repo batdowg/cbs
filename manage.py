@@ -4,6 +4,7 @@ import os
 from flask_migrate import Migrate
 from flask.cli import FlaskGroup
 import click
+import re
 from sqlalchemy import func
 from flask import current_app
 from app.shared.certificates import render_certificate
@@ -122,6 +123,34 @@ def purge_orphan_certs(dry_run: bool):
         click.echo(path)
     click.echo(summary)
     current_app.logger.info("[CERT-PURGE] %s", summary)
+
+
+@cli.command("backfill_cert_paths")
+def backfill_cert_paths():
+    """Update legacy certificate paths that used workshop codes."""
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    cert_root = os.path.join(site_root, "certificates")
+    legacy_re = re.compile(r"^\d{4}/[^/0-9][^/]*/")
+    updated = skipped = 0
+    for cert in db.session.query(Certificate).all():
+        rel = (cert.pdf_path or "").lstrip("/")
+        if rel.startswith("certificates/"):
+            rel = rel.split("/", 1)[1]
+        if not legacy_re.match(rel):
+            continue
+        year, rest = rel.split("/", 1)
+        _old_code, filename = rest.split("/", 1)
+        new_rel = os.path.join(year, str(cert.session_id), filename)
+        if os.path.isfile(os.path.join(cert_root, new_rel)):
+            cert.pdf_path = new_rel
+            updated += 1
+        else:
+            skipped += 1
+    if updated:
+        db.session.commit()
+    summary = f"updated={updated} skipped={skipped}"
+    click.echo(summary)
+    current_app.logger.info("[CERT-BACKFILL] %s", summary)
 
 
 if __name__ == "__main__":
