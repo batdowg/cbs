@@ -102,9 +102,11 @@ Every functional change must update this file **in the same PR**.
 - **CSA (Session Admin)** — **participant account**, not a user  
   `Home • My Sessions • My Workshops • My Resources • My Profile • Logout`
 
-- **Participant / Learner**  
-  `Home • My Workshops • My Resources • My Profile • Logout`  
+- **Participant / Learner**
+  `Home • My Workshops • My Resources • My Profile • Logout`
   - **My Certificates**: no persistent menu item; a link/section appears only if they have ≥1 certificate.
+
+- Staff "My Profile → My Certificates" appears only when the staff user has certificates issued as a participant.
 
 > Staff view switcher exists for **User** accounts (Sys Admin/Admin/CRM/Delivery/Contractor). **Participants/CSAs** do not see a switcher.
 
@@ -300,13 +302,14 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
 - Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
 - Staff session detail pages left-join `certificates` on `(session_id, participant_id)` and link directly to `/certificates/<pdf_path>` for each participant with a stored path (no id-based proxy).
+- Learner and staff profile certificate listings resolve the current account's `participants` and join `certificates` on `participant_id`, linking to `/certificates/<pdf_path>` without recomputing filenames.
 - Older builds used `YYYY/<workshop_code>/…`; these paths are legacy.
 - Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
 - `--dry-run` lists candidate paths and a summary without deleting.
 - In production, set `ALLOW_CERT_PURGE=1` to enable deletions.
 - One-off CLI `backfill_cert_paths` (run: `python manage.py backfill_cert_paths`) updates legacy `YYYY/<workshop_code>/…` rows when a `YYYY/session_id/…` file exists. Safe to skip if not needed.
 - Workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
-- Learner sees **My Certificates** only if they own ≥1 certificate.
+- Learner nav shows **My Certificates** only if they own ≥1 certificate; staff see **My Profile → My Certificates** only when they have certificates as participants.
 
 ---
 

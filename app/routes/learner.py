@@ -293,29 +293,30 @@ def prework_download(assignment_id: int):
 @bp.get("/my-certificates")
 @login_required
 def my_certs():
-    if flask_session.get("user_id"):
+    account_id = flask_session.get("participant_account_id")
+    if not account_id and flask_session.get("user_id"):
         user = db.session.get(User, flask_session.get("user_id"))
-        email = (user.email or "").lower()
-    else:
-        account = db.session.get(
-            ParticipantAccount, flask_session.get("participant_account_id")
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter(func.lower(ParticipantAccount.email) == (user.email or "").lower())
+            .one_or_none()
         )
-        email = (account.email or "").lower() if account else ""
-    certs = (
-        db.session.query(Certificate)
-        .join(Participant, Certificate.participant_id == Participant.id)
-        .filter(db.func.lower(Participant.email) == email)
-        .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
-        .all()
-    )
+        account_id = account.id if account else None
+    certs = []
+    if account_id:
+        certs = (
+            db.session.query(Certificate)
+            .join(Participant, Certificate.participant_id == Participant.id)
+            .filter(Participant.account_id == account_id)
+            .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
+            .all()
+        )
     cert_badges = {}
     for c in certs:
         mapping, _ = get_template_mapping(c.session)
         if mapping and mapping.badge_filename:
             cert_badges[c.id] = mapping.badge_filename
-    return render_template(
-        "my_certificates.html", certs=certs, cert_badges=cert_badges
-    )
+    return render_template("my_certificates.html", certs=certs, cert_badges=cert_badges)
 
 
 @bp.route("/profile", methods=["GET", "POST"])

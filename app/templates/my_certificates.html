@@ -2,10 +2,12 @@
 {% block title %}My Certificates{% endblock %}
 {% block content %}
 <h1>My Certificates</h1>
+{% if certs %}
 <ul>
 {% for c in certs %}
   <li>
-    <a href="{{ url_for('learner.download_certificate', cert_id=c.id) }}">{{ c.workshop_name }} - {{ c.workshop_date }}</a>
+    {{ c.workshop_name }} - {{ c.workshop_date }}
+    <a href="{{ '/certificates/' ~ c.pdf_path }}">Certificate</a>
     {% set badge_file = cert_badges.get(c.id) %}
     {% if badge_file %}
       {% set badge_url = '/badges/' ~ badge_file %}
@@ -15,4 +17,7 @@
   </li>
 {% endfor %}
 </ul>
+{% else %}
+<p>No certificates available.</p>
+{% endif %}
 {% endblock %}
