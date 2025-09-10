@@ -33,6 +33,7 @@ def test_best_badge_url_copies_to_site(app):
     if os.path.exists(site_file):
         os.remove(site_file)
     with app.app_context():
+
         with app.test_request_context():
             url = best_badge_url("Foundations")
             assert url == "/badges/foundations.webp"
@@ -49,3 +50,4 @@ def test_best_badge_respects_site_root(tmp_path, monkeypatch):
             url = best_badge_url("Foundations")
             assert url == "/badges/foundations.webp"
     assert (tmp_path / "badges" / "foundations.webp").is_file()
+
