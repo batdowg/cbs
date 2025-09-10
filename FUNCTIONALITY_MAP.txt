@@ -1,0 +1,53 @@
+CBS Functionality and Permissions Map
+=====================================
+
+Routes and Code Pages
+---------------------
+
+- **Accounts** – Set participant account passwords. File: `app/routes/accounts.py` (`set_account_password`). Permission: `admin_required` (Sys Admin or Admin)【F:app/routes/accounts.py†L11-L13】
+
+- **Authentication** – Login, logout, password reset, prework magic links. File: `app/routes/auth.py`. Login endpoint `@bp.route("/", methods=["GET", "POST"])` handles unified login【F:app/routes/auth.py†L215-L274】
+
+- **Clients** – Manage client records and locations. File: `app/routes/clients.py`. Listing and creation require `admin_required`【F:app/routes/clients.py†L71-L80】; editing uses `client_edit_required` allowing Admin/Sys Admin/CRM or CSA accounts【F:app/routes/clients.py†L37-L52】【F:app/routes/clients.py†L110-L113】
+
+- **CSA Portal** – CSA session dashboard. File: `app/routes/csa.py`. Access protected by learner `login_required`【F:app/routes/csa.py†L12-L14】
+
+- **Materials Management** – Session materials orders. File: `app/routes/materials.py`. `materials_access` grants manage rights to App Admin/Admin/CRM and view-only to Delivery/Contractor or session CSA【F:app/routes/materials.py†L53-L109】
+
+- **Materials Dashboard** – List all session shipments. File: `app/routes/materials_orders.py`. Access requires shipment managers or view-only roles【F:app/routes/materials_orders.py†L15-L22】
+
+- **Materials-Only Sessions** – Create standalone material orders. File: `app/routes/materials_only.py`. Requires login and Admin/App Admin/KCRM role【F:app/routes/materials_only.py†L56-L63】
+
+- **My Sessions** – Personalized session list for staff or participants. File: `app/routes/my_sessions.py`. Uses learner `login_required`【F:app/routes/my_sessions.py†L29-L31】
+
+- **Learner Portal** – Participant workshop lists, resources, prework, certificates, profile. File: `app/routes/learner.py`. All endpoints require `login_required`【F:app/routes/learner.py†L45-L60】
+
+- **Sessions** – Staff session listing, creation, editing, participants, prework, certificate generation. File: `app/routes/sessions.py`. Protected by `staff_required` (Admin, CRM, Delivery, Contractor)【F:app/routes/sessions.py†L172-L186】
+
+- **Certificates** – Staff landing for certificate tools. File: `app/routes/certificates.py`. Protected by `staff_required`【F:app/routes/certificates.py†L8-L10】
+
+- **Workshop Types** – Manage workshop type definitions and prework templates. File: `app/routes/workshop_types.py`. `staff_required` restricts to App Admin/Admin【F:app/routes/workshop_types.py†L21-L47】
+
+- **Users** – Staff account administration. File: `app/routes/users.py`. All routes require `manage_users_required` (roles able to manage users)【F:app/routes/users.py†L37-L60】
+
+- **Settings → Languages** – Manage language list. File: `app/routes/settings_languages.py`. Requires `admin_required`【F:app/routes/settings_languages.py†L10-L20】
+
+- **Settings → Materials Options** – Configure materials choices. File: `app/routes/settings_materials.py`. Requires `admin_required`【F:app/routes/settings_materials.py†L27-L65】
+
+- **Settings → Certificate Templates** – Configure certificate series and templates. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】
+
+- **Settings → Mail Settings** – SMTP configuration and test send. File: `app/routes/settings_mail.py`. Requires `app_admin_required`【F:app/routes/settings_mail.py†L14-L50】
+
+- **Settings → Badges** – Manage badge images. File: `app/routes/settings_badges.py`. Requires `admin_required`【F:app/routes/settings_badges.py†L41-L64】
+
+- **Settings → Resources** – Manage downloadable/linked resources. File: `app/routes/settings_resources.py`. `_current_user` allows App Admin/Admin/Delivery/Facilitator/Contractor view; editing limited to App Admin/Admin/Delivery【F:app/routes/settings_resources.py†L26-L44】【F:app/routes/settings_resources.py†L61-L79】
+
+- **Settings → Simulation Outlines** – Manage simulation outlines. File: `app/routes/settings_simulations.py`. `_current_user` allows KT staff, Delivery, Contractor view; editing restricted to KT staff or Delivery【F:app/routes/settings_simulations.py†L13-L25】【F:app/routes/settings_simulations.py†L42-L58】
+
+- **Settings → Roles Matrix** – Legacy redirect to users page. File: `app/routes/settings_roles.py`. Requires `manage_users_required`【F:app/routes/settings_roles.py†L8-L10】
+
+Permissions Reference
+---------------------
+
+Detailed role permissions for major features are defined in `app/shared/constants.py` as `PERMISSIONS_MATRIX`【F:app/shared/constants.py†L48-L220】
+
