@@ -292,24 +292,18 @@ def prework_download(assignment_id: int):
 @bp.get("/my-certificates")
 @login_required
 def my_certs():
-    account_id = flask_session.get("participant_account_id")
-    user_id = flask_session.get("user_id")
-    email = ""
-    if user_id:
-        user = db.session.get(User, user_id)
+    if flask_session.get("user_id"):
+        user = db.session.get(User, flask_session.get("user_id"))
         email = (user.email or "").lower()
-    elif account_id:
-        account = db.session.get(ParticipantAccount, account_id)
+    else:
+        account = db.session.get(
+            ParticipantAccount, flask_session.get("participant_account_id")
+        )
         email = (account.email or "").lower() if account else ""
-    cert_filter = (
-        Participant.account_id == account_id
-        if account_id
-        else func.lower(Participant.email) == email
-    )
     certs = (
         db.session.query(Certificate)
         .join(Participant, Certificate.participant_id == Participant.id)
-        .filter(cert_filter)
+        .filter(db.func.lower(Participant.email) == email)
         .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
         .all()
     )
