@@ -379,3 +379,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
 - Contractor menu/capabilities updated per §1.2/§1.4.  
 - Materials dashboard documented to current behavior.
+- Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
