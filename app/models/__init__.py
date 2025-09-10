@@ -143,6 +143,15 @@ class Language(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
 
+class BadgeImage(db.Model):
+    __tablename__ = "badge_images"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    language = db.Column(db.String(10), nullable=False, default="en")
+    filename = db.Column(db.String(255), nullable=False)
+
+
 class WorkshopType(db.Model):
     __tablename__ = "workshop_types"
 
@@ -453,6 +462,8 @@ class SessionParticipant(db.Model):
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
     completion_date = db.Column(db.Date)
+    session = db.relationship("Session")
+    participant = db.relationship("Participant")
     __table_args__ = (
         db.UniqueConstraint("session_id", "participant_id", name="uix_session_participant"),
     )
