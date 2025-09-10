@@ -81,7 +81,7 @@ Every functional change must update this file **in the same PR**.
 
 - **Sys Admin** (default view: Admin)
   `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • Settings ▾ • My Profile • Logout`
-  **Settings ▾**: `Users • Certificate Templates • Workshop Types • Resources • Simulation Outlines`
+  **Settings ▾**: `Users • Certificate Templates • Badges • Workshop Types • Resources • Simulation Outlines`
 
 - **Admin** (default view: Admin)  
   Same as Sys Admin. (System-wide toggles reserved for Sys Admin if any.)
@@ -124,6 +124,8 @@ Every functional change must update this file **in the same PR**.
 |-------------------------------------------------------|:-------:|:-----:|:---:|:--------:|:----------:|:---------------------------------:|:--------------------------:|
 | Settings – System settings                            |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
 | Settings – Certificate Templates                      |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
+| Settings – Badges (placeholder)                       |   ✓     |   ✓   |  –  |    –     |     –      |                –
+            |            –               |
 | Settings – Languages / Workshop Types / Matrix        |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
 | Users – Create/Edit/Disable                           |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
 | Users – Toggle SysAdmin                               |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
