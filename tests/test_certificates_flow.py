@@ -92,7 +92,8 @@ def test_badge_image_and_label(app):
     html = resp.data.decode()
     assert '<img src="/badges/foundations.webp"' in html
     assert "Badge" in html
-    assert "Download Certificate" in html
+    assert f'href="/certificates/{cert.pdf_path}"' in html
+    assert "Certificate" in html
 
 
 def test_badge_hidden_when_missing(app):
