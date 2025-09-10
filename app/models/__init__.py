@@ -151,9 +151,6 @@ class WorkshopType(db.Model):
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
     description = db.Column(db.Text)
-    badge = db.Column(
-        db.String(50), nullable=True
-    )  # one of allowed set; NULL means none
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
@@ -462,15 +459,6 @@ class CertificateTemplateSeries(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
 
-class BadgeImage(db.Model):
-    __tablename__ = "badge_images"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    language = db.Column(db.String(8), nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
-
-
 class CertificateTemplate(db.Model):
     __tablename__ = "certificate_templates"
 
@@ -483,16 +471,13 @@ class CertificateTemplate(db.Model):
     language = db.Column(db.String(8), nullable=False)
     size = db.Column(db.String(10), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
-    badge_image_id = db.Column(
-        db.Integer, db.ForeignKey("badge_images.id"), nullable=True
-    )
+    badge_filename = db.Column(db.String(255))
     __table_args__ = (
         db.UniqueConstraint(
             "series_id", "language", "size", name="uix_cert_template_series_lang_size"
         ),
     )
     series = db.relationship("CertificateTemplateSeries", backref="templates")
-    badge_image = db.relationship("BadgeImage")
 
 
 class Certificate(db.Model):

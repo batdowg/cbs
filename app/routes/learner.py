@@ -34,6 +34,7 @@ from ..models import (
 from ..models import Resource, WorkshopType
 from ..models import resource_workshop_types
 from ..shared.languages import get_language_options
+from ..shared.certificates import get_template_mapping
 
 import time
 
@@ -307,7 +308,14 @@ def my_certs():
         .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
         .all()
     )
-    return render_template("my_certificates.html", certs=certs)
+    cert_badges = {}
+    for c in certs:
+        mapping, _ = get_template_mapping(c.session)
+        if mapping and mapping.badge_filename:
+            cert_badges[c.id] = mapping.badge_filename
+    return render_template(
+        "my_certificates.html", certs=certs, cert_badges=cert_badges
+    )
 
 
 @bp.route("/profile", methods=["GET", "POST"])
