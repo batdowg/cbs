@@ -75,11 +75,9 @@ def create_app():
     def logo_passthrough():
         return send_from_directory(os.path.join(app.root_path, "static"), "ktlogo1.png")
 
-    @app.get("/badges/<slug>.<ext>")
-    def badge_file(slug: str, ext: str):
-        if ext not in ("webp", "png"):
-            abort(404)
-        filename = f"{slug}.{ext}"
+    @app.get("/badges/<slug>.webp")
+    def badge_file(slug: str):
+        filename = f"{slug}.webp"
         site_dir = "/srv/badges"
         asset_dir = os.path.join(app.root_path, "assets", "badges")
         site_path = os.path.join(site_dir, filename)
