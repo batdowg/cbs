@@ -33,7 +33,6 @@ from .models import (
     PreworkAssignment,
 )
 from .models import resource  # ensures app/models/resource.py is imported
-from .shared.badges import best_badge_url, slug_for_badge
 from .shared.rbac import app_admin_required
 from .shared.constants import LANGUAGE_NAMES
 from .shared.time import fmt_dt, fmt_time, fmt_time_range_with_tz
@@ -46,8 +45,6 @@ def create_app():
     app = Flask(__name__, template_folder="templates")
     app.secret_key = os.getenv("SECRET_KEY", "dev")
     app.config["PREFERRED_URL_SCHEME"] = "https"
-    app.jinja_env.globals["slug_for_badge"] = slug_for_badge
-    app.jinja_env.globals["best_badge_url"] = best_badge_url
     app.jinja_env.filters["fmt_dt"] = fmt_dt
     app.jinja_env.filters["fmt_time"] = fmt_time
     app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
@@ -75,9 +72,8 @@ def create_app():
     def logo_passthrough():
         return send_from_directory(os.path.join(app.root_path, "static"), "ktlogo1.png")
 
-    @app.get("/badges/<slug>.webp")
-    def badge_file(slug: str):
-        filename = f"{slug}.webp"
+    @app.get("/badges/<path:filename>")
+    def badge_file(filename: str):
         site_dir = "/srv/badges"
         asset_dir = os.path.join(app.root_path, "assets", "badges")
         site_path = os.path.join(site_dir, filename)

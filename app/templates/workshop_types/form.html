@@ -15,13 +15,6 @@
   {% endif %}
   <div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
   <div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
-  <div><label>Badge
-    <select name="badge">
-      {% for val,label in badge_choices %}
-      <option value="{{ val }}"{% if wt and wt.badge==val %} selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
   <div><label><input type="checkbox" name="simulation_based" {% if wt and wt.simulation_based %}checked{% endif %}> Simulation based</label></div>
   <div><label>Supported languages
     <select name="supported_languages" multiple>

@@ -6,6 +6,7 @@ bp = Blueprint('settings_badges', __name__, url_prefix='/settings/badges')
 
 
 @bp.get('/')
+@bp.get('')
 @admin_required
 def placeholder(current_user):
     return render_template('settings_badges/placeholder.html')

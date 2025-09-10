@@ -13,7 +13,7 @@ from flask import (
 )
 
 from ..app import db
-from ..models import CertificateTemplateSeries, CertificateTemplate, BadgeImage
+from ..models import CertificateTemplateSeries, CertificateTemplate
 from ..shared.rbac import manage_users_required
 from ..shared.languages import get_language_options
 
@@ -98,11 +98,18 @@ def edit_templates(series_id: int, current_user):
     mapping = {(t.language, t.size): t.filename for t in series.templates}
     badge_mapping = {}
     for t in series.templates:
-        if t.badge_image and t.language not in badge_mapping:
-            badge_mapping[t.language] = t.badge_image
+        if t.badge_filename and t.language not in badge_mapping:
+            badge_mapping[t.language] = t.badge_filename
     assets_dir = os.path.join(current_app.root_path, "assets")
     files = sorted([f for f in os.listdir(assets_dir) if f.lower().endswith(".pdf")])
-    badges = BadgeImage.query.order_by(BadgeImage.name).all()
+    badge_dir = os.path.join(current_app.root_path, "assets", "badges")
+    badges = sorted(
+        [
+            f
+            for f in os.listdir(badge_dir)
+            if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))
+        ]
+    )
     return render_template(
         "settings_cert_templates/templates.html",
         series=series,
@@ -122,8 +129,7 @@ def update_templates(series_id: int, current_user):
         abort(404)
     languages = get_language_options()
     for code, _ in languages:
-        badge_val = request.form.get(f"badge_{code}")
-        badge_id = int(badge_val) if badge_val else None
+        badge_filename = (request.form.get(f"badge_{code}") or "").strip() or None
         for size in ["A4", "LETTER"]:
             key = f"{code}_{size}"
             filename = (request.form.get(key) or "").strip()
@@ -133,7 +139,7 @@ def update_templates(series_id: int, current_user):
             if filename:
                 if tmpl:
                     tmpl.filename = filename
-                    tmpl.badge_image_id = badge_id
+                    tmpl.badge_filename = badge_filename
                 else:
                     db.session.add(
                         CertificateTemplate(
@@ -141,7 +147,7 @@ def update_templates(series_id: int, current_user):
                             language=code,
                             size=size,
                             filename=filename,
-                            badge_image_id=badge_id,
+                            badge_filename=badge_filename,
                         )
                     )
             elif tmpl:
