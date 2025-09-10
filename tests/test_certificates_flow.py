@@ -120,8 +120,7 @@ def test_badge_image_and_label(app):
         s["user_id"] = admin_id
     resp = client.get(f"/sessions/{sess_id}")
     html = resp.data.decode()
-    assert '<img src="/badges/foundations.webp"' in html
-    assert "Foundations" in html
+    assert '<img src="/badges/foundations.webp"' in html    assert "Foundations" in html
     assert f'href="/certificates/{cert_id}"' in html
 
 
