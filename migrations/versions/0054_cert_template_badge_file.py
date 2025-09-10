@@ -5,7 +5,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '0054_cert_template_badge_file'
-down_revision = '0053_cert_template_badge_image'
+down_revision = '0053_badge_images'
 branch_labels = None
 depends_on = None
 
