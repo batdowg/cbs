@@ -80,6 +80,9 @@ def create_app():
         if ext not in ("webp", "png"):
             abort(404)
         filename = f"{slug}.{ext}"
+
+        site_root = app.config.get("SITE_ROOT", "/srv")
+        site_dir = os.path.join(site_root, "badges")
         site_dir = "/srv/badges"
         asset_dir = os.path.join(app.root_path, "assets", "badges")
         site_path = os.path.join(site_dir, filename)
