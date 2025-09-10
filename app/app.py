@@ -359,6 +359,7 @@ def create_app():
     from .routes.settings_resources import bp as settings_resources_bp
     from .routes.settings_roles import bp as settings_roles_bp
     from .routes.settings_cert_templates import bp as settings_cert_templates_bp
+    from .routes.settings_badges import bp as settings_badges_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
@@ -380,6 +381,7 @@ def create_app():
     app.register_blueprint(settings_resources_bp)
     app.register_blueprint(settings_roles_bp)
     app.register_blueprint(settings_cert_templates_bp)
+    app.register_blueprint(settings_badges_bp)
 
     @app.get("/surveys")
     def surveys():

@@ -27,6 +27,7 @@
   /settings/materials    – Materials Options (by order_type; languages, formats)
   /settings/languages    – Languages list (active, sort)
   /settings/mail         – SMTP + From mapping + test send
+  /settings/badges       – Badge management (placeholder)
   /settings/resources    – Manage resources (name, type, link/file, workshop types)
 
 # Badges & cert files
