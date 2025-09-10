@@ -1,6 +1,6 @@
 cbs.ktapps.net {
     encode zstd gzip
-    root * {$SITE_ROOT}
+    root * /srv
     handle /static/* {
         file_server
     }
