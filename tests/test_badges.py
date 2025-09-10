@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.app import create_app, db
 from app.shared.badges import best_badge_url
+from app.models import BadgeImage
 
 
 @pytest.fixture
@@ -51,3 +52,15 @@ def test_best_badge_respects_site_root(tmp_path, monkeypatch):
             assert url == "/badges/foundations.webp"
     assert (tmp_path / "badges" / "foundations.webp").is_file()
 
+
+def test_badge_lookup_via_badge_image(app):
+    with app.app_context():
+        db.session.add(
+            BadgeImage(
+                name="Foundations badge", language="en", filename="foundations.webp"
+            )
+        )
+        db.session.commit()
+        with app.test_request_context():
+            url = best_badge_url("Foundations badge")
+            assert url == "/badges/foundations.webp"

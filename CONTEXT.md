@@ -10,6 +10,7 @@ Every functional change must update this file **in the same PR**.
 - **Proxy**: Caddy → `app:8000`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
+- **Static/badge assets**: Caddy serves `/static` and `/badges` directly from `SITE_ROOT`; certificate downloads use app route `/certificates/<cert_id>`. Badge URLs come from `WorkshopType.badge` → `BadgeImage.filename` and copy to `SITE_ROOT/badges` on demand.
 - **Health**: `GET /healthz` must respond `OK`
 - **Language seeding**: optional `SEED_LANGUAGES=1` at boot inserts the default language set when the table is empty. Idempotent and safe — if languages exist it logs `Languages already present — skipping.`; on insert it logs `Seeded N languages.`; errors log `Language seed failed: <err>`.
 
@@ -295,7 +296,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Certificates are written to `<certs_root>/<YYYY>/<session_id>/` where `<certs_root>` = `SITE_ROOT/certificates` (default `/srv/certificates`). `YYYY` uses the session start-date year; if missing, use the current year.
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
-- Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
+- Downloads are served by `/certificates/<cert_id>` after permission checks; Caddy must proxy this path to the app. If the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
 - Older builds used `YYYY/<workshop_code>/…`; these paths are legacy.
 - Maintenance CLI `purge_orphan_certs` scans the certificates root and deletes files lacking a `certificates` table row. Filenames may vary; presence is determined by DB record.
 - `--dry-run` lists candidate paths and a summary without deleting.
