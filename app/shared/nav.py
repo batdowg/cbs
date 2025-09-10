@@ -55,7 +55,6 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         settings_children.extend([
             {'id': 'users', 'label': 'Users', 'endpoint': 'users.list_users'},
             {'id': 'certificate_templates', 'label': 'Certificate Templates', 'endpoint': 'settings_cert_templates.list_series'},
-            {'id': 'badges', 'label': 'Badges', 'endpoint': 'settings_badges.list_badges'},
             {'id': 'mail', 'label': 'Mail Settings', 'endpoint': 'settings_mail.settings'},
         ])
     if settings_children:
