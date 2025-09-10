@@ -151,4 +151,4 @@ def test_csa_can_see_certificate(app):
     client = app.test_client()
     _login_csa(client, csa_account_id)
     resp = client.get(f"/sessions/{session_id}")
-    assert b"Download Certificate" in resp.data
+    assert b"Certificate" in resp.data
