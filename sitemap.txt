@@ -18,7 +18,9 @@
 # Settings (Admin/SysAdmin)
 /settings                – Landing (cards/links)
   /settings/users        – Manage staff accounts & roles
-  /settings/cert-templates – Certificate template series and mappings (PDFs, badge filenames)
+  /settings/cert-templates – Certificate template series and mappings (PDFs, badge filenames, bulk uploads)
+    /settings/cert-templates/<series_id>/upload-pdfs – Upload certificate template PDFs
+    /settings/cert-templates/<series_id>/upload-badges – Upload badge WEBPs
   /settings/workshop-types – CRUD workshop types
   /settings/clients      – Clients list
   /settings/clients/<id>/edit

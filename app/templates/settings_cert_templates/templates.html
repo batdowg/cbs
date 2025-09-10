@@ -2,6 +2,16 @@
 {% block title %}Template Mapping{% endblock %}
 {% block content %}
 <h1>Template Mapping for {{ series.name }} ({{ series.code }})</h1>
+<div style="margin-bottom: 1em;">
+  <form method="post" action="{{ url_for('settings_cert_templates.upload_pdfs', series_id=series.id) }}" enctype="multipart/form-data" style="display:inline;">
+    <input type="file" id="pdf_files" name="files" accept=".pdf" multiple style="display:none" onchange="this.form.submit()">
+    <button type="button" onclick="document.getElementById('pdf_files').click()">Upload certificate templates (PDFs)</button>
+  </form>
+  <form method="post" action="{{ url_for('settings_cert_templates.upload_badges', series_id=series.id) }}" enctype="multipart/form-data" style="display:inline; margin-left: 0.5em;">
+    <input type="file" id="badge_files" name="files" accept=".webp" multiple style="display:none" onchange="this.form.submit()">
+    <button type="button" onclick="document.getElementById('badge_files').click()">Upload badges (WEBP)</button>
+  </form>
+</div>
 <form method="post">
   <table border="1" cellpadding="4" cellspacing="0">
     <tr><th>Language</th><th>A4</th><th>Letter</th><th>Badge</th></tr>
