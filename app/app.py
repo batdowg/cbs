@@ -83,6 +83,7 @@ def create_app():
 
         site_root = app.config.get("SITE_ROOT", "/srv")
         site_dir = os.path.join(site_root, "badges")
+        site_dir = "/srv/badges"
         asset_dir = os.path.join(app.root_path, "assets", "badges")
         site_path = os.path.join(site_dir, filename)
         if os.path.isfile(site_path):
