@@ -346,6 +346,7 @@ The repo is organized **feature-first**. Top-level packages:
 
 Badge images and their management UI live under `routes/settings_badges.py` with templates in `templates/settings_badges/`. Uploaded badge files are stored in `app/assets/badges` and copied to `/srv/badges` on first use so they can be served from `/badges/<slug>.<ext>`.
 
+
 Each feature package contains `routes/`, `models/`, `services/` (business rules), `forms/`, `templates/`, and a `README.md` noting scope and owner.
 
 `shared/` contains common infrastructure and is imported via `from app.shared`:
