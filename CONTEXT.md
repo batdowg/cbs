@@ -10,7 +10,7 @@ Every functional change must update this file **in the same PR**.
 - **Proxy**: Caddy → `app:8000`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
-- **Static/badge assets**: Caddy serves `/static` and `/badges` directly from `SITE_ROOT`; certificate downloads use app route `/certificates/<cert_id>`
+- **Static/badge assets**: Caddy serves `/static` and `/badges` directly from `SITE_ROOT`; certificate downloads use app route `/certificates/<cert_id>`. Badge URLs come from `WorkshopType.badge` → `BadgeImage.filename` and copy to `SITE_ROOT/badges` on demand.
 - **Health**: `GET /healthz` must respond `OK`
 - **Language seeding**: optional `SEED_LANGUAGES=1` at boot inserts the default language set when the table is empty. Idempotent and safe — if languages exist it logs `Languages already present — skipping.`; on insert it logs `Seeded N languages.`; errors log `Language seed failed: <err>`.
 
