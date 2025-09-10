@@ -1,13 +1,10 @@
 cbs.ktapps.net {
     encode zstd gzip
-    root * /srv
-    handle_path /static/* {
+    root * {$SITE_ROOT}
+    handle /static/* {
         file_server
     }
-    handle_path /certificates/* {
-        file_server
-    }
-    handle_path /badges/* {
+    handle /badges/* {
         file_server
     }
     @health path /healthz

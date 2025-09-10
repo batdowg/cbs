@@ -10,10 +10,12 @@
     {% if badge_name %}
       {% set badge_url = best_badge_url(badge_name) %}
       {% if badge_url %}
-        <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="{{ badge_name }} badge" style="height:20px;width:auto;vertical-align:middle;"></a>
-        <a href="{{ badge_url }}" download>Badge</a>
+        <a href="{{ badge_url }}" download style="display:inline-flex;align-items:center;gap:4px;">
+          <img src="{{ badge_url }}" alt="{{ badge_name }}" style="height:20px;width:auto;vertical-align:middle;">
+          {{ badge_name }}
+        </a>
       {% else %}
-        Badge
+        {{ badge_name }}
       {% endif %}
     {% endif %}
   </li>

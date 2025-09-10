@@ -68,7 +68,9 @@ def _setup_cert(app):
 
 def test_generation_stores_session_path(app):
     with app.app_context():
-        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = _setup_cert(app)
+        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = (
+            _setup_cert(app)
+        )
         year = start_date.year
         assert pdf_path.startswith(f"{year}/{sess_id}/")
         assert os.path.isfile(os.path.join("/srv/certificates", pdf_path))
@@ -76,7 +78,9 @@ def test_generation_stores_session_path(app):
 
 def test_download_success_and_missing_file(app, caplog):
     with app.app_context():
-        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = _setup_cert(app)
+        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = (
+            _setup_cert(app)
+        )
     client = app.test_client()
     with client.session_transaction() as s:
         s["participant_account_id"] = acct_id
@@ -90,22 +94,42 @@ def test_download_success_and_missing_file(app, caplog):
     assert "[CERT-MISSING]" in caplog.text
 
 
+def test_download_absolute_path(app):
+    with app.app_context():
+        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = (
+            _setup_cert(app)
+        )
+        cert = db.session.get(Certificate, cert_id)
+        abs_path = os.path.join("/srv/certificates", cert.pdf_path)
+        cert.pdf_path = abs_path
+        db.session.commit()
+    client = app.test_client()
+    with client.session_transaction() as s:
+        s["participant_account_id"] = acct_id
+    resp = client.get(f"/certificates/{cert_id}")
+    assert resp.status_code == 200
+
+
 def test_badge_image_and_label(app):
     with app.app_context():
-        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = _setup_cert(app)
+        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = (
+            _setup_cert(app)
+        )
     client = app.test_client()
     with client.session_transaction() as s:
         s["user_id"] = admin_id
     resp = client.get(f"/sessions/{sess_id}")
     html = resp.data.decode()
     assert '<img src="/badges/foundations.webp"' in html
-    assert "Badge" in html
-    assert "Certificate" in html
+    assert "Foundations" in html
+    assert f'href="/certificates/{cert_id}"' in html
 
 
 def test_badge_label_without_image(app):
     with app.app_context():
-        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = _setup_cert(app)
+        sess_id, part_id, acct_id, cert_id, pdf_path, admin_id, start_date = (
+            _setup_cert(app)
+        )
         sess = db.session.get(Session, sess_id)
         sess.workshop_type.badge = "Imaginary"
         db.session.commit()
@@ -114,5 +138,5 @@ def test_badge_label_without_image(app):
         s["user_id"] = admin_id
     resp = client.get(f"/sessions/{sess_id}")
     html = resp.data.decode()
-    assert "Badge" in html
+    assert "Imaginary" in html
     assert '<img src="/badges/' not in html
