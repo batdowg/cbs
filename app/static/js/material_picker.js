@@ -2,14 +2,27 @@ document.addEventListener('DOMContentLoaded', function () {
   var dataEl = document.getElementById('material-data');
   if (!dataEl) return;
   var items = JSON.parse(dataEl.textContent || '[]');
+  var supportedEl = document.getElementById('supported-langs');
+  var supportedLangs = [];
+  if (supportedEl) {
+    try {
+      supportedLangs = JSON.parse(supportedEl.textContent || '[]');
+    } catch (e) {
+      supportedLangs = [];
+    }
+  }
   var itemMap = {};
   items.forEach(function (it) {
+    it.languages = (it.languages || []).map(function (l) {
+      if (typeof l === 'string') return l;
+      return (l.code || l.abbr || l.short_code || l.name || '').toLowerCase();
+    });
     itemMap['materials_options:' + it.id] = it;
   });
   function populate(row) {
     var langSel = document.querySelector('[name="language_' + row + '"]');
     if (!langSel) return;
-    var lang = langSel.value;
+    var lang = (langSel.value || '').toLowerCase();
     var showAll = document.querySelector('.show-all[data-row="' + row + '"]');
     showAll = showAll && showAll.checked;
     var list = document.getElementById('materials-' + row);
