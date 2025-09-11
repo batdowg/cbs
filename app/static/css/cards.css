@@ -1,0 +1,19 @@
+.kt-card {
+  background: var(--kt-bg);
+  border: 1px solid var(--kt-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  padding: var(--space-4);
+  margin-block: var(--space-4);
+}
+.kt-card-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin: 0 0 var(--space-3) 0;
+  color: var(--kt-text);
+}
+.kt-card + .kt-card { margin-top: var(--space-4); }
+/* make tables fit nicely inside cards */
+.kt-card table { margin: 0; }
+/* compact header row spacing when a table immediately follows a title */
+.kt-card-title + table { margin-top: var(--space-2); }

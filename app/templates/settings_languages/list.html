@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Languages{% endblock %}
 {% block content %}
-<h1>Languages</h1>
+<div class="kt-card">
+<h1 class="kt-card-title">Languages</h1>
 <p><a href="{{ url_for('settings_languages.new_lang') }}">New language</a></p>
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Name</th><th>Sort Order</th><th>Status</th><th></th></tr>
@@ -19,4 +20,5 @@
   </tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}
