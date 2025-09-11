@@ -92,7 +92,7 @@ Every functional change must update this file **in the same PR**.
 
 ## 0.7 Buttons & Links
 - Native buttons (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`) and elements with `.btn` share KT styling.
-- Variants: default/`.btn-primary`, `.btn-secondary` (white background, `--kt-text`, `--kt-border`, light `--kt-info` hover), `.btn-danger` (`--kt-accent-red`). Optional sizes `.btn-sm` and `.btn-lg` adjust padding and font size.
+- Variants: default/`.btn-primary`, `.btn-secondary` (white background, `--kt-text`, `--kt-border`, light `--kt-info` hover), `.btn-success` (`--kt-accent-green`, `--kt-text`), `.btn-danger` (`--kt-accent-red`). Optional sizes `.btn-sm` and `.btn-lg` adjust padding and font size.
 - Buttons show a `2px solid var(--kt-info)` focus ring with offset and reduce opacity with `cursor: not-allowed` when disabled.
 - Links use `--kt-info`, darken toward `--kt-primary-hover` on hover/active, and show the same focus ring when focus-visible.
 - Button styles live in `/static/css/buttons.css`; link styles live in `/static/css/ui.css`. Both load globally.
