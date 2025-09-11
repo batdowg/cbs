@@ -11,6 +11,7 @@ from flask import (
     session as flask_session,
 )
 import re
+from types import SimpleNamespace
 
 from ..app import db, User
 from ..models import (
@@ -227,6 +228,18 @@ def edit_type(type_id: int, current_user):
     supported_langs = sorted(
         {lang_key(lang) for lang in (wt.supported_languages or []) if lang_key(lang)}
     )
+    regions = get_region_options()
+    # Seed values for the blank row
+    last = defaults[-1] if defaults else None
+    blank_row = SimpleNamespace(
+        id="new0",
+        delivery_type=last.delivery_type if last else (DELIVERY_CHOICES[0] if DELIVERY_CHOICES else ""),
+        region_code=last.region_code if last else (regions[0][0] if regions else ""),
+        language=last.language if last else (supported_langs[0] if supported_langs else ""),
+        default_format=last.default_format if last else (FORMAT_CHOICES[0] if FORMAT_CHOICES else ""),
+        active=True,
+    )
+    defaults_view = list(defaults) + [blank_row]
     return render_template(
         "workshop_types/form.html",
         wt=wt,
@@ -235,9 +248,9 @@ def edit_type(type_id: int, current_user):
         supported_langs=supported_langs,
         series=series,
         materials_options=materials_options,
-        defaults=defaults,
+        defaults=defaults_view,
         selected_opts=selected_opts,
-        regions=get_region_options(),
+        regions=regions,
         delivery_choices=DELIVERY_CHOICES,
         format_choices=FORMAT_CHOICES,
     )
@@ -282,7 +295,7 @@ def update_type(type_id: int, current_user):
             row, field = m.groups()
             form_defaults.setdefault(row, {})[field] = value
     for d in list(defaults):
-        data = form_defaults.get(str(d.id), {})
+        data = form_defaults.pop(str(d.id), {})
         if data.get("remove"):
             db.session.delete(d)
             db.session.add(
@@ -293,13 +306,15 @@ def update_type(type_id: int, current_user):
                 )
             )
             continue
+        opt_val = data.get("material_option_id") or ""
+        if not opt_val:
+            continue
         delivery_type = data.get("delivery_type") or ""
         region_code = data.get("region_code") or ""
         language = data.get("language") or ""
-        opt_val = data.get("material_option_id") or ""
         default_format = data.get("default_format") or ""
         active = bool(data.get("active"))
-        if not all([delivery_type, region_code, language, opt_val, default_format]):
+        if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
@@ -330,15 +345,16 @@ def update_type(type_id: int, current_user):
                 details=f"id={d.id} wt={wt.id}",
             )
         )
-    new_data = form_defaults.get("new", {})
-    delivery_type = new_data.get("delivery_type") or ""
-    region_code = new_data.get("region_code") or ""
-    language = new_data.get("language") or ""
-    opt_val = new_data.get("material_option_id") or ""
-    default_format = new_data.get("default_format") or ""
-    active = bool(new_data.get("active"))
-    if any([delivery_type, region_code, language, opt_val, default_format]):
-        if not all([delivery_type, region_code, language, opt_val, default_format]):
+    for row_key, new_data in form_defaults.items():
+        delivery_type = new_data.get("delivery_type") or ""
+        region_code = new_data.get("region_code") or ""
+        language = new_data.get("language") or ""
+        opt_val = new_data.get("material_option_id") or ""
+        default_format = new_data.get("default_format") or ""
+        active = bool(new_data.get("active"))
+        if not opt_val:
+            continue
+        if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
@@ -346,13 +362,13 @@ def update_type(type_id: int, current_user):
         try:
             opt_id = int(opt_val)
         except ValueError:
-            flash("Invalid material item (row new)", "error")
+            flash(f"Invalid material item (row {row_key})", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
         opt = db.session.get(MaterialsOption, opt_id)
         if not opt:
-            flash("Invalid material item (row new)", "error")
+            flash(f"Invalid material item (row {row_key})", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
@@ -383,7 +399,9 @@ def update_type(type_id: int, current_user):
     )
     db.session.commit()
     flash("Workshop Type updated", "success")
-    return redirect(url_for("workshop_types.list_types"))
+    return redirect(
+        url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
+    )
 
 
 @bp.route("/<int:type_id>/defaults", methods=["GET", "POST"])
