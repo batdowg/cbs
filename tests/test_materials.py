@@ -11,6 +11,7 @@ from app.models import (
     Material,
     Client,
     ClientShippingLocation,
+    SessionShipping,
 )
 
 
@@ -60,7 +61,7 @@ def test_materials_page_loads(app):
         sess_tx["user_id"] = admin_id
     resp = client.get(f"/sessions/{session_id}/materials")
     assert resp.status_code == 200
-    assert b"Materials Order for" in resp.data
+    assert f"Material Order {session_id} - S1".encode() in resp.data
 
 
 def test_materials_page_without_client(app):
@@ -85,4 +86,47 @@ def test_materials_page_without_client(app):
         sess_tx["user_id"] = admin_id
     resp = client.get(f"/sessions/{session_id}/materials")
     assert resp.status_code == 200
-    assert b"Materials Order for" in resp.data
+    assert f"Material Order {session_id} - S1".encode() in resp.data
+
+
+def test_material_order_delivery_actions(app):
+    with app.app_context():
+        admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
+        admin.set_password("x")
+        wt = WorkshopType(code="WT", name="WT", cert_series="fn")
+        sess = Session(title="S1", workshop_type=wt)
+        db.session.add_all([admin, wt, sess])
+        db.session.commit()
+        shipment = SessionShipping(session_id=sess.id)
+        db.session.add(shipment)
+        db.session.commit()
+        admin_id = admin.id
+        session_id = sess.id
+    client = app.test_client()
+    with client.session_transaction() as sess_tx:
+        sess_tx["user_id"] = admin_id
+        sess_tx["_csrf_token"] = "t1"
+    resp = client.post(
+        f"/sessions/{session_id}/materials/deliver", data={"csrf_token": "t1"}
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        ship = SessionShipping.query.filter_by(session_id=session_id).first()
+        assert ship.status == "Delivered"
+        assert ship.delivered_at is not None
+    with client.session_transaction() as sess_tx:
+        sess_tx["_csrf_token"] = "t2"
+    resp = client.post(
+        f"/sessions/{session_id}/materials/deliver", data={"csrf_token": "t2"}
+    )
+    assert resp.status_code == 403
+    with client.session_transaction() as sess_tx:
+        sess_tx["_csrf_token"] = "t3"
+    resp = client.post(
+        f"/sessions/{session_id}/materials/undeliver", data={"csrf_token": "t3"}
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        ship = SessionShipping.query.filter_by(session_id=session_id).first()
+        assert ship.status == "In progress"
+        assert ship.delivered_at is None

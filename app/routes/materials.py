@@ -24,6 +24,7 @@ from ..models import (
     MaterialsOption,
     ClientShippingLocation,
     SimulationOutline,
+    AuditLog,
 )
 from ..shared.materials import (
     PHYSICAL_COMPONENTS,
@@ -42,6 +43,7 @@ ORDER_TYPES = [
 
 ORDER_STATUSES = [
     "New",
+    "In progress",
     "Ordered",
     "Shipped",
     "Delivered",
@@ -52,10 +54,7 @@ ORDER_STATUSES = [
 
 def can_manage_shipment(user: User | None) -> bool:
     return bool(
-        user
-        and (
-            user.is_app_admin or user.is_admin or getattr(user, "is_kcrm", False)
-        )
+        user and (user.is_app_admin or user.is_admin or getattr(user, "is_kcrm", False))
     )
 
 
@@ -143,9 +142,7 @@ def materials_view(
     view_only: bool,
 ):
     shipping_locations = (
-        ClientShippingLocation.query.filter_by(
-            client_id=sess.client_id, is_active=True
-        )
+        ClientShippingLocation.query.filter_by(client_id=sess.client_id, is_active=True)
         .order_by(ClientShippingLocation.id)
         .all()
         if sess.client_id
@@ -175,7 +172,9 @@ def materials_view(
     db.session.commit()
     if shipment.order_type is None:
         shipment.order_type = (
-            "Client-run Bulk order" if sess.materials_only else "KT-Run Standard materials"
+            "Client-run Bulk order"
+            if sess.materials_only
+            else "KT-Run Standard materials"
         )
         db.session.commit()
     if (
@@ -215,15 +214,6 @@ def materials_view(
         if readonly:
             abort(403)
         action = request.form.get("action")
-        if action == "mark_delivered":
-            if not can_mark_delivered(current_user):
-                abort(403)
-            shipment.delivered_at = datetime.utcnow()
-            sess.materials_ordered = True
-            sess.materials_ordered_at = datetime.utcnow()
-            db.session.commit()
-            flash("Shipment delivered", "info")
-            return redirect(url_for("materials.materials_view", session_id=session_id))
         if not can_manage_shipment(current_user):
             abort(403)
         if action == "update_header":
@@ -247,8 +237,13 @@ def materials_view(
             original_order_type = shipment.order_type
             original_status = shipment.status
             for field in fields:
-                if field == "materials_option_id" and shipment.order_type == "KT-Run Modular materials":
-                    ids = [int(v) for v in request.form.getlist("materials_option_id") if v]
+                if (
+                    field == "materials_option_id"
+                    and shipment.order_type == "KT-Run Modular materials"
+                ):
+                    ids = [
+                        int(v) for v in request.form.getlist("materials_option_id") if v
+                    ]
                     shipment.materials_options = (
                         MaterialsOption.query.filter(MaterialsOption.id.in_(ids)).all()
                         if ids
@@ -334,9 +329,15 @@ def materials_view(
                 db.session.rollback()
                 form = request.form
                 status = shipment.status
-                materials = Material.query.order_by(Material.name).all() if not view_only else []
+                materials = (
+                    Material.query.order_by(Material.name).all()
+                    if not view_only
+                    else []
+                )
                 materials_options = (
-                    MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
+                    MaterialsOption.query.filter_by(
+                        order_type=shipment.order_type, is_active=True
+                    )
                     .order_by(MaterialsOption.title)
                     .all()
                     if shipment.order_type
@@ -407,7 +408,9 @@ def materials_view(
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "update_item":
             item_id = request.form.get("item_id")
-            item = db.session.get(SessionShippingItem, int(item_id)) if item_id else None
+            item = (
+                db.session.get(SessionShippingItem, int(item_id)) if item_id else None
+            )
             if item and item.session_shipping_id == shipment.id:
                 material_id = request.form.get("material_id")
                 qty = request.form.get("quantity")
@@ -418,7 +421,9 @@ def materials_view(
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "delete_item":
             item_id = request.form.get("item_id")
-            item = db.session.get(SessionShippingItem, int(item_id)) if item_id else None
+            item = (
+                db.session.get(SessionShippingItem, int(item_id)) if item_id else None
+            )
             if item and item.session_shipping_id == shipment.id:
                 db.session.delete(item)
                 db.session.commit()
@@ -483,9 +488,78 @@ def materials_view(
     )
 
 
+@bp.post("/deliver")
+@materials_access
+def deliver(
+    session_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_mark_delivered(current_user):
+        abort(403)
+    if request.form.get("csrf_token") != flask_session.get("_csrf_token"):
+        abort(400)
+    shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+    if not shipment:
+        abort(404)
+    if shipment.status == "Delivered":
+        flash("Already delivered", "error")
+        return "", 403
+    shipment.status = "Delivered"
+    shipment.delivered_at = datetime.utcnow()
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id if current_user else None,
+            session_id=sess.id,
+            action="materials_delivered",
+        )
+    )
+    db.session.commit()
+    flash("Shipment marked delivered", "success")
+    return redirect(url_for("materials.materials_view", session_id=session_id))
+
+
+@bp.post("/undeliver")
+@materials_access
+def undeliver(
+    session_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_mark_delivered(current_user):
+        abort(403)
+    if request.form.get("csrf_token") != flask_session.get("_csrf_token"):
+        abort(400)
+    shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+    if not shipment:
+        abort(404)
+    shipment.status = "In progress"
+    shipment.delivered_at = None
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id if current_user else None,
+            session_id=sess.id,
+            action="materials_undelivered",
+        )
+    )
+    db.session.commit()
+    flash("Shipment status set to In progress", "info")
+    return redirect(url_for("materials.materials_view", session_id=session_id))
+
+
 @bp.get("/options")
 @materials_access
-def options(session_id: int, sess: Session, current_user: User | None, csa_view: bool, view_only: bool):
+def options(
+    session_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
     order_type = request.args.get("order_type")
     opts = []
     if order_type:

@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 from functools import wraps
 from datetime import datetime
 
@@ -49,6 +50,15 @@ def create_app():
     app.jinja_env.filters["fmt_time"] = fmt_time
     app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
     app.jinja_env.filters["lang_label"] = code_to_label
+
+    def generate_csrf_token():
+        token = session.get("_csrf_token")
+        if not token:
+            token = secrets.token_hex(16)
+            session["_csrf_token"] = token
+        return token
+
+    app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
     DB_USER = os.getenv("DB_USER", "cbs")
     DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
