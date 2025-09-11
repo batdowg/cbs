@@ -16,44 +16,57 @@
   margin-top: var(--space-2);
 }
 
-.kt-nav a,
-.kt-nav summary {
+.kt-sidebar a,
+.kt-sidebar summary {
   display:block;
   padding: var(--space-1) var(--space-2);
   border-left: 2px solid transparent;
   color: var(--kt-text);
   text-decoration:none;
-}
-
-.kt-nav a {
   font-family: 'Roboto', sans-serif;
+  font-size:16px;
 }
 
-.kt-nav summary {
-  font-family: 'Raleway', sans-serif;
+.kt-sidebar summary {
   cursor: pointer;
 }
 
-.kt-nav a:hover,
-.kt-nav summary:hover {
+.kt-sidebar a:hover,
+.kt-sidebar summary:hover {
   color: var(--kt-primary-hover);
   text-decoration: underline;
 }
 
-.kt-nav a:focus,
-.kt-nav summary:focus {
+.kt-sidebar .kt-subnav {
+  list-style: none;
+  margin: 0;
+  padding-left: var(--space-3);
+}
+
+.kt-sidebar a:focus-visible,
+.kt-sidebar summary:focus-visible {
   outline: 2px solid var(--kt-info);
   outline-offset: 2px;
+}
+
+.kt-sidebar [aria-current="page"] {
+  border-left-color: var(--kt-primary);
+  font-weight:600;
+}
+
+.kt-sidebar [aria-current="page"]:hover {
   text-decoration: underline;
 }
 
-.kt-nav a.active,
-.kt-nav summary.active,
-.kt-nav a[aria-current="page"],
-.kt-nav summary[aria-current="page"] {
-  border-left-color: var(--kt-primary);
-  font-weight:600;
-  text-decoration: underline;
+.kt-sidebar .is-ancestor > a,
+.kt-sidebar .is-ancestor > summary {
+  border-left-color: var(--kt-border);
+  font-weight:500;
+}
+
+.kt-sidebar .is-ancestor > a:hover,
+.kt-sidebar .is-ancestor > summary:hover {
+  text-decoration:none;
 }
 
 .kt-sidebar-footer {
