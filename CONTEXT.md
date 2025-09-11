@@ -104,6 +104,11 @@ Every functional change must update this file **in the same PR**.
 - Inputs, selects, textareas, radios, checkboxes, file controls, and helper/error text follow KT tokens for color, spacing, and focus rings.
 - Styles live in `/static/css/forms.css` and load globally.
 
+## 0.9 Navigation & Breadcrumbs
+- Header and main navigation use `/static/css/nav.css` with `--kt-bg` background, `--kt-text`/`--kt-info` links, and Raleway headings.
+- Links show underline and `--kt-primary-hover` on hover, a `--focus-outline` ring on focus, and a `--kt-primary` underline/border for the current page.
+- Breadcrumbs use Raleway, muted separators, `--kt-info` links, and mark the current page with `--kt-text`.
+
 ---
 
 # 1. Roles & Menus

@@ -1,0 +1,104 @@
+/* KT navigation and breadcrumb styles */
+
+/* Header / top nav */
+header, .app-header, .navbar, .topbar {
+  background: var(--kt-bg);
+  color: var(--kt-text);
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  min-height: 56px;
+  border-bottom: 1px solid var(--kt-border);
+}
+
+header nav, .app-header nav, .navbar nav, .topbar nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+}
+
+header nav a,
+.app-header nav a,
+.navbar a,
+.topbar a {
+  color: var(--kt-text);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-3);
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+header nav a:hover,
+.app-header nav a:hover,
+.navbar a:hover,
+.topbar a:hover {
+  color: var(--kt-primary-hover);
+  text-decoration: underline;
+}
+
+header nav a:focus,
+.app-header nav a:focus,
+.navbar a:focus,
+.topbar a:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+header nav a[aria-current="page"],
+.app-header nav a[aria-current="page"],
+.navbar a[aria-current="page"],
+.topbar a[aria-current="page"],
+header nav a.active,
+.app-header nav a.active,
+.navbar a.active,
+.topbar a.active {
+  color: var(--kt-primary);
+  border-bottom: 2px solid var(--kt-primary);
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: var(--space-2) 0;
+  margin: 0 0 var(--space-4) 0;
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  font-size: 0.875rem; /* ~14px */
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  color: var(--kt-muted);
+}
+
+.breadcrumb li + li:before {
+  content: "/";
+  margin: 0 var(--space-2);
+  color: var(--kt-muted);
+}
+
+.breadcrumb a {
+  color: var(--kt-info);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb a:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.breadcrumb li[aria-current="page"],
+.breadcrumb li.current,
+.breadcrumb a[aria-current="page"] {
+  color: var(--kt-text);
+}
