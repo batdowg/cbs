@@ -49,6 +49,7 @@ Routes and Code Pages
 
 - **Global UI Styles** – Branded buttons and links. File: `app/static/css/ui.css`.
 - **Global Form Styles** – Branded form controls and helper text. File: `app/static/css/forms.css`.
+- **Global Navigation Styles** – Header, nav, and breadcrumb tokens. File: `app/static/css/nav.css`.
 
 Permissions Reference
 ---------------------

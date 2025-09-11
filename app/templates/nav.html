@@ -1,7 +1,8 @@
 {% macro render_item(item) %}
+  {% set is_active = item.endpoint and request.endpoint == item.endpoint %}
   {% if item.children %}
     <details class="{{ item.id }}">
-      <summary class="nav-link">{{ item.label }}</summary>
+      <summary class="nav-link{% if is_active %} active{% endif %}" {% if is_active %}aria-current="page"{% endif %}>{{ item.label }}</summary>
       <ul>
       {% for child in item.children %}
         <li>{{ render_item(child) }}</li>
@@ -9,7 +10,7 @@
       </ul>
     </details>
   {% else %}
-    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}">{{ item.label }}</a>
+    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}"{% if is_active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a>
   {% endif %}
 {% endmacro %}
 <nav>
