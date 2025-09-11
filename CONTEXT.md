@@ -87,6 +87,16 @@ Every functional change must update this file **in the same PR**.
   - Radius: `--radius-md: 12px`; `--radius-lg: 16px`
   - Focus outline: `2px solid var(--kt-info)`
 
+## 0.7 Buttons & Links
+- Global button selectors (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`, `.btn`, `a.button`) share KT styling.
+- Variants:
+  - **Primary** – solid `--kt-primary` background with white text.
+  - **Outline** – transparent background, `--kt-primary` border/text; hover adds a light Azure tint.
+  - **Quiet** – borderless, `--kt-primary` text; hover adds underline and tint for secondary actions.
+- Disabled states reduce opacity and use `cursor: not-allowed` while preserving focus outlines when reachable.
+- Links use `--kt-info`, darken toward `--kt-primary-hover` on hover/active, and always show the `--focus-outline` ring when focused.
+- Styles live in `/static/css/ui.css` and load globally.
+
 ---
 
 # 1. Roles & Menus
