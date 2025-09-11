@@ -136,6 +136,29 @@ def test_all_physical_prechecked_mixed_not_prechecked(app):
     assert not re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
 
 
+def test_all_physical_allows_partial_selection(app):
+    with app.app_context():
+        admin_id, session_id = _setup_data()
+    client = app.test_client()
+    _login(client, admin_id)
+    resp = client.post(
+        f"/sessions/{session_id}/materials",
+        data={
+            "action": "update_header",
+            "materials_format": "ALL_PHYSICAL",
+            "components": ["WORKSHOP_LEARNER", "BOX_F"],
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        shipment = SessionShipping.query.filter_by(session_id=session_id).first()
+        assert shipment.materials_components == ["WORKSHOP_LEARNER", "BOX_F"]
+    resp = client.get(f"/sessions/{session_id}/materials")
+    assert re.search(b'value="WORKSHOP_LEARNER"[^>]*checked', resp.data)
+    assert not re.search(b'value="SESSION_MATERIALS"[^>]*checked', resp.data)
+
+
 def test_digital_and_sim_only_disable_components(app):
     with app.app_context():
         admin_id, session_id = _setup_data()

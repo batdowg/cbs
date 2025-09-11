@@ -244,11 +244,11 @@
     const fmtSel = document.querySelector('select[name="materials_format"]');
     const orderSel = document.querySelector('select[name="order_type"]');
     const boxes = [...document.querySelectorAll('input[name="components"]')];
-    function applyState(){
+    function applyState(autoCheck = false){
       const fmt = fmtSel?.value || '';
       const disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
       boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
-      if(fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
+      if(autoCheck && fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
     }
     function applyAutoFormat(){
       if(!fmtSel) return;
@@ -257,7 +257,7 @@
       }
       applyState();
     }
-    fmtSel && fmtSel.addEventListener('change', applyState);
+    fmtSel && fmtSel.addEventListener('change', () => applyState(true));
     orderSel && orderSel.addEventListener('change', applyAutoFormat);
     applyAutoFormat();
   })();
