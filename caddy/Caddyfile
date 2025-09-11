@@ -1,0 +1,21 @@
+cbs.ktapps.net {
+  encode zstd gzip
+  root * /srv
+
+  # Let Flask serve /static/*
+  # (do NOT add a /static handler)
+
+  # Serve these directly from /srv without stripping the prefix
+  handle /certificates/* {
+    file_server
+  }
+  handle /badges/* {
+    file_server
+  }
+
+  @health path /healthz
+  reverse_proxy @health app:8000
+  handle {
+    reverse_proxy app:8000
+  }
+}

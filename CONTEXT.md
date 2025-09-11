@@ -8,6 +8,7 @@ Every functional change must update this file **in the same PR**.
 - **App**: Python (Flask), Gunicorn
 - **DB**: PostgreSQL 16
 - **Proxy**: Caddy → `app:8000`
+- **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; `/certificates/*` and `/badges/*` are served via `handle` from `/srv` while Flask serves `/static/*`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
 - **Health**: `GET /healthz` must respond `OK`
@@ -333,6 +334,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Certificates are written to `<certs_root>/<YYYY>/<session_id>/` where `<certs_root>` = `SITE_ROOT/certificates` (default `/srv/certificates`). `YYYY` uses the session start-date year; if missing, use the current year.
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
+- PDFs are saved with mode `0644` so the Caddy process can read them.
 - Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
 - Staff session detail pages left-join `certificates` on `(session_id, participant_id)` and link directly to `/certificates/<pdf_path>` for each participant with a stored path (no id-based proxy).
 - Learner and staff profile certificate listings resolve the current account's `participants` and join `certificates` on `participant_id`, linking to `/certificates/<pdf_path>` without recomputing filenames.
