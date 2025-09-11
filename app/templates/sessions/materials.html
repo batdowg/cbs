@@ -51,20 +51,32 @@
 </script>
 {% endblock %}
 {% block content %}
-<h1>Materials Order for {{ sess.title }}</h1>
-<p>Status: {{ status }}</p>
+{% set facs = [] %}
+{% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
+{% for fac in sess.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
+<h1>Material Order {{ sess.id }} - {{ sess.title }}</h1>
 <form method="post">
   <input type="hidden" name="action" value="update_header">
-  <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}</div>
-  <div>Delivery region: {{ sess.region|default('', true) }}</div>
-  <div>Workshop start date: {{ sess.start_date|default('', true) }}</div>
+  <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
+  <div>CRM: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
+  <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
   <div>SFC Project link:
     {% if sess.client and sess.client.sfc_link %}
       {{ sess.client.sfc_link }}
     {% elif not csa_view %}
       <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
     {% endif %}
-  </div><br>
+  </div>
+  <h2>Shipping details</h2>
+  <div>Contact person: {{ shipment.contact_name|default('', true) }}</div>
+  <div>Contact Email: {{ shipment.contact_email|default('', true) }}</div>
+  <div>Contact Phone: {{ shipment.contact_phone|default('', true) }}</div>
+  {% if shipment.address_line1 %}
+  <div>Address: {{ shipment.address_line1 }}{% if shipment.address_line2 %} {{ shipment.address_line2 }}{% endif %}, {{ shipment.city }} {{ shipment.state }} {{ shipment.postal_code }}, {{ shipment.country }}</div>
+  {% else %}
+  <div>Digital only</div>
+  {% endif %}
+  <p>Status: {{ status }}</p>
   <div>Shipping location:
     {% if can_manage and not readonly %}
       {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
@@ -358,10 +370,16 @@
   <button type="submit">Mark Shipped</button>
 </form>
 {% endif %}
-{% if can_mark_delivered %}
-<form method="post">
-  <input type="hidden" name="action" value="mark_delivered">
-  <button type="submit">Mark Delivered</button>
+{% if can_mark_delivered and shipment.status != 'Delivered' %}
+<form method="post" action="{{ url_for('materials.deliver', session_id=sess.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit">Mark as delivered</button>
+</form>
+{% endif %}
+{% if can_mark_delivered and shipment.status in ['Delivered','In progress'] %}
+<form method="post" action="{{ url_for('materials.undeliver', session_id=sess.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit">Not delivered / Delivery problem</button>
 </form>
 {% endif %}
 {% if can_manage and not shipment.delivered_at %}

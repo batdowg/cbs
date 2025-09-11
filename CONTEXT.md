@@ -333,7 +333,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
 - **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
-- Materials orders have global statuses: **New, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
+- Materials order header displays `Material Order <session_id> - <session_title>` with client name and delivery region, CRM, facilitators, and SFC project link. A **Shipping details** section lists contact, email, phone, and address (or “Digital only” when absent).
+- Materials orders have global statuses: **New, In progress, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
+- POST `/sessions/<session_id>/materials/deliver` sets status to **Delivered** (403 on repeat with friendly flash); POST `/sessions/<session_id>/materials/undeliver` reverts to **In progress**.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
 - **Simulation Outline** shown when Order Type = Simulation or the Workshop Type is simulation-based.
 - Material format is always visible. If **Order Type** = “Simulation” and no value is set, default to **SIM Only**. Non-editable roles see the value read-only.
