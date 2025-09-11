@@ -1,80 +1,4 @@
-/* KT button and link styles */
-
-button,
-[type="button"],
-[type="submit"],
-[type="reset"],
-.btn,
-a.button {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--kt-primary);
-  border-radius: var(--radius-md);
-  background: var(--kt-primary);
-  color: #fff;
-  font: inherit;
-  line-height: 1.2;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-}
-
-button:hover:not(:disabled),
-[type="button"]:hover:not(:disabled),
-[type="submit"]:hover:not(:disabled),
-[type="reset"]:hover:not(:disabled),
-.btn:hover:not(.disabled),
-a.button:hover:not(.disabled) {
-  background: var(--kt-primary-hover);
-  border-color: var(--kt-primary-hover);
-}
-
-button:focus,
-[type="button"]:focus,
-[type="submit"]:focus,
-[type="reset"]:focus,
-.btn:focus,
-a.button:focus {
-  outline: var(--focus-outline);
-  outline-offset: 2px;
-}
-
-button:disabled,
-[type="button"]:disabled,
-[type="submit"]:disabled,
-[type="reset"]:disabled,
-.btn.disabled,
-a.button.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-outline {
-  background: transparent;
-  border-color: var(--kt-primary);
-  color: var(--kt-primary);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: rgba(0, 156, 222, 0.1);
-}
-
-.btn-quiet {
-  background: transparent;
-  border: none;
-  color: var(--kt-primary);
-  padding: var(--space-2) var(--space-2);
-}
-
-.btn-quiet:hover:not(:disabled) {
-  background: rgba(0, 156, 222, 0.1);
-  text-decoration: underline;
-}
-
+/* KT link styles */
 a {
   color: var(--kt-info);
   text-decoration: none;
@@ -90,7 +14,7 @@ a:visited {
   color: var(--kt-primary);
 }
 
-a:focus {
-  outline: var(--focus-outline);
+a:focus-visible {
+  outline: 2px solid var(--kt-info);
   outline-offset: 2px;
 }

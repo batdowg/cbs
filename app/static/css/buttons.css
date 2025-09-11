@@ -1,0 +1,107 @@
+/* KT button styles */
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  line-height: 1.2;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.btn,
+.btn-primary {
+  background-color: var(--kt-primary);
+  border-color: var(--kt-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+button:hover:not(:disabled),
+input[type="button"]:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+input[type="reset"]:hover:not(:disabled),
+.btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--kt-primary-hover);
+  border-color: var(--kt-primary-hover);
+}
+
+button:active:not(:disabled),
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled),
+input[type="reset"]:active:not(:disabled),
+.btn:active:not(:disabled),
+.btn-primary:active:not(:disabled) {
+  background-color: #004a9b;
+  border-color: #004a9b;
+}
+
+button:focus-visible,
+input[type="button"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--kt-info);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled,
+.btn:disabled,
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #fff;
+  border-color: var(--kt-border);
+  color: var(--kt-text);
+  font-weight: 500;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgba(0, 156, 222, 0.1);
+}
+
+.btn-danger {
+  background-color: var(--kt-accent-red);
+  border-color: var(--kt-accent-red);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c22f26;
+  border-color: #c22f26;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  padding: 14px 22px;
+  font-size: 1.125rem;
+}
+
+.btn > svg {
+  margin-right: .5ch;
+}
