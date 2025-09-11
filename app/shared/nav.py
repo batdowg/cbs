@@ -157,12 +157,15 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                         },
                     ],
                 },
-                {
-                    "id": "languages",
-                    "label": "Languages",
-                    "endpoint": "settings_languages.list_langs",
-                },
             ]
+        )
+    if is_kt_staff(user) or is_contractor(user):
+        settings_children.append(
+            {
+                "id": "simulation_outlines",
+                "label": "Simulation Outlines",
+                "endpoint": "settings_simulations.list_simulations",
+            }
         )
     if (
         is_admin(user)
@@ -177,28 +180,20 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                 "endpoint": "settings_resources.list_resources",
             }
         )
-    if is_kt_staff(user) or is_contractor(user):
-        settings_children.append(
-            {
-                "id": "simulation_outlines",
-                "label": "Simulation Outlines",
-                "endpoint": "settings_simulations.list_simulations",
-            }
-        )
     if can_manage_users(user):
         settings_children.extend(
             [
-                {"id": "users", "label": "Users", "endpoint": "users.list_users"},
+                {
+                    "id": "languages",
+                    "label": "Languages",
+                    "endpoint": "settings_languages.list_langs",
+                },
                 {
                     "id": "certificate_templates",
                     "label": "Certificate Templates",
                     "endpoint": "settings_cert_templates.list_series",
                 },
-                {
-                    "id": "badges",
-                    "label": "Badges",
-                    "endpoint": "settings_badges.placeholder",
-                },
+                {"id": "users", "label": "Users", "endpoint": "users.list_users"},
                 {
                     "id": "mail",
                     "label": "Mail Settings",

@@ -39,7 +39,6 @@ Routes and Code Pages
 
 - **Settings → Mail Settings** – SMTP configuration and test send. File: `app/routes/settings_mail.py`. Requires `app_admin_required`【F:app/routes/settings_mail.py†L14-L50】
 
-- **Settings → Badges** – Placeholder for badge management. File: `app/routes/settings_badges.py`. Requires `admin_required`【F:app/routes/settings_badges.py†L1-L11】
 
 - **Settings → Resources** – Manage downloadable/linked resources. File: `app/routes/settings_resources.py`. `_current_user` allows App Admin/Admin/Delivery/Facilitator/Contractor view; editing limited to App Admin/Admin/Delivery【F:app/routes/settings_resources.py†L26-L44】【F:app/routes/settings_resources.py†L61-L79】
 
