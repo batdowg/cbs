@@ -109,6 +109,11 @@ Every functional change must update this file **in the same PR**.
 - Links show underline and `--kt-primary-hover` on hover, a `--focus-outline` ring on focus, and a `--kt-primary` underline/border for the current page.
 - Breadcrumbs use Raleway, muted separators, `--kt-info` links, and mark the current page with `--kt-text`.
 
+## 0.10 Sidebar
+- Left sidebar uses `--kt-bg` background and `--kt-text` links.
+- Links underline and shift toward `--kt-primary-hover` on hover, keep a `2px solid var(--kt-info)` outline on focus, and show a `--kt-primary` left border with semibold text when active.
+- Footer select follows global form control styling.
+
 ---
 
 # 1. Roles & Menus
