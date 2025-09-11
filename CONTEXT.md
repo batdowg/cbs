@@ -100,6 +100,10 @@ Every functional change must update this file **in the same PR**.
 - Links use `--kt-info`, darken toward `--kt-primary-hover` on hover/active, and always show the `--focus-outline` ring when focused.
 - Styles live in `/static/css/ui.css` and load globally.
 
+## 0.8 Form Controls
+- Inputs, selects, textareas, radios, checkboxes, file controls, and helper/error text follow KT tokens for color, spacing, and focus rings.
+- Styles live in `/static/css/forms.css` and load globally.
+
 ---
 
 # 1. Roles & Menus
