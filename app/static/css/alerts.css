@@ -1,0 +1,50 @@
+.flash {
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  margin-block: var(--space-3);
+  border: 1px solid var(--kt-border);
+  border-left-width: 4px;
+}
+
+.flash a {
+  color: var(--kt-info);
+  text-decoration: none;
+}
+
+.flash a:hover {
+  text-decoration: underline;
+}
+
+.flash:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.flash-success {
+  background: color-mix(in srgb, var(--kt-accent-green) 15%, white);
+  border-color: var(--kt-accent-green);
+  border-left-color: var(--kt-accent-green);
+  color: var(--kt-text);
+}
+
+.flash-error {
+  background: color-mix(in srgb, var(--kt-accent-red) 15%, white);
+  border-color: var(--kt-accent-red);
+  border-left-color: var(--kt-accent-red);
+  color: var(--kt-body);
+}
+
+.flash-warning {
+  background: color-mix(in srgb, var(--kt-accent-orange) 15%, white);
+  border-color: var(--kt-accent-orange);
+  border-left-color: var(--kt-accent-orange);
+  color: var(--kt-body);
+}
+
+.flash-info {
+  background: color-mix(in srgb, var(--kt-info) 15%, white);
+  border-color: var(--kt-info);
+  border-left-color: var(--kt-info);
+  color: var(--kt-body);
+}
