@@ -109,6 +109,7 @@ Every functional change must update this file **in the same PR**.
 ## 0.10 Sidebar
 - Left sidebar uses `--kt-bg` background and `--kt-text` links.
 - Links underline and shift toward `--kt-primary-hover` on hover, keep a `2px solid var(--kt-info)` outline on focus, and show a `--kt-primary` left border with semibold text when active.
+- Active links are marked with `aria-current="page"` only when the path exactly matches; ancestor items add `is-ancestor` and show a light `--kt-border` left border with medium weight. Expansion continues to use native `<details>` elements.
 - Footer select follows global form control styling.
 
 ## 0.11 Flash/Alerts

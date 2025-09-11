@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from flask import session as flask_session, has_request_context
+from flask import session as flask_session, has_request_context, request, url_for
 from sqlalchemy import func
 
 from .acl import (
@@ -314,6 +314,29 @@ VIEW_FILTERS = {
 }
 
 
+def _mark_paths(items: List[MenuItem]) -> None:
+    current_path = request.path
+    for item in items:
+        endpoint = item.get("endpoint")
+        args = item.get("args") or {}
+        if endpoint:
+            href = url_for(endpoint, **args)
+            item["href"] = href
+            item["is_current"] = href == current_path
+        else:
+            item["href"] = None
+            item["is_current"] = False
+        children = item.get("children") or []
+        if children:
+            _mark_paths(children)
+            item["is_ancestor"] = any(
+                child.get("is_current") or child.get("is_ancestor")
+                for child in children
+            )
+        else:
+            item["is_ancestor"] = False
+
+
 def build_menu(
     current_user, active_view: str, show_resources: bool, is_csa: bool = False
 ) -> List[MenuItem]:
@@ -323,4 +346,5 @@ def build_menu(
         menu = _participant_menu(show_resources, is_csa)
     allowed = VIEW_FILTERS.get(active_view, VIEW_FILTERS["LEARNER"])
     filtered = [item for item in menu if item["id"] in allowed]
+    _mark_paths(filtered)
     return filtered
