@@ -57,17 +57,21 @@
 <h1>Material Order {{ sess.id }} - {{ sess.title }}</h1>
 <form method="post">
   <input type="hidden" name="action" value="update_header">
-  <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
-  <div>CRM: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
-  <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
-  <div>SFC Project link:
-    {% if sess.client and sess.client.sfc_link %}
-      {{ sess.client.sfc_link }}
-    {% elif not csa_view %}
-      <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
-    {% endif %}
+  <div class="kt-card">
+    <h2 class="kt-card-title">Order details</h2>
+    <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
+    <div>CRM: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
+    <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
+    <div>SFC Project link:
+      {% if sess.client and sess.client.sfc_link %}
+        {{ sess.client.sfc_link }}
+      {% elif not csa_view %}
+        <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
+      {% endif %}
+    </div>
   </div>
-  <h2>Shipping details</h2>
+  <div class="kt-card">
+    <h2 class="kt-card-title">Shipping details</h2>
   <div>Contact person: {{ shipment.contact_name|default('', true) }}</div>
   <div>Contact Email: {{ shipment.contact_email|default('', true) }}</div>
   <div>Contact Phone: {{ shipment.contact_phone|default('', true) }}</div>
@@ -98,11 +102,15 @@
       {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
       {{ sess.shipping_location.country|default('', true) }}
     {% endif %}
-  </div><br>
-  <div>Workshop Type: {% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %}</div>
-  <div>Delivery Type: {{ sess.delivery_type|default('', true) }}</div>
+  </div>
+  </div>
   <br>
-  <div>Order type:
+  <div class="kt-card">
+    <h2 class="kt-card-title">Materials type &amp; components</h2>
+    <div>Workshop Type: {% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %}</div>
+    <div>Delivery Type: {{ sess.delivery_type|default('', true) }}</div>
+    <br>
+    <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
       {% set ot_val = form.get('order_type') if form else shipment.order_type %}
       <select name="order_type" data-options-url="{{ url_for('materials.options', session_id=sess.id) }}">
@@ -196,6 +204,7 @@
     <label># of credits (2 teams per credit)
       <input type="number" name="credits" min="0" value="{{ form.get('credits') if form else (shipment.credits or 2) }}">
     </label>
+  </div>
   </div>
 
   <div>Courier:

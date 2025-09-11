@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Certificate Templates{% endblock %}
 {% block content %}
-<h1>Certificate Template Series</h1>
+<div class="kt-card">
+<h1 class="kt-card-title">Certificate Template Series</h1>
 <p><a href="{{ url_for('settings_cert_templates.new_series') }}">New Series</a></p>
 <table>
   <tr><th>Code</th><th>Name</th><th>Active</th><th></th><th></th></tr>
@@ -15,4 +16,5 @@
   </tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}

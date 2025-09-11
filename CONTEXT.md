@@ -116,6 +116,10 @@ Every functional change must update this file **in the same PR**.
 - Markup: `<div class="flash flash-{{ category }}" role="alert" aria-live="polite" tabindex="0">…</div>`.
 - Styles live in `/static/css/alerts.css` and load globally after `sidebar.css`.
 
+## 0.12 Cards
+- `.kt-card` wraps tables or forms for visual grouping using brand tokens.
+- `.kt-card-title` applies heading styling inside a card.
+
 ---
 
 # 1. Roles & Menus

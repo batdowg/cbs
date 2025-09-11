@@ -71,7 +71,8 @@
   {% endif %}
 </div>
 {% endif %}
-<h2>Participants</h2>
+<div class="kt-card">
+<h2 class="kt-card-title">Participants</h2>
 {% if csa_view %}
   {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
   <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
@@ -195,4 +196,5 @@
   <p>Certificates cannot be generated until session is marked Delivered.</p>
   {% endif %}
 {% endif %}
+</div>
 {% endblock %}
