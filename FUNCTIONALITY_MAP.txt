@@ -48,6 +48,7 @@ Routes and Code Pages
 - **Settings → Roles Matrix** – Legacy redirect to users page. File: `app/routes/settings_roles.py`. Requires `manage_users_required`【F:app/routes/settings_roles.py†L8-L10】
 
 - **Global UI Styles** – Branded buttons and links. File: `app/static/css/ui.css`.
+- **Global Form Styles** – Branded form controls and helper text. File: `app/static/css/forms.css`.
 
 Permissions Reference
 ---------------------
