@@ -110,7 +110,6 @@ Every functional change must update this file **in the same PR**.
 - Left sidebar uses `--kt-bg` background and `--kt-text` links.
 - Links underline and shift toward `--kt-primary-hover` on hover, keep a `2px solid var(--kt-info)` outline on focus, and show a `--kt-primary` left border with semibold text when active.
 - Footer select follows global form control styling.
-- Nested `<ul>` elements use `.kt-subnav` with no bullets and consistent spacing. Links matching the current path include `aria-current="page"`, and any ancestor `<li>` gains `.is-ancestor` for a subtle left border.
 
 ## 0.11 Flash/Alerts
 - Flash messages render as `.flash` elements with variants `.flash-success`, `.flash-error`, `.flash-warning`, and `.flash-info`.
