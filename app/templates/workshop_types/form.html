@@ -51,45 +51,47 @@
     {% for d in defaults %}
     <tr>
       <td>
-        <select name="delivery_type_{{ d.id }}">
+        <select name="defaults[{{ d.id }}][delivery_type]" class="delivery-select" data-row="{{ d.id }}">
           {% for opt in delivery_choices %}
           <option value="{{ opt }}" {% if d.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>
       </td>
       <td>
-        <select name="region_code_{{ d.id }}">
+        <select name="defaults[{{ d.id }}][region_code]">
           {% for code,label in regions %}
           <option value="{{ code }}" {% if d.region_code==code %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </td>
       <td>
-        <select name="language_{{ d.id }}" class="lang-select" data-row="{{ d.id }}">
+        <select name="defaults[{{ d.id }}][language]" class="lang-select" data-row="{{ d.id }}">
           {% for code,label in language_options if code in supported_langs %}
           <option value="{{ code }}" {% if d.language==code %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </td>
       <td>
-        <input name="catalog_ref_{{ d.id }}" class="material-item" data-row="{{ d.id }}" data-selected="{{ d.catalog_ref }}" list="materials-{{ d.id }}" placeholder="Search...">
+        {% set sel = selected_opts.get(d.id) %}
+        <input class="material-label" data-row="{{ d.id }}" value="{{ sel.label if sel }}" list="materials-{{ d.id }}" placeholder="Search...">
+        <input type="hidden" name="defaults[{{ d.id }}][material_option_id]" class="material-id" data-row="{{ d.id }}" value="{{ sel.id if sel }}">
         <datalist id="materials-{{ d.id }}"></datalist>
         <label><input type="checkbox" class="show-all" data-row="{{ d.id }}"> Show all</label>
       </td>
       <td>
-        <select name="default_format_{{ d.id }}">
+        <select name="defaults[{{ d.id }}][default_format]">
           {% for opt in format_choices %}
           <option value="{{ opt }}" {% if d.default_format==opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
         </select>
       </td>
-      <td><input type="checkbox" name="active_{{ d.id }}" {% if d.active %}checked{% endif %}></td>
-      <td><input type="checkbox" name="remove_{{ d.id }}"></td>
+      <td><input type="checkbox" name="defaults[{{ d.id }}][active]" {% if d.active %}checked{% endif %}></td>
+      <td><input type="checkbox" name="defaults[{{ d.id }}][remove]"></td>
     </tr>
     {% endfor %}
     <tr>
       <td>
-        <select name="delivery_type_new">
+        <select name="defaults[new][delivery_type]" class="delivery-select" data-row="new">
           <option value=""></option>
           {% for opt in delivery_choices %}
           <option value="{{ opt }}">{{ opt }}</option>
@@ -97,7 +99,7 @@
         </select>
       </td>
       <td>
-        <select name="region_code_new">
+        <select name="defaults[new][region_code]">
           <option value=""></option>
           {% for code,label in regions %}
           <option value="{{ code }}">{{ label }}</option>
@@ -105,7 +107,7 @@
         </select>
       </td>
       <td>
-        <select name="language_new" class="lang-select" data-row="new">
+        <select name="defaults[new][language]" class="lang-select" data-row="new">
           <option value=""></option>
           {% for code,label in language_options if code in supported_langs %}
           <option value="{{ code }}">{{ label }}</option>
@@ -113,19 +115,20 @@
         </select>
       </td>
       <td>
-        <input name="catalog_ref_new" class="material-item" data-row="new" list="materials-new" placeholder="Search...">
+        <input class="material-label" data-row="new" list="materials-new" placeholder="Search...">
+        <input type="hidden" name="defaults[new][material_option_id]" class="material-id" data-row="new">
         <datalist id="materials-new"></datalist>
         <label><input type="checkbox" class="show-all" data-row="new"> Show all</label>
       </td>
       <td>
-        <select name="default_format_new">
+        <select name="defaults[new][default_format]">
           <option value=""></option>
           {% for opt in format_choices %}
           <option value="{{ opt }}">{{ opt }}</option>
           {% endfor %}
         </select>
       </td>
-      <td><input type="checkbox" name="active_new" checked></td>
+      <td><input type="checkbox" name="defaults[new][active]" checked></td>
       <td></td>
     </tr>
   </table>
@@ -133,8 +136,6 @@
   <button type="submit">Save</button>
 </form>
 {% if wt %}
-<script id="material-data" type="application/json">{{ items_data|tojson }}</script>
-<script id="supported-langs" type="application/json">{{ supported_langs|tojson }}</script>
 <script src="{{ url_for('static', filename='js/material_picker.js') }}"></script>
 {% endif %}
 {% endblock %}

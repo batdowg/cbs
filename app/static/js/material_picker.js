@@ -1,53 +1,41 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var dataEl = document.getElementById('material-data');
-  if (!dataEl) return;
-  var items = JSON.parse(dataEl.textContent || '[]');
-  var supportedEl = document.getElementById('supported-langs');
-  var supportedLangs = [];
-  if (supportedEl) {
-    try {
-      supportedLangs = JSON.parse(supportedEl.textContent || '[]');
-    } catch (e) {
-      supportedLangs = [];
-    }
-  }
-  var itemMap = {};
-  items.forEach(function (it) {
-    it.languages = (it.languages || []).map(function (l) {
-      if (typeof l === 'string') return l;
-      return (l.code || l.abbr || l.short_code || l.name || '').toLowerCase();
-    });
-    itemMap['materials_options:' + it.id] = it;
-  });
-  function populate(row) {
-    var langSel = document.querySelector('[name="language_' + row + '"]');
-    if (!langSel) return;
-    var lang = (langSel.value || '').toLowerCase();
+  function fetchOptions(row) {
+    var langSel = document.querySelector('[name="defaults[' + row + '][language]"]');
+    var delSel = document.querySelector('[name="defaults[' + row + '][delivery_type]"]');
+    var lang = langSel ? langSel.value : '';
+    var delivery = delSel ? delSel.value : '';
     var showAll = document.querySelector('.show-all[data-row="' + row + '"]');
-    showAll = showAll && showAll.checked;
-    var list = document.getElementById('materials-' + row);
-    list.innerHTML = '';
-    items.forEach(function (it) {
-      if (!showAll && lang && it.languages.length && it.languages.indexOf(lang) === -1) {
-        return;
-      }
-      var opt = document.createElement('option');
-      opt.value = it.label;
-      opt.dataset.ref = 'materials_options:' + it.id;
-      list.appendChild(opt);
-    });
-    var input = document.querySelector('input.material-item[data-row="' + row + '"]');
-    var sel = input.dataset.selected || input.dataset.ref;
-    if (sel && itemMap[sel]) {
-      input.value = itemMap[sel].label;
-      input.dataset.ref = sel;
-    } else {
-      input.value = '';
-      input.dataset.ref = '';
-    }
-    input.dataset.selected = '';
+    var params = new URLSearchParams();
+    if (delivery) params.append('delivery_type', delivery);
+    if (lang) params.append('lang', lang);
+    if (showAll && showAll.checked) params.append('include_bulk', '1');
+    return fetch('/workshop-types/material-options?' + params.toString())
+      .then(function (r) { return r.json(); });
   }
-  document.querySelectorAll('input.material-item').forEach(function (inp) {
+
+  function populate(row) {
+    fetchOptions(row).then(function (data) {
+      var list = document.getElementById('materials-' + row);
+      if (!list) return;
+      list.innerHTML = '';
+      (data.items || []).forEach(function (it) {
+        var opt = document.createElement('option');
+        opt.value = it.label;
+        opt.dataset.id = it.id;
+        list.appendChild(opt);
+      });
+      var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
+      var input = document.querySelector('input.material-label[data-row="' + row + '"]');
+      if (hidden && input && hidden.value) {
+        var match = (data.items || []).find(function (it) {
+          return String(it.id) === hidden.value;
+        });
+        if (match) input.value = match.label;
+      }
+    });
+  }
+
+  document.querySelectorAll('input.material-label').forEach(function (inp) {
     var row = inp.dataset.row;
     populate(row);
     inp.addEventListener('input', function () {
@@ -55,31 +43,16 @@ document.addEventListener('DOMContentLoaded', function () {
       var match = Array.prototype.find.call(list.options, function (o) {
         return o.value === inp.value;
       });
-      if (match) {
-        inp.dataset.ref = match.dataset.ref;
-      } else {
-        inp.dataset.ref = '';
-      }
+      var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
+      if (match) hidden.value = match.dataset.id;
+      else hidden.value = '';
     });
   });
-  document.querySelectorAll('.lang-select').forEach(function (sel) {
-    sel.addEventListener('change', function () {
-      populate(sel.dataset.row);
+
+  ['.lang-select', '.show-all', '.delivery-select'].forEach(function (sel) {
+    document.querySelectorAll(sel).forEach(function (el) {
+      el.addEventListener('change', function () { populate(el.dataset.row); });
     });
   });
-  document.querySelectorAll('.show-all').forEach(function (chk) {
-    chk.addEventListener('change', function () {
-      populate(chk.dataset.row);
-    });
-  });
-  var form = document.querySelector('form');
-  if (form) {
-    form.addEventListener('submit', function () {
-      document.querySelectorAll('input.material-item').forEach(function (inp) {
-        if (inp.dataset.ref) {
-          inp.value = inp.dataset.ref;
-        }
-      });
-    });
-  }
 });
+

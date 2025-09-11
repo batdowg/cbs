@@ -10,6 +10,7 @@ from flask import (
     url_for,
     session as flask_session,
 )
+import re
 
 from ..app import db, User
 from ..models import (
@@ -20,10 +21,12 @@ from ..models import (
     CertificateTemplateSeries,
     MaterialsOption,
     WorkshopTypeMaterialDefault,
+    Language,
 )
 from ..shared.html import sanitize_html
-from ..shared.languages import get_language_options
+from ..shared.languages import get_language_options, code_to_label
 from ..shared.regions import get_region_options
+from flask import jsonify
 
 bp = Blueprint("workshop_types", __name__, url_prefix="/workshop-types")
 
@@ -44,6 +47,33 @@ def lang_key(lang) -> str:
     ).lower()
 
 
+def query_material_options(delivery_type: str, lang_name: str, include_bulk: bool = False):
+    """Return material options matching delivery type and language.
+
+    Language filtering uses ``Language.name`` because the table stores names
+    only. When ``include_bulk`` is false, options with "bulk" in the title or
+    description and the explicit "Client-run Bulk order" catalog are excluded.
+    ``delivery_type`` is reserved for future family rules.
+    """
+
+    q = MaterialsOption.query.filter(MaterialsOption.is_active == True)
+    if lang_name:
+        q = q.join(MaterialsOption.languages).filter(
+            Language.name.ilike(lang_name)
+        )
+    if not include_bulk:
+        bulk = "%bulk%"
+        q = q.filter(
+            MaterialsOption.order_type != "Client-run Bulk order",
+            db.func.lower(MaterialsOption.title).notlike(bulk),
+            db.or_(
+                MaterialsOption.description.is_(None),
+                db.func.lower(MaterialsOption.description).notlike(bulk),
+            ),
+        )
+    return q.order_by(MaterialsOption.order_type, MaterialsOption.title).all()
+
+
 def staff_required(fn):
     from functools import wraps
     from flask import session as flask_session
@@ -59,6 +89,24 @@ def staff_required(fn):
         return fn(*args, **kwargs, current_user=user)
 
     return wrapper
+
+
+@bp.get("/material-options")
+@staff_required
+def material_options(current_user):
+    delivery = request.args.get("delivery_type") or ""
+    lang_code = request.args.get("lang") or ""
+    lang_name = code_to_label(lang_code)
+    include_bulk = bool(request.args.get("include_bulk"))
+    items = query_material_options(delivery, lang_name, include_bulk)
+    results = []
+    for item in items:
+        langs = sorted(l.name.lower() for l in item.languages)
+        label = f"{item.order_type} • {item.title}"
+        if langs:
+            label += f" • [{', '.join(langs)}]"
+        results.append({"id": item.id, "label": label})
+    return jsonify(items=results)
 
 
 @bp.get("/")
@@ -155,26 +203,27 @@ def edit_type(type_id: int, current_user):
         .all()
     )
     language_options = get_language_options()
-    items = (
-        MaterialsOption.query.filter(
-            MaterialsOption.is_active == True,
-            MaterialsOption.order_type != "Client-run Bulk order",
-        )
-        .order_by(MaterialsOption.order_type, MaterialsOption.title)
-        .all()
-    )
     defaults = (
         WorkshopTypeMaterialDefault.query.filter_by(workshop_type_id=wt.id)
         .order_by(WorkshopTypeMaterialDefault.id)
         .all()
     )
-    items_data = []
-    for item in items:
-        langs = sorted(filter(None, [lang_key(lang) for lang in item.languages]))
-        label = f"{item.order_type} • {item.title}"
-        if langs:
-            label += f" • [{', '.join(langs)}]"
-        items_data.append({"id": item.id, "label": label, "languages": langs})
+    selected_opts: dict[int, dict[str, str]] = {}
+    for d in defaults:
+        opt_id = 0
+        if d.catalog_ref.startswith("materials_options:"):
+            try:
+                opt_id = int(d.catalog_ref.split(":", 1)[1])
+            except ValueError:
+                opt_id = 0
+        if opt_id:
+            opt = db.session.get(MaterialsOption, opt_id)
+            if opt:
+                langs = sorted(l.name.lower() for l in opt.languages)
+                label = f"{opt.order_type} • {opt.title}"
+                if langs:
+                    label += f" • [{', '.join(langs)}]"
+                selected_opts[d.id] = {"id": opt.id, "label": label}
     supported_langs = sorted(
         {lang_key(lang) for lang in (wt.supported_languages or []) if lang_key(lang)}
     )
@@ -187,10 +236,10 @@ def edit_type(type_id: int, current_user):
         series=series,
         materials_options=materials_options,
         defaults=defaults,
+        selected_opts=selected_opts,
         regions=get_region_options(),
         delivery_choices=DELIVERY_CHOICES,
         format_choices=FORMAT_CHOICES,
-        items_data=items_data,
     )
 
 
@@ -225,8 +274,16 @@ def update_type(type_id: int, current_user):
         .order_by(WorkshopTypeMaterialDefault.id)
         .all()
     )
+    pattern = re.compile(r"defaults\[(.+?)\]\[(.+?)\]")
+    form_defaults: dict[str, dict[str, str]] = {}
+    for key, value in request.form.items():
+        m = pattern.fullmatch(key)
+        if m:
+            row, field = m.groups()
+            form_defaults.setdefault(row, {})[field] = value
     for d in list(defaults):
-        if request.form.get(f"remove_{d.id}"):
+        data = form_defaults.get(str(d.id), {})
+        if data.get("remove"):
             db.session.delete(d)
             db.session.add(
                 AuditLog(
@@ -236,26 +293,34 @@ def update_type(type_id: int, current_user):
                 )
             )
             continue
-        delivery_type = request.form.get(f"delivery_type_{d.id}") or ""
-        region_code = request.form.get(f"region_code_{d.id}") or ""
-        language = request.form.get(f"language_{d.id}") or ""
-        catalog_ref = (request.form.get(f"catalog_ref_{d.id}") or "").strip()
-        default_format = request.form.get(f"default_format_{d.id}") or ""
-        active = bool(request.form.get(f"active_{d.id}"))
-        if not all([delivery_type, region_code, language, catalog_ref, default_format]):
+        delivery_type = data.get("delivery_type") or ""
+        region_code = data.get("region_code") or ""
+        language = data.get("language") or ""
+        opt_val = data.get("material_option_id") or ""
+        default_format = data.get("default_format") or ""
+        active = bool(data.get("active"))
+        if not all([delivery_type, region_code, language, opt_val, default_format]):
             flash("All fields required", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
-        if not catalog_ref.startswith("materials_options:"):
-            flash("Invalid material item", "error")
+        try:
+            opt_id = int(opt_val)
+        except ValueError:
+            flash(f"Invalid material item (row {d.id})", "error")
+            return redirect(
+                url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
+            )
+        opt = db.session.get(MaterialsOption, opt_id)
+        if not opt:
+            flash(f"Invalid material item (row {d.id})", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
         d.delivery_type = delivery_type
         d.region_code = region_code
         d.language = language
-        d.catalog_ref = catalog_ref
+        d.catalog_ref = f"materials_options:{opt_id}"
         d.default_format = default_format
         d.active = active
         db.session.add(
@@ -265,27 +330,29 @@ def update_type(type_id: int, current_user):
                 details=f"id={d.id} wt={wt.id}",
             )
         )
-    delivery_type = request.form.get("delivery_type_new") or ""
-    region_code = request.form.get("region_code_new") or ""
-    language = request.form.get("language_new") or ""
-    catalog_ref = (request.form.get("catalog_ref_new") or "").strip()
-    default_format = request.form.get("default_format_new") or ""
-    active = bool(request.form.get("active_new"))
-    if any([delivery_type, region_code, language, catalog_ref, default_format]):
-        if not all([delivery_type, region_code, language, catalog_ref, default_format]):
+    new_data = form_defaults.get("new", {})
+    delivery_type = new_data.get("delivery_type") or ""
+    region_code = new_data.get("region_code") or ""
+    language = new_data.get("language") or ""
+    opt_val = new_data.get("material_option_id") or ""
+    default_format = new_data.get("default_format") or ""
+    active = bool(new_data.get("active"))
+    if any([delivery_type, region_code, language, opt_val, default_format]):
+        if not all([delivery_type, region_code, language, opt_val, default_format]):
             flash("All fields required", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
-        if not catalog_ref.startswith("materials_options:"):
-            flash("Invalid material item", "error")
+        try:
+            opt_id = int(opt_val)
+        except ValueError:
+            flash("Invalid material item (row new)", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
-        opt_id = catalog_ref.split(":", 1)[1]
-        opt = db.session.get(MaterialsOption, int(opt_id))
-        if not opt or opt.order_type == "Client-run Bulk order":
-            flash("Material item not found", "error")
+        opt = db.session.get(MaterialsOption, opt_id)
+        if not opt:
+            flash("Invalid material item (row new)", "error")
             return redirect(
                 url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
             )
@@ -294,7 +361,7 @@ def update_type(type_id: int, current_user):
             delivery_type=delivery_type,
             region_code=region_code,
             language=language,
-            catalog_ref=catalog_ref,
+            catalog_ref=f"materials_options:{opt_id}",
             default_format=default_format,
             active=active,
         )
