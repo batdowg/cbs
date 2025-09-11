@@ -173,6 +173,7 @@ def render_certificate(
     out_buf = BytesIO()
     writer.write(out_buf)
     write_atomic(full_path, out_buf.getvalue())
+    os.chmod(full_path, 0o644)  # world-readable for Caddy
 
     cert = (
         db.session.query(Certificate)
