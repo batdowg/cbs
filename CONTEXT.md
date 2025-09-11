@@ -64,6 +64,29 @@ Every functional change must update this file **in the same PR**.
   - `test_passwords::test_add_staff_user_as_participant` – 0.81
 - **Quarantined tests**: none
 
+## 0.6 Brand Fonts & Tokens
+- Fonts:
+  - Headings use **Raleway**.
+  - Body text uses **Roboto**.
+  - `.kt-display` applies **Neptune** for opt-in display/hero text.
+- Tokens (defined in `/static/css/brand.css`):
+  - Colors:
+    - `--kt-primary`: `#0057B7` (Sapphire)
+    - `--kt-primary-hover`: `#007DC5` (Medium Blue)
+    - `--kt-info`: `#009CDE` (Azure)
+    - `--kt-text`: `#002C5B` (Navy)
+    - `--kt-body`: `#111111` (approved dark for long text)
+    - `--kt-muted`: `#6D6E71` (Ash)
+    - `--kt-border`: `#D1D3D4` (Light Gray)
+    - `--kt-bg`: `#FFFFFF` (White)
+    - `--kt-accent-green`: `#A4D65E`
+    - `--kt-accent-yellow`: `#F4E501`
+    - `--kt-accent-orange`: `#F68D2E`
+    - `--kt-accent-red`: `#E03C31`
+  - Spacing scale (`8px` rhythm): `--space-1: 4px` … `--space-6: 32px`
+  - Radius: `--radius-md: 12px`; `--radius-lg: 16px`
+  - Focus outline: `2px solid var(--kt-info)`
+
 ---
 
 # 1. Roles & Menus
