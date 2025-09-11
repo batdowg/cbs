@@ -577,10 +577,71 @@ class MaterialsOption(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_type = db.Column(db.Text, nullable=False)
     title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text)
+    sku_physical = db.Column(db.String(100))
     formats = db.Column(db.JSON, nullable=False, default=list)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     languages = db.relationship("Language", secondary="materials_option_languages")
+
+
+class MaterialDefault(db.Model):
+    __tablename__ = "material_defaults"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "workshop_type_id",
+            "delivery_type",
+            "region_code",
+            "language",
+            "catalog_ref",
+            name="uq_material_defaults_context_ref",
+        ),
+        db.CheckConstraint(
+            "default_format IN ('Digital','Physical','Self-paced')",
+            name="ck_material_defaults_format",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    workshop_type_id = db.Column(
+        db.Integer, db.ForeignKey("workshop_types.id", ondelete="CASCADE"), nullable=False
+    )
+    delivery_type = db.Column(db.String(32), nullable=False)
+    region_code = db.Column(db.String(8), nullable=False)
+    language = db.Column(db.String(8), nullable=False)
+    catalog_ref = db.Column(db.String(50), nullable=False)
+    default_format = db.Column(db.String(16), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    workshop_type = db.relationship("WorkshopType")
+
+
+class MaterialOrderItem(db.Model):
+    __tablename__ = "material_order_items"
+    __table_args__ = (
+        db.CheckConstraint(
+            "format IN ('Digital','Physical','Self-paced')",
+            name="ck_material_order_items_format",
+        ),
+        db.Index("ix_material_order_items_session_id", "session_id"),
+        db.Index("ix_material_order_items_processed", "processed"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    catalog_ref = db.Column(db.String(50), nullable=False)
+    title_snapshot = db.Column(db.String(160))
+    description_snapshot = db.Column(db.Text)
+    sku_physical_snapshot = db.Column(db.String(100))
+    language = db.Column(db.String(8))
+    format = db.Column(db.String(16))
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    processed = db.Column(db.Boolean, nullable=False, default=False)
+    processed_at = db.Column(db.DateTime)
+    processed_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    processed_by = db.relationship("User")
 
 
 class SessionShipping(db.Model):
@@ -773,6 +834,8 @@ __all__ = [
     "MaterialType",
     "Material",
     "MaterialsOption",
+    "MaterialDefault",
+    "MaterialOrderItem",
     "SessionShipping",
     "SessionShippingItem",
     "Badge",

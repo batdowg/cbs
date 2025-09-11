@@ -263,6 +263,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `materials_order_items` (order_id, sku/desc, qty, notes)
 - `session_shipping` (address/contact fields)
 
+### Material defaults: context → items
+
+- `material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item and `default_format` (Digital/Physical/Self-paced).
+- `material_order_items` snapshot per-session ordered items with title, description, SKU, language, format, quantity, and processed state.
+
 ## 3.6 Clients (if present)
 - `clients`, `client_locations` and linkage tables as per migrations.
 

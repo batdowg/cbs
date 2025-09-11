@@ -360,6 +360,9 @@ def create_app():
     from .routes.auth import bp as auth_bp
     from .routes.settings_mail import bp as settings_mail_bp
     from .routes.settings_materials import bp as settings_materials_bp
+    from .routes.settings_material_defaults import (
+        bp as settings_material_defaults_bp,
+    )
     from .routes.settings_simulations import bp as settings_simulations_bp
     from .routes.settings_languages import bp as settings_languages_bp
     from .routes.sessions import bp as sessions_bp
@@ -381,6 +384,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(settings_mail_bp)
     app.register_blueprint(settings_materials_bp)
+    app.register_blueprint(settings_material_defaults_bp)
     app.register_blueprint(settings_simulations_bp)
     app.register_blueprint(settings_languages_bp)
     app.register_blueprint(sessions_bp)
