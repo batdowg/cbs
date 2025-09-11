@@ -91,14 +91,11 @@ Every functional change must update this file **in the same PR**.
 - Tables: default `<table>` elements use `/static/css/table.css` with header/stripe/hover tints from `--kt-info`, text colors from `--kt-text` and `--kt-body`, borders `--kt-border`, and cell padding `var(--space-2)`/`var(--space-3)`.
 
 ## 0.7 Buttons & Links
-- Global button selectors (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`, `.btn`, `a.button`) share KT styling.
-- Variants:
-  - **Primary** – solid `--kt-primary` background with white text.
-  - **Outline** – transparent background, `--kt-primary` border/text; hover adds a light Azure tint.
-  - **Quiet** – borderless, `--kt-primary` text; hover adds underline and tint for secondary actions.
-- Disabled states reduce opacity and use `cursor: not-allowed` while preserving focus outlines when reachable.
-- Links use `--kt-info`, darken toward `--kt-primary-hover` on hover/active, and always show the `--focus-outline` ring when focused.
-- Styles live in `/static/css/ui.css` and load globally.
+- Native buttons (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`) and elements with `.btn` share KT styling.
+- Variants: default/`.btn-primary`, `.btn-secondary` (white background, `--kt-text`, `--kt-border`, light `--kt-info` hover), `.btn-danger` (`--kt-accent-red`). Optional sizes `.btn-sm` and `.btn-lg` adjust padding and font size.
+- Buttons show a `2px solid var(--kt-info)` focus ring with offset and reduce opacity with `cursor: not-allowed` when disabled.
+- Links use `--kt-info`, darken toward `--kt-primary-hover` on hover/active, and show the same focus ring when focus-visible.
+- Button styles live in `/static/css/buttons.css`; link styles live in `/static/css/ui.css`. Both load globally.
 
 ## 0.8 Form Controls
 - Inputs, selects, textareas, radios, checkboxes, file controls, and helper/error text follow KT tokens for color, spacing, and focus rings.
