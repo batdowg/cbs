@@ -51,6 +51,7 @@ Routes and Code Pages
 - **Global Form Styles** – Branded form controls and helper text. File: `app/static/css/forms.css`.
 - **Global Navigation Styles** – Header, nav, and breadcrumb tokens. File: `app/static/css/nav.css`.
 - **Global Sidebar Styling (CSS only)** – Left sidebar layout and link states. File: `app/static/css/sidebar.css`.
+- **Global Alerts Styling** – Flash/alert banners. File: `app/static/css/alerts.css`.
 
 Permissions Reference
 ---------------------

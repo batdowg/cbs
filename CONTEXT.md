@@ -114,6 +114,11 @@ Every functional change must update this file **in the same PR**.
 - Links underline and shift toward `--kt-primary-hover` on hover, keep a `2px solid var(--kt-info)` outline on focus, and show a `--kt-primary` left border with semibold text when active.
 - Footer select follows global form control styling.
 
+## 0.11 Flash/Alerts
+- Flash messages render as `.flash` elements with variants `.flash-success`, `.flash-error`, `.flash-warning`, and `.flash-info`.
+- Markup: `<div class="flash flash-{{ category }}" role="alert" aria-live="polite" tabindex="0">…</div>`.
+- Styles live in `/static/css/alerts.css` and load globally after `sidebar.css`.
+
 ---
 
 # 1. Roles & Menus

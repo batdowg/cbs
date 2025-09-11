@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ui.css') }}">
   <style>
@@ -24,8 +25,6 @@
       margin-bottom:var(--space-4);
       border:1px solid #f0c36d;
     }
-    .flashes li.error { color:var(--kt-accent-red); font-weight:700; }
-    .flashes li.success { color:var(--kt-accent-green); font-weight:600; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -38,7 +37,21 @@
     <div class="view-banner">You're in <strong>{{ active_view.replace('_',' ').title() }}</strong> view. Permissions are unchanged. <a href="{{ url_for('settings_view', view='ADMIN') }}">Switch to Admin</a></div>
     {% endif %}
     {% with msgs=get_flashed_messages(with_categories=true) %}
-      {% if msgs %}<ul class="flashes">{% for cat,msg in msgs %}<li class="{{cat}}">{{msg}}</li>{% endfor %}</ul>{% endif %}
+      {% if msgs %}
+      <div class="flashes">
+        {% for cat,msg in msgs %}
+          {% set cat = {
+            'message':'info',
+            'info':'info',
+            'success':'success',
+            'warning':'warning',
+            'error':'error',
+            'danger':'error'
+          }.get(cat, 'info') %}
+          <div class="flash flash-{{ cat }}" role="alert" aria-live="polite" tabindex="0">{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
