@@ -126,6 +126,11 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                     "label": "Material settings",
                     "children": [
                         {
+                            "id": "defaults",
+                            "label": "Defaults",
+                            "endpoint": "settings_material_defaults.list_defaults",
+                        },
+                        {
                             "id": "standard",
                             "label": "Standard",
                             "endpoint": "settings_materials.list_options",

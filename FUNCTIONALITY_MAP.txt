@@ -34,6 +34,7 @@ Routes and Code Pages
 - **Settings → Languages** – Manage language list. File: `app/routes/settings_languages.py`. Requires `admin_required`【F:app/routes/settings_languages.py†L10-L20】
 
 - **Settings → Materials Options** – Configure materials choices. File: `app/routes/settings_materials.py`. Requires `admin_required`【F:app/routes/settings_materials.py†L27-L65】
+- **Settings → Material Defaults** – Map context to default material items. File: `app/routes/settings_material_defaults.py`. Requires `admin_required`【F:app/routes/settings_material_defaults.py†L1-L119】
 
 - **Settings → Certificate Templates** – Configure certificate series, template PDFs, badge filenames, and bulk upload template PDFs or badge WEBPs. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】
 
@@ -53,6 +54,12 @@ Routes and Code Pages
 - Sidebar active/ancestor styling; submenu behavior unchanged.
 - **Global Alerts Styling** – Flash/alert banners. File: `app/static/css/alerts.css`.
 - **Global Card Styling** – `.kt-card` wrappers and `.kt-card-title`. File: `app/static/css/cards.css`. Applied to `home/_admin.html`, `home/_sessions.html`, `home/_delivery.html`, `session_detail.html`, `sessions/materials.html`, `settings_cert_templates/list.html`, `settings_languages/list.html`, `settings_materials/list.html`, `settings_resources/list.html`, `settings_roles.html`, `settings_simulations/list.html`.
+
+Database Tables
+---------------
+
+- `material_defaults` – context (workshop type, delivery type, region, language) → material item & default format.
+- `material_order_items` – session material line snapshots with processing status.
 
 Permissions Reference
 ---------------------
