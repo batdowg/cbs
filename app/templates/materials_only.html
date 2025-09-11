@@ -275,17 +275,17 @@
   orderType && orderType.addEventListener('change', function(){ loadOptions(this.value); });
   var fmtSel = document.getElementById('materials-format');
   var boxes = Array.from(document.querySelectorAll('input[name="components"]'));
-  function applyComponentState(){
+  function applyComponentState(autoCheck=false){
     var fmt = fmtSel.value;
     var disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
     boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
-    if(fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
+    if(autoCheck && fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
   }
   function applyAutoFormat(){
     if(orderType.value === 'Simulation' && !fmtSel.value){ fmtSel.value = 'SIM_ONLY'; }
     applyComponentState();
   }
-  fmtSel && fmtSel.addEventListener('change', applyComponentState);
+  fmtSel && fmtSel.addEventListener('change', function(){ applyComponentState(true); });
   orderType && orderType.addEventListener('change', applyAutoFormat);
   var clientDialog = document.getElementById('client-dialog');
   var clientForm = document.getElementById('client-inline-form');
