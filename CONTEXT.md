@@ -88,6 +88,8 @@ Every functional change must update this file **in the same PR**.
   - Radius: `--radius-md: 12px`; `--radius-lg: 16px`
   - Focus outline: `2px solid var(--kt-info)`
 
+- Tables: default `<table>` elements use `/static/css/table.css` with header/stripe/hover tints from `--kt-info`, text colors from `--kt-text` and `--kt-body`, borders `--kt-border`, and cell padding `var(--space-2)`/`var(--space-3)`.
+
 ## 0.7 Buttons & Links
 - Global button selectors (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`, `.btn`, `a.button`) share KT styling.
 - Variants:
