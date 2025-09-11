@@ -454,4 +454,5 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Contractor menu/capabilities updated per §1.2/§1.4.  
 - Materials dashboard documented to current behavior.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
-- Workshop Type edit normalizes language keys for material pickers to tolerate languages without explicit codes.
+- Workshop Type edit default-materials picker filters by `Language.name`, posts
+  `material_option_id`, and hides "Bulk" options unless "Show all" is checked.
