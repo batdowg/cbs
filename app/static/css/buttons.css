@@ -92,6 +92,23 @@ input[type="reset"]:disabled,
   border-color: #c22f26;
 }
 
+.btn-success {
+  background-color: var(--kt-accent-green);
+  border-color: var(--kt-accent-green);
+  color: var(--kt-text);
+  font-weight: 600;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--kt-accent-green) 85%, black);
+  border-color: color-mix(in srgb, var(--kt-accent-green) 85%, black);
+}
+
+.btn-success:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--kt-accent-green) 70%, black);
+  border-color: color-mix(in srgb, var(--kt-accent-green) 70%, black);
+}
+
 .btn-sm {
   padding: 6px 12px;
   font-size: 0.875rem;
