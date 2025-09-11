@@ -6,7 +6,7 @@ import pytest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.app import create_app, db
-from app.models import MaterialDefault, MaterialsOption, WorkshopType
+from app.models import WorkshopTypeMaterialDefault, MaterialsOption, WorkshopType
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def test_material_default_unique(app):
         db.session.add_all([wt, opt])
         db.session.commit()
         ref = f"materials_options:{opt.id}"
-        d1 = MaterialDefault(
+        d1 = WorkshopTypeMaterialDefault(
             workshop_type_id=wt.id,
             delivery_type="Onsite",
             region_code="NA",
@@ -37,7 +37,7 @@ def test_material_default_unique(app):
         )
         db.session.add(d1)
         db.session.commit()
-        d2 = MaterialDefault(
+        d2 = WorkshopTypeMaterialDefault(
             workshop_type_id=wt.id,
             delivery_type="Onsite",
             region_code="NA",
