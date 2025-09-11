@@ -51,6 +51,7 @@ Routes and Code Pages
 - **Global Form Styles** – Branded form controls and helper text. File: `app/static/css/forms.css`.
 - **Global Navigation Styles** – Header, nav, and breadcrumb tokens. File: `app/static/css/nav.css`.
 - **Global Sidebar Styling (CSS only)** – Left sidebar layout and link states. File: `app/static/css/sidebar.css`.
+- Sidebar active/ancestor styling; submenu behavior unchanged.
 - **Global Alerts Styling** – Flash/alert banners. File: `app/static/css/alerts.css`.
 - **Global Card Styling** – `.kt-card` wrappers and `.kt-card-title`. File: `app/static/css/cards.css`. Applied to `home/_admin.html`, `home/_sessions.html`, `home/_delivery.html`, `session_detail.html`, `sessions/materials.html`, `settings_cert_templates/list.html`, `settings_languages/list.html`, `settings_materials/list.html`, `settings_resources/list.html`, `settings_roles.html`, `settings_simulations/list.html`.
 

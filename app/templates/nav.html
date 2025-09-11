@@ -1,16 +1,15 @@
 {% macro render_item(item) %}
-  {% set is_active = item.endpoint and request.endpoint == item.endpoint %}
   {% if item.children %}
-    <details class="{{ item.id }}">
-      <summary class="nav-link{% if is_active %} active{% endif %}" {% if is_active %}aria-current="page"{% endif %}>{{ item.label }}</summary>
-      <ul>
+    <details class="{{ item.id }}{% if item.is_ancestor %} is-ancestor{% endif %}">
+      <summary class="nav-link">{{ item.label }}</summary>
+      <ul class="kt-subnav">
       {% for child in item.children %}
-        <li>{{ render_item(child) }}</li>
+        <li{% if child.is_ancestor %} class="is-ancestor"{% endif %}>{{ render_item(child) }}</li>
       {% endfor %}
       </ul>
     </details>
   {% else %}
-    <a href="{{ url_for(item.endpoint, **(item.args or {})) }}"{% if is_active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a>
+    <a href="{{ item.href }}"{% if item.is_current %} aria-current="page"{% endif %}>{{ item.label }}</a>
   {% endif %}
 {% endmacro %}
 <nav class="kt-nav">
