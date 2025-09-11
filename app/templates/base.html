@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ui.css') }}">
   <style>
@@ -12,19 +13,6 @@
       margin:0;
       display:flex;
       min-height:100vh;
-    }
-    .sidebar {
-      width:220px;
-      background:#f0f0f0;
-      padding:var(--space-4);
-      flex-shrink:0;
-    }
-    .sidebar a,
-    .sidebar .nav-link {
-      display:block;
-      margin:var(--space-2) 0;
-      text-decoration:none;
-      color:var(--kt-info);
     }
     .content {
       flex:1;
@@ -42,7 +30,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <aside class="sidebar">
+  <aside class="sidebar kt-sidebar">
     {% include 'nav.html' %}
   </aside>
   <main class="content">

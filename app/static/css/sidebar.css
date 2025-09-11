@@ -1,0 +1,72 @@
+/* KT sidebar styling */
+
+.kt-sidebar {
+  width:220px;
+  background: var(--kt-bg);
+  padding: var(--space-4);
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.kt-nav {
+  display:flex;
+  flex-direction:column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.kt-nav a,
+.kt-nav summary {
+  display:block;
+  padding: var(--space-1) var(--space-2);
+  border-left: 2px solid transparent;
+  color: var(--kt-text);
+  text-decoration:none;
+}
+
+.kt-nav a {
+  font-family: 'Roboto', sans-serif;
+}
+
+.kt-nav summary {
+  font-family: 'Raleway', sans-serif;
+  cursor: pointer;
+}
+
+.kt-nav a:hover,
+.kt-nav summary:hover {
+  color: var(--kt-primary-hover);
+  text-decoration: underline;
+}
+
+.kt-nav a:focus,
+.kt-nav summary:focus {
+  outline: 2px solid var(--kt-info);
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
+.kt-nav a.active,
+.kt-nav summary.active,
+.kt-nav a[aria-current="page"],
+.kt-nav summary[aria-current="page"] {
+  border-left-color: var(--kt-primary);
+  font-weight:600;
+  text-decoration: underline;
+}
+
+.kt-sidebar-footer {
+  margin-top: var(--space-4);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--kt-border);
+}
+
+.kt-sidebar-footer label {
+  font-family: 'Raleway', sans-serif;
+  color: var(--kt-text);
+}
+
+.kt-sidebar-footer select {
+  width:100%;
+}

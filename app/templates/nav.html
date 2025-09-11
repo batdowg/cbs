@@ -13,13 +13,13 @@
     <a href="{{ url_for(item.endpoint, **(item.args or {})) }}"{% if is_active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a>
   {% endif %}
 {% endmacro %}
-<nav>
+<nav class="kt-nav">
   <a href="/{{''}}"><img src="{{ url_for('static', filename='ktlogo1.png') }}" onerror="this.onerror=null;this.src='/logo.png';" alt="KT Logo" style="max-height:48px;"></a>
   {% for item in nav_menu %}
     {{ render_item(item) }}
   {% endfor %}
   {% if view_options|length > 1 %}
-  <form method="post" action="{{ url_for('settings_view') }}" style="margin-top:1rem;">
+  <form method="post" action="{{ url_for('settings_view') }}" class="kt-sidebar-footer">
     <label>View:</label>
     <select name="view" onchange="this.form.submit()">
       {% for opt in view_options %}
