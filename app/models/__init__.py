@@ -585,8 +585,8 @@ class MaterialsOption(db.Model):
     languages = db.relationship("Language", secondary="materials_option_languages")
 
 
-class MaterialDefault(db.Model):
-    __tablename__ = "material_defaults"
+class WorkshopTypeMaterialDefault(db.Model):
+    __tablename__ = "workshop_type_material_defaults"
     __table_args__ = (
         db.UniqueConstraint(
             "workshop_type_id",
@@ -594,11 +594,11 @@ class MaterialDefault(db.Model):
             "region_code",
             "language",
             "catalog_ref",
-            name="uq_material_defaults_context_ref",
+            name="uq_wt_material_defaults_context_ref",
         ),
         db.CheckConstraint(
             "default_format IN ('Digital','Physical','Self-paced')",
-            name="ck_material_defaults_format",
+            name="ck_wt_material_defaults_format",
         ),
     )
 
@@ -834,7 +834,7 @@ __all__ = [
     "MaterialType",
     "Material",
     "MaterialsOption",
-    "MaterialDefault",
+    "WorkshopTypeMaterialDefault",
     "MaterialOrderItem",
     "SessionShipping",
     "SessionShippingItem",

@@ -6,7 +6,7 @@
 - test_materials_only.py
 - test_sessions_status.py
 - test_users_ui.py
-- test_material_defaults.py
+- test_workshop_type_material_defaults.py
 
 ## Slow
 - test_passwords.py (module)

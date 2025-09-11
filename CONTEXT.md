@@ -262,10 +262,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `materials_orders` (session_id, **format** enum: All Physical/All Digital/Mixed/SIM Only; four **physical_components** booleans; **po_number**; **latest_arrival_date**; ship_date; courier; tracking; special_instructions)
 - `materials_order_items` (order_id, sku/desc, qty, notes)
 - `session_shipping` (address/contact fields)
+- Catalog items include optional `description` (TEXT) and `sku_physical` (VARCHAR(100)).
 
-### Material defaults: context → items
+### Workshop Type default materials
 
-- `material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item and `default_format` (Digital/Physical/Self-paced).
+- `workshop_type_material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item, `default_format` (Digital/Physical/Self-paced), and `active`.
 - `material_order_items` snapshot per-session ordered items with title, description, SKU, language, format, quantity, and processed state.
 
 ## 3.6 Clients (if present)
@@ -332,6 +333,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - **All Digital / SIM Only** → 4 visible, disabled
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
+- The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
 - **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
 - Region and Language are selects with human labels; changing Language immediately filters Workshop Type options by supported languages. Workshop Type codes display without names on `/materials-only`, and the full Materials form renders on first load.
 - Client select supports inline **Add Client**; Shipping location offers **Add** and **Edit locations** dialogs without clearing other inputs.

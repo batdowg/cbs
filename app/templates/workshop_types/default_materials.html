@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Default Materials - {{ wt.name }}{% endblock %}
+{% block content %}
+<div class="kt-card">
+<h1 class="kt-card-title">Default Materials – {{ wt.name }}</h1>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Remove</th></tr>
+    {% for d in defaults %}
+    <tr>
+      <td>
+        <select name="delivery_type_{{ d.id }}">
+          {% for opt in delivery_choices %}
+          <option value="{{ opt }}" {% if d.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="region_code_{{ d.id }}">
+          {% for code,label in regions %}
+          <option value="{{ code }}" {% if d.region_code==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="language_{{ d.id }}">
+          {% for code,label in language_options %}
+          <option value="{{ code }}" {% if d.language==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <input name="catalog_ref_{{ d.id }}" list="material-items" value="{{ d.catalog_ref }}" required>
+      </td>
+      <td>
+        <select name="default_format_{{ d.id }}">
+          {% for opt in format_choices %}
+          <option value="{{ opt }}" {% if d.default_format==opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="checkbox" name="active_{{ d.id }}" {% if d.active %}checked{% endif %}></td>
+      <td><input type="checkbox" name="remove_{{ d.id }}"></td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td>
+        <select name="delivery_type_new">
+          <option value=""></option>
+          {% for opt in delivery_choices %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="region_code_new">
+          <option value=""></option>
+          {% for code,label in regions %}
+          <option value="{{ code }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="language_new">
+          <option value=""></option>
+          {% for code,label in language_options %}
+          <option value="{{ code }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input name="catalog_ref_new" list="material-items"></td>
+      <td>
+        <select name="default_format_new">
+          <option value=""></option>
+          {% for opt in format_choices %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="checkbox" name="active_new" checked></td>
+      <td></td>
+    </tr>
+  </table>
+  <datalist id="material-items">
+    {% for item in items %}
+    <option value="materials_options:{{ item.id }}">{{ item.title }} ({{ item.order_type }})</option>
+    {% endfor %}
+  </datalist>
+  <p><button type="submit">Save</button></p>
+</form>
+<p><a href="{{ url_for('workshop_types.edit_type', type_id=wt.id) }}">Back to Workshop Type</a></p>
+</div>
+{% endblock %}
