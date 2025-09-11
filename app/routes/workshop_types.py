@@ -130,12 +130,38 @@ def edit_type(type_id: int, current_user):
         .order_by(MaterialsOption.title)
         .all()
     )
+    items = (
+        MaterialsOption.query.filter(
+            MaterialsOption.is_active == True,
+            MaterialsOption.order_type != 'Client-run Bulk order',
+        )
+        .order_by(MaterialsOption.order_type, MaterialsOption.title)
+        .all()
+    )
+    defaults = (
+        WorkshopTypeMaterialDefault.query.filter_by(workshop_type_id=wt.id)
+        .order_by(WorkshopTypeMaterialDefault.id)
+        .all()
+    )
+    items_data = []
+    for item in items:
+        langs = sorted([lang.code for lang in item.languages])
+        label = f"{item.order_type} • {item.title}"
+        if langs:
+            label += f" • [{', '.join(langs)}]"
+        items_data.append({"id": item.id, "label": label, "languages": langs})
     return render_template(
         'workshop_types/form.html',
         wt=wt,
+        current_user=current_user,
         language_options=get_language_options(),
         series=series,
         materials_options=materials_options,
+        defaults=defaults,
+        regions=get_region_options(),
+        delivery_choices=DELIVERY_CHOICES,
+        format_choices=FORMAT_CHOICES,
+        items_data=items_data,
     )
 
 
@@ -163,6 +189,83 @@ def update_type(type_id: int, current_user):
         flash('Invalid certificate series', 'error')
         return redirect(url_for('workshop_types.edit_type', type_id=wt.id))
     wt.cert_series = series_code
+    defaults = (
+        WorkshopTypeMaterialDefault.query.filter_by(workshop_type_id=wt.id)
+        .order_by(WorkshopTypeMaterialDefault.id)
+        .all()
+    )
+    for d in list(defaults):
+        if request.form.get(f'remove_{d.id}'):
+            db.session.delete(d)
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    action='wt_material_default_delete',
+                    details=f'id={d.id} wt={wt.id}',
+                )
+            )
+            continue
+        delivery_type = request.form.get(f'delivery_type_{d.id}') or ''
+        region_code = request.form.get(f'region_code_{d.id}') or ''
+        language = request.form.get(f'language_{d.id}') or ''
+        catalog_ref = (request.form.get(f'catalog_ref_{d.id}') or '').strip()
+        default_format = request.form.get(f'default_format_{d.id}') or ''
+        active = bool(request.form.get(f'active_{d.id}'))
+        if not all([delivery_type, region_code, language, catalog_ref, default_format]):
+            flash('All fields required', 'error')
+            return redirect(url_for('workshop_types.edit_type', type_id=wt.id) + '#defaults')
+        if not catalog_ref.startswith('materials_options:'):
+            flash('Invalid material item', 'error')
+            return redirect(url_for('workshop_types.edit_type', type_id=wt.id) + '#defaults')
+        d.delivery_type = delivery_type
+        d.region_code = region_code
+        d.language = language
+        d.catalog_ref = catalog_ref
+        d.default_format = default_format
+        d.active = active
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action='wt_material_default_update',
+                details=f'id={d.id} wt={wt.id}',
+            )
+        )
+    delivery_type = request.form.get('delivery_type_new') or ''
+    region_code = request.form.get('region_code_new') or ''
+    language = request.form.get('language_new') or ''
+    catalog_ref = (request.form.get('catalog_ref_new') or '').strip()
+    default_format = request.form.get('default_format_new') or ''
+    active = bool(request.form.get('active_new'))
+    if any([delivery_type, region_code, language, catalog_ref, default_format]):
+        if not all([delivery_type, region_code, language, catalog_ref, default_format]):
+            flash('All fields required', 'error')
+            return redirect(url_for('workshop_types.edit_type', type_id=wt.id) + '#defaults')
+        if not catalog_ref.startswith('materials_options:'):
+            flash('Invalid material item', 'error')
+            return redirect(url_for('workshop_types.edit_type', type_id=wt.id) + '#defaults')
+        opt_id = catalog_ref.split(':', 1)[1]
+        opt = db.session.get(MaterialsOption, int(opt_id))
+        if not opt or opt.order_type == 'Client-run Bulk order':
+            flash('Material item not found', 'error')
+            return redirect(url_for('workshop_types.edit_type', type_id=wt.id) + '#defaults')
+        rule = WorkshopTypeMaterialDefault(
+            workshop_type_id=wt.id,
+            delivery_type=delivery_type,
+            region_code=region_code,
+            language=language,
+            catalog_ref=catalog_ref,
+            default_format=default_format,
+            active=active,
+        )
+        db.session.add(rule)
+        db.session.flush()
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action='wt_material_default_create',
+                details=f'id={rule.id} wt={wt.id}',
+            )
+        )
     db.session.add(
         AuditLog(
             user_id=current_user.id,
@@ -178,112 +281,9 @@ def update_type(type_id: int, current_user):
 @bp.route('/<int:type_id>/defaults', methods=['GET', 'POST'])
 @staff_required
 def default_materials(type_id: int, current_user):
-    wt = db.session.get(WorkshopType, type_id)
-    if not wt:
-        abort(404)
-    items = (
-        MaterialsOption.query.filter_by(is_active=True)
-        .order_by(MaterialsOption.title)
-        .all()
-    )
-    defaults = (
-        WorkshopTypeMaterialDefault.query.filter_by(workshop_type_id=wt.id)
-        .order_by(WorkshopTypeMaterialDefault.id)
-        .all()
-    )
-    language_options = get_language_options()
-    if request.method == 'POST':
-        if request.form.get('csrf_token') != flask_session.get('_csrf_token'):
-            abort(400)
-        changed = False
-        for d in list(defaults):
-            if request.form.get(f'remove_{d.id}'):
-                db.session.delete(d)
-                db.session.add(
-                    AuditLog(
-                        user_id=current_user.id,
-                        action='wt_material_default_delete',
-                        details=f'id={d.id} wt={wt.id}',
-                    )
-                )
-                changed = True
-                continue
-            delivery_type = request.form.get(f'delivery_type_{d.id}') or ''
-            region_code = request.form.get(f'region_code_{d.id}') or ''
-            language = request.form.get(f'language_{d.id}') or ''
-            catalog_ref = (request.form.get(f'catalog_ref_{d.id}') or '').strip()
-            default_format = request.form.get(f'default_format_{d.id}') or ''
-            active = bool(request.form.get(f'active_{d.id}'))
-            if not all([delivery_type, region_code, language, catalog_ref, default_format]):
-                flash('All fields required', 'error')
-                return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-            if not catalog_ref.startswith('materials_options:'):
-                flash('Invalid material item', 'error')
-                return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-            d.delivery_type = delivery_type
-            d.region_code = region_code
-            d.language = language
-            d.catalog_ref = catalog_ref
-            d.default_format = default_format
-            d.active = active
-            db.session.add(
-                AuditLog(
-                    user_id=current_user.id,
-                    action='wt_material_default_update',
-                    details=f'id={d.id} wt={wt.id}',
-                )
-            )
-            changed = True
-        delivery_type = request.form.get('delivery_type_new') or ''
-        region_code = request.form.get('region_code_new') or ''
-        language = request.form.get('language_new') or ''
-        catalog_ref = (request.form.get('catalog_ref_new') or '').strip()
-        default_format = request.form.get('default_format_new') or ''
-        active = bool(request.form.get('active_new'))
-        if any([delivery_type, region_code, language, catalog_ref, default_format]):
-            if not all([delivery_type, region_code, language, catalog_ref, default_format]):
-                flash('All fields required', 'error')
-                return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-            if not catalog_ref.startswith('materials_options:'):
-                flash('Invalid material item', 'error')
-                return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-            opt_id = catalog_ref.split(':', 1)[1]
-            opt = db.session.get(MaterialsOption, int(opt_id))
-            if not opt:
-                flash('Material item not found', 'error')
-                return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-            rule = WorkshopTypeMaterialDefault(
-                workshop_type_id=wt.id,
-                delivery_type=delivery_type,
-                region_code=region_code,
-                language=language,
-                catalog_ref=catalog_ref,
-                default_format=default_format,
-                active=active,
-            )
-            db.session.add(rule)
-            db.session.flush()
-            db.session.add(
-                AuditLog(
-                    user_id=current_user.id,
-                    action='wt_material_default_create',
-                    details=f'id={rule.id} wt={wt.id}',
-                )
-            )
-            changed = True
-        if changed:
-            db.session.commit()
-            flash('Defaults updated', 'success')
-        return redirect(url_for('workshop_types.default_materials', type_id=wt.id))
-    return render_template(
-        'workshop_types/default_materials.html',
-        wt=wt,
-        items=items,
-        defaults=defaults,
-        regions=get_region_options(),
-        delivery_choices=DELIVERY_CHOICES,
-        format_choices=FORMAT_CHOICES,
-        language_options=language_options,
+    return redirect(
+        url_for('workshop_types.edit_type', type_id=type_id) + '#defaults',
+        code=302,
     )
 
 

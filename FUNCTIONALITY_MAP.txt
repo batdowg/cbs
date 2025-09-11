@@ -34,7 +34,7 @@ Routes and Code Pages
 - **Settings → Languages** – Manage language list. File: `app/routes/settings_languages.py`. Requires `admin_required`【F:app/routes/settings_languages.py†L10-L20】
 
 - **Settings → Materials Options** – Configure materials choices. File: `app/routes/settings_materials.py`. Requires `admin_required`【F:app/routes/settings_materials.py†L27-L65】
-- **Workshop Types → Default Materials** – Map Delivery Type × Region × Language to a catalog item and format. File: `app/routes/workshop_types.py::default_materials`. Requires `staff_required` (Sys Admin/Admin)【F:app/routes/workshop_types.py†L178-L287】
+- **Workshop Types – Edit (Default Materials)** – Map Delivery Type × Region × Language to a catalog item and format on the edit page (`#defaults`). Picker filters by language and excludes Bulk Order catalog. File: `app/routes/workshop_types.py` (edit_type, update_type, redirect)【F:app/routes/workshop_types.py†L117-L287】
 - *(Removed)* Settings → Material Defaults page; defaults now managed per Workshop Type.
 
 - **Settings → Certificate Templates** – Configure certificate series, template PDFs, badge filenames, and bulk upload template PDFs or badge WEBPs. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】

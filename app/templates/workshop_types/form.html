@@ -1,17 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}{% endblock %}
 {% block content %}
-<h1>
-  {{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}
-  {% if wt and current_user %}
-    {% if current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor %}
-      <a href="{{ url_for('workshop_types.prework', type_id=wt.id) }}">Prework</a>
-    {% endif %}
-    {% if current_user.is_app_admin or current_user.is_admin %}
-      <a href="{{ url_for('workshop_types.default_materials', type_id=wt.id) }}">Default Materials</a>
-    {% endif %}
-  {% endif %}
-</h1>
+<h1>{{ 'New Workshop Type' if not wt else 'Edit Workshop Type' }}</h1>
+{% if wt and current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+<p><a href="{{ url_for('workshop_types.prework', type_id=wt.id) }}">Prework</a></p>
+{% endif %}
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% if not wt %}
@@ -45,6 +38,96 @@
     </select>
   </label></div>
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
+  {% if wt %}
+  <h2 id="defaults">Default Materials</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Remove</th></tr>
+    {% for d in defaults %}
+    <tr>
+      <td>
+        <select name="delivery_type_{{ d.id }}">
+          {% for opt in delivery_choices %}
+          <option value="{{ opt }}" {% if d.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="region_code_{{ d.id }}">
+          {% for code,label in regions %}
+          <option value="{{ code }}" {% if d.region_code==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="language_{{ d.id }}" class="lang-select" data-row="{{ d.id }}">
+          {% for code,label in language_options %}
+          <option value="{{ code }}" {% if d.language==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <input name="catalog_ref_{{ d.id }}" class="material-item" data-row="{{ d.id }}" data-selected="{{ d.catalog_ref }}" list="materials-{{ d.id }}" placeholder="Search...">
+        <datalist id="materials-{{ d.id }}"></datalist>
+        <label><input type="checkbox" class="show-all" data-row="{{ d.id }}"> Show all</label>
+      </td>
+      <td>
+        <select name="default_format_{{ d.id }}">
+          {% for opt in format_choices %}
+          <option value="{{ opt }}" {% if d.default_format==opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="checkbox" name="active_{{ d.id }}" {% if d.active %}checked{% endif %}></td>
+      <td><input type="checkbox" name="remove_{{ d.id }}"></td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td>
+        <select name="delivery_type_new">
+          <option value=""></option>
+          {% for opt in delivery_choices %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="region_code_new">
+          <option value=""></option>
+          {% for code,label in regions %}
+          <option value="{{ code }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="language_new" class="lang-select" data-row="new">
+          <option value=""></option>
+          {% for code,label in language_options %}
+          <option value="{{ code }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <input name="catalog_ref_new" class="material-item" data-row="new" list="materials-new" placeholder="Search...">
+        <datalist id="materials-new"></datalist>
+        <label><input type="checkbox" class="show-all" data-row="new"> Show all</label>
+      </td>
+      <td>
+        <select name="default_format_new">
+          <option value=""></option>
+          {% for opt in format_choices %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="checkbox" name="active_new" checked></td>
+      <td></td>
+    </tr>
+  </table>
+  {% endif %}
   <button type="submit">Save</button>
 </form>
+{% if wt %}
+<script id="material-data" type="application/json">{{ items_data|tojson }}</script>
+<script src="{{ url_for('static', filename='js/material_picker.js') }}"></script>
+{% endif %}
 {% endblock %}

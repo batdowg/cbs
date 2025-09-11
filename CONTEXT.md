@@ -268,6 +268,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 - `workshop_type_material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item, `default_format` (Digital/Physical/Self-paced), and `active`.
 - `material_order_items` snapshot per-session ordered items with title, description, SKU, language, format, quantity, and processed state.
+- Managed inline on the **Workshop Type edit page** under a “Default Materials” section (`/workshop-types/<id>/edit#defaults`). Legacy `/workshop-types/<id>/defaults` redirects here.
+- Material item picker labels each choice as `<CatalogName> • <ItemTitle>` with optional language tags `• [en, es]`; typing searches those labels.
+- Picker filters items by the row’s Language and excludes the “Client-run Bulk order” catalog. A per-row **Show all** checkbox bypasses the language filter (still excluding Bulk).
+- The edit page header links to **Prework** as a separate action; the H1 remains “Edit Workshop Type.”
 
 ## 3.6 Clients (if present)
 - `clients`, `client_locations` and linkage tables as per migrations.

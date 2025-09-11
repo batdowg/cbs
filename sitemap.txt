@@ -22,7 +22,7 @@
     /settings/cert-templates/<series_id>/upload-pdfs – Upload certificate template PDFs
     /settings/cert-templates/<series_id>/upload-badges – Upload badge WEBPs
   /settings/workshop-types – CRUD workshop types
-  /workshop-types/<id>/defaults – Default Materials for a workshop type
+  /workshop-types/<id>/defaults – legacy; redirects to /workshop-types/<id>/edit#defaults
   /settings/clients      – Clients list
   /settings/clients/<id>/edit
       – Manage client, CRM, region
