@@ -31,7 +31,7 @@ Every functional change must update this file **in the same PR**.
 - Certificates: `<certs_root>/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (`<certs_root>` = `SITE_ROOT/certificates`, default `/srv/certificates`); `pdf_path` in DB is stored relative to `<certs_root>`.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
-- “KT Staff” is a **derived condition** (see §1.3), **not** a stored role.
+ - “KT Staff” is a **derived condition** (see §1.4), **not** a stored role.
 - Experimental features must register in `shared.flags` and be disabled by default.
 
 ## 0.4 App Conventions & PR Hygiene
@@ -127,53 +127,75 @@ Every functional change must update this file **in the same PR**.
 
 # 1. Roles & Menus
 
+Roles control permissions; Views control menu visibility.
+
 ## 1.1 Roles (applies to **User** accounts only)
 - **Sys Admin** — platform-wide admin incl. settings and user management.
 - **Admin** — staff-level admin incl. user management.
 - **CRM (Client Relationship Manager)** — owns session setup, client comms; can create/edit sessions, assign facilitators, manage participants, send prework/invites, finalize.
 - **Delivery (Facilitator)** — sees and works own assigned sessions; delivery-centric UX.
-- **Contractor** — limited internal user; access restricted to assigned sessions; no settings; see §1.4 for exact capabilities.
+- **Contractor** — limited internal user; access restricted to assigned sessions; no settings; see §1.5 for exact capabilities.
 
 > **CSA** and **Participant/Learner** are **not user roles**; they are **participant accounts** (see §2).
 
-## 1.2 Menus by Audience (explicit; no bundling)
+## 1.2 Views & Menus
 
-- **Sys Admin** (default view: Admin)
-  `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • Settings ▾ • My Profile • Logout`
-  **Settings ▾**: `Clients • Workshop Types • Material settings • Simulation Outlines • Resources • Languages • Certificate Templates • Users • Mail Settings`
+- **Admin**
+  - Home
+  - New Order
+  - Workshop Dashboard
+  - Material Dashboard
+  - Surveys
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Settings ▾: Clients, Workshop Types, Material Settings, Simulation Outlines, Resources, Languages, Certificate Templates, Users, Mail Settings
+  - Logout
+- **Session Manager**
+  - Home
+  - New Order
+  - Workshop Dashboard
+  - Material Dashboard
+  - Surveys
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Settings ▾: Clients, Workshop Types, Resources, Certificate Templates
+  - Logout
+- **Session Admin**
+  - Home
+  - My Sessions
+  - Workshop Dashboard
+  - Material Dashboard
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Logout
+- **Material Manager**
+  - Home
+  - New Order
+  - Material Dashboard
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Settings ▾: Clients, Workshop Types, Material Settings, Simulation Outlines, Resources
+  - Logout
+- **Delivery**
+  - Home
+  - My Sessions
+  - Workshop Dashboard
+  - Surveys
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Settings ▾: Resources
+  - Logout
+- **Learner**
+  - Home
+  - My Workshops
+  - My Resources
+  - My Certificates
+  - My Profile
+  - Logout
 
-- **Admin** (default view: Admin)  
-  Same as Sys Admin. (System-wide toggles reserved for Sys Admin if any.)
+## 1.3 View Selector
+Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not.
 
-- **CRM** (default view: Session Manager)  
-  `Home • My Sessions • Training Sessions • Material Only Order • Material Dashboard • Surveys • My Resources • My Profile • Logout`
-  **Default filters**: “My Sessions” = sessions I own / I’m assigned CRM on the client (if model supports client CRM; else owner fallback).
-
-- **Delivery / Facilitator** (default view: Delivery)  
-  `Home • My Sessions • My Resources • My Profile • Logout`  
-  (No Materials or Surveys in menu.)
-
-- **Contractor** (default view: Admin-lite)
-  `Home • My Sessions • Training Sessions (read-only; assigned only) • My Resources • My Profile • Logout`
-  - No Materials/Surveys/Settings in menu.
-  - Can add/remove participants similar to CSA **including during session**; other session fields are read-only.
-
-- **CSA (Session Admin)** — **participant account**, not a user  
-  `Home • My Sessions • My Workshops • My Resources • My Profile • Logout`
-
-- **Participant / Learner**
-  `Home • My Workshops • My Resources • My Profile • Logout`
-  - **My Certificates**: no persistent menu item; a link/section appears only if they have ≥1 certificate.
-
-- Staff "My Profile → My Certificates" appears only when the staff user has certificates issued as a participant.
-
-> Staff view switcher exists for **User** accounts (Sys Admin/Admin/CRM/Delivery/Contractor). **Participants/CSAs** do not see a switcher.
-
-## 1.3 “KT Staff” definition (derived, not stored)
+## 1.4 “KT Staff” definition (derived, not stored)
 - KT Staff = any **User** account that is **not** Contractor and **not** a participant/CSA.  
 - Do **not** persist `is_kt_staff`; if present in schema, stop using it and compute at runtime.
 
-## 1.4 High-level permissions (delta highlights)
+## 1.5 High-level permissions (delta highlights)
 - **CRM**: full session lifecycle; Materials access; default owner/CRM filters.
 - **Delivery**: operates own sessions; no Materials/Surveys menu.
 - **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA even after start; cannot change prework settings; other session fields read-only; access limited to assigned sessions.
@@ -439,8 +461,8 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 
 # 13. QA Checklists
 
-- **Menus** match §1.2 per role; staff switcher excludes CSA/Learner; participants/CSAs have no switcher.
-- **Learner gating** per §4.1; CSA window per §4.2; Contractor behavior per §1.2/§1.4.
+- **Menus** match §1.2 per view; View selector visible only to SysAdmin/Administrator/CRM/KT Facilitator; CSA/Participant/Contractor have no switcher.
+- **Learner gating** per §4.1; CSA window per §4.2; Contractor behavior per §1.2/§1.5.
 - **Resources** list only workshop types whose sessions have **started** for that participant.
 - **Materials** UI rules per §7; dashboard sort & columns match §9.
 - **Emails** include URL/username/password; no magic links.
@@ -453,7 +475,7 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Magic-link infra disabled and endpoints should return 410/redirect.  
 - “KT Staff” is a derived condition; any stored boolean is deprecated and must not drive logic.  
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
-- Contractor menu/capabilities updated per §1.2/§1.4.
+- Contractor menu/capabilities updated per §1.2/§1.5.
 - Materials dashboard documented to current behavior.
 - Session detail pages render a minimal order view for materials-only sessions and guard full details with `{% if not session.materials_only %}`; workshop-type and facilitator sections now use `{% if %}` guards to avoid null dereferences.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.

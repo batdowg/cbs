@@ -39,6 +39,7 @@ from .shared.constants import LANGUAGE_NAMES
 from .shared.time import fmt_dt, fmt_time, fmt_time_range_with_tz
 from .shared.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .shared.nav import build_menu
+from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor
 from .shared.languages import code_to_label
 
 
@@ -165,8 +166,12 @@ def create_app():
                 is not None
             )
         active_view = get_active_view(user, request, is_csa)
-        nav_menu = build_menu(user, active_view, show_resources_nav, is_csa)
-        view_opts = STAFF_VIEWS if user else []
+        nav_menu = build_menu(active_view)
+        view_opts = []
+        if user and not is_contractor(user) and (
+            is_admin(user) or is_kcrm(user) or is_delivery(user)
+        ):
+            view_opts = STAFF_VIEWS
         return {
             "current_user": user,
             "current_account": account,
@@ -190,7 +195,7 @@ def create_app():
         if user_id:
             user = db.session.get(User, user_id)
             active_view = get_active_view(user, request)
-            if active_view == "MATERIALS":
+            if active_view == "MATERIAL_MANAGER":
                 return redirect(url_for("materials_orders.list_orders"))
             query = db.session.query(Session)
             query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))

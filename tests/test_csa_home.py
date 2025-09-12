@@ -50,7 +50,6 @@ def test_csa_my_sessions_page(app):
     assert b"My Sessions" in resp.data
     assert f"/sessions/{sess_id}".encode() in resp.data
     assert b'href="/csa/my-sessions"' in resp.data
-    assert b'href="/my-workshops"' in resp.data
     assert b'action="/settings/view"' not in resp.data
 
 
