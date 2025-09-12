@@ -58,7 +58,9 @@ def settings(current_user):
         assignments.setdefault((row.region, row.processing_type), []).append(
             row.user
         )
-    users = User.query.order_by(User.full_name).all()
+    users = (
+        User.query.filter_by(is_admin=True).order_by(User.full_name).all()
+    )
     return render_template(
         "settings_mail.html",
         settings=settings,
@@ -85,19 +87,43 @@ def test_send(current_user):
 def save_processors(current_user):
     regions = [code for code, _ in get_region_options()]
     types = ["Digital", "Physical", "Simulation"]
+    rejected: list[str] = []
     for region in regions:
         for ptype in types:
             key = f"{region}-{ptype}"
             ids = sorted({int(x) for x in request.form.getlist(key) if x})
+            existing_ids = {
+                row.user_id
+                for row in ProcessorAssignment.query.filter_by(
+                    region=region, processing_type=ptype
+                )
+            }
             db.session.query(ProcessorAssignment).filter_by(
                 region=region, processing_type=ptype
             ).delete()
             for uid in ids:
-                db.session.add(
-                    ProcessorAssignment(
-                        region=region, processing_type=ptype, user_id=uid
+                if uid in existing_ids:
+                    db.session.add(
+                        ProcessorAssignment(
+                            region=region, processing_type=ptype, user_id=uid
+                        )
                     )
-                )
+                    continue
+                user = db.session.get(User, uid)
+                if user and user.is_admin:
+                    db.session.add(
+                        ProcessorAssignment(
+                            region=region, processing_type=ptype, user_id=uid
+                        )
+                    )
+                else:
+                    label = (user.full_name or user.email) if user else str(uid)
+                    rejected.append(label)
     db.session.commit()
+    if rejected:
+        flash(
+            "Skipped non-administrator users: " + ", ".join(rejected),
+            "error",
+        )
     flash("Processors updated", "success")
     return redirect(url_for("settings_mail.settings"))
