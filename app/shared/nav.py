@@ -43,18 +43,12 @@ def _has_certificates(user) -> bool:
 
 def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
+    items.append({"id": "home", "label": "Home", "endpoint": "home"})
     items.append(
         {
-            "id": "home",
-            "label": "Home",
-            "children": [
-                {"id": "home_home", "label": "Home", "endpoint": "home"},
-                {
-                    "id": "new_order",
-                    "label": "New Order",
-                    "href": "https://cbs.ktapps.net/sessions/new",
-                },
-            ],
+            "id": "new_order",
+            "label": "New Order",
+            "href": "https://cbs.ktapps.net/sessions/new",
         }
     )
     items.append(
@@ -216,18 +210,12 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
 
 def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
+    items.append({"id": "home", "label": "Home", "endpoint": "home"})
     items.append(
         {
-            "id": "home",
-            "label": "Home",
-            "children": [
-                {"id": "home_home", "label": "Home", "endpoint": "home"},
-                {
-                    "id": "new_order",
-                    "label": "New Order",
-                    "href": "https://cbs.ktapps.net/sessions/new",
-                },
-            ],
+            "id": "new_order",
+            "label": "New Order",
+            "href": "https://cbs.ktapps.net/sessions/new",
         }
     )
     if is_csa:
@@ -275,6 +263,7 @@ def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
 VIEW_FILTERS = {
     "ADMIN": {
         "home",
+        "new_order",
         "my_sessions",
         "sessions",
         "materials",
@@ -286,6 +275,7 @@ VIEW_FILTERS = {
     },
     "SESSION_MANAGER": {
         "home",
+        "new_order",
         "my_sessions",
         "sessions",
         "surveys",
@@ -295,6 +285,7 @@ VIEW_FILTERS = {
     },
     "MATERIALS": {
         "home",
+        "new_order",
         "my_sessions",
         "materials",
         "surveys",
@@ -303,9 +294,10 @@ VIEW_FILTERS = {
         "settings",
         "logout",
     },
-    "DELIVERY": {"home", "my_sessions", "surveys", "my_resources", "profile", "logout"},
+    "DELIVERY": {"home", "new_order", "my_sessions", "surveys", "my_resources", "profile", "logout"},
     "LEARNER": {
         "home",
+        "new_order",
         "my_workshops",
         "my_resources",
         "my_certs",
@@ -314,6 +306,7 @@ VIEW_FILTERS = {
     },
     "CSA": {
         "home",
+        "new_order",
         "my_sessions",
         "my_workshops",
         "my_resources",
