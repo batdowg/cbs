@@ -12,29 +12,39 @@
 {% endif %}
 
 <form method="get">
-  <input type="text" name="q" placeholder="Search" value="{{ params.get('q','') }}">
-  <label>Status
-    <select name="status">
-      <option value="" {% if not params.get('status') %}selected{% endif %}></option>
-      {% for opt in ['New','In Progress','Ready for Delivery','Delivered','Finalized','On Hold','Cancelled'] %}
-      <option value="{{ opt }}" {% if params.get('status')==opt %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-    &ensp;Region 
-    <select name="region">
-      <option value="" {% if not params.get('region') %}selected{% endif %}></option>
-      {% for opt in ['NA','EU','SEA','Other'] %}
-      <option value="{{ opt }}" {% if params.get('region')==opt %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-    &ensp;Delivery Type 
-    <select name="delivery_type">
-      <option value="" {% if not params.get('delivery_type') %}selected{% endif %}></option>
-      {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
-      <option value="{{ opt }}" {% if params.get('delivery_type')==opt %}selected{% endif %}>{{ opt }}</option>
-      {% endfor %}
-    </select>
-    &ensp;Start from <input type="date" name="start_from" value="{{ params.get('start_from','') }}"> to <input type="date" name="start_to" value="{{ params.get('start_to','') }}"></label>
+  <div class="field-row">
+    <input type="text" name="q" placeholder="Search" value="{{ params.get('q','') }}">
+    <label>Status
+      <select name="status">
+        <option value="" {% if not params.get('status') %}selected{% endif %}></option>
+        {% for opt in ['New','In Progress','Ready for Delivery','Delivered','Finalized','On Hold','Cancelled'] %}
+        <option value="{{ opt }}" {% if params.get('status')==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Region
+      <select name="region">
+        <option value="" {% if not params.get('region') %}selected{% endif %}></option>
+        {% for opt in ['NA','EU','SEA','Other'] %}
+        <option value="{{ opt }}" {% if params.get('region')==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Delivery Type
+      <select name="delivery_type">
+        <option value="" {% if not params.get('delivery_type') %}selected{% endif %}></option>
+        {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
+        <option value="{{ opt }}" {% if params.get('delivery_type')==opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Start from
+      <input type="date" name="start_from" value="{{ params.get('start_from','') }}">
+    </label>
+    <label>to
+      <input type="date" name="start_to" value="{{ params.get('start_to','') }}">
+    </label>
+  </div>
   <input type="hidden" name="sort" value="{{ sort }}">
   <input type="hidden" name="dir" value="{{ direction }}">
   <button type="submit">Filter</button>

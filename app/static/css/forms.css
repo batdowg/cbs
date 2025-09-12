@@ -1,10 +1,12 @@
 /* KT brand form controls */
 
 :root {
-  --field-height: 40px; /* Baseline for single-line controls */
+  --field-h: 40px; /* match current select height */
   --field-px: 12px;
   --field-py: 8px;
-  --field-radius: var(--radius-md);
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --radius-md: 12px; /* keep existing brand radius */
 }
 
 input[type="text"],
@@ -24,7 +26,7 @@ textarea,
   color: var(--kt-body);
   background-color: #fff;
   border: 1px solid var(--kt-border);
-  border-radius: var(--field-radius);
+  border-radius: var(--radius-md);
 }
 
 /* Single-line control sizing */
@@ -40,27 +42,34 @@ input[type="time"],
 input[type="datetime-local"],
 select,
 .form-control {
-  height: var(--field-height);
-  line-height: calc(var(--field-height) - 2px);
+  box-sizing: border-box;
+  height: var(--field-h);
+  line-height: calc(var(--field-h) - 2px);
   padding: var(--field-py) var(--field-px);
+  border-radius: var(--radius-md);
 }
 
 select {
-  padding-right: calc(var(--field-px) * 2 + 12px);
+  padding-right: calc(var(--field-px) * 2 + 1.5em);
   background-position: right var(--field-px) center;
+}
+
+select:focus {
+  outline-offset: 2px;
 }
 
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
-  padding-right: calc(var(--field-px) * 2 + 12px);
+  padding-right: calc(var(--field-px) * 2 + 1.5em);
   vertical-align: middle;
 }
 
 textarea {
-  min-height: calc(var(--field-height) * 2);
+  min-height: calc(var(--field-h) * 2);
   line-height: 1.4;
   padding: var(--field-py) var(--field-px);
+  border-radius: var(--radius-md);
 }
 
 input::placeholder,
@@ -90,9 +99,8 @@ label {
   display: block;
 }
 
-.form-group,
-.form-row {
-  margin-bottom: var(--space-4);
+.form-group {
+  margin-bottom: var(--gap-md);
 }
 
 .form-group > label {
@@ -162,6 +170,15 @@ input[type="checkbox"] + label {
 
 .field-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--gap-md);
+}
+
+.field-row .form-group {
+  margin: 0; /* spacing comes from gap */
+}
+
+.field-row.gap-sm {
+  gap: var(--gap-sm);
 }
