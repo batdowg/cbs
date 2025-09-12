@@ -6,7 +6,47 @@
   --field-py: 8px;
   --gap-sm: 8px;
   --gap-md: 12px;
+  --field-gap-x: 12px;
+  --field-gap-y: 12px;
   --radius-md: 12px; /* keep existing brand radius */
+}
+
+/* Horizontal spacing for adjacent single-line controls */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+input[type="number"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select,
+.form-control {
+  margin-right: var(--field-gap-x);
+  margin-bottom: var(--field-gap-y);
+  vertical-align: middle; /* keeps baselines aligned when inline */
+}
+
+/* Trim extra right margin when a control naturally fills the row */
+.form-control:last-child,
+select:last-child,
+input:last-child {
+  margin-right: 0;
+}
+
+/* Inline action/link spacing */
+select + a,
+input + a,
+.form-control + a {
+  margin-left: 8px;
+}
+
+/* Keep icons/text aligned with controls */
+select + a,
+input + a {
+  vertical-align: middle;
 }
 
 input[type="text"],
@@ -168,11 +208,12 @@ input[type="checkbox"] + label {
   vertical-align: middle;
 }
 
+.filters,
+.filter-row,
 .field-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--gap-md);
+  gap: var(--field-gap-y) var(--field-gap-x);
 }
 
 .field-row .form-group {
