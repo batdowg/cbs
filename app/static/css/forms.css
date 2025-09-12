@@ -1,38 +1,66 @@
 /* KT brand form controls */
 
+:root {
+  --field-height: 40px; /* Baseline for single-line controls */
+  --field-px: 12px;
+  --field-py: 8px;
+  --field-radius: var(--radius-md);
+}
+
 input[type="text"],
 input[type="email"],
-input[type="password"],
+input[type="url"],
+input[type="tel"],
 input[type="number"],
+input[type="search"],
+input[type="password"],
 input[type="date"],
 input[type="time"],
-input[type="url"],
-input[type="search"],
-input[type="file"],
+input[type="datetime-local"],
+select,
 textarea,
-select {
+.form-control {
   font: inherit;
   color: var(--kt-body);
   background-color: #fff;
   border: 1px solid var(--kt-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  line-height: 1.5;
-  min-height: calc(1.5em + 2 * var(--space-2));
+  border-radius: var(--field-radius);
 }
 
-/* Match text field heights to select elements */
+/* Single-line control sizing */
 input[type="text"],
 input[type="email"],
-input[type="password"],
+input[type="url"],
+input[type="tel"],
 input[type="number"],
+input[type="search"],
+input[type="password"],
 input[type="date"],
 input[type="time"],
-input[type="url"],
-input[type="search"],
-input[type="file"] {
-  line-height: 1;
-  min-height: calc(1em + 2 * var(--space-2));
+input[type="datetime-local"],
+select,
+.form-control {
+  height: var(--field-height);
+  line-height: calc(var(--field-height) - 2px);
+  padding: var(--field-py) var(--field-px);
+}
+
+select {
+  padding-right: calc(var(--field-px) * 2 + 12px);
+  background-position: right var(--field-px) center;
+}
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  padding-right: calc(var(--field-px) * 2 + 12px);
+  vertical-align: middle;
+}
+
+textarea {
+  min-height: calc(var(--field-height) * 2);
+  line-height: 1.4;
+  padding: var(--field-py) var(--field-px);
 }
 
 input::placeholder,
@@ -60,7 +88,6 @@ label {
   font-family: 'Raleway', sans-serif;
   color: var(--kt-text);
   display: block;
-  margin-bottom: var(--space-1);
 }
 
 .form-group,
@@ -68,18 +95,14 @@ label {
   margin-bottom: var(--space-4);
 }
 
-label + input,
-label + select,
-label + textarea,
-label + .form-control {
-  margin-bottom: var(--space-4);
+.form-group > label {
+  margin-bottom: 6px;
 }
 
-.help,
-.form-text {
+.form-help {
   color: var(--kt-muted);
-  font-size: 0.875rem;
-  margin-top: var(--space-1);
+  font-size: 0.9rem;
+  margin-top: 4px;
 }
 
 .error,
@@ -135,4 +158,10 @@ input[type="radio"] + label,
 input[type="checkbox"] + label {
   margin-left: var(--space-1);
   vertical-align: middle;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
