@@ -77,7 +77,7 @@
   </div>
   <div class="kt-card">
     <h2 class="kt-card-title">Order components</h2>
-    <h3>Workshop: {% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %} ({{ sess.delivery_type|default('', true) }})</h3>
+    <h3>{% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %} ({{ sess.delivery_type|default('', true) }})</h3>
     <div>Order type:
     {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
       {% set ot_val = form.get('order_type') if form else shipment.order_type %}
