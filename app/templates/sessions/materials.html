@@ -329,17 +329,36 @@
   <button type="submit" class="btn btn-primary">Apply Defaults</button>
 </form>
 {% endif %}
-<table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Title</th><th>Language</th><th>Format</th><th>Qty</th></tr>
+<table border="1" cellpadding="4" cellspacing="0" id="material-items-table">
+  <tr><th>Title</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
   {% for item in order_items %}
-  <tr>
+  <tr data-item-id="{{ item.id }}" data-update-url="{{ url_for('materials.update_order_item_quantity', session_id=sess.id, item_id=item.id) }}" data-delete-url="{{ url_for('materials.delete_order_item', session_id=sess.id, item_id=item.id) }}">
     <td>{{ item.title_snapshot }}</td>
     <td>{{ item.language }}</td>
     <td>{{ item.format }}</td>
+    {% if can_manage %}
+    <td><input type="number" min="0" value="{{ item.quantity }}" class="qty-input" style="width:4em"></td>
+    <td>
+      <button type="button" class="btn btn-sm save-qty">Save</button>
+      <button type="button" class="btn btn-sm btn-danger remove-item">Remove</button>
+    </td>
+    {% else %}
     <td>{{ item.quantity }}</td>
+    {% endif %}
   </tr>
   {% endfor %}
 </table>
+{% if can_manage %}
+<div id="material-item-add">
+  <h4>Add item</h4>
+  <input id="add-material-label" list="add-material-list" placeholder="Search..." style="min-width:20em">
+  <input type="hidden" id="add-material-id">
+  <datalist id="add-material-list"></datalist>
+  <label><input type="checkbox" id="add-show-all"> Show all</label>
+  <input type="number" id="add-material-qty" min="1" value="1" style="width:4em">
+  <button type="button" id="add-material-btn" class="btn btn-primary btn-sm">Add</button>
+</div>
+{% endif %}
 <h3>Shipment Items</h3>
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Material</th><th>Qty</th><th>Notes</th>{% if can_manage %}<th></th>{% endif %}</tr>
@@ -441,6 +460,68 @@
         });
     });
   }
+
+  var addShowAll = document.getElementById('add-show-all');
+  var addLabel = document.getElementById('add-material-label');
+  var addId = document.getElementById('add-material-id');
+  var addList = document.getElementById('add-material-list');
+  var addQty = document.getElementById('add-material-qty');
+  var addBtn = document.getElementById('add-material-btn');
+  function populateAddOptions(){
+    if(!addList) return;
+    var params = new URLSearchParams();
+    params.append('delivery_type', '{{ sess.delivery_type }}');
+    params.append('lang', '{{ sess.workshop_language }}');
+    if(addShowAll && addShowAll.checked) params.append('include_bulk','1');
+    fetch('/workshop-types/material-options?' + params.toString()).then(r=>r.json()).then(function(data){
+      addList.innerHTML = '';
+      (data.items||[]).forEach(function(it){
+        var opt = document.createElement('option');
+        opt.value = it.label;
+        opt.dataset.id = it.id;
+        addList.appendChild(opt);
+      });
+    });
+  }
+  if(addList){
+    populateAddOptions();
+    if(addShowAll){ addShowAll.addEventListener('change', populateAddOptions); }
+    addLabel.addEventListener('input', function(){
+      var match = Array.prototype.find.call(addList.options, function(o){ return o.value === addLabel.value; });
+      addId.value = match ? match.dataset.id : '';
+    });
+    if(addBtn){
+      addBtn.addEventListener('click', function(){
+        if(!addId.value || !addQty.value) return;
+        fetch('{{ url_for('materials.add_order_item', session_id=sess.id) }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            option_id: addId.value,
+            language: '{{ sess.workshop_language }}',
+            format: document.getElementById('materials-format') ? document.getElementById('materials-format').value : 'Digital',
+            quantity: addQty.value
+          })
+        }).then(function(r){ if(r.ok) window.location.reload(); });
+      });
+    }
+  }
+
+  document.querySelectorAll('#material-items-table .save-qty').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tr = btn.closest('tr');
+      var url = tr.dataset.updateUrl;
+      var qty = tr.querySelector('.qty-input').value;
+      fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({quantity: qty})}).then(function(r){ if(r.ok) window.location.reload(); });
+    });
+  });
+  document.querySelectorAll('#material-items-table .remove-item').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tr = btn.closest('tr');
+      var url = tr.dataset.deleteUrl;
+      fetch(url, {method:'POST'}).then(function(r){ if(r.ok) tr.remove(); });
+    });
+  });
 </script>
 {% endblock %}
 

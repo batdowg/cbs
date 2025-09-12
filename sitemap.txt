@@ -9,6 +9,10 @@
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
+/sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
+/sessions/<id>/materials/items – Add a material item
+/sessions/<id>/materials/items/<id>/qty – Update material item quantity
+/sessions/<id>/materials/items/<id>/delete – Remove material item
 /sessions/<id>/participants – Add/edit/CSV import participants
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them
 /my-certificates         – Learner portal: download own PDFs
@@ -23,6 +27,7 @@
     /settings/cert-templates/<series_id>/upload-badges – Upload badge WEBPs
   /settings/workshop-types – CRUD workshop types
   /workshop-types/<id>/defaults – legacy; redirects to /workshop-types/<id>/edit#defaults
+  /workshop-types/defaults/<id>/delete – delete a Workshop-Type default material row
   /settings/clients      – Clients list
   /settings/clients/<id>/edit
       – Manage client, CRM, region

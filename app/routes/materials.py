@@ -525,13 +525,16 @@ def apply_defaults(
             url_for("materials.materials_view", session_id=session_id) + "#material-items"
         )
 
+    shipment = SessionShipping.query.filter_by(session_id=sess.id).first()
     participant_count = (
         db.session.query(db.func.count(SessionParticipant.id))
         .filter_by(session_id=sess.id)
         .scalar()
     )
-    applied = 0
-    skipped = 0
+    sets = shipment.material_sets if shipment and shipment.material_sets else 0
+    qty_base = sets if sets > 0 else participant_count
+    created = 0
+    updated = 0
     for d in defaults:
         kind, _, ident = d.catalog_ref.partition(":")
         obj = None
@@ -569,7 +572,8 @@ def apply_defaults(
             format=fmt,
         ).first()
         if exists:
-            skipped += 1
+            exists.quantity = qty_base or 0
+            updated += 1
             continue
         item = MaterialOrderItem(
             session_id=sess.id,
@@ -579,15 +583,104 @@ def apply_defaults(
             sku_physical_snapshot=sku,
             language=d.language,
             format=fmt,
-            quantity=participant_count or 0,
+            quantity=qty_base or 0,
         )
         db.session.add(item)
-        applied += 1
+        created += 1
     db.session.commit()
-    flash(f"Applied {applied} defaults ({skipped} skipped).", "info")
+    flash(
+        f"Applied defaults: {created} added, {updated} updated.",
+        "success",
+    )
     return redirect(
         url_for("materials.materials_view", session_id=session_id) + "#material-items"
     )
+
+
+@bp.post("/items/<int:item_id>/qty")
+@materials_access
+def update_order_item_quantity(
+    session_id: int,
+    item_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_manage_shipment(current_user) or view_only:
+        abort(403)
+    item = MaterialOrderItem.query.filter_by(session_id=session_id, id=item_id).first()
+    if not item:
+        abort(404)
+    data = request.get_json(silent=True) or request.form
+    try:
+        qty = int(data.get("quantity"))
+    except (TypeError, ValueError):
+        return "Invalid quantity", 400
+    if qty < 0:
+        qty = 0
+    item.quantity = qty
+    db.session.commit()
+    return jsonify(status="ok", quantity=item.quantity)
+
+
+@bp.post("/items")
+@materials_access
+def add_order_item(
+    session_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_manage_shipment(current_user) or view_only:
+        abort(403)
+    data = request.get_json(silent=True) or request.form
+    option_id = data.get("option_id")
+    language = data.get("language") or ""
+    fmt = data.get("format") or ""
+    try:
+        qty = int(data.get("quantity"))
+    except (TypeError, ValueError):
+        qty = 0
+    if not option_id or qty <= 0 or not fmt:
+        return "Invalid data", 400
+    opt = db.session.get(MaterialsOption, int(option_id))
+    if not opt:
+        return "Invalid option", 400
+    item = MaterialOrderItem(
+        session_id=sess.id,
+        catalog_ref=f"materials_options:{opt.id}",
+        title_snapshot=opt.title,
+        description_snapshot=opt.description,
+        sku_physical_snapshot=opt.sku_physical,
+        language=language,
+        format=fmt,
+        quantity=qty,
+    )
+    db.session.add(item)
+    db.session.commit()
+    return jsonify(status="ok", id=item.id)
+
+
+@bp.post("/items/<int:item_id>/delete")
+@materials_access
+def delete_order_item(
+    session_id: int,
+    item_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_manage_shipment(current_user) or view_only:
+        abort(403)
+    item = MaterialOrderItem.query.filter_by(session_id=session_id, id=item_id).first()
+    if not item:
+        abort(404)
+    db.session.delete(item)
+    db.session.commit()
+    return jsonify(status="ok")
 
 
 @bp.post("/deliver")
