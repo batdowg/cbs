@@ -4,8 +4,9 @@ from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from ..app import db
-from ..models import Settings
+from ..models import Settings, ProcessorAssignment, User
 from ..shared.rbac import app_admin_required
+from ..shared.regions import get_region_options
 from ..emailer import send
 
 bp = Blueprint("settings_mail", __name__)
@@ -43,7 +44,28 @@ def settings(current_user):
         db.session.commit()
         flash("Saved")
         return redirect(url_for("settings_mail.settings"))
-    return render_template("settings_mail.html", settings=settings)
+    proc_region = request.args.get("proc_region") or "NA"
+    proc_type = request.args.get("proc_type") or "Digital"
+    proc_users = (
+        User.query.join(ProcessorAssignment)
+        .filter(
+            ProcessorAssignment.region == proc_region,
+            ProcessorAssignment.processing_type == proc_type,
+        )
+        .order_by(User.full_name)
+        .all()
+    )
+    users = User.query.order_by(User.full_name).all()
+    return render_template(
+        "settings_mail.html",
+        settings=settings,
+        regions=get_region_options(),
+        processing_types=["Digital", "Physical", "Simulation"],
+        proc_region=proc_region,
+        proc_type=proc_type,
+        proc_users=proc_users,
+        users=users,
+    )
 
 
 @bp.post("/mail-settings/test")
@@ -55,3 +77,23 @@ def test_send(current_user):
     else:
         flash(f"Error: {res.get('detail')}", "error")
     return redirect(url_for("settings_mail.settings"))
+
+
+@bp.post("/mail-settings/processors")
+@app_admin_required
+def save_processors(current_user):
+    region = request.form.get("region") or ""
+    ptype = request.form.get("processing_type") or ""
+    ids = [int(x) for x in request.form.getlist("user_ids") if x]
+    db.session.query(ProcessorAssignment).filter_by(
+        region=region, processing_type=ptype
+    ).delete()
+    for uid in ids:
+        db.session.add(
+            ProcessorAssignment(region=region, processing_type=ptype, user_id=uid)
+        )
+    db.session.commit()
+    flash("Processors updated", "success")
+    return redirect(
+        url_for("settings_mail.settings", proc_region=region, proc_type=ptype)
+    )

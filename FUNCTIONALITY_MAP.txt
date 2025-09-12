@@ -39,7 +39,7 @@ Routes and Code Pages
 
 - **Settings → Certificate Templates** – Configure certificate series, template PDFs, badge filenames, and bulk upload template PDFs or badge WEBPs. File: `app/routes/settings_cert_templates.py`. Requires `manage_users_required`【F:app/routes/settings_cert_templates.py†L14-L29】
 
-- **Settings → Mail Settings** – SMTP configuration and test send. File: `app/routes/settings_mail.py`. Requires `app_admin_required`【F:app/routes/settings_mail.py†L14-L50】
+- **Settings → Mail & Notification** – SMTP configuration, processors mapping, and test send. File: `app/routes/settings_mail.py`. Requires `app_admin_required`【F:app/routes/settings_mail.py†L14-L99】
 
 
 - **Settings → Resources** – Manage downloadable/linked resources. File: `app/routes/settings_resources.py`. `_current_user` allows App Admin/Admin/Delivery/Facilitator/Contractor view; editing limited to App Admin/Admin/Delivery【F:app/routes/settings_resources.py†L26-L44】【F:app/routes/settings_resources.py†L61-L79】

@@ -32,6 +32,7 @@ from .models import (
     SessionFacilitator,
     Certificate,
     PreworkAssignment,
+    ProcessorAssignment,
 )
 from .models import resource  # ensures app/models/resource.py is imported
 from .shared.rbac import app_admin_required

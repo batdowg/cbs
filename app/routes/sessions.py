@@ -678,6 +678,7 @@ def new_session(current_user):
             timezone=tz,
             capacity=16,
             client_id=selected_client_id,
+            region=current_user.region,
         ),
         workshop_types=workshop_types,
         facilitators=facilitators,
