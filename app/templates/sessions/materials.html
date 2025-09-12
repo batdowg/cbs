@@ -188,10 +188,9 @@
   <template id="item-row-template">
     <tr data-row="__index__">
       <td>
-        <input type="text" class="material-label" list="materials-__index__" placeholder="Search...">
-        <button type="button" class="clear-material">×</button>
-        <input type="hidden" name="items[__index__][option_id]" class="material-id">
-        <datalist id="materials-__index__" class="materials-list"></datalist>
+        <select name="items[__index__][option_id]" class="material-select">
+          <option value=""></option>
+        </select>
       </td>
       <td>
         <select name="items[__index__][language]" class="lang-select">
