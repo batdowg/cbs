@@ -26,7 +26,7 @@
         {% endfor %}
       </select>
     </label></div>
-    <div><label>Language*
+    <div><label>Workshop language*
       <select name="workshop_language" required>
         {% for code,label in workshop_languages %}
         <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>

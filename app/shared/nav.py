@@ -46,6 +46,13 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items.append({"id": "home", "label": "Home", "endpoint": "home"})
     items.append(
         {
+            "id": "new_order",
+            "label": "New Order",
+            "href": "https://cbs.ktapps.net/sessions/new",
+        }
+    )
+    items.append(
+        {
             "id": "my_sessions",
             "label": "My Sessions",
             "endpoint": "my_sessions.list_my_sessions",
@@ -204,6 +211,13 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
 def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
     items.append({"id": "home", "label": "Home", "endpoint": "home"})
+    items.append(
+        {
+            "id": "new_order",
+            "label": "New Order",
+            "href": "https://cbs.ktapps.net/sessions/new",
+        }
+    )
     if is_csa:
         items.append(
             {"id": "my_sessions", "label": "My Sessions", "endpoint": "csa.my_sessions"}
@@ -249,6 +263,7 @@ def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
 VIEW_FILTERS = {
     "ADMIN": {
         "home",
+        "new_order",
         "my_sessions",
         "sessions",
         "materials",
@@ -260,6 +275,7 @@ VIEW_FILTERS = {
     },
     "SESSION_MANAGER": {
         "home",
+        "new_order",
         "my_sessions",
         "sessions",
         "surveys",
@@ -269,6 +285,7 @@ VIEW_FILTERS = {
     },
     "MATERIALS": {
         "home",
+        "new_order",
         "my_sessions",
         "materials",
         "surveys",
@@ -277,9 +294,10 @@ VIEW_FILTERS = {
         "settings",
         "logout",
     },
-    "DELIVERY": {"home", "my_sessions", "surveys", "my_resources", "profile", "logout"},
+    "DELIVERY": {"home", "new_order", "my_sessions", "surveys", "my_resources", "profile", "logout"},
     "LEARNER": {
         "home",
+        "new_order",
         "my_workshops",
         "my_resources",
         "my_certs",
@@ -288,6 +306,7 @@ VIEW_FILTERS = {
     },
     "CSA": {
         "home",
+        "new_order",
         "my_sessions",
         "my_workshops",
         "my_resources",
@@ -303,8 +322,12 @@ def _mark_paths(items: List[MenuItem]) -> None:
     for item in items:
         endpoint = item.get("endpoint")
         args = item.get("args") or {}
+        href = item.get("href")
         if endpoint:
             href = url_for(endpoint, **args)
+            item["href"] = href
+            item["is_current"] = href == current_path
+        elif href:
             item["href"] = href
             item["is_current"] = href == current_path
         else:
