@@ -359,80 +359,8 @@
   <button type="button" id="add-material-btn" class="btn btn-primary btn-sm">Add</button>
 </div>
 {% endif %}
-<h3>Shipment Items</h3>
-<table border="1" cellpadding="4" cellspacing="0">
-  <tr><th>Material</th><th>Qty</th><th>Notes</th>{% if can_manage %}<th></th>{% endif %}</tr>
-  {% for item in shipment.items %}
-  <tr>
-    {% if can_manage %}
-    <form method="post">
-      <input type="hidden" name="action" value="update_item">
-      <input type="hidden" name="item_id" value="{{ item.id }}">
-      <td>
-        <select name="material_id">
-          <option value="">— select —</option>
-          {% for m in materials %}
-            <option value="{{ m.id }}" {% if item.material_id==m.id %}selected{% endif %}>{{ m.name }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td><input type="number" name="quantity" min="1" value="{{ item.quantity }}"></td>
-      <td><input type="text" name="notes" value="{{ item.notes or '' }}"></td>
-      <td>
-        <button type="submit">Update</button>
-    </form>
-    <form method="post" style="display:inline">
-      <input type="hidden" name="action" value="delete_item">
-      <input type="hidden" name="item_id" value="{{ item.id }}">
-      <button type="submit">Delete</button>
-    </form>
-      </td>
-    {% else %}
-      <td>{{ item.material.name if item.material else '' }}</td>
-      <td>{{ item.quantity }}</td>
-      <td>{{ item.notes or '' }}</td>
-      {% if can_manage %}<td></td>{% endif %}
-    {% endif %}
-  </tr>
-  {% endfor %}
-</table>
-{% if can_manage %}
-<h4>Add item</h4>
-<form method="post">
-  <input type="hidden" name="action" value="add_item">
-  <select name="material_id">
-    <option value="">— select —</option>
-    {% for m in materials %}
-      <option value="{{ m.id }}">{{ m.name }}</option>
-    {% endfor %}
-  </select>
-  <input type="number" name="quantity" min="1">
-  <input type="text" name="notes">
-  <button type="submit">Add</button>
-</form>
-<form method="post">
-  <input type="hidden" name="action" value="mark_shipped">
-  <button type="submit">Mark Shipped</button>
-</form>
-{% endif %}
-{% if can_mark_delivered and shipment.status != 'Delivered' %}
-<form method="post" action="{{ url_for('materials.deliver', session_id=sess.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <button type="submit">Mark as delivered</button>
-</form>
-{% endif %}
-{% if can_mark_delivered and shipment.status in ['Delivered','In progress'] %}
-<form method="post" action="{{ url_for('materials.undeliver', session_id=sess.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <button type="submit">Not delivered / Delivery problem</button>
-</form>
-{% endif %}
-{% if can_manage and not shipment.delivered_at %}
-<form method="post" onsubmit="return confirm('Delete shipment?');">
-  <input type="hidden" name="action" value="delete">
-  <button type="submit">Delete Shipment</button>
-</form>
-{% endif %}
+
+
 <script>
   var orderType = document.querySelector('select[name="order_type"]');
   var materialsDiv = document.getElementById('materials-type');
