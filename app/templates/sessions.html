@@ -18,21 +18,21 @@
       <option value="{{ opt }}" {% if params.get('status')==opt %}selected{% endif %}>{{ opt }}</option>
       {% endfor %}
     </select>
-     Region 
+     &nbsp;Region 
     <select name="region">
       <option value="" {% if not params.get('region') %}selected{% endif %}></option>
       {% for opt in ['NA','EU','SEA','Other'] %}
       <option value="{{ opt }}" {% if params.get('region')==opt %}selected{% endif %}>{{ opt }}</option>
       {% endfor %}
     </select>
-     Delivery Type 
+     &nbsp;Delivery Type 
     <select name="delivery_type">
       <option value="" {% if not params.get('delivery_type') %}selected{% endif %}></option>
       {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
       <option value="{{ opt }}" {% if params.get('delivery_type')==opt %}selected{% endif %}>{{ opt }}</option>
       {% endfor %}
     </select>
-     Start from <input type="date" name="start_from" value="{{ params.get('start_from','') }}"> to <input type="date" name="start_to" value="{{ params.get('start_to','') }}"></label>
+     &nbsp;Start from <input type="date" name="start_from" value="{{ params.get('start_from','') }}"> to <input type="date" name="start_to" value="{{ params.get('start_to','') }}"></label>
   <input type="hidden" name="sort" value="{{ sort }}">
   <input type="hidden" name="dir" value="{{ direction }}">
   <button type="submit">Filter</button>
