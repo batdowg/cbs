@@ -54,9 +54,10 @@
 {% if session.delivered and not session.finalized and not session.cancelled %}
 <form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>
 {% endif %}
- {% if current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor %}| <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>{% endif %}
+{% if not session.materials_only and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}| <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>{% endif %}
  | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </p>
+{% if not session.materials_only %}
 <div>
   <h2>Client Session Administrator</h2>
   {% if session.csa_account %}
@@ -70,7 +71,6 @@
     </form>
   {% endif %}
 </div>
-{% endif %}
 <div class="kt-card">
 <h2 class="kt-card-title">Participants</h2>
 {% if csa_view %}
@@ -197,4 +197,5 @@
   {% endif %}
 {% endif %}
 </div>
+{% endif %}
 {% endblock %}

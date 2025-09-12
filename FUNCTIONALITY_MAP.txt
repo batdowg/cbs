@@ -16,7 +16,7 @@ Routes and Code Pages
 
 - **Materials Dashboard** – List all session shipments. File: `app/routes/materials_orders.py`. Access requires shipment managers or view-only roles【F:app/routes/materials_orders.py†L15-L22】
 
-- **Materials-Only Sessions** – Create standalone material orders. File: `app/routes/materials_only.py`. Requires login and Admin/App Admin/KCRM role【F:app/routes/materials_only.py†L56-L63】
+- **Materials-Only Sessions** – Create standalone material orders via the session form. File: `app/routes/sessions.py` (action `materials_only`). Requires login and Admin/App Admin/KCRM role【F:app/routes/sessions.py†L320-L350】
 
 - **My Sessions** – Personalized session list for staff or participants. File: `app/routes/my_sessions.py`. Uses learner `login_required`【F:app/routes/my_sessions.py†L29-L31】
 

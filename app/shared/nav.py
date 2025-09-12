@@ -63,14 +63,6 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
                 "args": sess_args,
             }
         )
-    if is_admin(user) or is_kcrm(user):
-        items.append(
-            {
-                "id": "materials_only",
-                "label": "Material Only Order",
-                "endpoint": "materials_only.create",
-            }
-        )
     if is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user):
         items.append(
             {
@@ -259,7 +251,6 @@ VIEW_FILTERS = {
         "home",
         "my_sessions",
         "sessions",
-        "materials_only",
         "materials",
         "surveys",
         "my_resources",
@@ -271,7 +262,6 @@ VIEW_FILTERS = {
         "home",
         "my_sessions",
         "sessions",
-        "materials_only",
         "surveys",
         "my_resources",
         "profile",
@@ -280,7 +270,6 @@ VIEW_FILTERS = {
     "MATERIALS": {
         "home",
         "my_sessions",
-        "materials_only",
         "materials",
         "surveys",
         "my_resources",

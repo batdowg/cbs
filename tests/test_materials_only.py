@@ -1,12 +1,11 @@
 import os
-from datetime import date
 
 import pytest
 
 pytestmark = pytest.mark.smoke
 
 from app.app import create_app, db
-from app.models import User, WorkshopType, Session, SessionShipping, Client
+from app.models import User, WorkshopType, Session, Client
 
 
 @pytest.fixture
@@ -36,26 +35,24 @@ def setup_basic(app):
         return admin.id, wt.id, client.id
 
 
-def test_materials_only_creates_order_with_order_date(app):
+def test_materials_only_creates_session(app):
     admin_id, wt_id, client_id = setup_basic(app)
     client = app.test_client()
     login(client, admin_id)
-    today = date.today().isoformat()
     resp = client.post(
-        "/materials-only",
+        "/sessions/new",
         data={
             "title": "MO",
             "client_id": str(client_id),
             "region": "NA",
-            "language": "en",
-            "workshop_type_id": str(wt_id),
-            "order_date": today,
+            "workshop_language": "en",
+            "action": "materials_only",
         },
         follow_redirects=False,
     )
     assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/materials")
     with app.app_context():
         sess = Session.query.filter_by(title="MO").first()
         assert sess and sess.materials_only
-        ship = SessionShipping.query.filter_by(session_id=sess.id).first()
-        assert ship.order_date == date.fromisoformat(today)
+        assert sess.delivery_type == "Material Order"

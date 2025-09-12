@@ -4,7 +4,7 @@
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
 <form method="post">
   <fieldset>
-    <legend>Session Info</legend>
+    <legend>Order Information</legend>
     {% set _title = title_override if title_override is not none else session.title %}
     <div><label>Title* <input type="text" name="title" value="{{ _title or '' }}" required></label></div>
     <div><label>Client*
@@ -25,20 +25,20 @@
         <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
       </select>
-    </label>  
-
-    <div><label>Sponsor <input type="text" name="sponsor" value="{{ session.sponsor or '' }}"></label>  
-    <label>Client Session Administrator <input type="email" name="csa_email" value="{{ session.csa_account.email if session and session.csa_account else '' }}"></label></div>
-  </fieldset>
-  <fieldset>
-    <legend>Details</legend>
-    <div><label>Workshop language*
+    </label></div>
+    <div><label>Language*
       <select name="workshop_language" required>
         {% for code,label in workshop_languages %}
         <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label></div>
+    <div style="margin-top:8px;">
+      <button type="submit" name="action" value="materials_only">No workshop, material order only</button>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Workshop details</legend>
     <div><label>Workshop*
       <select name="workshop_type_id" required>
         <option value="">--Select--</option>

@@ -336,12 +336,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
 - Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle.
-- **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
-- Region and Language are selects with human labels; changing Language immediately filters Workshop Type options by supported languages. Workshop Type codes display without names on `/materials-only`, and the full Materials form renders on first load.
-- Client select supports inline **Add Client**; Shipping location offers **Add** and **Edit locations** dialogs without clearing other inputs.
-- Simulation Outline appears when Order Type = Simulation or the Workshop Type is simulation-based; hides otherwise but retains any value.
-- Order Date input above Latest arrival date defaults to today for new orders.
-- When `materials_only = true`, Training-session features (participants, prework, certificates) are hidden/denied.
+- **Materials-only orders** share the session form. `/sessions/new` shows an **Order Information** section (Title, Client with CRM, Region, Language) with a **No workshop, material order only** button that creates a hidden session (`materials_only = true`, `delivery_type = "Material Order"`) and redirects to that session's Materials Order page. Certificates and badges are unaffected and remain gated.
+- When `materials_only = true`, training-session features (participants, prework, certificates) are hidden/denied.
 - Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
 - Material Sets default equals the Session Capacity when set; otherwise 0.
