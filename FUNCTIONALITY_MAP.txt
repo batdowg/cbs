@@ -12,7 +12,7 @@ Routes and Code Pages
 
 - **CSA Portal** – CSA session dashboard. File: `app/routes/csa.py`. Access protected by learner `login_required`【F:app/routes/csa.py†L12-L14】
 
-- **Materials Management** – Session materials orders. File: `app/routes/materials.py`. `materials_access` grants manage rights to App Admin/Admin/CRM and view-only to Delivery/Contractor or session CSA【F:app/routes/materials.py†L53-L109】. Includes status actions `/materials/deliver` and `/materials/undeliver` for Admin/Sys Admin to update order status, an apply-defaults upsert for `material_order_items`, and JSON endpoints to add, update quantity, or delete individual items.
+- **Materials Management** – Session materials orders. File: `app/routes/materials.py`. `materials_access` grants manage rights to App Admin/Admin/CRM and view-only to Delivery/Contractor or session CSA【F:app/routes/materials.py†L53-L109】. Includes status actions `/materials/deliver` and `/materials/undeliver` for Admin/Sys Admin to update order status and an apply-defaults upsert for `material_order_items`. Material Items render as an inline table saved on the main form submission (create/update/delete).
 
 - **Materials Dashboard** – List all session shipments. File: `app/routes/materials_orders.py`. Access requires shipment managers or view-only roles【F:app/routes/materials_orders.py†L15-L22】
 
