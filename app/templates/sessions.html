@@ -55,7 +55,7 @@
     <th>{{ sort_link('Start Date','start_date') }}</th>
     <th>{{ sort_link('Status','status') }}</th>
     <th>{{ sort_link('Region','region') }}</th>
-    <th class="col-actions">Actions</th>
+    <th>Actions</th>
   </tr>
   {% for s in sessions %}
   <tr>
@@ -66,9 +66,9 @@
     <td>{{ s.start_date }}</td>
     <td>{{ s.computed_status }}</td>
     <td>{{ s.region }}</td>
-    <td class="col-actions">
+    <td>
       {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
-        <a class="btn btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
+        <a href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
       {% endif %}
     </td>
   </tr>

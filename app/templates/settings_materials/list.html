@@ -5,7 +5,7 @@
 <h1 class="kt-card-title">{{ label }} Materials</h1>
 <p><a href="{{ url_for('settings_materials.new_option', slug=slug) }}">New option</a></p>
 <table class="kt-table">
-  <tr><th>Title</th><th>Languages</th><th>Formats</th><th>Qty basis</th><th>Status</th><th class="col-actions">Actions</th></tr>
+  <tr><th>Title</th><th>Languages</th><th>Formats</th><th>Qty basis</th><th>Status</th><th></th></tr>
   {% for opt in options %}
   <tr>
     <td>{{ opt.title }}</td>
@@ -13,10 +13,10 @@
     <td>{{ opt.formats|join(', ') }}</td>
     <td>{{ opt.quantity_basis }}</td>
     <td>{{ 'Active' if opt.is_active else 'Inactive' }}</td>
-    <td class="col-actions">
-      <a class="btn btn-sm" href="{{ url_for('settings_materials.edit_option', slug=slug, opt_id=opt.id) }}">Edit</a>
+    <td>
+      <a href="{{ url_for('settings_materials.edit_option', slug=slug, opt_id=opt.id) }}">Edit</a>
       <form method="post" action="{{ url_for('settings_materials.toggle_option', slug=slug, opt_id=opt.id) }}" style="display:inline">
-        <button class="btn btn-sm" type="submit">{{ 'Deactivate' if opt.is_active else 'Activate' }}</button>
+        <button type="submit">{{ 'Deactivate' if opt.is_active else 'Activate' }}</button>
       </form>
     </td>
   </tr>

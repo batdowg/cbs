@@ -35,13 +35,3 @@
 .kt-table tbody tr:hover {
   background: color-mix(in srgb, var(--kt-info) 8%, var(--kt-bg));
 }
-
-.kt-table .col-actions {
-  width: 1%;
-  white-space: nowrap;
-  text-align: right;
-}
-
-.kt-table .col-actions .btn {
-  margin-left: .25rem;
-}

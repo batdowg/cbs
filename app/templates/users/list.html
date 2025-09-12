@@ -30,7 +30,7 @@
     <th>CRM</th>
     <th>KT Facilitator</th>
     <th>Contractor</th>
-    <th class="col-actions">Edit</th>
+    <th>Edit</th>
   </tr>
   {% for u in users %}
   <tr>
@@ -42,7 +42,7 @@
     <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>
     <td><input type="checkbox" name="is_kt_contractor_{{ u.id }}" {% if u.is_kt_contractor %}checked{% endif %}></td>
-    <td class="col-actions"><a class="btn btn-sm" href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
+    <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
   </tr>
   {% endfor %}
   </table>
