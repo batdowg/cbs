@@ -5,15 +5,15 @@
 <h1 class="kt-card-title">Simulation Outlines</h1>
 <p><a href="{{ url_for('settings_simulations.new_simulation') }}">New Simulation Outline</a></p>
 <table class="kt-table">
-  <tr><th>Number</th><th>Skill</th><th>Level</th><th>Descriptor</th><th class="col-actions">Actions</th></tr>
+  <tr><th>Number</th><th>Skill</th><th>Level</th><th>Descriptor</th><th></th></tr>
   {% for sim in simulations %}
   <tr>
     <td>{{ sim.number }}</td>
     <td>{{ sim.skill }}</td>
     <td>{{ sim.level }}</td>
     <td>{{ sim.descriptor }}</td>
-    <td class="col-actions"><a class="btn btn-sm" href="{{ url_for('settings_simulations.edit_simulation', sim_id=sim.id) }}">Edit</a>
-      <form action="{{ url_for('settings_simulations.delete_simulation', sim_id=sim.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete?');"><button class="btn btn-sm btn-danger" type="submit">Delete</button></form>
+    <td><a href="{{ url_for('settings_simulations.edit_simulation', sim_id=sim.id) }}">Edit</a>
+      <form action="{{ url_for('settings_simulations.delete_simulation', sim_id=sim.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete?');"><button type="submit">Delete</button></form>
     </td>
   </tr>
   {% endfor %}

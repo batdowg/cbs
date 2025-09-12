@@ -6,7 +6,7 @@
 <p><a href="{{ url_for('settings_resources.new_resource') }}">New Resource</a></p>
 <table class="kt-table">
   <tr>
-    <th>Name</th><th>Type</th><th>Target</th><th>Workshop Types</th><th>Active</th><th class="col-actions">Actions</th>
+    <th>Name</th><th>Type</th><th>Target</th><th>Workshop Types</th><th>Active</th><th>Actions</th>
   </tr>
   {% for r in resources %}
   <tr>
@@ -21,7 +21,7 @@
     </td>
     <td>{% for wt in r.workshop_types %}{{ wt.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
     <td>{{ 'Yes' if r.active else 'No' }}</td>
-    <td class="col-actions"><a class="btn btn-sm" href="{{ url_for('settings_resources.edit_resource', res_id=r.id) }}">Edit</a></td>
+    <td><a href="{{ url_for('settings_resources.edit_resource', res_id=r.id) }}">Edit</a></td>
   </tr>
   {% endfor %}
 </table>
