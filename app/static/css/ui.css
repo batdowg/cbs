@@ -15,6 +15,6 @@ a:visited {
 }
 
 a:focus-visible {
-  outline: 2px solid var(--kt-info);
+  outline: var(--focus-outline);
   outline-offset: 2px;
 }

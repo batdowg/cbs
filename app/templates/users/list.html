@@ -1,8 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Users{% endblock %}
 {% block content %}
+{% set breadcrumbs = [{'href': url_for('home'), 'label': 'Home'}, {'label': 'Users'}] %}
 <h1>Users</h1>
-<p><a href="{{ url_for('users.new_user') }}">New User</a> | <a href="#" id="role-matrix-link">Role Matrix</a></p>
+{% include 'shared/_breadcrumbs.html' %}
+<p><a class="btn btn-success" href="{{ url_for('users.new_user') }}">New User</a> | <a href="#" id="role-matrix-link">Role Matrix</a></p>
 
 <form method="get" action="{{ url_for('users.list_users') }}">
   <input type="text" name="q" value="{{ q }}" placeholder="Search" autocomplete="off">
@@ -17,7 +19,8 @@
 </form>
 
 <form method="post" action="{{ url_for('users.bulk_update') }}">
-<table>
+<div class="kt-table-wrapper">
+<table class="kt-table">
   <tr>
     <th>Email</th>
     <th>Full Name</th>
@@ -42,7 +45,8 @@
     <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
   </tr>
   {% endfor %}
-</table>
+  </table>
+</div>
 <p><button type="submit">Save changes</button></p>
 </form>
 {% include 'users/role_matrix.html' %}

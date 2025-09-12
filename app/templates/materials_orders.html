@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Materials Dashboard{% endblock %}
 {% block content %}
+{% set breadcrumbs = [{'href': url_for('home'), 'label': 'Home'}, {'label': 'Materials Dashboard'}] %}
 <h1>Materials Dashboard</h1>
+{% include 'shared/_breadcrumbs.html' %}
 <form method="get">
   <label>Client
     <select name="client_id">
@@ -41,7 +43,8 @@
 {% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
 {% if status %}{% set base = base + '&status=' + status %}{% endif %}
 {% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
-<table border="1" cellpadding="4" cellspacing="0">
+<div class="kt-table-wrapper">
+<table class="kt-table">
   <tr>
     <th><a href="?sort=title{{ base }}">Workshop title</a></th>
     <th><a href="?sort=client{{ base }}">Client</a></th>
@@ -58,9 +61,10 @@
     <td>{{ row.workshop_type }}</td>
     <td>{{ row.arrival_date }}</td>
     <td>{{ row.order_type }}</td>
-    <td>{{ row.materials_status }}</td>
-    <td>{{ row.session_status }}</td>
+    <td><span class="pill pill--{{ row.materials_status|lower|replace(' ', '') }}">{{ row.materials_status }}</span></td>
+    <td><span class="pill pill--{{ row.session_status|lower|replace(' ', '') }}">{{ row.session_status }}</span></td>
   </tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}

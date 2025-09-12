@@ -80,6 +80,10 @@ input[type="reset"]:disabled,
   background-color: rgba(0, 156, 222, 0.1);
 }
 
+.btn-secondary:active:not(:disabled) {
+  background-color: rgba(0, 156, 222, 0.2);
+}
+
 .btn-danger {
   background-color: var(--kt-accent-red);
   border-color: var(--kt-accent-red);
@@ -90,6 +94,11 @@ input[type="reset"]:disabled,
 .btn-danger:hover:not(:disabled) {
   background-color: #c22f26;
   border-color: #c22f26;
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: #a52820;
+  border-color: #a52820;
 }
 
 .btn-success {

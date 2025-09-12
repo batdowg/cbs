@@ -89,6 +89,13 @@ label + .form-control {
   margin-top: var(--space-1);
 }
 
+.success,
+.valid-feedback {
+  color: var(--kt-accent-green);
+  font-size: 0.875rem;
+  margin-top: var(--space-1);
+}
+
 input.error,
 input.invalid,
 input.is-invalid,
@@ -99,6 +106,15 @@ textarea.error,
 textarea.invalid,
 textarea.is-invalid {
   border-color: var(--kt-accent-red);
+}
+
+input.valid,
+input.is-valid,
+select.valid,
+select.is-valid,
+textarea.valid,
+textarea.is-valid {
+  border-color: var(--kt-accent-green);
 }
 
 input[type="radio"],
