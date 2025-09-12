@@ -456,3 +456,8 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
 - Workshop Type edit default-materials picker filters by `Language.name`, posts
   `material_option_id`, and hides "Bulk" options unless "Show all" is checked.
+- Session Materials page provides an **Apply Defaults** button that adds
+  `workshop_type_material_defaults` for the session's workshop type, delivery
+  type, region, and language as `material_order_items` with quantity from the
+  participant count. Existing rows with the same `catalog_ref`, `language`, and
+  format are skipped, and simulation outline defaults force Digital format.

@@ -323,7 +323,24 @@
     });
   }
   </script>
-<h3>Items</h3>
+<h3 id="material-items">Material Items</h3>
+{% if can_manage %}
+<form method="post" action="{{ url_for('materials.apply_defaults', session_id=sess.id) }}">
+  <button type="submit" class="btn btn-primary">Apply Defaults</button>
+</form>
+{% endif %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr><th>Title</th><th>Language</th><th>Format</th><th>Qty</th></tr>
+  {% for item in order_items %}
+  <tr>
+    <td>{{ item.title_snapshot }}</td>
+    <td>{{ item.language }}</td>
+    <td>{{ item.format }}</td>
+    <td>{{ item.quantity }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<h3>Shipment Items</h3>
 <table border="1" cellpadding="4" cellspacing="0">
   <tr><th>Material</th><th>Qty</th><th>Notes</th>{% if can_manage %}<th></th>{% endif %}</tr>
   {% for item in shipment.items %}
