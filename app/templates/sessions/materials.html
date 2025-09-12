@@ -211,7 +211,11 @@
     </tr>
   </template>
   {% endif %}
-  <div>Courier:
+  <div>Ship date:
+    {% if can_edit_materials_header('ship_date', current_user, shipment) and not readonly %}
+      <input type="date" name="ship_date" value="{{ form.get('ship_date') if form else (shipment.ship_date.isoformat() if shipment.ship_date else '') }}">
+    {% else %}{{ shipment.ship_date|default('', true) }}{% endif %}
+  Courier:
     {% if can_edit_materials_header('courier', current_user, shipment) and not readonly %}
       <input type="text" name="courier" value="{{ form.get('courier') if form else (shipment.courier or '') }}">
     {% else %}{{ shipment.courier|default('', true) }}{% endif %}
@@ -220,12 +224,6 @@
       <input type="text" name="tracking" value="{{ form.get('tracking') if form else (shipment.tracking or '') }}">
     {% else %}{{ shipment.tracking|default('', true) }}{% endif %}
   </div>
-  <div>Ship date:
-    {% if can_edit_materials_header('ship_date', current_user, shipment) and not readonly %}
-      <input type="date" name="ship_date" value="{{ form.get('ship_date') if form else (shipment.ship_date.isoformat() if shipment.ship_date else '') }}">
-    {% else %}{{ shipment.ship_date|default('', true) }}{% endif %}
-  </div>
-
   <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
 </form>
 {% if can_manage %}
