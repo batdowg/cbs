@@ -88,7 +88,7 @@ def save_processors(current_user):
     for region in regions:
         for ptype in types:
             key = f"{region}-{ptype}"
-            ids = [int(x) for x in request.form.getlist(key) if x]
+            ids = sorted({int(x) for x in request.form.getlist(key) if x})
             db.session.query(ProcessorAssignment).filter_by(
                 region=region, processing_type=ptype
             ).delete()
