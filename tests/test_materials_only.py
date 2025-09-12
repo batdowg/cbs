@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from datetime import date
 
 pytestmark = pytest.mark.smoke
 
@@ -56,3 +57,26 @@ def test_materials_only_creates_session(app):
         sess = Session.query.filter_by(title="MO").first()
         assert sess and sess.materials_only
         assert sess.delivery_type == "Material Order"
+
+
+def test_materials_only_session_detail_view(app):
+    admin_id, wt_id, client_id = setup_basic(app)
+    with app.app_context():
+        sess = Session(
+            title="MO",
+            workshop_type_id=wt_id,
+            client_id=client_id,
+            materials_only=True,
+            delivery_type="Material Order",
+            start_date=date.today(),
+            end_date=date.today(),
+        )
+        db.session.add(sess)
+        db.session.commit()
+        session_id = sess.id
+    client = app.test_client()
+    login(client, admin_id)
+    resp = client.get(f"/sessions/{session_id}")
+    assert resp.status_code == 200
+    assert b"Materials Order" in resp.data
+    assert b"Participants" not in resp.data

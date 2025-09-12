@@ -450,8 +450,9 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Magic-link infra disabled and endpoints should return 410/redirect.  
 - “KT Staff” is a derived condition; any stored boolean is deprecated and must not drive logic.  
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
-- Contractor menu/capabilities updated per §1.2/§1.4.  
+- Contractor menu/capabilities updated per §1.2/§1.4.
 - Materials dashboard documented to current behavior.
+- Session detail pages render a minimal order view for materials-only sessions and guard full details with `{% if not session.materials_only %}`.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
 - Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options` and used wherever the item is selected.
 - Workshop Type edit default-materials dropdown filters by `Language.name`, posts `material_option_id`, and hides "Bulk" options (no "Show all").
