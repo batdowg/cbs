@@ -135,12 +135,12 @@
   </div>
   </div>
 
-  <h3 id="material-items">Material Items</h3>
+  <h2 id="material-items">Material Items
   {% if can_manage %}
   {% set apply_disabled = shipment.order_type != 'KT-Run Standard materials' or (shipment.material_sets or 0) == 0 %}
   {% set tooltip = 'Select # of Material sets first.' if (shipment.material_sets or 0) == 0 else '' %}
   <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
-  {% endif %}
+  {% endif %}</h2>
   <table border="1" cellpadding="4" cellspacing="0" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}" data-default-formats='{{ default_formats | tojson }}'>
     <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
     {% for item in order_items %}
