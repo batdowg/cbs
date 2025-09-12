@@ -74,9 +74,9 @@
       <td>
         {% set sel = selected_opts.get(d.id) %}
         <input class="material-label" data-row="{{ d.id }}" value="{{ sel.label if sel }}" list="materials-{{ d.id }}" placeholder="Search...">
+        <button type="button" class="clear-material" data-row="{{ d.id }}">×</button>
         <input type="hidden" name="defaults[{{ d.id }}][material_option_id]" class="material-id" data-row="{{ d.id }}" value="{{ sel.id if sel }}">
         <datalist id="materials-{{ d.id }}"></datalist>
-        <label><input type="checkbox" class="show-all" data-row="{{ d.id }}"> Show all</label>
       </td>
       <td>
         <select name="defaults[{{ d.id }}][default_format]">
@@ -121,9 +121,9 @@
       </td>
       <td>
         <input class="material-label" data-row="__index__" list="materials-__index__" placeholder="Search...">
+        <button type="button" class="clear-material" data-row="__index__">×</button>
         <input type="hidden" name="defaults[__index__][material_option_id]" class="material-id" data-row="__index__">
         <datalist id="materials-__index__"></datalist>
-        <label><input type="checkbox" class="show-all" data-row="__index__"> Show all</label>
       </td>
       <td>
         <select name="defaults[__index__][default_format]">

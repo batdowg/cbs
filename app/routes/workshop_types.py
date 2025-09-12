@@ -25,7 +25,7 @@ from ..models import (
     Language,
 )
 from ..shared.html import sanitize_html
-from ..shared.languages import get_language_options, code_to_label
+from ..shared.languages import get_language_options, code_to_label, NAME_TO_CODE
 from ..shared.regions import get_region_options
 from flask import jsonify
 
@@ -106,11 +106,23 @@ def material_options(current_user):
         items = [it for it in items if it.id not in exclude_ids]
     results = []
     for item in items:
-        langs = sorted(l.name.lower() for l in item.languages)
+        langs = []
+        for l in item.languages:
+            code = NAME_TO_CODE.get(l.name)
+            if code:
+                langs.append(code)
+        langs = sorted(langs)
         label = f"{item.order_type} • {item.title}"
         if langs:
             label += f" • [{', '.join(langs)}]"
-        results.append({"id": item.id, "label": label})
+        results.append(
+            {
+                "id": item.id,
+                "label": label,
+                "langs": langs,
+                "formats": item.formats or [],
+            }
+        )
     return jsonify(items=results)
 
 

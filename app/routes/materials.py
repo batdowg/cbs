@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from functools import wraps
 
 from flask import (
@@ -358,6 +358,7 @@ def materials_view(
                 qty = int(data.get("quantity") or 0)
                 lang = data.get("language") or sess.workshop_language
                 fmt_val = data.get("format") or (shipment.materials_format or "Digital")
+                processed_flag = data.get("processed") == "1"
                 if fmt_val not in ROW_FORMAT_CHOICES:
                     fmt_val = ROW_FORMAT_CHOICES[0]
                 if item_id and item_id in existing:
@@ -368,6 +369,14 @@ def materials_view(
                         item.quantity = qty
                         item.language = lang
                         item.format = fmt_val
+                        if processed_flag and not item.processed:
+                            item.processed = True
+                            item.processed_at = datetime.now(timezone.utc)
+                            item.processed_by_id = current_user.id if current_user else None
+                        elif not processed_flag and item.processed:
+                            item.processed = False
+                            item.processed_at = None
+                            item.processed_by_id = None
                     continue
                 if delete_flag or not option_id:
                     continue
@@ -386,6 +395,14 @@ def materials_view(
                     dup.quantity = qty
                     dup.language = lang
                     dup.format = fmt_val
+                    if processed_flag and not dup.processed:
+                        dup.processed = True
+                        dup.processed_at = datetime.now(timezone.utc)
+                        dup.processed_by_id = current_user.id if current_user else None
+                    elif not processed_flag and dup.processed:
+                        dup.processed = False
+                        dup.processed_at = None
+                        dup.processed_by_id = None
                     continue
                 item = MaterialOrderItem(
                     session_id=sess.id,
@@ -396,7 +413,11 @@ def materials_view(
                     language=lang,
                     format=fmt_val,
                     quantity=qty,
+                    processed=processed_flag,
                 )
+                if processed_flag:
+                    item.processed_at = datetime.now(timezone.utc)
+                    item.processed_by_id = current_user.id if current_user else None
                 db.session.add(item)
 
             db.session.commit()
