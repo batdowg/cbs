@@ -65,7 +65,7 @@
     {% endif %}
     {% if sess.shipping_location %}
       {% if can_manage and not readonly %}<br>{% endif %}
-      {{ sess.shipping_location.contact_name|default('', true) }}<br>
+      Attn: {{ sess.shipping_location.contact_name|default('', true) }}<br>
       {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
       {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
       {{ sess.shipping_location.country|default('', true) }}
