@@ -58,7 +58,7 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
         items.append(
             {
                 "id": "sessions",
-                "label": "Training Sessions",
+                "label": "Workshop Dashboard",
                 "endpoint": "sessions.list_sessions",
                 "args": sess_args,
             }
