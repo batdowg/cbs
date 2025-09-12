@@ -344,7 +344,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
 - Material Sets default equals the Session Capacity when set; otherwise 0.
 - **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
-- Materials order header displays `Material Order <session_id> - <session_title>` with client name and delivery region, CRM, facilitators, and SFC project link. A **Shipping details** section lists contact, email, phone, and address (or “Digital only” when absent) and always includes a **Shipping location** dropdown with **Add/Edit locations**, even for materials-only sessions.
+
+- Materials order header displays `Material Order <session_id> - <session_title>` with client name and delivery region, CRM, facilitators, and SFC project link. A **Shipping details** section lists contact, email, phone, and address (or “Digital only” when absent) and always includes a **Shipping location** dropdown with **Add/Edit locations**, even for materials-only sessions. Selecting or adding a location immediately refreshes the displayed contact and address.
 - Materials orders have global statuses: **New, In progress, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
 - Session Materials page uses inline-editable Material Items with per-row Language and Format selects and quantity, saved with a single action; Order date derives from creation time and is read-only; Status is read-only and shown in the title; Courier, Tracking, and Ship date fields render below the items table.
 - Material Item rows restrict Language and Format choices to those supported by the selected Material Item. Format defaults from Workshop Type → Default Materials when available.
