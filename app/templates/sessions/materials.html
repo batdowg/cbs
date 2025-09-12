@@ -115,12 +115,6 @@
       {% else %}{{ fmt|default('', true) }}{% endif %}
     </label>
   </div>
-
-  <div>PO Number:
-    {% if can_edit_materials_header('materials_po_number', current_user, shipment) and not readonly %}
-      <input type="text" name="materials_po_number" value="{{ form.get('materials_po_number') if form else (shipment.materials_po_number or '') }}">
-    {% else %}{{ shipment.materials_po_number|default('', true) }}{% endif %}
-  </div>
   <div id="material-sets" {% if shipment.order_type=='Simulation' %}style="display:none"{% endif %}>
     <label>Material Sets
       <input type="number" name="material_sets" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">

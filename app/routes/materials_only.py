@@ -77,7 +77,6 @@ def create():
         ship_date = _parse_date(request.form.get("ship_date"))
         material_sets = request.form.get("material_sets", type=int)
         credits = request.form.get("credits", type=int)
-        po_number = request.form.get("materials_po_number") or None
         sim_outline_id = request.form.get("simulation_outline_id", type=int)
         if not title or not client_id or not workshop_type_id:
             flash("Title, Client, and Workshop Type required", "error")
@@ -105,7 +104,6 @@ def create():
                 material_sets=material_sets if material_sets is not None else 0,
                 materials_format=material_format
                 or ("SIM_ONLY" if order_type == "Simulation" else None),
-                materials_po_number=po_number,
                 order_date=order_date,
                 ship_date=ship_date,
                 arrival_date=arrival_date,
