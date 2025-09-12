@@ -4,7 +4,7 @@
 <h1>Workshop Types</h1>
 <p><a href="{{ url_for('workshop_types.new_type') }}">New Workshop Type</a></p>
 <table class="kt-table">
-  <tr><th>Code</th><th>Name</th><th>Status</th><th>Supported languages</th><th>Certificate series</th><th>Description</th><th></th></tr>
+  <tr><th>Code</th><th>Name</th><th>Status</th><th>Supported languages</th><th>Certificate series</th><th>Description</th><th class="col-actions">Actions</th></tr>
   {% for wt in types %}
   <tr>
     <td>{{ wt.code }}</td>
@@ -13,7 +13,7 @@
     <td>{% if wt.supported_languages %}{{ wt.supported_languages | map('lang_label') | join(', ') }}{% else %}—{% endif %}</td>
     <td>{{ wt.cert_series }}</td>
     <td>{{ wt.description }}</td>
-    <td><a href="{{ url_for('workshop_types.edit_type', type_id=wt.id) }}">Edit</a></td>
+    <td class="col-actions"><a class="btn btn-sm" href="{{ url_for('workshop_types.edit_type', type_id=wt.id) }}">Edit</a></td>
   </tr>
   {% endfor %}
 </table>
