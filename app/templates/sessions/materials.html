@@ -330,7 +330,7 @@
 </form>
 {% endif %}
 <table border="1" cellpadding="4" cellspacing="0" id="material-items-table">
-  <tr><th>Title</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
+  <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
   {% for item in order_items %}
   <tr data-item-id="{{ item.id }}" data-update-url="{{ url_for('materials.update_order_item_quantity', session_id=sess.id, item_id=item.id) }}" data-delete-url="{{ url_for('materials.delete_order_item', session_id=sess.id, item_id=item.id) }}">
     <td>{{ item.title_snapshot }}</td>
