@@ -42,10 +42,9 @@
           <td>
             <div class="proc-people" data-key="{{ code }}-{{ pt }}">
               {% for u in assignments.get((code, pt), []) %}
-              <div><input type="hidden" name="{{ code }}-{{ pt }}" value="{{ u.id }}">{{ u.full_name or u.email }} <button type="button" data-remove="{{ u.id }}">Remove</button></div>
+              <span class="chip"><input type="hidden" name="{{ code }}-{{ pt }}" value="{{ u.id }}"><span>{{ u.full_name or u.email }}</span><button type="button" class="chip-remove" aria-label="Remove">×</button></span>
               {% endfor %}
-              <input type="text" class="proc-user-input" list="proc-user-options">
-              <button type="button" class="add-proc-user">Add</button>
+              <button type="button" class="add-proc-user btn-secondary btn-sm">Add</button>
             </div>
           </td>
         </tr>
@@ -53,40 +52,69 @@
       {% endfor %}
     </tbody>
   </table>
-  <datalist id="proc-user-options">
-    {% for u in users %}
-    <option data-id="{{ u.id }}" value="{{ u.full_name or u.email }}"></option>
-    {% endfor %}
-  </datalist>
   <button type="submit">Save Processors</button>
 </form>
+<dialog id="user-picker">
+  <form method="dialog" class="user-picker-form">
+    <input type="text" id="user-picker-search" placeholder="Search users">
+    <div id="user-picker-options" class="user-picker-options">
+      {% for u in users %}
+      <label><input type="checkbox" value="{{ u.id }}" data-label="{{ u.full_name or u.email }}"> {{ u.full_name or u.email }}</label>
+      {% endfor %}
+    </div>
+    <menu>
+      <button value="cancel">Cancel</button>
+      <button id="user-picker-add" value="default">Add</button>
+    </menu>
+  </form>
+</dialog>
 </div>
 <script>
-document.querySelectorAll('.proc-people').forEach(container=>{
-  const input=container.querySelector('.proc-user-input');
-  const addBtn=container.querySelector('.add-proc-user');
-  const key=container.dataset.key;
-  addBtn.addEventListener('click',function(e){
-    e.preventDefault();
-    const val=input.value.trim();
-    if(!val){return;}
-    const list=document.getElementById('proc-user-options');
-    const opt=[...list.options].find(o=>o.value===val);
-    if(!opt){return;}
-    const id=opt.dataset.id;
-    if(container.querySelector('input[name="'+key+'"][value="'+id+'"])'){
-      input.value='';
-      return;
-    }
-    const div=document.createElement('div');
-    div.innerHTML='<input type="hidden" name="'+key+'" value="'+id+'">'+val+' <button type="button" data-remove="'+id+'">Remove</button>';
-    container.insertBefore(div, input);
-    input.value='';
+const picker=document.getElementById('user-picker');
+const search=document.getElementById('user-picker-search');
+const optionLabels=[...document.querySelectorAll('#user-picker-options label')];
+let currentContainer=null;
+function updateOptions(){
+  if(!currentContainer){return;}
+  const term=search.value.toLowerCase();
+  const key=currentContainer.dataset.key;
+  const selected=[...currentContainer.querySelectorAll('input[name="'+key+'"]')].map(i=>i.value);
+  optionLabels.forEach(label=>{
+    const cb=label.querySelector('input');
+    const text=cb.dataset.label.toLowerCase();
+    const match=text.includes(term);
+    const already=selected.includes(cb.value);
+    label.style.display=match && !already? '' : 'none';
+    cb.checked=false;
   });
-  container.addEventListener('click',function(e){
-    if(e.target.dataset.remove){
+}
+document.querySelectorAll('.add-proc-user').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    currentContainer=btn.closest('.proc-people');
+    search.value='';
+    updateOptions();
+    picker.showModal();
+  });
+});
+search.addEventListener('input',updateOptions);
+document.getElementById('user-picker-add').addEventListener('click',()=>{
+  const key=currentContainer.dataset.key;
+  picker.querySelectorAll('input[type="checkbox"]:checked').forEach(cb=>{
+    const id=cb.value;
+    const label=cb.dataset.label;
+    const span=document.createElement('span');
+    span.className='chip';
+    span.innerHTML='<input type="hidden" name="'+key+'" value="'+id+'"><span>'+label+'</span><button type="button" class="chip-remove" aria-label="Remove">×</button>';
+    currentContainer.insertBefore(span,currentContainer.querySelector('.add-proc-user'));
+    cb.checked=false;
+  });
+  picker.close();
+});
+document.querySelectorAll('.proc-people').forEach(container=>{
+  container.addEventListener('click',e=>{
+    if(e.target.classList.contains('chip-remove')){
       e.preventDefault();
-      e.target.parentElement.remove();
+      e.target.closest('.chip').remove();
     }
   });
 });
