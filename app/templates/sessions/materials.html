@@ -43,37 +43,35 @@
   </div>
   <div class="kt-card">
     <h2 class="kt-card-title">Shipping details</h2>
-  <div>Contact person : {{ shipment.contact_name|default('', true) }}</div>
-  <div>Contact Email&ensp;&nbsp;: {{ shipment.contact_email|default('', true) }}</div>
-  <div>Contact Phone &thinsp;: {{ shipment.contact_phone|default('', true) }}</div>
-  {% if shipment.address_line1 %}
-
-
-  <div>Shipping location:
-    {% if can_manage and not readonly %}
-      {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
-      <select name="shipping_location_id" id="shipping-location-select">
-        <option value=""></option>
-        {% for loc in shipping_locations %}
-        <option value="{{ loc.id }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
-        {% endfor %}
-      </select>
-      {% if sess.client_id %}
-      <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
-      <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+  <div>Contact person : <span id="ship-contact-name">{{ shipment.contact_name|default('', true) }}</span></div>
+  <div>Contact Email&ensp;&nbsp;: <span id="ship-contact-email">{{ shipment.contact_email|default('', true) }}</span></div>
+  <div>Contact Phone &thinsp;: <span id="ship-contact-phone">{{ shipment.contact_phone|default('', true) }}</span></div>
+    <div>Shipping location:
+      {% if can_manage and not readonly %}
+        {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
+        <select name="shipping_location_id" id="shipping-location-select">
+          <option value=""></option>
+          {% for loc in shipping_locations %}
+          <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
+          {% endfor %}
+        </select>
+        {% if sess.client_id %}
+        <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
+        <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+        {% endif %}
       {% endif %}
-    {% endif %}
-    {% if sess.shipping_location %}
-      {% if can_manage and not readonly %}<br>{% endif %}
-      Attn: {{ sess.shipping_location.contact_name|default('', true) }}<br>
-      {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
-      {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
-      {{ sess.shipping_location.country|default('', true) }}
-    {% endif %}
-  </div>
-  {% else %}
-  <div>Digital only</div>
-  {% endif %}
+      <div id="shipping-location-display">
+      {% if sess.shipping_location %}
+        {% if can_manage and not readonly %}<br>{% endif %}
+        Attn: {{ sess.shipping_location.contact_name|default('', true) }}<br>
+        {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
+        {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
+        {{ sess.shipping_location.country|default('', true) }}
+      {% elif readonly %}
+        <div>Digital only</div>
+      {% endif %}
+      </div>
+    </div>
   </div>
   <div class="kt-card">
     <h2 class="kt-card-title">Order components</h2>
@@ -280,12 +278,42 @@
     applyAutoFormat();
     updateApply();
   })();
+  var shipSel = document.getElementById('shipping-location-select');
+  function updateShipDetails(){
+    var opt = shipSel && shipSel.options[shipSel.selectedIndex];
+    var nameEl = document.getElementById('ship-contact-name');
+    var emailEl = document.getElementById('ship-contact-email');
+    var phoneEl = document.getElementById('ship-contact-phone');
+    var dispDiv = document.getElementById('shipping-location-display');
+    if(opt && opt.value){
+      nameEl.textContent = opt.dataset.contact || '';
+      emailEl.textContent = opt.dataset.email || '';
+      phoneEl.textContent = opt.dataset.phone || '';
+      var lines = [];
+      if(opt.dataset.contact){ lines.push('Attn: '+opt.dataset.contact); }
+      if(opt.dataset.address1){
+        var addr = opt.dataset.address1;
+        if(opt.dataset.address2){ addr += ' '+opt.dataset.address2; }
+        lines.push(addr);
+      }
+      var line2 = [opt.dataset.city, opt.dataset.state, opt.dataset.postal].filter(Boolean).join(' ');
+      if(line2){ lines.push(line2); }
+      if(opt.dataset.country){ lines.push(opt.dataset.country); }
+      dispDiv.innerHTML = lines.join('<br>');
+    } else {
+      nameEl.textContent = '';
+      emailEl.textContent = '';
+      phoneEl.textContent = '';
+      dispDiv.innerHTML = '';
+    }
+  }
+  shipSel && shipSel.addEventListener('change', updateShipDetails);
+  updateShipDetails();
   var shipBtn = document.getElementById('add-shipping-location');
   var clientId = {{ sess.client_id or 'null' }};
   if(shipBtn && clientId){
     var shipDialog = document.getElementById('shipping-dialog');
     var shipForm = document.getElementById('shipping-inline-form');
-    var shipSel = document.getElementById('shipping-location-select');
     function clearShipErrors(){ shipForm.querySelectorAll('.error').forEach(el=>el.remove()); }
     shipBtn.addEventListener('click', function(e){
       e.preventDefault();
@@ -304,7 +332,17 @@
           if(status==200 && data.id){
             var o=document.createElement('option');
             o.value=data.id; o.textContent=data.display;
+            o.dataset.contact = data.contact_name || '';
+            o.dataset.email = data.contact_email || '';
+            o.dataset.phone = data.contact_phone || '';
+            o.dataset.address1 = data.address_line1 || '';
+            o.dataset.address2 = data.address_line2 || '';
+            o.dataset.city = data.city || '';
+            o.dataset.state = data.state || '';
+            o.dataset.postal = data.postal_code || '';
+            o.dataset.country = data.country || '';
             shipSel.appendChild(o); shipSel.value=data.id;
+            updateShipDetails();
             shipDialog.close();
           }else if(data.errors){
             for(var k in data.errors){

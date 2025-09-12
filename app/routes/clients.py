@@ -337,4 +337,16 @@ def inline_shipping_location(client_id, current_user, csa_account):
     loc.is_active = request.form.get("is_active") in {"1", "on", "true"}
     db.session.add(loc)
     db.session.commit()
-    return {"id": loc.id, "display": loc.display_name()}
+    return {
+        "id": loc.id,
+        "display": loc.display_name(),
+        "contact_name": loc.contact_name,
+        "contact_phone": loc.contact_phone,
+        "contact_email": loc.contact_email,
+        "address_line1": loc.address_line1,
+        "address_line2": loc.address_line2,
+        "city": loc.city,
+        "state": loc.state,
+        "postal_code": loc.postal_code,
+        "country": loc.country,
+    }

@@ -154,6 +154,7 @@ def test_rbac_active_toggle(app):
         assert db.session.get(ClientShippingLocation, ship_id).is_active is False
 
 
+@pytest.mark.smoke
 def test_materials_requires_shipping_location(app):
     with app.app_context():
         admin = User(email="admin@example.com", is_app_admin=True)
@@ -170,6 +171,7 @@ def test_materials_requires_shipping_location(app):
     login_admin(tc, admin_id)
     resp = tc.get(f"/sessions/{session_id}/materials", follow_redirects=True)
     assert resp.status_code == 200
+    assert b"Shipping location" in resp.data
     with app.app_context():
         ship = ClientShippingLocation(
             client_id=client_id,
