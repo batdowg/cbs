@@ -1,5 +1,4 @@
 import os
-import os
 import sys
 
 import pytest
@@ -42,7 +41,6 @@ def test_material_default_unique(app):
             language="en",
             catalog_ref=ref,
             default_format="Physical",
-            quantity_basis="Per learner",
         )
         db.session.add(d1)
         db.session.commit()
@@ -53,7 +51,6 @@ def test_material_default_unique(app):
             language="en",
             catalog_ref=ref,
             default_format="Physical",
-            quantity_basis="Per learner",
         )
         db.session.add(d2)
         with pytest.raises(Exception):
@@ -78,7 +75,6 @@ def test_delete_default_row(app):
             language="en",
             catalog_ref=f"materials_options:{opt.id}",
             default_format="Digital",
-            quantity_basis="Per learner",
             active=True,
         )
         db.session.add(d)

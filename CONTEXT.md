@@ -267,11 +267,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ### Workshop Type default materials
 
-- `workshop_type_material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item, `default_format` (Digital/Physical/Self-paced), `quantity_basis` (`Per learner`/`Per order`, default `Per learner`), and `active`.
+- `workshop_type_material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item, `default_format` (Digital/Physical/Self-paced), and `active`. Quantity basis derives from the referenced Material Item.
 - `material_order_items` snapshot per-session ordered items with title, description, SKU, language, format, quantity, and processed state.
 - Managed inline on the **Workshop Type edit page** under a “Default Materials” section (`/workshop-types/<id>/edit#defaults`). Legacy `/workshop-types/<id>/defaults` redirects here.
-- Material item picker labels each choice as `<CatalogName> • <ItemTitle>` with optional language tags `• [en, es]`; typing searches those labels.
-- Picker filters items by the row’s Language and excludes the “Client-run Bulk order” catalog. A per-row **Show all** checkbox bypasses the language filter (still excluding Bulk).
+- Material item dropdown labels each choice as `<Family> • <ItemTitle>` with optional language tags `• [en, es]`; “KT-Run Standard materials” and “KT-Run Modular materials” display as “Standard” and “Modular.”
+- The dropdown filters items by the row’s Language and excludes the “Client-run Bulk order” catalog; no “Show all” toggle.
 - The edit page header links to **Prework** as a separate action; the H1 remains “Edit Workshop Type.”
 
 ## 3.6 Clients (if present)
@@ -335,7 +335,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
-- Default Materials rows use a searchable Materials selector with a clear action; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. Invalid selections are cleared. The selector has no "Show all" toggle.
+- Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle.
 - **Material Only Order** single-page create lives at `/materials-only` and makes a hidden session (`materials_only = true`) for logistics. These sessions appear only on the **Material Dashboard**.
 - Region and Language are selects with human labels; changing Language immediately filters Workshop Type options by supported languages. Workshop Type codes display without names on `/materials-only`, and the full Materials form renders on first load.
 - Client select supports inline **Add Client**; Shipping location offers **Add** and **Edit locations** dialogs without clearing other inputs.
@@ -351,7 +351,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Session Materials page uses inline-editable Material Items with per-row Language and Format selects and quantity, saved with a single action; Order date derives from creation time and is read-only; Status is read-only and shown in the title; Courier, Tracking, and Ship date fields render below the items table.
 - Material Item rows restrict Language and Format choices to those supported by the selected Material Item. Format defaults from Workshop Type → Default Materials when available.
 - Each Material Item row includes a **Processed** checkbox that records the current user and a `yyyy-mm-dd HH:MM UTC` timestamp when checked; unchecking clears the stamp.
-- Apply Defaults is enabled only when Order Type = “KT-Run Standard materials” and Material Sets > 0 (disabled tooltip: “Select # of Material sets first.”). The action keeps the selected Material format and adds any missing items from defaults using “Per learner” → Material Sets and “Per order” → 1 without altering existing rows. The Materials item picker no longer shows a “Show all” checkbox on the session page.
+- Apply Defaults is enabled only when Order Type = “KT-Run Standard materials” and Material Sets > 0 (disabled tooltip: “Select # of Material sets first.”). The action keeps the selected Material format and adds any missing items from defaults using each item's Quantity basis (“Per learner” → Material Sets, “Per order” → 1) without altering existing rows. The Materials selector is a dropdown with no “Show all” checkbox.
 - POST `/sessions/<session_id>/materials/deliver` sets status to **Delivered** (403 on repeat with friendly flash); POST `/sessions/<session_id>/materials/undeliver` reverts to **In progress**.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
 - **Simulation Outline** shown when Order Type = Simulation or the Workshop Type is simulation-based.
@@ -457,16 +457,9 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Contractor menu/capabilities updated per §1.2/§1.4.  
 - Materials dashboard documented to current behavior.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
-- Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options`.
-- Workshop Type edit default-materials picker filters by `Language.name`, posts
-  `material_option_id`, and hides "Bulk" options unless "Show all" is checked.
-- Session Materials page provides an **Apply Defaults** button that adds any
-  missing `workshop_type_material_defaults` for the session's workshop type,
-  delivery type, region, and language as `material_order_items` using the
-  default format and quantity basis (Material Sets for “Per learner”, 1 for “Per
-  order”). Existing rows remain unchanged. Items support inline quantity,
-  language, and format edits, per-row removal, and a searchable picker to add
-  new items.
+- Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options` and used wherever the item is selected.
+- Workshop Type edit default-materials dropdown filters by `Language.name`, posts `material_option_id`, and hides "Bulk" options (no "Show all").
+- Session Materials page provides an **Apply Defaults** button that adds any missing `workshop_type_material_defaults` for the session's workshop type, delivery type, region, and language as `material_order_items` using each item's quantity basis (Material Sets for “Per learner”, 1 for “Per order”). Existing rows remain unchanged. Items support inline quantity, language, and format edits, per-row removal, and a dropdown to add new items.
 - Workshop Type default-material rows drop the "Remove" checkbox in favor of a
   per-row delete action (`POST /workshop-types/defaults/<id>/delete`).
 - PO Number field removed from materials orders and underlying storage.

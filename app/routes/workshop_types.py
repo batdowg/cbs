@@ -75,6 +75,14 @@ def query_material_options(
     return q.order_by(MaterialsOption.order_type, MaterialsOption.title).all()
 
 
+def friendly_order_type(order_type: str) -> str:
+    if order_type.startswith("KT-Run Standard materials"):
+        return order_type.replace("KT-Run Standard materials", "Standard", 1)
+    if order_type.startswith("KT-Run Modular materials"):
+        return order_type.replace("KT-Run Modular materials", "Modular", 1)
+    return order_type
+
+
 def staff_required(fn):
     from functools import wraps
     from flask import session as flask_session
@@ -112,7 +120,7 @@ def material_options(current_user):
             if code:
                 langs.append(code)
         langs = sorted(langs)
-        label = f"{item.order_type} • {item.title}"
+        label = f"{friendly_order_type(item.order_type)} • {item.title}"
         if langs:
             label += f" • [{', '.join(langs)}]"
         results.append(
@@ -121,6 +129,7 @@ def material_options(current_user):
                 "label": label,
                 "langs": langs,
                 "formats": item.formats or [],
+                "basis": item.quantity_basis,
             }
         )
     return jsonify(items=results)
@@ -256,7 +265,7 @@ def edit_type(type_id: int, current_user):
             opt = db.session.get(MaterialsOption, opt_id)
             if opt:
                 langs = sorted(l.name.lower() for l in opt.languages)
-                label = f"{opt.order_type} • {opt.title}"
+                label = f"{friendly_order_type(opt.order_type)} • {opt.title}"
                 if langs:
                     label += f" • [{', '.join(langs)}]"
                 selected_opts[d.id] = {"id": opt.id, "label": label}
@@ -282,7 +291,6 @@ def edit_type(type_id: int, current_user):
             if last
             else (FORMAT_CHOICES[0] if FORMAT_CHOICES else "")
         ),
-        quantity_basis=last.quantity_basis if last else "Per learner",
         active=True,
     )
     defaults_view = list(defaults) + [blank_row]
@@ -349,13 +357,7 @@ def update_type(type_id: int, current_user):
         region_code = data.get("region_code") or ""
         language = data.get("language") or ""
         default_format = data.get("default_format") or ""
-        quantity_basis = data.get("quantity_basis") or "Per learner"
         active = bool(data.get("active"))
-        if quantity_basis not in {"Per learner", "Per order"}:
-            flash("Invalid quantity basis", "error")
-            return redirect(
-                url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
-            )
         if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
@@ -379,7 +381,7 @@ def update_type(type_id: int, current_user):
         d.language = language
         d.catalog_ref = f"materials_options:{opt_id}"
         d.default_format = default_format
-        d.quantity_basis = quantity_basis
+        d.quantity_basis = opt.quantity_basis
         d.active = active
         db.session.add(
             AuditLog(
@@ -394,15 +396,9 @@ def update_type(type_id: int, current_user):
         language = new_data.get("language") or ""
         opt_val = new_data.get("material_option_id") or ""
         default_format = new_data.get("default_format") or ""
-        quantity_basis = new_data.get("quantity_basis") or "Per learner"
         active = bool(new_data.get("active"))
         if not opt_val:
             continue
-        if quantity_basis not in {"Per learner", "Per order"}:
-            flash("Invalid quantity basis", "error")
-            return redirect(
-                url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
-            )
         if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
@@ -428,7 +424,7 @@ def update_type(type_id: int, current_user):
             language=language,
             catalog_ref=f"materials_options:{opt_id}",
             default_format=default_format,
-            quantity_basis=quantity_basis,
+            quantity_basis=opt.quantity_basis,
             active=active,
         )
         db.session.add(rule)

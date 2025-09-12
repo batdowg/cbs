@@ -18,27 +18,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function populate(row) {
     fetchOptions(row).then(function (data) {
-      var list = document.getElementById('materials-' + row);
-      if (!list) return;
-      list.innerHTML = '';
+      var sel = document.querySelector('select.material-select[data-row="' + row + '"]');
+      if (!sel) return;
+      var current = sel.value;
+      sel.innerHTML = '';
+      var blank = document.createElement('option');
+      blank.value = '';
+      sel.appendChild(blank);
+      var found = false;
       (data.items || []).forEach(function (it) {
         optionData[it.id] = { langs: it.langs || [], formats: it.formats || [] };
         var opt = document.createElement('option');
-        opt.value = it.label;
-        opt.dataset.id = it.id;
-        list.appendChild(opt);
+        opt.value = it.id;
+        opt.textContent = it.label;
+        sel.appendChild(opt);
+        if (String(it.id) === current) found = true;
       });
-      var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
-      var input = document.querySelector('input.material-label[data-row="' + row + '"]');
-      if (hidden && input && hidden.value) {
-        var match = (data.items || []).find(function (it) {
-          return String(it.id) === hidden.value;
-        });
-        if (match) {
-          input.value = match.label;
-          applyRestrictions(row, optionData[hidden.value]);
-        }
+      if (found) {
+        sel.value = current;
+        applyRestrictions(row, optionData[current]);
       } else {
+        sel.value = '';
         applyRestrictions(row, null);
       }
     });
@@ -69,10 +69,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var delivery = document.querySelector('[name="defaults[' + row + '][delivery_type]"]');
     var region = document.querySelector('[name="defaults[' + row + '][region_code]"]');
     var lang = document.querySelector('[name="defaults[' + row + '][language]"]');
-    var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
+    var sel = document.querySelector('select.material-select[data-row="' + row + '"]');
     return (
-      delivery && region && lang && hidden &&
-      delivery.value && region.value && lang.value && hidden.value
+      delivery && region && lang && sel &&
+      delivery.value && region.value && lang.value && sel.value
     );
   }
 
@@ -106,40 +106,13 @@ document.addEventListener('DOMContentLoaded', function () {
     initRow(rowId);
   }
 
-  function bindMaterialInput(row, inp) {
-    inp.addEventListener('input', function () {
-      var list = document.getElementById('materials-' + row);
-      var match = Array.prototype.find.call(list.options, function (o) {
-        return o.value === inp.value;
-      });
-      var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
-      hidden.value = match ? match.dataset.id : '';
-      applyRestrictions(row, hidden.value ? optionData[hidden.value] : null);
-      checkLastRow();
-    });
-  }
-
   function initRow(row) {
     populate(row);
-    var inp = document.querySelector('input.material-label[data-row="' + row + '"]');
-    var hidden = document.querySelector('input.material-id[data-row="' + row + '"]');
-    if (inp) {
-      bindMaterialInput(row, inp);
-      inp.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-          inp.value = '';
-          if (hidden) hidden.value = '';
-          applyRestrictions(row, null);
-        }
-      });
-      inp.addEventListener('focus', function(){ inp.select(); });
-    }
-    var clearBtn = document.querySelector('.clear-material[data-row="' + row + '"]');
-    if (clearBtn && inp) {
-      clearBtn.addEventListener('click', function(){
-        inp.value = '';
-        if (hidden) hidden.value = '';
-        applyRestrictions(row, null);
+    var sel = document.querySelector('select.material-select[data-row="' + row + '"]');
+    if (sel) {
+      sel.addEventListener('change', function () {
+        var meta = sel.value ? optionData[sel.value] : null;
+        applyRestrictions(row, meta);
         checkLastRow();
       });
     }
@@ -167,4 +140,3 @@ document.addEventListener('DOMContentLoaded', function () {
     initRow(tr.dataset.row);
   });
 });
-

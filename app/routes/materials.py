@@ -384,7 +384,11 @@ def materials_view(
                 if not opt:
                     continue
                 if qty <= 0:
-                    qty = compute_default_qty(sess, shipment)
+                    qty = (
+                        1
+                        if opt.quantity_basis == "Per order"
+                        else compute_default_qty(sess, shipment)
+                    )
                 dup = MaterialOrderItem.query.filter_by(
                     session_id=sess.id,
                     catalog_ref=f"materials_options:{opt.id}",
@@ -528,6 +532,7 @@ def apply_defaults(
         desc = None
         sku = None
         fmt = d.default_format
+        basis = "Per learner"
         if kind == "materials_options" and ident.isdigit():
             obj = db.session.get(MaterialsOption, int(ident))
             if not obj:
@@ -542,6 +547,7 @@ def apply_defaults(
             title = obj.title
             desc = obj.description
             sku = obj.sku_physical
+            basis = obj.quantity_basis
         elif kind in {"simulation_outline", "simulation_outlines"} and ident.isdigit():
             obj = db.session.get(SimulationOutline, int(ident))
             if not obj:
@@ -553,7 +559,7 @@ def apply_defaults(
 
         if d.catalog_ref in existing_refs:
             continue
-        qty = qty_base if d.quantity_basis != "Per order" else 1
+        qty = qty_base if basis != "Per order" else 1
         item = MaterialOrderItem(
             session_id=sess.id,
             catalog_ref=d.catalog_ref,
