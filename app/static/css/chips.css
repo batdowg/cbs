@@ -1,0 +1,29 @@
+/* Filter chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--kt-border);
+  background: var(--kt-bg);
+  color: var(--kt-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--kt-info);
+}
+.chip:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+.chip--selected {
+  background: var(--kt-info);
+  border-color: var(--kt-info);
+  color: #fff;
+}
+.chip .chip-remove {
+  margin-left: var(--space-1);
+}

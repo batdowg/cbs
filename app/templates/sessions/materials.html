@@ -20,6 +20,13 @@
 {% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
 {% for fac in sess.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
 <h1>Material Order {{ sess.id }} - {{ sess.title }} ({{ status }})</h1>
+<nav class="kt-tabs">
+  <a href="{{ url_for('sessions.session_detail', session_id=sess.id) }}">Details</a>
+  {% if not sess.materials_only and sess.workshop_type %}
+  <a href="{{ url_for('sessions.session_prework', session_id=sess.id) }}">Prework</a>
+  {% endif %}
+  <a href="{{ url_for('materials.materials_view', session_id=sess.id) }}" aria-current="page">Materials Order</a>
+</nav>
 <form method="post">
   <input type="hidden" name="action" value="update_header">
   <div class="kt-card">

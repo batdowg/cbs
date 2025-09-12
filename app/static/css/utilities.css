@@ -1,0 +1,21 @@
+/* Form grid utilities */
+.grid {
+  display: grid;
+}
+.grid-2 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.gap-sm {
+  gap: var(--space-2);
+}
+.gap-md {
+  gap: var(--space-4);
+}
+.gap-lg {
+  gap: var(--space-6);
+}
