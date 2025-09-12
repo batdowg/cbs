@@ -4,8 +4,8 @@
 <h2>SMTP Settings</h2>
 <p>Updated: {{ settings.updated_at }}</p>
 <form method="post">
-  <label>SMTP Host</label>
-  <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}" autocomplete="off">
+  <label>SMTP Host
+  <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}" autocomplete="off"></label>
   <label>SMTP Port</label>
   <input type="number" name="smtp_port" value="{{ settings.smtp_port or '' }}" autocomplete="off">
   <label>SMTP Auth User</label>
