@@ -51,6 +51,7 @@ ORDER_STATUSES = [
     "On hold",
 ]
 
+
 def can_manage_shipment(user: User | None) -> bool:
     return bool(
         user and (user.is_app_admin or user.is_admin or getattr(user, "is_kcrm", False))
@@ -117,7 +118,7 @@ CSA_FIELDS = {
 def compute_default_qty(sess: Session, shipment: SessionShipping | None) -> int:
     if shipment and shipment.material_sets:
         return shipment.material_sets
-    return sess.capacity or 1
+    return sess.capacity or 0
 
 
 def can_edit_materials_header(
@@ -192,6 +193,9 @@ def materials_view(
             opt = db.session.get(MaterialsOption, shipment.materials_option_id)
             if opt:
                 shipment.materials_options = [opt]
+        db.session.commit()
+    if not shipment.material_sets:
+        shipment.material_sets = sess.capacity or 0
         db.session.commit()
     readonly = view_only or sess.finalized or bool(shipment.delivered_at)
     fmt = shipment.materials_format or (
@@ -355,9 +359,7 @@ def materials_view(
                 option_id = data.get("option_id")
                 qty = int(data.get("quantity") or 0)
                 lang = data.get("language") or sess.workshop_language
-                fmt_val = data.get("format") or (
-                    shipment.materials_format or "Digital"
-                )
+                fmt_val = data.get("format") or (shipment.materials_format or "Digital")
                 if item_id and item_id in existing:
                     item = existing.pop(item_id)
                     if delete_flag or qty <= 0:
@@ -451,6 +453,22 @@ def apply_defaults(
 ):
     if not can_manage_shipment(current_user) or view_only:
         abort(403)
+    shipment = SessionShipping.query.filter_by(session_id=sess.id).first()
+    if not shipment or shipment.material_sets <= 0:
+        flash("Select # of Material sets first.", "error")
+        return redirect(
+            url_for("materials.materials_view", session_id=session_id)
+            + "#material-items"
+        )
+    if shipment.order_type != "KT-Run Standard materials":
+        flash("Defaults apply only to KT-Run Standard materials.", "error")
+        return redirect(
+            url_for("materials.materials_view", session_id=session_id)
+            + "#material-items"
+        )
+    fmt_sel = request.form.get("materials_format")
+    if fmt_sel is not None:
+        shipment.materials_format = fmt_sel or None
     defaults = (
         WorkshopTypeMaterialDefault.query.filter_by(
             workshop_type_id=sess.workshop_type_id,
@@ -464,11 +482,12 @@ def apply_defaults(
     )
     if not defaults:
         flash("No defaults found for this session's context.", "info")
+        db.session.commit()
         return redirect(
-            url_for("materials.materials_view", session_id=session_id) + "#material-items"
+            url_for("materials.materials_view", session_id=session_id)
+            + "#material-items"
         )
 
-    shipment = SessionShipping.query.filter_by(session_id=sess.id).first()
     qty_base = compute_default_qty(sess, shipment)
     created = 0
     updated = 0
@@ -502,6 +521,7 @@ def apply_defaults(
         else:
             continue
 
+        qty = qty_base if d.quantity_basis != "Per order" else 1
         exists = MaterialOrderItem.query.filter_by(
             session_id=sess.id,
             catalog_ref=d.catalog_ref,
@@ -509,7 +529,7 @@ def apply_defaults(
             format=fmt,
         ).first()
         if exists:
-            exists.quantity = qty_base or 0
+            exists.quantity = qty
             updated += 1
             continue
         item = MaterialOrderItem(
@@ -520,7 +540,7 @@ def apply_defaults(
             sku_physical_snapshot=sku,
             language=d.language,
             format=fmt,
-            quantity=qty_base or 0,
+            quantity=qty,
         )
         db.session.add(item)
         created += 1
@@ -562,8 +582,6 @@ def update_order_item_quantity(
         item.quantity = qty
     db.session.commit()
     return jsonify(status="ok", quantity=qty)
-
-
 
 
 @bp.post("/deliver")

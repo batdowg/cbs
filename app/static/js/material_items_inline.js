@@ -10,32 +10,30 @@ document.addEventListener('DOMContentLoaded', function(){
     return Array.from(table.querySelectorAll('input.material-id'))
       .map(function(i){ return i.value; }).filter(Boolean);
   }
-  function fetchOptions(row, showAll){
+  function fetchOptions(){
     var params = new URLSearchParams();
     if(delivery) params.append('delivery_type', delivery);
     if(lang) params.append('lang', lang);
-    if(showAll) params.append('include_bulk','1');
     var exclude = selectedIds();
-    if(!showAll && exclude.length) params.append('exclude', exclude.join(','));
+    if(exclude.length) params.append('exclude', exclude.join(','));
     return fetch(pickerUrl + '?' + params.toString()).then(function(r){ return r.json(); });
   }
   function getDefaultQty(){
     var setsInput = document.querySelector('input[name="material_sets"]');
     var sets = parseInt(setsInput ? setsInput.value : '0', 10);
     if(sets > 0) return sets;
-    return capacity > 0 ? capacity : 1;
+    return capacity > 0 ? capacity : 0;
   }
   function initRow(row){
     var label = row.querySelector('.material-label');
     var hidden = row.querySelector('.material-id');
     var list = row.querySelector('.materials-list');
-    var showAll = row.querySelector('.show-all');
     var qty = row.querySelector('.qty-input');
     var removeBtn = row.querySelector('.remove-row');
     var delFlag = row.querySelector('.delete-flag');
     if(label){
       function populate(){
-        fetchOptions(row, showAll.checked).then(function(data){
+        fetchOptions().then(function(data){
           list.innerHTML = '';
           (data.items||[]).forEach(function(it){
             var opt = document.createElement('option');
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function(){
         });
       }
       populate();
-      showAll.addEventListener('change', populate);
       label.addEventListener('input', function(){
         var match = Array.from(list.options).find(function(o){ return o.value === label.value; });
         hidden.value = match ? match.dataset.id : '';

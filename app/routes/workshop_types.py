@@ -48,7 +48,9 @@ def lang_key(lang) -> str:
     ).lower()
 
 
-def query_material_options(delivery_type: str, lang_name: str, include_bulk: bool = False):
+def query_material_options(
+    delivery_type: str, lang_name: str, include_bulk: bool = False
+):
     """Return material options matching delivery type and language.
 
     Language filtering uses ``Language.name`` because the table stores names
@@ -59,9 +61,7 @@ def query_material_options(delivery_type: str, lang_name: str, include_bulk: boo
 
     q = MaterialsOption.query.filter(MaterialsOption.is_active == True)
     if lang_name:
-        q = q.join(MaterialsOption.languages).filter(
-            Language.name.ilike(lang_name)
-        )
+        q = q.join(MaterialsOption.languages).filter(Language.name.ilike(lang_name))
     if not include_bulk:
         bulk = "%bulk%"
         q = q.filter(
@@ -100,11 +100,7 @@ def material_options(current_user):
     lang_name = code_to_label(lang_code)
     include_bulk = bool(request.args.get("include_bulk"))
     exclude_raw = request.args.get("exclude") or ""
-    exclude_ids = {
-        int(x)
-        for x in exclude_raw.split(",")
-        if x.isdigit()
-    }
+    exclude_ids = {int(x) for x in exclude_raw.split(",") if x.isdigit()}
     items = query_material_options(delivery, lang_name, include_bulk)
     if exclude_ids and not include_bulk:
         items = [it for it in items if it.id not in exclude_ids]
@@ -260,10 +256,21 @@ def edit_type(type_id: int, current_user):
     last = defaults[-1] if defaults else None
     blank_row = SimpleNamespace(
         id="new0",
-        delivery_type=last.delivery_type if last else (DELIVERY_CHOICES[0] if DELIVERY_CHOICES else ""),
+        delivery_type=(
+            last.delivery_type
+            if last
+            else (DELIVERY_CHOICES[0] if DELIVERY_CHOICES else "")
+        ),
         region_code=last.region_code if last else (regions[0][0] if regions else ""),
-        language=last.language if last else (supported_langs[0] if supported_langs else ""),
-        default_format=last.default_format if last else (FORMAT_CHOICES[0] if FORMAT_CHOICES else ""),
+        language=(
+            last.language if last else (supported_langs[0] if supported_langs else "")
+        ),
+        default_format=(
+            last.default_format
+            if last
+            else (FORMAT_CHOICES[0] if FORMAT_CHOICES else "")
+        ),
+        quantity_basis=last.quantity_basis if last else "Per learner",
         active=True,
     )
     defaults_view = list(defaults) + [blank_row]
@@ -330,7 +337,13 @@ def update_type(type_id: int, current_user):
         region_code = data.get("region_code") or ""
         language = data.get("language") or ""
         default_format = data.get("default_format") or ""
+        quantity_basis = data.get("quantity_basis") or "Per learner"
         active = bool(data.get("active"))
+        if quantity_basis not in {"Per learner", "Per order"}:
+            flash("Invalid quantity basis", "error")
+            return redirect(
+                url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
+            )
         if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
@@ -354,6 +367,7 @@ def update_type(type_id: int, current_user):
         d.language = language
         d.catalog_ref = f"materials_options:{opt_id}"
         d.default_format = default_format
+        d.quantity_basis = quantity_basis
         d.active = active
         db.session.add(
             AuditLog(
@@ -368,9 +382,15 @@ def update_type(type_id: int, current_user):
         language = new_data.get("language") or ""
         opt_val = new_data.get("material_option_id") or ""
         default_format = new_data.get("default_format") or ""
+        quantity_basis = new_data.get("quantity_basis") or "Per learner"
         active = bool(new_data.get("active"))
         if not opt_val:
             continue
+        if quantity_basis not in {"Per learner", "Per order"}:
+            flash("Invalid quantity basis", "error")
+            return redirect(
+                url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
+            )
         if not all([delivery_type, region_code, language, default_format]):
             flash("All fields required", "error")
             return redirect(
@@ -396,6 +416,7 @@ def update_type(type_id: int, current_user):
             language=language,
             catalog_ref=f"materials_options:{opt_id}",
             default_format=default_format,
+            quantity_basis=quantity_basis,
             active=active,
         )
         db.session.add(rule)
@@ -416,9 +437,7 @@ def update_type(type_id: int, current_user):
     )
     db.session.commit()
     flash("Workshop Type updated", "success")
-    return redirect(
-        url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults"
-    )
+    return redirect(url_for("workshop_types.edit_type", type_id=wt.id) + "#defaults")
 
 
 @bp.route("/<int:type_id>/defaults", methods=["GET", "POST"])

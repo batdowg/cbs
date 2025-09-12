@@ -150,7 +150,9 @@
 
   <h3 id="material-items">Material Items</h3>
   {% if can_manage %}
-  <button type="submit" form="defaults-form" class="btn btn-primary">Apply Defaults</button>
+  {% set apply_disabled = shipment.order_type != 'KT-Run Standard materials' or (shipment.material_sets or 0) == 0 %}
+  {% set tooltip = 'Select # of Material sets first.' if (shipment.material_sets or 0) == 0 else '' %}
+  <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
   {% endif %}
   <table border="1" cellpadding="4" cellspacing="0" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}">
     <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
@@ -160,7 +162,7 @@
         <input type="hidden" name="items[{{ item.id }}][id]" value="{{ item.id }}">
         <input type="hidden" name="items[{{ item.id }}][option_id]" value="{{ item.catalog_ref.split(':')[1] if item.catalog_ref }}">
       </td>
-      <td>{{ item.language }}<input type="hidden" name="items[{{ item.id }}][language]" value="{{ item.language }}"></td>
+      <td>{{ item.language | lang_label }}<input type="hidden" name="items[{{ item.id }}][language]" value="{{ item.language }}"></td>
       <td>{{ item.format }}<input type="hidden" name="items[{{ item.id }}][format]" value="{{ item.format }}"></td>
       {% if can_manage %}
       <td><input type="number" name="items[{{ item.id }}][quantity]" value="{{ item.quantity }}" class="qty-input" min="0" style="width:4em"></td>
@@ -178,9 +180,8 @@
         <input type="text" class="material-label" list="materials-__index__" placeholder="Search...">
         <input type="hidden" name="items[__index__][option_id]" class="material-id">
         <datalist id="materials-__index__" class="materials-list"></datalist>
-        <label><input type="checkbox" class="show-all"> Show all</label>
       </td>
-      <td>{{ sess.workshop_language }}<input type="hidden" name="items[__index__][language]" value="{{ sess.workshop_language }}"></td>
+      <td>{{ sess.workshop_language | lang_label }}<input type="hidden" name="items[__index__][language]" value="{{ sess.workshop_language }}"></td>
       <td>{{ fmt }}<input type="hidden" name="items[__index__][format]" value="{{ fmt }}"></td>
       <td><input type="number" name="items[__index__][quantity]" class="qty-input" min="0" style="width:4em"></td>
       <td><button type="button" class="btn btn-sm btn-danger remove-row" style="display:none">Remove</button><input type="hidden" name="items[__index__][delete]" value="0" class="delete-flag"></td>
@@ -210,7 +211,9 @@
   <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
 </form>
 {% if can_manage %}
-<form id="defaults-form" method="post" action="{{ url_for('materials.apply_defaults', session_id=sess.id) }}"></form>
+<form id="defaults-form" method="post" action="{{ url_for('materials.apply_defaults', session_id=sess.id) }}">
+  <input type="hidden" name="materials_format" id="defaults-format">
+</form>
 {% endif %}
 <dialog id="shipping-dialog">
   <form id="shipping-inline-form">
@@ -236,6 +239,11 @@
     const fmtSel = document.querySelector('select[name="materials_format"]');
     const orderSel = document.querySelector('select[name="order_type"]');
     const boxes = [...document.querySelectorAll('input[name="components"]')];
+    const setsInput = document.querySelector('input[name="material_sets"]');
+    const applyBtn = document.getElementById('apply-defaults-btn');
+    const defaultsForm = document.getElementById('defaults-form');
+    const hiddenFmt = document.getElementById('defaults-format');
+    function syncFmt(){ if(hiddenFmt && fmtSel) hiddenFmt.value = fmtSel.value; }
     function applyState(autoCheck = false){
       const fmt = fmtSel?.value || '';
       const disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
@@ -249,9 +257,19 @@
       }
       applyState();
     }
-    fmtSel && fmtSel.addEventListener('change', () => applyState(true));
-    orderSel && orderSel.addEventListener('change', applyAutoFormat);
+    function updateApply(){
+      if(!applyBtn) return;
+      const sets = parseInt(setsInput?.value || '0',10);
+      const isStandard = orderSel?.value === 'KT-Run Standard materials';
+      applyBtn.disabled = !isStandard || sets === 0;
+      applyBtn.title = sets === 0 ? 'Select # of Material sets first.' : '';
+    }
+    fmtSel && fmtSel.addEventListener('change', () => {applyState(true); syncFmt(); updateApply();});
+    orderSel && orderSel.addEventListener('change', () => {applyAutoFormat(); updateApply();});
+    setsInput && setsInput.addEventListener('input', updateApply);
+    syncFmt();
     applyAutoFormat();
+    updateApply();
   })();
   var shipBtn = document.getElementById('add-shipping-location');
   var clientId = {{ sess.client_id or 'null' }};

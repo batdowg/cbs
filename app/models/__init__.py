@@ -600,17 +600,29 @@ class WorkshopTypeMaterialDefault(db.Model):
             "default_format IN ('Digital','Physical','Self-paced')",
             name="ck_wt_material_defaults_format",
         ),
+        db.CheckConstraint(
+            "quantity_basis IN ('Per learner','Per order')",
+            name="ck_wt_material_defaults_qty_basis",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
     workshop_type_id = db.Column(
-        db.Integer, db.ForeignKey("workshop_types.id", ondelete="CASCADE"), nullable=False
+        db.Integer,
+        db.ForeignKey("workshop_types.id", ondelete="CASCADE"),
+        nullable=False,
     )
     delivery_type = db.Column(db.String(32), nullable=False)
     region_code = db.Column(db.String(8), nullable=False)
     language = db.Column(db.String(8), nullable=False)
     catalog_ref = db.Column(db.String(50), nullable=False)
     default_format = db.Column(db.String(16), nullable=False)
+    quantity_basis = db.Column(
+        db.String(16),
+        nullable=False,
+        default="Per learner",
+        server_default="Per learner",
+    )
     active = db.Column(db.Boolean, nullable=False, default=True)
 
     workshop_type = db.relationship("WorkshopType")
@@ -640,7 +652,9 @@ class MaterialOrderItem(db.Model):
     quantity = db.Column(db.Integer, nullable=False, default=0)
     processed = db.Column(db.Boolean, nullable=False, default=False)
     processed_at = db.Column(db.DateTime)
-    processed_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    processed_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL")
+    )
     processed_by = db.relationship("User")
 
 

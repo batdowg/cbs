@@ -47,7 +47,7 @@
   {% if wt %}
   <h2 id="defaults">Default Materials</h2>
   <table id="defaults-table" border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Actions</th></tr>
+    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Qty basis</th><th>Active</th><th>Actions</th></tr>
     {% for d in defaults %}
     <tr data-row="{{ d.id }}"{% if loop.last %} data-blank-row="true"{% endif %}>
       <td>
@@ -83,6 +83,12 @@
           {% for opt in format_choices %}
           <option value="{{ opt }}" {% if d.default_format==opt %}selected{% endif %}>{{ opt }}</option>
           {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="defaults[{{ d.id }}][quantity_basis]">
+          <option value="Per learner" {% if d.quantity_basis=='Per learner' %}selected{% endif %}>Per learner</option>
+          <option value="Per order" {% if d.quantity_basis=='Per order' %}selected{% endif %}>Per order</option>
         </select>
       </td>
       <td><input type="checkbox" name="defaults[{{ d.id }}][active]" {% if d.active %}checked{% endif %}></td>
@@ -124,6 +130,12 @@
           {% for opt in format_choices %}
           <option value="{{ opt }}">{{ opt }}</option>
           {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="defaults[__index__][quantity_basis]">
+          <option value="Per learner">Per learner</option>
+          <option value="Per order">Per order</option>
         </select>
       </td>
       <td><input type="checkbox" name="defaults[__index__][active]" checked></td>
