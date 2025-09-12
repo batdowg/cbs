@@ -25,6 +25,9 @@ from ..models import (
     ClientShippingLocation,
     SimulationOutline,
     AuditLog,
+    WorkshopTypeMaterialDefault,
+    MaterialOrderItem,
+    SessionParticipant,
 )
 from ..shared.materials import (
     PHYSICAL_COMPONENTS,
@@ -442,6 +445,11 @@ def materials_view(
             return redirect(url_for("materials.materials_view", session_id=session_id))
     status = shipment.status
     materials = Material.query.order_by(Material.name).all() if not view_only else []
+    order_items = (
+        MaterialOrderItem.query.filter_by(session_id=session_id)
+        .order_by(MaterialOrderItem.id)
+        .all()
+    )
     materials_options = (
         MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
         .order_by(MaterialsOption.title)
@@ -461,6 +469,7 @@ def materials_view(
         shipment=shipment,
         status=status,
         materials=materials,
+        order_items=order_items,
         materials_options=materials_options,
         selected_option=selected_option,
         selected_options=selected_options,
@@ -485,6 +494,99 @@ def materials_view(
         simulation_outlines=simulation_outlines,
         form=None,
         errors={},
+    )
+
+
+@bp.post("/apply-defaults")
+@materials_access
+def apply_defaults(
+    session_id: int,
+    sess: Session,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    if not can_manage_shipment(current_user) or view_only:
+        abort(403)
+    defaults = (
+        WorkshopTypeMaterialDefault.query.filter_by(
+            workshop_type_id=sess.workshop_type_id,
+            delivery_type=sess.delivery_type,
+            region_code=sess.region,
+            language=sess.workshop_language,
+            active=True,
+        )
+        .order_by(WorkshopTypeMaterialDefault.id)
+        .all()
+    )
+    if not defaults:
+        flash("No defaults found for this session's context.", "info")
+        return redirect(
+            url_for("materials.materials_view", session_id=session_id) + "#material-items"
+        )
+
+    participant_count = (
+        db.session.query(db.func.count(SessionParticipant.id))
+        .filter_by(session_id=sess.id)
+        .scalar()
+    )
+    applied = 0
+    skipped = 0
+    for d in defaults:
+        kind, _, ident = d.catalog_ref.partition(":")
+        obj = None
+        title = None
+        desc = None
+        sku = None
+        fmt = d.default_format
+        if kind == "materials_options" and ident.isdigit():
+            obj = db.session.get(MaterialsOption, int(ident))
+            if not obj:
+                continue
+            bulk = "bulk"
+            if (
+                obj.order_type == "Client-run Bulk order"
+                or (obj.title and bulk in obj.title.lower())
+                or (obj.description and bulk in obj.description.lower())
+            ):
+                continue
+            title = obj.title
+            desc = obj.description
+            sku = obj.sku_physical
+        elif kind in {"simulation_outline", "simulation_outlines"} and ident.isdigit():
+            obj = db.session.get(SimulationOutline, int(ident))
+            if not obj:
+                continue
+            title = obj.label
+            fmt = "Digital"
+        else:
+            continue
+
+        exists = MaterialOrderItem.query.filter_by(
+            session_id=sess.id,
+            catalog_ref=d.catalog_ref,
+            language=d.language,
+            format=fmt,
+        ).first()
+        if exists:
+            skipped += 1
+            continue
+        item = MaterialOrderItem(
+            session_id=sess.id,
+            catalog_ref=d.catalog_ref,
+            title_snapshot=title,
+            description_snapshot=desc,
+            sku_physical_snapshot=sku,
+            language=d.language,
+            format=fmt,
+            quantity=participant_count or 0,
+        )
+        db.session.add(item)
+        applied += 1
+    db.session.commit()
+    flash(f"Applied {applied} defaults ({skipped} skipped).", "info")
+    return redirect(
+        url_for("materials.materials_view", session_id=session_id) + "#material-items"
     )
 
 
