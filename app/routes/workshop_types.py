@@ -99,7 +99,15 @@ def material_options(current_user):
     lang_code = request.args.get("lang") or ""
     lang_name = code_to_label(lang_code)
     include_bulk = bool(request.args.get("include_bulk"))
+    exclude_raw = request.args.get("exclude") or ""
+    exclude_ids = {
+        int(x)
+        for x in exclude_raw.split(",")
+        if x.isdigit()
+    }
     items = query_material_options(delivery, lang_name, include_bulk)
+    if exclude_ids and not include_bulk:
+        items = [it for it in items if it.id not in exclude_ids]
     results = []
     for item in items:
         langs = sorted(l.name.lower() for l in item.languages)

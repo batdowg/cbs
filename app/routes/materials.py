@@ -19,15 +19,12 @@ from ..app import db, User
 from ..models import (
     Session,
     SessionShipping,
-    SessionShippingItem,
-    Material,
     MaterialsOption,
     ClientShippingLocation,
     SimulationOutline,
     AuditLog,
     WorkshopTypeMaterialDefault,
     MaterialOrderItem,
-    SessionParticipant,
 )
 from ..shared.materials import (
     PHYSICAL_COMPONENTS,
@@ -53,7 +50,6 @@ ORDER_STATUSES = [
     "Cancelled",
     "On hold",
 ]
-
 
 def can_manage_shipment(user: User | None) -> bool:
     return bool(
@@ -116,6 +112,12 @@ def materials_access(fn):
 CSA_FIELDS = {
     "arrival_date",
 }
+
+
+def compute_default_qty(sess: Session, shipment: SessionShipping | None) -> int:
+    if shipment and shipment.material_sets:
+        return shipment.material_sets
+    return sess.capacity or 1
 
 
 def can_edit_materials_header(
@@ -208,11 +210,6 @@ def materials_view(
     show_sim_outline = shipment.order_type == "Simulation" or sim_base
     status = shipment.status
     show_credits = shipment.order_type == "Simulation" or sim_base
-    order_date_val = (
-        shipment.order_date.isoformat()
-        if shipment.order_date
-        else date.today().isoformat()
-    )
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -228,40 +225,19 @@ def materials_view(
                 "tracking",
                 "ship_date",
                 "special_instructions",
-                "order_date",
                 "order_type",
-                "materials_option_id",
                 "materials_format",
                 "materials_po_number",
                 "material_sets",
                 "credits",
-                "status",
             }
             original_order_type = shipment.order_type
-            original_status = shipment.status
             for field in fields:
-                if (
-                    field == "materials_option_id"
-                    and shipment.order_type == "KT-Run Modular materials"
-                ):
-                    ids = [
-                        int(v) for v in request.form.getlist("materials_option_id") if v
-                    ]
-                    shipment.materials_options = (
-                        MaterialsOption.query.filter(MaterialsOption.id.in_(ids)).all()
-                        if ids
-                        else []
-                    )
-                    shipment.materials_option_id = ids[0] if ids else None
-                    continue
                 val = request.form.get(field)
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
-                if field in {"ship_date", "arrival_date", "order_date"}:
+                if field in {"ship_date", "arrival_date"}:
                     setattr(shipment, field, _parse_date(val))
-                elif field == "materials_option_id":
-                    shipment.materials_options = []
-                    setattr(shipment, field, int(val) if val else None)
                 elif field == "materials_format":
                     setattr(shipment, field, val or None)
                 elif field in {"material_sets", "credits"}:
@@ -270,9 +246,6 @@ def materials_view(
                     except ValueError:
                         num_val = 0
                     setattr(shipment, field, max(0, num_val))
-                elif field == "status":
-                    if val:
-                        setattr(shipment, field, val)
                 else:
                     setattr(shipment, field, val or None)
             show_sim_outline = shipment.order_type == "Simulation" or sim_base
@@ -320,50 +293,16 @@ def materials_view(
                 shipment.materials_options = []
             if shipment.order_type == "Simulation" and not shipment.materials_format:
                 shipment.materials_format = "SIM_ONLY"
-            if original_status != shipment.status:
-                if shipment.status == "Ordered":
-                    sess.ready_for_delivery = True
-                    sess.ready_at = datetime.utcnow()
-                if shipment.status == "Delivered":
-                    sess.status = "Finalized"
-                    sess.finalized = True
-                    sess.finalized_at = datetime.utcnow()
             if errors:
                 db.session.rollback()
                 form = request.form
-                status = shipment.status
-                materials = (
-                    Material.query.order_by(Material.name).all()
-                    if not view_only
-                    else []
-                )
-                materials_options = (
-                    MaterialsOption.query.filter_by(
-                        order_type=shipment.order_type, is_active=True
-                    )
-                    .order_by(MaterialsOption.title)
-                    .all()
-                    if shipment.order_type
-                    else []
-                )
-                selected_option = (
-                    db.session.get(MaterialsOption, shipment.materials_option_id)
-                    if shipment.materials_option_id
-                    else None
-                )
-                selected_options = shipment.materials_options
                 return (
                     render_template(
                         "sessions/materials.html",
                         sess=sess,
                         shipment=shipment,
-                        status=status,
-                        materials=materials,
-                        materials_options=materials_options,
-                        selected_option=selected_option,
-                        selected_options=selected_options,
+                        status=shipment.status,
                         order_types=ORDER_TYPES,
-                        order_statuses=ORDER_STATUSES,
                         csa_view=csa_view,
                         readonly=readonly,
                         current_user=current_user,
@@ -379,7 +318,6 @@ def materials_view(
                         show_sim_outline=show_sim_outline,
                         show_credits=show_credits,
                         sim_base=sim_base,
-                        order_date_val=order_date_val,
                         simulation_outlines=simulation_outlines,
                         form=form,
                         errors=errors,
@@ -390,46 +328,71 @@ def materials_view(
                 sfc_link = request.form.get("sfc_link")
                 if sfc_link:
                     sess.client.sfc_link = sfc_link
-            db.session.commit()
-            flash("Saved", "info")
-            return redirect(url_for("materials.materials_view", session_id=session_id))
-        if action == "add_item":
-            material_id = request.form.get("material_id")
-            qty = request.form.get("quantity")
-            notes = request.form.get("notes")
-            if material_id and qty and int(qty) >= 1:
-                item = SessionShippingItem(
-                    session_shipping_id=shipment.id,
-                    material_id=int(material_id),
-                    quantity=int(qty),
-                    notes=notes,
+
+            # process item rows
+            from collections import defaultdict
+
+            items_raw: dict[str, dict[str, str]] = defaultdict(dict)
+            for key, val in request.form.items():
+                if not key.startswith("items["):
+                    continue
+                try:
+                    rest = key[6:]
+                    row, field = rest.split("][")
+                    field = field.rstrip("]")
+                except ValueError:
+                    continue
+                items_raw[row][field] = val
+
+            existing = {
+                str(i.id): i
+                for i in MaterialOrderItem.query.filter_by(session_id=sess.id).all()
+            }
+
+            for row, data in items_raw.items():
+                item_id = data.get("id")
+                delete_flag = data.get("delete") == "1"
+                option_id = data.get("option_id")
+                qty = int(data.get("quantity") or 0)
+                lang = data.get("language") or sess.workshop_language
+                fmt_val = data.get("format") or (
+                    shipment.materials_format or "Digital"
+                )
+                if item_id and item_id in existing:
+                    item = existing.pop(item_id)
+                    if delete_flag or qty <= 0:
+                        db.session.delete(item)
+                    else:
+                        item.quantity = qty
+                    continue
+                if delete_flag or not option_id:
+                    continue
+                opt = db.session.get(MaterialsOption, int(option_id))
+                if not opt:
+                    continue
+                if qty <= 0:
+                    qty = compute_default_qty(sess, shipment)
+                dup = MaterialOrderItem.query.filter_by(
+                    session_id=sess.id,
+                    catalog_ref=f"materials_options:{opt.id}",
+                ).first()
+                if dup:
+                    dup.quantity = qty
+                    continue
+                item = MaterialOrderItem(
+                    session_id=sess.id,
+                    catalog_ref=f"materials_options:{opt.id}",
+                    title_snapshot=opt.title,
+                    description_snapshot=opt.description,
+                    sku_physical_snapshot=opt.sku_physical,
+                    language=lang,
+                    format=fmt_val,
+                    quantity=qty,
                 )
                 db.session.add(item)
-                db.session.commit()
-            else:
-                flash("Material and quantity required", "error")
-            return redirect(url_for("materials.materials_view", session_id=session_id))
-        if action == "update_item":
-            item_id = request.form.get("item_id")
-            item = (
-                db.session.get(SessionShippingItem, int(item_id)) if item_id else None
-            )
-            if item and item.session_shipping_id == shipment.id:
-                material_id = request.form.get("material_id")
-                qty = request.form.get("quantity")
-                item.material_id = int(material_id) if material_id else None
-                item.quantity = int(qty) if qty else 0
-                item.notes = request.form.get("notes")
-                db.session.commit()
-            return redirect(url_for("materials.materials_view", session_id=session_id))
-        if action == "delete_item":
-            item_id = request.form.get("item_id")
-            item = (
-                db.session.get(SessionShippingItem, int(item_id)) if item_id else None
-            )
-            if item and item.session_shipping_id == shipment.id:
-                db.session.delete(item)
-                db.session.commit()
+
+            db.session.commit()
+            flash("Saved", "info")
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "mark_shipped":
             if not shipment.ship_date:
@@ -444,37 +407,18 @@ def materials_view(
                 db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
     status = shipment.status
-    materials = Material.query.order_by(Material.name).all() if not view_only else []
     order_items = (
         MaterialOrderItem.query.filter_by(session_id=session_id)
         .order_by(MaterialOrderItem.id)
         .all()
     )
-    materials_options = (
-        MaterialsOption.query.filter_by(order_type=shipment.order_type, is_active=True)
-        .order_by(MaterialsOption.title)
-        .all()
-        if shipment.order_type
-        else []
-    )
-    selected_option = (
-        db.session.get(MaterialsOption, shipment.materials_option_id)
-        if shipment.materials_option_id
-        else None
-    )
-    selected_options = shipment.materials_options
     return render_template(
         "sessions/materials.html",
         sess=sess,
         shipment=shipment,
         status=status,
-        materials=materials,
         order_items=order_items,
-        materials_options=materials_options,
-        selected_option=selected_option,
-        selected_options=selected_options,
         order_types=ORDER_TYPES,
-        order_statuses=ORDER_STATUSES,
         csa_view=csa_view,
         readonly=readonly,
         current_user=current_user,
@@ -490,7 +434,6 @@ def materials_view(
         show_sim_outline=show_sim_outline,
         show_credits=show_credits,
         sim_base=sim_base,
-        order_date_val=order_date_val,
         simulation_outlines=simulation_outlines,
         form=None,
         errors={},
@@ -526,13 +469,7 @@ def apply_defaults(
         )
 
     shipment = SessionShipping.query.filter_by(session_id=sess.id).first()
-    participant_count = (
-        db.session.query(db.func.count(SessionParticipant.id))
-        .filter_by(session_id=sess.id)
-        .scalar()
-    )
-    sets = shipment.material_sets if shipment and shipment.material_sets else 0
-    qty_base = sets if sets > 0 else participant_count
+    qty_base = compute_default_qty(sess, shipment)
     created = 0
     updated = 0
     for d in defaults:
@@ -619,68 +556,14 @@ def update_order_item_quantity(
         return "Invalid quantity", 400
     if qty < 0:
         qty = 0
-    item.quantity = qty
+    if qty == 0:
+        db.session.delete(item)
+    else:
+        item.quantity = qty
     db.session.commit()
-    return jsonify(status="ok", quantity=item.quantity)
+    return jsonify(status="ok", quantity=qty)
 
 
-@bp.post("/items")
-@materials_access
-def add_order_item(
-    session_id: int,
-    sess: Session,
-    current_user: User | None,
-    csa_view: bool,
-    view_only: bool,
-):
-    if not can_manage_shipment(current_user) or view_only:
-        abort(403)
-    data = request.get_json(silent=True) or request.form
-    option_id = data.get("option_id")
-    language = data.get("language") or ""
-    fmt = data.get("format") or ""
-    try:
-        qty = int(data.get("quantity"))
-    except (TypeError, ValueError):
-        qty = 0
-    if not option_id or qty <= 0 or not fmt:
-        return "Invalid data", 400
-    opt = db.session.get(MaterialsOption, int(option_id))
-    if not opt:
-        return "Invalid option", 400
-    item = MaterialOrderItem(
-        session_id=sess.id,
-        catalog_ref=f"materials_options:{opt.id}",
-        title_snapshot=opt.title,
-        description_snapshot=opt.description,
-        sku_physical_snapshot=opt.sku_physical,
-        language=language,
-        format=fmt,
-        quantity=qty,
-    )
-    db.session.add(item)
-    db.session.commit()
-    return jsonify(status="ok", id=item.id)
-
-
-@bp.post("/items/<int:item_id>/delete")
-@materials_access
-def delete_order_item(
-    session_id: int,
-    item_id: int,
-    sess: Session,
-    current_user: User | None,
-    csa_view: bool,
-    view_only: bool,
-):
-    if not can_manage_shipment(current_user) or view_only:
-        abort(403)
-    item = MaterialOrderItem.query.filter_by(session_id=session_id, id=item_id).first()
-    if not item:
-        abort(404)
-    db.session.delete(item)
-    db.session.commit()
-    return jsonify(status="ok")
 
 
 @bp.post("/deliver")
