@@ -419,8 +419,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 10. Emails & Auth
 
 - **Mail & Notification settings** store SMTP configuration and manage processor assignments mapping (Region, Processing type) → Users for future notifications.
+  - Processors render in a table with columns **Region**, **Type**, and **Processors**.
+  - Each row shows assigned users as removable chips and allows adding more via a user selector.
+  - Access requirements are unchanged and saving assignments triggers no notifications.
 - **Magic links are disabled.** Any legacy endpoints must return HTTP 410 Gone or redirect to sign-in.
-- Prework & account-invite emails include: **URL, username (email), temp password** (`KTRocks!` or `KTRocks!CSA`).  
+- Prework & account-invite emails include: **URL, username (email), temp password** (`KTRocks!` or `KTRocks!CSA`).
 - Users can change passwords in **My Profile**; no forced password change.
 
 ---

@@ -33,7 +33,7 @@ def test_processors_persist(app):
         sess["user_id"] = admin_id
     resp = client.post(
         "/mail-settings/processors",
-        data={"region": "NA", "processing_type": "Digital", "user_ids": [str(u1_id)]},
+        data={"NA-Digital": [str(u1_id)]},
     )
     assert resp.status_code == 302
     with app.app_context():

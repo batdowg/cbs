@@ -27,55 +27,68 @@
 </form>
 
 <h2>Processors</h2>
+<p>Assign processors per region and processing type.</p>
 <form method="post" action="{{ url_for('settings_mail.save_processors') }}" id="proc-form">
-  <label>Region
-    <select name="region" id="proc-region">
+  <table>
+    <thead>
+      <tr><th>Region</th><th>Type</th><th>Processors</th></tr>
+    </thead>
+    <tbody>
       {% for code,label in regions %}
-      <option value="{{ code }}" {% if proc_region==code %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>Processing type
-    <select name="processing_type" id="proc-type">
-      {% for pt in processing_types %}
-      <option value="{{ pt }}" {% if proc_type==pt %}selected{% endif %}>{{ pt }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <div>
-    <label>People</label>
-    <div id="proc-people">
-      {% for u in proc_users %}
-      <div><input type="hidden" name="user_ids" value="{{ u.id }}">{{ u.full_name or u.email }} <button type="button" data-remove="{{ u.id }}">Remove</button></div>
-      {% endfor %}
-      <input type="text" id="proc-user-input" list="proc-user-options">
-      <datalist id="proc-user-options">
-        {% for u in users %}
-        <option data-id="{{ u.id }}" value="{{ u.full_name or u.email }}"></option>
+        {% for pt in processing_types %}
+        <tr>
+          <td>{{ label }}</td>
+          <td>{{ pt }}</td>
+          <td>
+            <div class="proc-people" data-key="{{ code }}-{{ pt }}">
+              {% for u in assignments.get((code, pt), []) %}
+              <div><input type="hidden" name="{{ code }}-{{ pt }}" value="{{ u.id }}">{{ u.full_name or u.email }} <button type="button" data-remove="{{ u.id }}">Remove</button></div>
+              {% endfor %}
+              <input type="text" class="proc-user-input" list="proc-user-options">
+              <button type="button" class="add-proc-user">Add</button>
+            </div>
+          </td>
+        </tr>
         {% endfor %}
-      </datalist>
-      <button type="button" id="add-proc-user">Add</button>
-    </div>
-  </div>
+      {% endfor %}
+    </tbody>
+  </table>
+  <datalist id="proc-user-options">
+    {% for u in users %}
+    <option data-id="{{ u.id }}" value="{{ u.full_name or u.email }}"></option>
+    {% endfor %}
+  </datalist>
   <button type="submit">Save Processors</button>
 </form>
 </div>
 <script>
-const regionSel=document.getElementById('proc-region');
-const typeSel=document.getElementById('proc-type');
-function reload(){
-  const r=regionSel.value;const t=typeSel.value;
-  const params=new URLSearchParams(window.location.search);
-  params.set('proc_region',r);params.set('proc_type',t);
-  window.location='?' + params.toString();
-}
-regionSel.addEventListener('change',reload);
-typeSel.addEventListener('change',reload);
-const addBtn=document.getElementById('add-proc-user');
-const input=document.getElementById('proc-user-input');
-const list=document.getElementById('proc-user-options');
-const container=document.getElementById('proc-people');
-addBtn.addEventListener('click',function(e){e.preventDefault();const val=input.value.trim();if(!val){return;}const opt=[...list.options].find(o=>o.value===val);if(!opt){return;}const id=opt.dataset.id;if(container.querySelector('input[name="user_ids"][value="'+id+'"])'){input.value='';return;}const div=document.createElement('div');div.innerHTML='<input type="hidden" name="user_ids" value="'+id+'">'+val+' <button type="button" data-remove="'+id+'">Remove</button>';container.insertBefore(div, input);input.value='';});
-container.addEventListener('click',function(e){if(e.target.dataset.remove){e.preventDefault();e.target.parentElement.remove();}});
+document.querySelectorAll('.proc-people').forEach(container=>{
+  const input=container.querySelector('.proc-user-input');
+  const addBtn=container.querySelector('.add-proc-user');
+  const key=container.dataset.key;
+  addBtn.addEventListener('click',function(e){
+    e.preventDefault();
+    const val=input.value.trim();
+    if(!val){return;}
+    const list=document.getElementById('proc-user-options');
+    const opt=[...list.options].find(o=>o.value===val);
+    if(!opt){return;}
+    const id=opt.dataset.id;
+    if(container.querySelector('input[name="'+key+'"][value="'+id+'"])'){
+      input.value='';
+      return;
+    }
+    const div=document.createElement('div');
+    div.innerHTML='<input type="hidden" name="'+key+'" value="'+id+'">'+val+' <button type="button" data-remove="'+id+'">Remove</button>';
+    container.insertBefore(div, input);
+    input.value='';
+  });
+  container.addEventListener('click',function(e){
+    if(e.target.dataset.remove){
+      e.preventDefault();
+      e.target.parentElement.remove();
+    }
+  });
+});
 </script>
 {% endblock %}
