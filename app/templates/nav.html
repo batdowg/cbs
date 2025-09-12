@@ -22,7 +22,7 @@
     <label>View:</label>
     <select name="view" onchange="this.form.submit()">
       {% for opt in view_options %}
-      {% set label = 'Session Admin' if opt == 'CSA' else opt.replace('_', ' ').title() %}
+      {% set label = opt.replace('_', ' ').title() %}
       <option value="{{ opt }}" {% if opt == active_view %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>

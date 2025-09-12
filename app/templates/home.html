@@ -6,9 +6,9 @@
 {% endif %}
 {% if active_view == 'ADMIN' %}
   {% include 'home/_admin.html' %}
-{% elif active_view == 'SESSION_MANAGER' %}
+{% elif active_view in ['SESSION_MANAGER', 'SESSION_ADMIN'] %}
   {% include 'home/_sessions.html' %}
-{% elif active_view == 'MATERIALS' %}
+{% elif active_view == 'MATERIAL_MANAGER' %}
   {% include 'home/_materials.html' %}
 {% elif active_view == 'DELIVERY' %}
   {% include 'home/_delivery.html' %}

@@ -1,323 +1,228 @@
+from __future__ import annotations
+
+"""Sidebar navigation configuration.
+
+The mapping in ``VIEW_MENUS`` is **display only** – it controls which links are
+rendered for a given View. Permission checks live in the routes themselves.
+"""
+
+from copy import deepcopy
 from typing import Any, Dict, List
 
-from flask import session as flask_session, has_request_context, request, url_for
-from sqlalchemy import func
-
-from .acl import (
-    can_manage_users,
-    is_admin,
-    is_kcrm,
-    is_delivery,
-    is_contractor,
-    is_kt_staff,
-)
+from flask import request, url_for
 
 MenuItem = Dict[str, Any]
 
 
-def _has_certificates(user) -> bool:
-    if not has_request_context():
-        return False
-    from ..app import db
-    from ..models import ParticipantAccount, Participant, Certificate
+# --- Common menu items ----------------------------------------------------
 
-    account_id = flask_session.get("participant_account_id")
-    if not account_id and user is not None:
-        email = (getattr(user, "email", "") or "").lower()
-        account = (
-            db.session.query(ParticipantAccount)
-            .filter(func.lower(ParticipantAccount.email) == email)
-            .one_or_none()
-        )
-        account_id = account.id if account else None
-    if not account_id:
-        return False
-    return (
-        db.session.query(Certificate.id)
-        .join(Participant, Certificate.participant_id == Participant.id)
-        .filter(Participant.account_id == account_id)
-        .first()
-        is not None
-    )
+HOME: MenuItem = {"id": "home", "label": "Home", "endpoint": "home"}
+NEW_ORDER: MenuItem = {
+    "id": "new_order",
+    "label": "New Order",
+    "href": "https://cbs.ktapps.net/sessions/new",
+}
+WORKSHOP_DASHBOARD: MenuItem = {
+    "id": "sessions",
+    "label": "Workshop Dashboard",
+    "endpoint": "sessions.list_sessions",
+}
+MATERIAL_DASHBOARD: MenuItem = {
+    "id": "materials",
+    "label": "Material Dashboard",
+    "endpoint": "materials_orders.list_orders",
+}
+SURVEYS: MenuItem = {"id": "surveys", "label": "Surveys", "endpoint": "surveys"}
+MY_SESSIONS: MenuItem = {
+    "id": "my_sessions",
+    "label": "My Sessions",
+    "endpoint": "my_sessions.list_my_sessions",
+}
+MY_WORKSHOPS: MenuItem = {
+    "id": "my_workshops",
+    "label": "My Workshops",
+    "endpoint": "learner.my_workshops",
+}
+MY_RESOURCES: MenuItem = {
+    "id": "my_resources",
+    "label": "My Resources",
+    "endpoint": "learner.my_resources",
+}
+MY_CERTS: MenuItem = {
+    "id": "my_certificates",
+    "label": "My Certificates",
+    "endpoint": "learner.my_certs",
+}
+PROFILE_LINK: MenuItem = {
+    "id": "profile_details",
+    "label": "My Profile",
+    "endpoint": "learner.profile",
+}
+PROFILE_GROUP: MenuItem = {
+    "id": "profile",
+    "label": "My Profile",
+    "children": [PROFILE_LINK, MY_RESOURCES, {"id": "profile_certs", "label": "My Certificates", "endpoint": "learner.my_certs"}],
+}
+LOGOUT: MenuItem = {"id": "logout", "label": "Logout", "endpoint": "auth.logout"}
 
-
-def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
-    items: List[MenuItem] = []
-    items.append({"id": "home", "label": "Home", "endpoint": "home"})
-    items.append(
+# Settings submenu items
+CLIENTS: MenuItem = {
+    "id": "clients",
+    "label": "Clients",
+    "endpoint": "clients.list_clients",
+}
+WORKSHOP_TYPES: MenuItem = {
+    "id": "workshop_types",
+    "label": "Workshop Types",
+    "endpoint": "workshop_types.list_types",
+}
+MATERIAL_SETTINGS: MenuItem = {
+    "id": "material_settings",
+    "label": "Material Settings",
+    "children": [
         {
-            "id": "new_order",
-            "label": "New Order",
-            "href": "https://cbs.ktapps.net/sessions/new",
-        }
-    )
-    items.append(
+            "id": "standard",
+            "label": "Standard",
+            "endpoint": "settings_materials.list_options",
+            "args": {"slug": "standard"},
+        },
         {
-            "id": "my_sessions",
-            "label": "My Sessions",
-            "endpoint": "my_sessions.list_my_sessions",
-        }
-    )
-    if is_admin(user):
-        sess_args = (
-            flask_session.get("sessions_list_args") if has_request_context() else None
-        )
-        items.append(
-            {
-                "id": "sessions",
-                "label": "Workshop Dashboard",
-                "endpoint": "sessions.list_sessions",
-                "args": sess_args,
-            }
-        )
-    if is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user):
-        items.append(
-            {
-                "id": "materials",
-                "label": "Material Dashboard",
-                "endpoint": "materials_orders.list_orders",
-            }
-        )
-    items.append({"id": "surveys", "label": "Surveys", "endpoint": "surveys"})
-    if show_resources:
-        items.append(
-            {
-                "id": "my_resources",
-                "label": "My Resources",
-                "endpoint": "learner.my_resources",
-            }
-        )
-    profile_children = [
-        {"id": "profile_details", "label": "My Profile", "endpoint": "learner.profile"},
-    ]
-    if _has_certificates(user):
-        profile_children.append(
-            {
-                "id": "profile_certs",
-                "label": "My Certificates",
-                "endpoint": "learner.my_certs",
-            }
-        )
-    if len(profile_children) > 1:
-        items.append(
-            {"id": "profile", "label": "My Profile", "children": profile_children}
-        )
-    else:
-        items.append(
-            {"id": "profile", "label": "My Profile", "endpoint": "learner.profile"}
-        )
-    settings_children: List[MenuItem] = []
-    if can_manage_users(user):
-        settings_children.extend(
-            [
-                {
-                    "id": "clients",
-                    "label": "Clients",
-                    "endpoint": "clients.list_clients",
-                },
-                {
-                    "id": "workshop_types",
-                    "label": "Workshop Types",
-                    "endpoint": "workshop_types.list_types",
-                },
-                {
-                    "id": "materials_settings",
-                    "label": "Material settings",
-                    "children": [
-                        {
-                            "id": "standard",
-                            "label": "Standard",
-                            "endpoint": "settings_materials.list_options",
-                            "args": {"slug": "standard"},
-                        },
-                        {
-                            "id": "modular",
-                            "label": "Modular",
-                            "endpoint": "settings_materials.list_options",
-                            "args": {"slug": "modular"},
-                        },
-                        {
-                            "id": "ldi",
-                            "label": "LDI",
-                            "endpoint": "settings_materials.list_options",
-                            "args": {"slug": "ldi"},
-                        },
-                        {
-                            "id": "bulk",
-                            "label": "Bulk Order",
-                            "endpoint": "settings_materials.list_options",
-                            "args": {"slug": "bulk"},
-                        },
-                        {
-                            "id": "simulation",
-                            "label": "Simulation",
-                            "endpoint": "settings_materials.list_options",
-                            "args": {"slug": "simulation"},
-                        },
-                    ],
-                },
-            ]
-        )
-    if is_kt_staff(user) or is_contractor(user):
-        settings_children.append(
-            {
-                "id": "simulation_outlines",
-                "label": "Simulation Outlines",
-                "endpoint": "settings_simulations.list_simulations",
-            }
-        )
-    if (
-        is_admin(user)
-        or is_delivery(user)
-        or getattr(user, "is_kt_facilitator", False)
-        or is_contractor(user)
-    ):
-        settings_children.append(
-            {
-                "id": "resources",
-                "label": "Resources",
-                "endpoint": "settings_resources.list_resources",
-            }
-        )
-    if can_manage_users(user):
-        settings_children.extend(
-            [
-                {
-                    "id": "languages",
-                    "label": "Languages",
-                    "endpoint": "settings_languages.list_langs",
-                },
-                {
-                    "id": "certificate_templates",
-                    "label": "Certificate Templates",
-                    "endpoint": "settings_cert_templates.list_series",
-                },
-                {"id": "users", "label": "Users", "endpoint": "users.list_users"},
-                {
-                    "id": "mail",
-                    "label": "Mail Settings",
-                    "endpoint": "settings_mail.settings",
-                },
-            ]
-        )
-    if settings_children:
-        items.append(
-            {"id": "settings", "label": "Settings", "children": settings_children}
-        )
-    items.append({"id": "logout", "label": "Logout", "endpoint": "auth.logout"})
-    return items
-
-
-def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
-    items: List[MenuItem] = []
-    items.append({"id": "home", "label": "Home", "endpoint": "home"})
-    items.append(
+            "id": "modular",
+            "label": "Modular",
+            "endpoint": "settings_materials.list_options",
+            "args": {"slug": "modular"},
+        },
         {
-            "id": "new_order",
-            "label": "New Order",
-            "href": "https://cbs.ktapps.net/sessions/new",
-        }
-    )
-    if is_csa:
-        items.append(
-            {"id": "my_sessions", "label": "My Sessions", "endpoint": "csa.my_sessions"}
-        )
-        items.append(
-            {
-                "id": "my_workshops",
-                "label": "My Workshops",
-                "endpoint": "learner.my_workshops",
-            }
-        )
-    else:
-        items.append(
-            {
-                "id": "my_workshops",
-                "label": "My Workshops",
-                "endpoint": "learner.my_workshops",
-            }
-        )
-    if show_resources:
-        items.append(
-            {
-                "id": "my_resources",
-                "label": "My Resources",
-                "endpoint": "learner.my_resources",
-            }
-        )
-    if _has_certificates(None):
-        items.append(
-            {
-                "id": "my_certs",
-                "label": "My Certificates",
-                "endpoint": "learner.my_certs",
-            }
-        )
-    items.append(
-        {"id": "profile", "label": "My Profile", "endpoint": "learner.profile"}
-    )
-    items.append({"id": "logout", "label": "Logout", "endpoint": "auth.logout"})
-    return items
+            "id": "ldi",
+            "label": "LDI",
+            "endpoint": "settings_materials.list_options",
+            "args": {"slug": "ldi"},
+        },
+        {
+            "id": "bulk",
+            "label": "Bulk Order",
+            "endpoint": "settings_materials.list_options",
+            "args": {"slug": "bulk"},
+        },
+        {
+            "id": "simulation",
+            "label": "Simulation",
+            "endpoint": "settings_materials.list_options",
+            "args": {"slug": "simulation"},
+        },
+    ],
+}
+SIMULATION_OUTLINES: MenuItem = {
+    "id": "simulation_outlines",
+    "label": "Simulation Outlines",
+    "endpoint": "settings_simulations.list_simulations",
+}
+RESOURCES_SETTING: MenuItem = {
+    "id": "resources",
+    "label": "Resources",
+    "endpoint": "settings_resources.list_resources",
+}
+LANGUAGES: MenuItem = {
+    "id": "languages",
+    "label": "Languages",
+    "endpoint": "settings_languages.list_langs",
+}
+CERT_TEMPLATES: MenuItem = {
+    "id": "certificate_templates",
+    "label": "Certificate Templates",
+    "endpoint": "settings_cert_templates.list_series",
+}
+USERS: MenuItem = {"id": "users", "label": "Users", "endpoint": "users.list_users"}
+MAIL_SETTINGS: MenuItem = {
+    "id": "mail_settings",
+    "label": "Mail Settings",
+    "endpoint": "settings_mail.settings",
+}
+
+SETTINGS_ALL = [
+    CLIENTS,
+    WORKSHOP_TYPES,
+    MATERIAL_SETTINGS,
+    SIMULATION_OUTLINES,
+    RESOURCES_SETTING,
+    LANGUAGES,
+    CERT_TEMPLATES,
+    USERS,
+    MAIL_SETTINGS,
+]
+SETTINGS_SESSION_MANAGER = [CLIENTS, WORKSHOP_TYPES, RESOURCES_SETTING, CERT_TEMPLATES]
+SETTINGS_MATERIAL_MANAGER = [
+    CLIENTS,
+    WORKSHOP_TYPES,
+    MATERIAL_SETTINGS,
+    SIMULATION_OUTLINES,
+    RESOURCES_SETTING,
+]
+SETTINGS_DELIVERY = [RESOURCES_SETTING]
 
 
-VIEW_FILTERS = {
-    "ADMIN": {
-        "home",
-        "new_order",
-        "my_sessions",
-        "sessions",
-        "materials",
-        "surveys",
-        "my_resources",
-        "profile",
-        "settings",
-        "logout",
-    },
-    "SESSION_MANAGER": {
-        "home",
-        "new_order",
-        "my_sessions",
-        "sessions",
-        "surveys",
-        "my_resources",
-        "profile",
-        "logout",
-    },
-    "MATERIALS": {
-        "home",
-        "new_order",
-        "my_sessions",
-        "materials",
-        "surveys",
-        "my_resources",
-        "profile",
-        "settings",
-        "logout",
-    },
-    "DELIVERY": {"home", "new_order", "my_sessions", "surveys", "my_resources", "profile", "logout"},
-    "LEARNER": {
-        "home",
-        "new_order",
-        "my_workshops",
-        "my_resources",
-        "my_certs",
-        "profile",
-        "logout",
-    },
-    "CSA": {
-        "home",
-        "new_order",
-        "my_sessions",
-        "my_workshops",
-        "my_resources",
-        "my_certs",
-        "profile",
-        "logout",
-    },
+# --- View → menu mapping --------------------------------------------------
+
+VIEW_MENUS: Dict[str, List[MenuItem]] = {
+    "ADMIN": [
+        HOME,
+        NEW_ORDER,
+        WORKSHOP_DASHBOARD,
+        MATERIAL_DASHBOARD,
+        SURVEYS,
+        PROFILE_GROUP,
+        {"id": "settings", "label": "Settings", "children": SETTINGS_ALL},
+        LOGOUT,
+    ],
+    "SESSION_MANAGER": [
+        HOME,
+        NEW_ORDER,
+        WORKSHOP_DASHBOARD,
+        MATERIAL_DASHBOARD,
+        SURVEYS,
+        PROFILE_GROUP,
+        {"id": "settings", "label": "Settings", "children": SETTINGS_SESSION_MANAGER},
+        LOGOUT,
+    ],
+    "SESSION_ADMIN": [
+        HOME,
+        MY_SESSIONS,
+        WORKSHOP_DASHBOARD,
+        MATERIAL_DASHBOARD,
+        PROFILE_GROUP,
+        LOGOUT,
+    ],
+    "MATERIAL_MANAGER": [
+        HOME,
+        NEW_ORDER,
+        MATERIAL_DASHBOARD,
+        PROFILE_GROUP,
+        {"id": "settings", "label": "Settings", "children": SETTINGS_MATERIAL_MANAGER},
+        LOGOUT,
+    ],
+    "DELIVERY": [
+        HOME,
+        MY_SESSIONS,
+        WORKSHOP_DASHBOARD,
+        SURVEYS,
+        PROFILE_GROUP,
+        {"id": "settings", "label": "Settings", "children": SETTINGS_DELIVERY},
+        LOGOUT,
+    ],
+    "LEARNER": [
+        HOME,
+        MY_WORKSHOPS,
+        MY_RESOURCES,
+        MY_CERTS,
+        {"id": "profile", "label": "My Profile", "endpoint": "learner.profile"},
+        LOGOUT,
+    ],
 }
 
 
 def _mark_paths(items: List[MenuItem]) -> None:
+    """Populate ``href`` and active/ancestor flags for the given items."""
+
     current_path = request.path
     for item in items:
         endpoint = item.get("endpoint")
@@ -344,14 +249,10 @@ def _mark_paths(items: List[MenuItem]) -> None:
             item["is_ancestor"] = False
 
 
-def build_menu(
-    current_user, active_view: str, show_resources: bool, is_csa: bool = False
-) -> List[MenuItem]:
-    if current_user:
-        menu = _staff_base_menu(current_user, show_resources)
-    else:
-        menu = _participant_menu(show_resources, is_csa)
-    allowed = VIEW_FILTERS.get(active_view, VIEW_FILTERS["LEARNER"])
-    filtered = [item for item in menu if item["id"] in allowed]
-    _mark_paths(filtered)
-    return filtered
+def build_menu(active_view: str) -> List[MenuItem]:
+    """Return the menu items for ``active_view`` with active-state flags."""
+
+    menu = deepcopy(VIEW_MENUS.get(active_view, VIEW_MENUS["LEARNER"]))
+    _mark_paths(menu)
+    return menu
+

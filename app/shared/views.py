@@ -1,5 +1,12 @@
-STAFF_VIEWS = ['ADMIN', 'SESSION_MANAGER', 'CSA', 'MATERIALS', 'DELIVERY', 'LEARNER']
-CSA_VIEWS = ['CSA', 'LEARNER']
+STAFF_VIEWS = [
+    'ADMIN',
+    'SESSION_MANAGER',
+    'SESSION_ADMIN',
+    'MATERIAL_MANAGER',
+    'DELIVERY',
+    'LEARNER',
+]
+CSA_VIEWS = ['SESSION_ADMIN', 'LEARNER']
 
 
 def get_active_view(current_user, request, is_csa: bool = False) -> str:
@@ -15,6 +22,6 @@ def get_active_view(current_user, request, is_csa: bool = False) -> str:
     if is_csa:
         if cookie_view in CSA_VIEWS:
             return cookie_view
-        return 'CSA'
+        return 'SESSION_ADMIN'
     # participant context
     return 'LEARNER'

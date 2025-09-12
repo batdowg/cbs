@@ -42,7 +42,7 @@ def test_home_dashboard_per_view(app):
         db.session.commit()
     client = app.test_client()
     login(client, 'mat@example.com', 'pw')
-    client.get('/settings/view', query_string={'view': 'MATERIALS'})
+    client.get('/settings/view', query_string={'view': 'MATERIAL_MANAGER'})
     resp = client.get('/home', follow_redirects=True)
     assert b'Materials Dashboard' in resp.data
 
@@ -57,7 +57,7 @@ def test_cookie_override_and_clear(app):
     login(client, 'sess@example.com', 'pw')
     resp = client.get('/home', follow_redirects=True)
     assert b'Sessions Dashboard' in resp.data
-    client.get('/settings/view', query_string={'view': 'MATERIALS'})
+    client.get('/settings/view', query_string={'view': 'MATERIAL_MANAGER'})
     resp = client.get('/home', follow_redirects=True)
     assert b'Materials Dashboard' in resp.data
     client.get('/settings/view', query_string={'view': 'INVALID'})
@@ -90,5 +90,5 @@ def test_staff_view_switcher_shows_session_admin_option(app):
     resp = client.get('/home')
     assert b'action="/settings/view"' in resp.data
     form_chunk = resp.data.split(b'action="/settings/view"')[1].split(b'</form>')[0]
-    assert b'<option value="CSA"' in form_chunk
+    assert b'<option value="SESSION_ADMIN"' in form_chunk
     assert b'Session Admin' in form_chunk
