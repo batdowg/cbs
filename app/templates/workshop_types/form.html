@@ -46,7 +46,7 @@
   <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
   {% if wt %}
   <h2 id="defaults">Default Materials</h2>
-  <table id="defaults-table" border="1" cellpadding="4" cellspacing="0">
+  <table class="kt-table" id="defaults-table">
     <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Actions</th></tr>
     {% for d in defaults %}
     <tr data-row="{{ d.id }}"{% if loop.last %} data-blank-row="true"{% endif %}>

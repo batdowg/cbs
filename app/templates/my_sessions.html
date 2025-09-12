@@ -4,7 +4,7 @@
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
   {% if current_user %}
-  <table border="1" cellpadding="4" cellspacing="0">
+  <table class="kt-table">
     <tr>
       <th>Title</th>
       <th>Client</th>
@@ -31,7 +31,7 @@
     {% endfor %}
   </table>
   {% else %}
-  <table border="1" cellpadding="4" cellspacing="0">
+  <table class="kt-table">
     <tr>
       <th>Workshop</th>
       <th>Dates</th>

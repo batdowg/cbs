@@ -1,17 +1,35 @@
-/* Print-only styles */
+@media print {
+  /* Hide navigation and chrome */
+  .kt-sidebar,
+  nav,
+  header,
+  .flashes,
+  .view-banner {
+    display: none !important;
+  }
 
-.kt-sidebar,
-nav,
-.flashes,
-.view-banner {
-  display: none !important;
-}
+  body {
+    margin: 0;
+    color: #000;
+    background: #fff;
+  }
 
-body {
-  margin: 0;
-}
+  .content {
+    padding: 0;
+  }
 
-.kt-table th,
-.kt-table td {
-  border: 1px solid #000;
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  /* Ensure tables print cleanly */
+  .kt-table {
+    overflow: visible;
+  }
+
+  .kt-table th,
+  .kt-table td {
+    border: 1px solid #000;
+  }
 }

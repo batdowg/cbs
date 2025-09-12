@@ -4,7 +4,7 @@
 <div class="kt-card">
 <h1 class="kt-card-title">Simulation Outlines</h1>
 <p><a href="{{ url_for('settings_simulations.new_simulation') }}">New Simulation Outline</a></p>
-<table border="1" cellpadding="4" cellspacing="0">
+<table class="kt-table">
   <tr><th>Number</th><th>Skill</th><th>Level</th><th>Descriptor</th><th></th></tr>
   {% for sim in simulations %}
   <tr>

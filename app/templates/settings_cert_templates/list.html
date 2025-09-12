@@ -4,7 +4,7 @@
 <div class="kt-card">
 <h1 class="kt-card-title">Certificate Template Series</h1>
 <p><a href="{{ url_for('settings_cert_templates.new_series') }}">New Series</a></p>
-<table>
+<table class="kt-table">
   <tr><th>Code</th><th>Name</th><th>Active</th><th></th><th></th></tr>
   {% for s in series %}
   <tr>
