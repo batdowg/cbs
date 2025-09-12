@@ -29,7 +29,9 @@ def login(client, user_id):
 def test_material_default_unique(app):
     with app.app_context():
         wt = WorkshopType(code="AAA", name="Type A", cert_series="fn")
-        opt = MaterialsOption(order_type="KT-Run Standard materials", title="Item A", formats=["Physical"])
+        opt = MaterialsOption(
+            order_type="KT-Run Standard materials", title="Item A", formats=["Physical"]
+        )
         db.session.add_all([wt, opt])
         db.session.commit()
         ref = f"materials_options:{opt.id}"
@@ -40,6 +42,7 @@ def test_material_default_unique(app):
             language="en",
             catalog_ref=ref,
             default_format="Physical",
+            quantity_basis="Per learner",
         )
         db.session.add(d1)
         db.session.commit()
@@ -50,6 +53,7 @@ def test_material_default_unique(app):
             language="en",
             catalog_ref=ref,
             default_format="Physical",
+            quantity_basis="Per learner",
         )
         db.session.add(d2)
         with pytest.raises(Exception):
@@ -62,7 +66,9 @@ def test_delete_default_row(app):
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
         wt = WorkshopType(code="BBB", name="Type B", cert_series="fn")
-        opt = MaterialsOption(order_type="KT-Run Standard materials", title="Item A", formats=["Digital"])
+        opt = MaterialsOption(
+            order_type="KT-Run Standard materials", title="Item A", formats=["Digital"]
+        )
         db.session.add_all([admin, wt, opt])
         db.session.commit()
         d = WorkshopTypeMaterialDefault(
@@ -72,6 +78,7 @@ def test_delete_default_row(app):
             language="en",
             catalog_ref=f"materials_options:{opt.id}",
             default_format="Digital",
+            quantity_basis="Per learner",
             active=True,
         )
         db.session.add(d)

@@ -37,8 +37,12 @@ def setup_session(app):
         admin = User(email="admin@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("x")
         wt = WorkshopType(code="WT", name="WT", cert_series="fn")
-        opt = MaterialsOption(order_type="KT-Run Standard materials", title="ItemA", formats=["Digital"])
-        opt2 = MaterialsOption(order_type="KT-Run Standard materials", title="ItemB", formats=["Digital"])
+        opt = MaterialsOption(
+            order_type="KT-Run Standard materials", title="ItemA", formats=["Digital"]
+        )
+        opt2 = MaterialsOption(
+            order_type="KT-Run Standard materials", title="ItemB", formats=["Digital"]
+        )
         db.session.add_all([admin, wt, opt, opt2])
         db.session.commit()
         default = WorkshopTypeMaterialDefault(
@@ -48,6 +52,17 @@ def setup_session(app):
             language="en",
             catalog_ref=f"materials_options:{opt.id}",
             default_format="Digital",
+            quantity_basis="Per learner",
+            active=True,
+        )
+        default2 = WorkshopTypeMaterialDefault(
+            workshop_type_id=wt.id,
+            delivery_type="Onsite",
+            region_code="NA",
+            language="en",
+            catalog_ref=f"materials_options:{opt2.id}",
+            default_format="Digital",
+            quantity_basis="Per order",
             active=True,
         )
         sess = Session(
@@ -61,9 +76,11 @@ def setup_session(app):
         )
         p1 = Participant(email="a@a", full_name="A")
         p2 = Participant(email="b@b", full_name="B")
-        db.session.add_all([default, sess, p1, p2])
+        db.session.add_all([default, default2, sess, p1, p2])
         db.session.commit()
-        shipment = SessionShipping(session_id=sess.id, material_sets=5)
+        shipment = SessionShipping(
+            session_id=sess.id, material_sets=5, order_type="KT-Run Standard materials"
+        )
         db.session.add(shipment)
         db.session.commit()
         sp1 = SessionParticipant(session_id=sess.id, participant_id=p1.id)
@@ -82,10 +99,17 @@ def test_material_item_flow(app):
     resp = client.post(f"/sessions/{sess_id}/materials/apply-defaults")
     assert resp.status_code == 302
     with app.app_context():
-        items = MaterialOrderItem.query.filter_by(session_id=sess_id).all()
-        assert len(items) == 1
-        assert items[0].quantity == 5
-        item_id = items[0].id
+        items = (
+            MaterialOrderItem.query.filter_by(session_id=sess_id)
+            .order_by(MaterialOrderItem.id)
+            .all()
+        )
+        assert len(items) == 2
+        per_learner = items[0]
+        per_order = items[1]
+        assert per_learner.quantity == 5
+        assert per_order.quantity == 1
+        item_id = per_learner.id
 
     resp = client.post(
         f"/sessions/{sess_id}/materials/items/{item_id}/qty",
@@ -95,19 +119,6 @@ def test_material_item_flow(app):
     with app.app_context():
         assert db.session.get(MaterialOrderItem, item_id).quantity == 8
 
-    resp = client.post(
-        f"/sessions/{sess_id}/materials/items",
-        json={
-            "option_id": opt2_id,
-            "language": "en",
-            "format": "Digital",
-            "quantity": 3,
-        },
-    )
-    assert resp.status_code == 200
-    with app.app_context():
-        assert MaterialOrderItem.query.filter_by(session_id=sess_id).count() == 2
-
     with app.app_context():
         shipment = SessionShipping.query.filter_by(session_id=sess_id).first()
         shipment.material_sets = 7
@@ -115,4 +126,9 @@ def test_material_item_flow(app):
     resp = client.post(f"/sessions/{sess_id}/materials/apply-defaults")
     assert resp.status_code == 302
     with app.app_context():
-        assert db.session.get(MaterialOrderItem, item_id).quantity == 7
+        per_learner = db.session.get(MaterialOrderItem, item_id)
+        per_order = MaterialOrderItem.query.filter_by(
+            session_id=sess_id, catalog_ref=f"materials_options:{opt2_id}"
+        ).first()
+        assert per_learner.quantity == 7
+        assert per_order.quantity == 1
