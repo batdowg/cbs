@@ -139,7 +139,7 @@
   <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
   {% endif %}</h2>
   <table border="1" cellpadding="4" cellspacing="0" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}" data-default-formats='{{ default_formats | tojson }}'>
-    <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
+    <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th><th>Processed</th>{% if can_manage %}<th></th>{% endif %}</tr>
     {% for item in order_items %}
     <tr data-existing>
       <td>{{ item.title_snapshot }}
@@ -170,9 +170,16 @@
       </td>
       {% if can_manage %}
       <td><input type="number" name="items[{{ item.id }}][quantity]" value="{{ item.quantity }}" class="qty-input" min="0" style="width:4em"></td>
+      <td>
+        <input type="checkbox" name="items[{{ item.id }}][processed]" value="1" {% if item.processed %}checked{% endif %}>
+        {% if item.processed and item.processed_at %}
+          <div>{{ item.processed_at.strftime('%Y-%m-%d %H:%M') }} UTC {{ (item.processed_by.full_name or item.processed_by.email) if item.processed_by }}</div>
+        {% endif %}
+      </td>
       <td><button type="button" class="btn btn-sm btn-danger remove-row">Remove</button><input type="hidden" name="items[{{ item.id }}][delete]" value="0" class="delete-flag"></td>
       {% else %}
       <td>{{ item.quantity }}</td>
+      <td>{% if item.processed and item.processed_at %}{{ item.processed_at.strftime('%Y-%m-%d %H:%M') }} UTC {{ (item.processed_by.full_name or item.processed_by.email) if item.processed_by }}{% endif %}</td>
       {% endif %}
     </tr>
     {% endfor %}
@@ -182,6 +189,7 @@
     <tr data-row="__index__">
       <td>
         <input type="text" class="material-label" list="materials-__index__" placeholder="Search...">
+        <button type="button" class="clear-material">×</button>
         <input type="hidden" name="items[__index__][option_id]" class="material-id">
         <datalist id="materials-__index__" class="materials-list"></datalist>
       </td>
@@ -201,6 +209,7 @@
         </select>
       </td>
       <td><input type="number" name="items[__index__][quantity]" class="qty-input" min="0" style="width:4em"></td>
+      <td><input type="checkbox" name="items[__index__][processed]" value="1"></td>
       <td><button type="button" class="btn btn-sm btn-danger remove-row" style="display:none">Remove</button><input type="hidden" name="items[__index__][delete]" value="0" class="delete-flag"></td>
     </tr>
   </template>
