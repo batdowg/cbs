@@ -57,6 +57,7 @@
 {% if not session.materials_only and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}| <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>{% endif %}
  | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </p>
+{% endif %}
 {% if not session.materials_only %}
 <div>
   <h2>Client Session Administrator</h2>
@@ -192,10 +193,10 @@
   <form action="{{ url_for('sessions.generate_bulk', session_id=session.id) }}" method="post">
     <button type="submit">Generate Certificates</button>
   </form>
-  {% else %}
-  <p>Certificates cannot be generated until session is marked Delivered.</p>
+    {% else %}
+    <p>Certificates cannot be generated until session is marked Delivered.</p>
+    {% endif %}
   {% endif %}
-{% endif %}
-</div>
-{% endif %}
-{% endblock %}
+    </div>
+    {% endif %}
+  {% endblock %}

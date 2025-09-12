@@ -43,7 +43,20 @@ def _has_certificates(user) -> bool:
 
 def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
-    items.append({"id": "home", "label": "Home", "endpoint": "home"})
+    items.append(
+        {
+            "id": "home",
+            "label": "Home",
+            "children": [
+                {"id": "home_home", "label": "Home", "endpoint": "home"},
+                {
+                    "id": "new_order",
+                    "label": "New Order",
+                    "href": "https://cbs.ktapps.net/sessions/new",
+                },
+            ],
+        }
+    )
     items.append(
         {
             "id": "my_sessions",
@@ -203,7 +216,20 @@ def _staff_base_menu(user, show_resources: bool) -> List[MenuItem]:
 
 def _participant_menu(show_resources: bool, is_csa: bool) -> List[MenuItem]:
     items: List[MenuItem] = []
-    items.append({"id": "home", "label": "Home", "endpoint": "home"})
+    items.append(
+        {
+            "id": "home",
+            "label": "Home",
+            "children": [
+                {"id": "home_home", "label": "Home", "endpoint": "home"},
+                {
+                    "id": "new_order",
+                    "label": "New Order",
+                    "href": "https://cbs.ktapps.net/sessions/new",
+                },
+            ],
+        }
+    )
     if is_csa:
         items.append(
             {"id": "my_sessions", "label": "My Sessions", "endpoint": "csa.my_sessions"}
@@ -303,8 +329,12 @@ def _mark_paths(items: List[MenuItem]) -> None:
     for item in items:
         endpoint = item.get("endpoint")
         args = item.get("args") or {}
+        href = item.get("href")
         if endpoint:
             href = url_for(endpoint, **args)
+            item["href"] = href
+            item["is_current"] = href == current_path
+        elif href:
             item["href"] = href
             item["is_current"] = href == current_path
         else:
