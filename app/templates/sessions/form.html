@@ -15,7 +15,7 @@
         {% endfor %}
       </select>
       <a href="#" id="add-client" class="button">Add Client</a> 
-       CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span>
+       &emsp;CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span>
     </label>
     </div>
     <div><label>Region*
