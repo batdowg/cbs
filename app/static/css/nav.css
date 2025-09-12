@@ -61,44 +61,48 @@ header nav a.active,
 }
 
 /* Breadcrumbs */
-.breadcrumb {
+.kt-breadcrumbs {
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  font-size: 0.875rem; /* ~14px */
+  margin: 0 0 var(--space-4) 0;
+}
+
+.kt-breadcrumbs ol {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
   padding: var(--space-2) 0;
-  margin: 0 0 var(--space-4) 0;
-  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  font-size: 0.875rem; /* ~14px */
+  margin: 0;
 }
 
-.breadcrumb li {
+.kt-breadcrumbs li {
   display: flex;
   align-items: center;
   color: var(--kt-muted);
 }
 
-.breadcrumb li + li:before {
+.kt-breadcrumbs li + li:before {
   content: "/";
   margin: 0 var(--space-2);
   color: var(--kt-muted);
 }
 
-.breadcrumb a {
+.kt-breadcrumbs a {
   color: var(--kt-info);
   text-decoration: none;
 }
 
-.breadcrumb a:hover {
+.kt-breadcrumbs a:hover {
   text-decoration: underline;
 }
 
-.breadcrumb a:focus {
+.kt-breadcrumbs a:focus-visible {
   outline: var(--focus-outline);
   outline-offset: 2px;
 }
 
-.breadcrumb li[aria-current="page"],
-.breadcrumb li.current,
-.breadcrumb a[aria-current="page"] {
+.kt-breadcrumbs li[aria-current="page"],
+.kt-breadcrumbs li.current,
+.kt-breadcrumbs a[aria-current="page"] {
   color: var(--kt-text);
 }

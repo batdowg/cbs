@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Sessions{% endblock %}
 {% block content %}
+{% set breadcrumbs = [{'href': url_for('home'), 'label': 'Home'}, {'label': 'Workshops'}] %}
 <h1>Workshops</h1>
+{% include 'shared/_breadcrumbs.html' %}
 <p><a class="btn btn-success" href="{{ url_for('sessions.new_session') }}">New Order</a>
 {% if show_global %}
 <a href="{{ url_for('sessions.list_sessions') }}">Hide Global Sessions</a></p>
@@ -39,7 +41,8 @@
   <a href="{{ url_for('sessions.list_sessions') }}">Clear</a>
 </form><br>
 
-<table border="1" cellpadding="4" cellspacing="0">
+<div class="kt-table-wrapper">
+<table class="kt-table">
   <tr>
     {% macro sort_link(label, field) -%}
       {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
@@ -71,4 +74,5 @@
   </tr>
   {% endfor %}
 </table>
+</div>
 {% endblock %}

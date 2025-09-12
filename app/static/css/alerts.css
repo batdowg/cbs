@@ -5,6 +5,7 @@
   margin-block: var(--space-3);
   border: 1px solid var(--kt-border);
   border-left-width: 4px;
+  position: relative;
 }
 
 .flash a {
@@ -47,4 +48,22 @@
   border-color: var(--kt-info);
   border-left-color: var(--kt-info);
   color: var(--kt-body);
+}
+
+.flash-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+  font-size: 1rem;
+}
+
+.flash-close:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
 }

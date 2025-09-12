@@ -1,0 +1,43 @@
+/* Status chips and badges */
+
+.pill {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--kt-text);
+  border: 1px solid var(--kt-border);
+  background: var(--kt-bg);
+}
+
+.pill--new {
+  border-color: var(--kt-info);
+  background: color-mix(in srgb, var(--kt-info) 20%, var(--kt-bg));
+}
+
+.pill--inprogress {
+  border-color: var(--kt-accent-yellow);
+  background: color-mix(in srgb, var(--kt-accent-yellow) 20%, var(--kt-bg));
+}
+
+.pill--shipped {
+  border-color: var(--kt-accent-orange);
+  background: color-mix(in srgb, var(--kt-accent-orange) 20%, var(--kt-bg));
+}
+
+.pill--delivered {
+  border-color: var(--kt-accent-green);
+  background: color-mix(in srgb, var(--kt-accent-green) 20%, var(--kt-bg));
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  background: var(--kt-info);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}

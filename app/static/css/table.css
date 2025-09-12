@@ -1,4 +1,10 @@
-table {
+/* KT table styles */
+
+.kt-table-wrapper {
+  overflow-x: auto;
+}
+
+table.kt-table {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid var(--kt-border);
@@ -6,36 +12,26 @@ table {
   overflow: hidden;
 }
 
-thead th {
-  background: color-mix(in srgb, var(--kt-info) 15%, var(--kt-bg));
-  color: var(--kt-text);
-}
-
-tbody td {
-  color: var(--kt-body);
-}
-
-th,
-td {
+.kt-table th,
+.kt-table td {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--kt-border);
   text-align: left;
 }
 
-tbody tr:nth-child(even) {
+.kt-table thead th {
+  background: color-mix(in srgb, var(--kt-info) 15%, var(--kt-bg));
+  color: var(--kt-text);
+}
+
+.kt-table tbody td {
+  color: var(--kt-body);
+}
+
+.kt-table tbody tr:nth-child(even) {
   background: color-mix(in srgb, var(--kt-info) 4%, var(--kt-bg));
 }
 
-tbody tr:hover {
+.kt-table tbody tr:hover {
   background: color-mix(in srgb, var(--kt-info) 8%, var(--kt-bg));
-}
-
-tbody td a {
-  color: var(--kt-info);
-}
-
-tbody td a:hover,
-tbody td a:focus {
-  color: var(--kt-primary-hover);
-  text-decoration: underline;
 }

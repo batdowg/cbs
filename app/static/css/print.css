@@ -1,0 +1,17 @@
+/* Print-only styles */
+
+.kt-sidebar,
+nav,
+.flashes,
+.view-banner {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+}
+
+.kt-table th,
+.kt-table td {
+  border: 1px solid #000;
+}
