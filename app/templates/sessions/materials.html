@@ -135,7 +135,7 @@
   </div>
   </div>
 
-  <h2 id="material-items">Material Items
+  <h2 class="kt-card-title", id="material-items">Material Items
   {% if can_manage %}
   {% set apply_disabled = shipment.order_type != 'KT-Run Standard materials' or (shipment.material_sets or 0) == 0 %}
   {% set tooltip = 'Select # of Material sets first.' if (shipment.material_sets or 0) == 0 else '' %}
