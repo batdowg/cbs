@@ -32,7 +32,7 @@
       – Client Shipping Locations (inline table + add/edit)
   /settings/materials    – Materials Options (by order_type; languages, formats)
   /settings/languages    – Languages list (active, sort)
-  /settings/mail         – SMTP + From mapping + test send
+  /mail-settings         – SMTP configuration, processors mapping, test send
   /settings/resources    – Manage resources (name, type, link/file, workshop types)
 
 # Badges & cert files

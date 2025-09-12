@@ -135,7 +135,7 @@ CERT_TEMPLATES: MenuItem = {
 USERS: MenuItem = {"id": "users", "label": "Users", "endpoint": "users.list_users"}
 MAIL_SETTINGS: MenuItem = {
     "id": "mail_settings",
-    "label": "Mail Settings",
+    "label": "Mail & Notification",
     "endpoint": "settings_mail.settings",
 }
 

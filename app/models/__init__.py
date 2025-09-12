@@ -133,6 +133,21 @@ class Settings(db.Model):
             return None
 
 
+class ProcessorAssignment(db.Model):
+    __tablename__ = "processor_assignments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(8), nullable=False)
+    processing_type = db.Column(db.String(20), nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    user = db.relationship("User")
+    __table_args__ = (
+        db.UniqueConstraint("region", "processing_type", "user_id"),
+    )
+
+
 class Language(db.Model):
     __tablename__ = "languages"
 
@@ -843,6 +858,7 @@ __all__ = [
     "User",
     "ParticipantAccount",
     "Settings",
+    "ProcessorAssignment",
     "Language",
     "WorkshopType",
     "Client",

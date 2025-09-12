@@ -147,7 +147,7 @@ Roles control permissions; Views control menu visibility.
   - Material Dashboard
   - Surveys
   - My Profile ▾: My Profile, My Resources, My Certificates
-  - Settings ▾: Clients, Workshop Types, Material Settings, Simulation Outlines, Resources, Languages, Certificate Templates, Users, Mail Settings
+  - Settings ▾: Clients, Workshop Types, Material Settings, Simulation Outlines, Resources, Languages, Certificate Templates, Users, Mail & Notification
   - Logout
 - **Session Manager**
   - Home
@@ -354,6 +354,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
 - **/profile**: staff edit `User.full_name`, `User.title`, and Certificate Name; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
 - **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
+- **Region default**: `/sessions/new` preselects the current user's Region when available; users may change it before saving.
 - **Sessions & Settings**: all language pickers and labels show human names; templates use global `lang_label` helper to render codes; database stores codes; deactivated languages are not selectable; sort by configured order.
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
@@ -417,7 +418,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 10. Emails & Auth
 
-- **Magic links are disabled.** Any legacy endpoints must return HTTP 410 Gone or redirect to sign-in.  
+- **Mail & Notification settings** store SMTP configuration and manage processor assignments mapping (Region, Processing type) → Users for future notifications.
+- **Magic links are disabled.** Any legacy endpoints must return HTTP 410 Gone or redirect to sign-in.
 - Prework & account-invite emails include: **URL, username (email), temp password** (`KTRocks!` or `KTRocks!CSA`).  
 - Users can change passwords in **My Profile**; no forced password change.
 
