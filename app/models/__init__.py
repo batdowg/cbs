@@ -724,7 +724,6 @@ class SessionShipping(db.Model):
         nullable=True,
     )
     materials_components = db.Column(db.JSON)
-    materials_po_number = db.Column(db.String(64))
     submitted_at = db.Column(db.DateTime)
     delivered_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())

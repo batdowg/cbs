@@ -240,7 +240,6 @@ def materials_view(
                 "order_date",
                 "order_type",
                 "materials_format",
-                "materials_po_number",
                 "material_sets",
                 "credits",
             }

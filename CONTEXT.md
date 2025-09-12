@@ -385,7 +385,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 9. Materials Dashboard (current behavior)
 
 - **Default sort**: **Latest Arrival Date ascending** (earliest due first).  
-- **Columns**: Session, Client, Workshop Type, Latest Arrival, Format, Physical Components, PO Number, Status, Ship Date, Courier/Tracking.  
+- **Columns**: Session, Client, Workshop Type, Latest Arrival, Format, Physical Components, Status, Ship Date, Courier/Tracking.
 - **Filters** (currently implemented): status, format. (Future: date range, components, type, facilitator.)  
 - **Row actions** per permissions: Open, Edit, Mark Shipped, Mark Delivered.
 
@@ -466,3 +466,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
   new items.
 - Workshop Type default-material rows drop the "Remove" checkbox in favor of a
   per-row delete action (`POST /workshop-types/defaults/<id>/delete`).
+- PO Number field removed from materials orders and underlying storage.
