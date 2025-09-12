@@ -1,0 +1,31 @@
+/* Loading skeletons */
+@keyframes kt-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.skeleton {
+  background: var(--kt-border);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  background-size: 200px 100%;
+  animation: kt-shimmer 1.2s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+.skeleton-row {
+  height: 1em;
+  margin-bottom: var(--space-2);
+}
+.skeleton-block {
+  height: 150px;
+}
