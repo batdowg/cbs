@@ -1,51 +1,17 @@
 /* KT brand form controls */
 
 :root {
-  --field-h: 40px; /* match current select height */
+  --field-h: 40px;
   --field-px: 12px;
   --field-py: 8px;
-  --gap-sm: 8px;
-  --gap-md: 12px;
-  --field-gap-x: 12px;
-  --field-gap-y: 12px;
-  --radius-md: 12px; /* keep existing brand radius */
+  --gap-x: 8px; /* was 12px */
+  --gap-y: 8px; /* was 12px */
 }
-
-/* Horizontal spacing for adjacent single-line controls */
-input[type="text"],
-input[type="email"],
-input[type="url"],
-input[type="tel"],
-input[type="number"],
-input[type="search"],
-input[type="password"],
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"],
-select,
-.form-control {
-  margin-right: var(--field-gap-x);
-  margin-bottom: var(--field-gap-y);
-  vertical-align: middle; /* keeps baselines aligned when inline */
-}
-
-/* Trim extra right margin when a control naturally fills the row */
-.form-control:last-child,
-select:last-child,
-input:last-child {
-  margin-right: 0;
-}
-
 /* Inline action/link spacing */
 select + a,
 input + a,
 .form-control + a {
   margin-left: 8px;
-}
-
-/* Keep icons/text aligned with controls */
-select + a,
-input + a {
   vertical-align: middle;
 }
 
@@ -66,7 +32,7 @@ textarea,
   color: var(--kt-body);
   background-color: #fff;
   border: 1px solid var(--kt-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
 }
 
 /* Single-line control sizing */
@@ -86,7 +52,17 @@ select,
   height: var(--field-h);
   line-height: calc(var(--field-h) - 2px);
   padding: var(--field-py) var(--field-px);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
+  margin-right: var(--gap-x);
+  margin-bottom: 0;
+  vertical-align: middle;
+}
+
+/* Trim extra right margin when a control naturally fills the row */
+.form-control:last-child,
+select:last-child,
+input:last-child {
+  margin-right: 0;
 }
 
 select {
@@ -102,14 +78,13 @@ input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
   padding-right: calc(var(--field-px) * 2 + 1.5em);
-  vertical-align: middle;
 }
 
 textarea {
   min-height: calc(var(--field-h) * 2);
   line-height: 1.4;
   padding: var(--field-py) var(--field-px);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
 }
 
 input::placeholder,
@@ -140,11 +115,18 @@ label {
 }
 
 .form-group {
-  margin-bottom: var(--gap-md);
+  margin-bottom: var(--gap-y);
 }
 
 .form-group > label {
-  margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--field-h);
+  margin-bottom: 0;
+}
+
+.form-group.label-top > label {
+  align-items: flex-start;
 }
 
 .form-help {
@@ -213,13 +195,10 @@ input[type="checkbox"] + label {
 .field-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--field-gap-y) var(--field-gap-x);
+  column-gap: var(--gap-x);
+  row-gap: var(--gap-y);
 }
 
 .field-row .form-group {
-  margin: 0; /* spacing comes from gap */
-}
-
-.field-row.gap-sm {
-  gap: var(--gap-sm);
+  margin: 0; /* spacing comes from gaps */
 }
