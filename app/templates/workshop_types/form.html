@@ -47,7 +47,7 @@
   {% if wt %}
   <h2 id="defaults">Default Materials</h2>
   <table id="defaults-table" border="1" cellpadding="4" cellspacing="0">
-    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Remove</th></tr>
+    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Actions</th></tr>
     {% for d in defaults %}
     <tr data-row="{{ d.id }}"{% if loop.last %} data-blank-row="true"{% endif %}>
       <td>
@@ -86,7 +86,7 @@
         </select>
       </td>
       <td><input type="checkbox" name="defaults[{{ d.id }}][active]" {% if d.active %}checked{% endif %}></td>
-      <td>{% if not loop.last %}<input type="checkbox" name="defaults[{{ d.id }}][remove]">{% endif %}</td>
+      <td>{% if not loop.last %}<button type="button" class="btn btn-sm btn-danger delete-default" data-id="{{ d.id }}" data-url="{{ url_for('workshop_types.delete_default_row', default_id=d.id) }}">Delete</button>{% endif %}</td>
     </tr>
     {% endfor %}
   </table>
@@ -135,5 +135,15 @@
 </form>
 {% if wt %}
 <script src="{{ url_for('static', filename='js/material_picker.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.delete-default').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var url = btn.dataset.url;
+      fetch(url, {method:'POST'}).then(function(r){ if(r.ok){ btn.closest('tr').remove(); }});
+    });
+  });
+});
+</script>
 {% endif %}
 {% endblock %}

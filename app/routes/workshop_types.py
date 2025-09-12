@@ -110,6 +110,25 @@ def material_options(current_user):
     return jsonify(items=results)
 
 
+@bp.post("/defaults/<int:default_id>/delete")
+@staff_required
+def delete_default_row(default_id: int, current_user):
+    d = db.session.get(WorkshopTypeMaterialDefault, default_id)
+    if not d:
+        abort(404)
+    wt_id = d.workshop_type_id
+    db.session.delete(d)
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id,
+            action="wt_material_default_delete",
+            details=f"id={default_id} wt={wt_id}",
+        )
+    )
+    db.session.commit()
+    return jsonify(status="ok")
+
+
 @bp.get("/")
 @staff_required
 def list_types(current_user):
@@ -296,16 +315,6 @@ def update_type(type_id: int, current_user):
             form_defaults.setdefault(row, {})[field] = value
     for d in list(defaults):
         data = form_defaults.pop(str(d.id), {})
-        if data.get("remove"):
-            db.session.delete(d)
-            db.session.add(
-                AuditLog(
-                    user_id=current_user.id,
-                    action="wt_material_default_delete",
-                    details=f"id={d.id} wt={wt.id}",
-                )
-            )
-            continue
         opt_val = data.get("material_option_id") or ""
         if not opt_val:
             continue

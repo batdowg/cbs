@@ -8,6 +8,7 @@ from app.models import (
     User,
     WorkshopType,
     Session,
+    SessionShipping,
     MaterialsOption,
     WorkshopTypeMaterialDefault,
     MaterialOrderItem,
@@ -37,7 +38,8 @@ def setup_session(app):
         admin.set_password("x")
         wt = WorkshopType(code="WT", name="WT", cert_series="fn")
         opt = MaterialsOption(order_type="KT-Run Standard materials", title="ItemA", formats=["Digital"])
-        db.session.add_all([admin, wt, opt])
+        opt2 = MaterialsOption(order_type="KT-Run Standard materials", title="ItemB", formats=["Digital"])
+        db.session.add_all([admin, wt, opt, opt2])
         db.session.commit()
         default = WorkshopTypeMaterialDefault(
             workshop_type_id=wt.id,
@@ -61,25 +63,56 @@ def setup_session(app):
         p2 = Participant(email="b@b", full_name="B")
         db.session.add_all([default, sess, p1, p2])
         db.session.commit()
+        shipment = SessionShipping(session_id=sess.id, material_sets=5)
+        db.session.add(shipment)
+        db.session.commit()
         sp1 = SessionParticipant(session_id=sess.id, participant_id=p1.id)
         sp2 = SessionParticipant(session_id=sess.id, participant_id=p2.id)
         db.session.add_all([sp1, sp2])
         db.session.commit()
-        return admin.id, sess.id
+        return admin.id, sess.id, opt2.id
 
 
 @pytest.mark.smoke
-def test_apply_defaults(app):
-    admin_id, sess_id = setup_session(app)
+def test_material_item_flow(app):
+    admin_id, sess_id, opt2_id = setup_session(app)
     client = app.test_client()
     login(client, admin_id)
+
     resp = client.post(f"/sessions/{sess_id}/materials/apply-defaults")
     assert resp.status_code == 302
     with app.app_context():
         items = MaterialOrderItem.query.filter_by(session_id=sess_id).all()
         assert len(items) == 1
-        assert items[0].quantity == 2
+        assert items[0].quantity == 5
+        item_id = items[0].id
+
+    resp = client.post(
+        f"/sessions/{sess_id}/materials/items/{item_id}/qty",
+        json={"quantity": 8},
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert db.session.get(MaterialOrderItem, item_id).quantity == 8
+
+    resp = client.post(
+        f"/sessions/{sess_id}/materials/items",
+        json={
+            "option_id": opt2_id,
+            "language": "en",
+            "format": "Digital",
+            "quantity": 3,
+        },
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert MaterialOrderItem.query.filter_by(session_id=sess_id).count() == 2
+
+    with app.app_context():
+        shipment = SessionShipping.query.filter_by(session_id=sess_id).first()
+        shipment.material_sets = 7
+        db.session.commit()
     resp = client.post(f"/sessions/{sess_id}/materials/apply-defaults")
     assert resp.status_code == 302
     with app.app_context():
-        assert MaterialOrderItem.query.filter_by(session_id=sess_id).count() == 1
+        assert db.session.get(MaterialOrderItem, item_id).quantity == 7
