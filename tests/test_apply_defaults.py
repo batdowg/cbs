@@ -130,5 +130,8 @@ def test_material_item_flow(app):
         per_order = MaterialOrderItem.query.filter_by(
             session_id=sess_id, catalog_ref=f"materials_options:{opt2_id}"
         ).first()
-        assert per_learner.quantity == 7
+        assert per_learner.quantity == 8
         assert per_order.quantity == 1
+        assert (
+            MaterialOrderItem.query.filter_by(session_id=sess_id).count() == 2
+        )

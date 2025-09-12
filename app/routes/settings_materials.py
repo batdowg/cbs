@@ -15,6 +15,7 @@ MATERIAL_MAP = {
 }
 
 FORMAT_CHOICES = ['Digital', 'Physical', 'Self-paced', 'Mixed']
+QTY_BASIS_CHOICES = ['Per learner', 'Per order']
 
 
 def _get_type(slug: str):
@@ -80,10 +81,15 @@ def create_option(slug: str, current_user):
     lang_ids = [int(l) for l in request.form.getlist('language_ids') if l.isdigit()]
     langs = Language.query.filter(Language.id.in_(lang_ids)).all() if lang_ids else []
     formats = [f for f in request.form.getlist('formats') if f in FORMAT_CHOICES]
+    quantity_basis = request.form.get('quantity_basis') or 'Per learner'
+    if quantity_basis not in QTY_BASIS_CHOICES:
+        flash('Invalid quantity basis', 'error')
+        return redirect(url_for('settings_materials.new_option', slug=slug))
     opt = MaterialsOption(
         order_type=order_type,
         title=title,
         formats=formats,
+        quantity_basis=quantity_basis,
     )
     opt.languages = langs
     db.session.add(opt)
@@ -139,6 +145,11 @@ def update_option(slug: str, opt_id: int, current_user):
     lang_ids = [int(l) for l in request.form.getlist('language_ids') if l.isdigit()]
     opt.languages = Language.query.filter(Language.id.in_(lang_ids)).all() if lang_ids else []
     opt.formats = [f for f in request.form.getlist('formats') if f in FORMAT_CHOICES]
+    quantity_basis = request.form.get('quantity_basis') or 'Per learner'
+    if quantity_basis not in QTY_BASIS_CHOICES:
+        flash('Invalid quantity basis', 'error')
+        return redirect(url_for('settings_materials.edit_option', slug=slug, opt_id=opt_id))
+    opt.quantity_basis = quantity_basis
     opt.is_active = bool(request.form.get('is_active'))
     db.session.commit()
     flash('Option updated', 'success')

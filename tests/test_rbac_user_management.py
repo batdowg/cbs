@@ -89,8 +89,9 @@ def test_nav_hides_user_admin_links_for_non_admin(app):
         db.session.commit()
         admin_db = db.session.get(User, admin.id)
         user_db = db.session.get(User, user.id)
-        menu_admin = build_menu(admin_db, "ADMIN", True)
-        menu_user = build_menu(user_db, "ADMIN", True)
+        with app.test_request_context('/'):
+            menu_admin = build_menu(admin_db, "ADMIN", True)
+            menu_user = build_menu(user_db, "ADMIN", True)
 
         def ids(menu):
             out = []

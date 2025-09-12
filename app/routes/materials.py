@@ -26,10 +26,10 @@ from ..models import (
     WorkshopTypeMaterialDefault,
     MaterialOrderItem,
 )
-from ..shared.materials import (
-    PHYSICAL_COMPONENTS,
-    material_format_choices,
-)
+from ..shared.materials import material_format_choices
+from ..shared.languages import get_language_options
+
+ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -201,12 +201,6 @@ def materials_view(
     fmt = shipment.materials_format or (
         "SIM_ONLY" if shipment.order_type == "Simulation" else ""
     )
-    selected_components = shipment.materials_components or []
-    if fmt in {"ALL_DIGITAL", "SIM_ONLY"}:
-        selected_components = []
-    elif fmt == "ALL_PHYSICAL" and not selected_components:
-        selected_components = [key for key, _ in PHYSICAL_COMPONENTS]
-    components_required = fmt in {"ALL_PHYSICAL", "MIXED"}
     simulation_outlines = SimulationOutline.query.order_by(
         SimulationOutline.number, SimulationOutline.skill
     ).all()
@@ -214,6 +208,20 @@ def materials_view(
     show_sim_outline = shipment.order_type == "Simulation" or sim_base
     status = shipment.status
     show_credits = shipment.order_type == "Simulation" or sim_base
+    language_options = get_language_options()
+    default_formats: dict[int, str] = {}
+    if sess.workshop_type_id:
+        defs = WorkshopTypeMaterialDefault.query.filter_by(
+            workshop_type_id=sess.workshop_type_id,
+            delivery_type=sess.delivery_type,
+            region_code=sess.region,
+            language=sess.workshop_language,
+            active=True,
+        ).all()
+        for d in defs:
+            kind, _, ident = d.catalog_ref.partition(":")
+            if kind == "materials_options" and ident.isdigit():
+                default_formats[int(ident)] = d.default_format
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -229,6 +237,7 @@ def materials_view(
                 "tracking",
                 "ship_date",
                 "special_instructions",
+                "order_date",
                 "order_type",
                 "materials_format",
                 "materials_po_number",
@@ -240,7 +249,7 @@ def materials_view(
                 val = request.form.get(field)
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
-                if field in {"ship_date", "arrival_date"}:
+                if field in {"ship_date", "arrival_date", "order_date"}:
                     setattr(shipment, field, _parse_date(val))
                 elif field == "materials_format":
                     setattr(shipment, field, val or None)
@@ -255,19 +264,9 @@ def materials_view(
             show_sim_outline = shipment.order_type == "Simulation" or sim_base
             show_credits = shipment.order_type == "Simulation" or sim_base
             errors: dict[str, str] = {}
-            selected_components = request.form.getlist("components")
             fmt = shipment.materials_format or (
                 "SIM_ONLY" if shipment.order_type == "Simulation" else ""
             )
-            components_required = fmt in {"ALL_PHYSICAL", "MIXED"}
-            if components_required:
-                if not selected_components:
-                    errors["components"] = "Select physical components"
-                    flash("Select physical components", "error")
-                else:
-                    shipment.materials_components = selected_components
-            else:
-                shipment.materials_components = None
             if show_sim_outline:
                 so_id = request.form.get("simulation_outline_id")
                 sess.simulation_outline_id = int(so_id) if so_id else None
@@ -315,9 +314,9 @@ def materials_view(
                         can_mark_delivered=can_mark_delivered(current_user),
                         shipping_locations=shipping_locations,
                         material_formats=material_format_choices(),
-                        physical_components=PHYSICAL_COMPONENTS,
-                        components_required=components_required,
-                        selected_components=selected_components,
+                        language_options=language_options,
+                        row_format_choices=ROW_FORMAT_CHOICES,
+                        default_formats=default_formats,
                         fmt=fmt,
                         show_sim_outline=show_sim_outline,
                         show_credits=show_credits,
@@ -360,12 +359,16 @@ def materials_view(
                 qty = int(data.get("quantity") or 0)
                 lang = data.get("language") or sess.workshop_language
                 fmt_val = data.get("format") or (shipment.materials_format or "Digital")
+                if fmt_val not in ROW_FORMAT_CHOICES:
+                    fmt_val = ROW_FORMAT_CHOICES[0]
                 if item_id and item_id in existing:
                     item = existing.pop(item_id)
                     if delete_flag or qty <= 0:
                         db.session.delete(item)
                     else:
                         item.quantity = qty
+                        item.language = lang
+                        item.format = fmt_val
                     continue
                 if delete_flag or not option_id:
                     continue
@@ -377,9 +380,13 @@ def materials_view(
                 dup = MaterialOrderItem.query.filter_by(
                     session_id=sess.id,
                     catalog_ref=f"materials_options:{opt.id}",
+                    language=lang,
+                    format=fmt_val,
                 ).first()
                 if dup:
                     dup.quantity = qty
+                    dup.language = lang
+                    dup.format = fmt_val
                     continue
                 item = MaterialOrderItem(
                     session_id=sess.id,
@@ -429,9 +436,9 @@ def materials_view(
         can_mark_delivered=can_mark_delivered(current_user),
         shipping_locations=shipping_locations,
         material_formats=material_format_choices(),
-        physical_components=PHYSICAL_COMPONENTS,
-        components_required=components_required,
-        selected_components=selected_components,
+        language_options=language_options,
+        row_format_choices=ROW_FORMAT_CHOICES,
+        default_formats=default_formats,
         fmt=fmt,
         show_sim_outline=show_sim_outline,
         show_credits=show_credits,
@@ -490,7 +497,10 @@ def apply_defaults(
 
     qty_base = compute_default_qty(sess, shipment)
     created = 0
-    updated = 0
+    existing_refs = {
+        i.catalog_ref
+        for i in MaterialOrderItem.query.filter_by(session_id=sess.id).all()
+    }
     for d in defaults:
         kind, _, ident = d.catalog_ref.partition(":")
         obj = None
@@ -521,17 +531,9 @@ def apply_defaults(
         else:
             continue
 
-        qty = qty_base if d.quantity_basis != "Per order" else 1
-        exists = MaterialOrderItem.query.filter_by(
-            session_id=sess.id,
-            catalog_ref=d.catalog_ref,
-            language=d.language,
-            format=fmt,
-        ).first()
-        if exists:
-            exists.quantity = qty
-            updated += 1
+        if d.catalog_ref in existing_refs:
             continue
+        qty = qty_base if d.quantity_basis != "Per order" else 1
         item = MaterialOrderItem(
             session_id=sess.id,
             catalog_ref=d.catalog_ref,
@@ -545,10 +547,7 @@ def apply_defaults(
         db.session.add(item)
         created += 1
     db.session.commit()
-    flash(
-        f"Applied defaults: {created} added, {updated} updated.",
-        "success",
-    )
+    flash(f"Applied defaults: {created} added.", "success")
     return redirect(
         url_for("materials.materials_view", session_id=session_id) + "#material-items"
     )

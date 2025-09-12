@@ -18,6 +18,12 @@
       <label><input type="checkbox" name="formats" value="{{ fmt }}" {% if opt and fmt in opt.formats %}checked{% endif %}>{{ fmt }}</label>
     {% endfor %}
   </div>
+  <div>Quantity basis:
+    <select name="quantity_basis">
+      <option value="Per learner" {% if not opt or opt.quantity_basis=='Per learner' %}selected{% endif %}>Per learner</option>
+      <option value="Per order" {% if opt and opt.quantity_basis=='Per order' %}selected{% endif %}>Per order</option>
+    </select>
+  </div>
   {% if opt %}
   <div>Status:
     <input type="checkbox" name="is_active" value="1" {% if opt.is_active %}checked{% endif %}>

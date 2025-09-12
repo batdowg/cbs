@@ -572,6 +572,10 @@ class MaterialsOption(db.Model):
             "order_type IN ('KT-Run Standard materials','KT-Run Modular materials','KT-Run LDI materials','Client-run Bulk order','Simulation')",
             name="ck_materials_options_order_type",
         ),
+        db.CheckConstraint(
+            "quantity_basis IN ('Per learner','Per order')",
+            name="ck_materials_options_qty_basis",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -580,6 +584,12 @@ class MaterialsOption(db.Model):
     description = db.Column(db.Text)
     sku_physical = db.Column(db.String(100))
     formats = db.Column(db.JSON, nullable=False, default=list)
+    quantity_basis = db.Column(
+        db.String(16),
+        nullable=False,
+        default="Per learner",
+        server_default="Per learner",
+    )
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     languages = db.relationship("Language", secondary="materials_option_languages")
