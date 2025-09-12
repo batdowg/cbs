@@ -106,7 +106,7 @@
   {% elif not csa_can_manage %}
   <p>Participant changes closed.</p>
   {% endif %}
-  <table border="1" cellpadding="4" cellspacing="0">
+  <table class="kt-table">
     <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Certificate</th><th>Actions</th></tr>
     {% for row in participants %}
     <tr>
@@ -158,7 +158,7 @@
   </div>
   {% endif %}
   {% endif %}
-  <table border="1" cellpadding="4" cellspacing="0">
+  <table class="kt-table">
     <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Completion Date</th><th>Certificate</th><th>Actions</th></tr>
     {% for row in participants %}
     <tr>

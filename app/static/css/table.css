@@ -4,7 +4,7 @@
   overflow-x: auto;
 }
 
-table.kt-table {
+.kt-table {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid var(--kt-border);

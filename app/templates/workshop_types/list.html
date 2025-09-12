@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Workshop Types</h1>
 <p><a href="{{ url_for('workshop_types.new_type') }}">New Workshop Type</a></p>
-<table border="1" cellpadding="4" cellspacing="0">
+<table class="kt-table">
   <tr><th>Code</th><th>Name</th><th>Status</th><th>Supported languages</th><th>Certificate series</th><th>Description</th><th></th></tr>
   {% for wt in types %}
   <tr>
