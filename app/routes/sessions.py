@@ -193,7 +193,6 @@ def list_sessions(current_user):
     flask_session["sessions_list_args"] = params
 
     query = db.session.query(Session).outerjoin(Client).outerjoin(WorkshopType)
-    query = query.filter(Session.materials_only.is_(False))
     if not show_global and current_user.region:
         query = query.filter(Session.region == current_user.region)
 
@@ -336,6 +335,42 @@ def new_session(current_user):
     ).all()
     if request.method == "POST":
         action = request.form.get("action")
+        if action == "materials_only":
+            missing = []
+            title = request.form.get("title")
+            if not title:
+                missing.append("Title")
+            cid = request.form.get("client_id")
+            if not cid:
+                missing.append("Client")
+            region = request.form.get("region")
+            if not region:
+                missing.append("Region")
+            workshop_language = request.form.get("workshop_language")
+            if not workshop_language:
+                missing.append("Language")
+            if workshop_language not in [c for c, _ in get_language_options()]:
+                workshop_language = "en"
+            if missing:
+                flash("Required fields: " + ", ".join(missing), "error")
+                return redirect(url_for("sessions.new_session"))
+            sess = Session(
+                title=title,
+                client_id=int(cid) if cid else None,
+                region=region,
+                workshop_language=workshop_language,
+                delivery_type="Material Order",
+                start_date=date.today(),
+                end_date=date.today(),
+                materials_only=True,
+            )
+            db.session.add(sess)
+            db.session.flush()
+            db.session.add(
+                SessionShipping(session_id=sess.id, created_by=current_user.id)
+            )
+            db.session.commit()
+            return redirect(url_for("materials.materials_view", session_id=sess.id))
         missing = []
         title = request.form.get("title")
         if not title:
@@ -410,7 +445,6 @@ def new_session(current_user):
             delivered=delivered,
             finalized=finalized,
             no_material_order=no_material_order,
-            sponsor=request.form.get("sponsor") or None,
             notes=request.form.get("notes") or None,
             simulation_outline_id=so_id,
             client_id=int(cid) if cid else None,
@@ -879,7 +913,6 @@ def edit_session(session_id: int, current_user):
         sess.finalized = finalized
         sess.on_hold = on_hold
         sess.no_material_order = no_material_order
-        sess.sponsor = request.form.get("sponsor") or None
         sess.notes = request.form.get("notes") or None
         if sess.workshop_type and sess.workshop_type.simulation_based:
             so_id = request.form.get("simulation_outline_id")
@@ -1058,31 +1091,34 @@ def edit_session(session_id: int, current_user):
 @csa_allowed_for_session(allow_delivered_view=True)
 def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     view_csa = csa_view or request.args.get("view") == "csa"
-    rows = (
-        db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
-        .join(Participant, SessionParticipant.participant_id == Participant.id)
-        .outerjoin(
-            Certificate,
-            (Certificate.session_id == session_id)
-            & (Certificate.participant_id == Participant.id),
-        )
-        .filter(SessionParticipant.session_id == session_id)
-        .all()
-    )
-    participants = [
-        {"participant": participant, "link": link, "pdf_path": pdf_path}
-        for link, participant, pdf_path in rows
-    ]
-    import_errors = flask_session.pop("import_errors", None)
+    participants: list[dict[str, object]] = []
+    import_errors = None
     can_manage = False
     start_dt_utc = session_start_dt_utc(sess)
-    if csa_account:
-        can_manage = csa_can_manage_participants(csa_account, sess)
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
-    mapping, _ = get_template_mapping(sess)
-    if mapping:
-        badge_filename = mapping.badge_filename
+    if not sess.materials_only:
+        rows = (
+            db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
+            .join(Participant, SessionParticipant.participant_id == Participant.id)
+            .outerjoin(
+                Certificate,
+                (Certificate.session_id == session_id)
+                & (Certificate.participant_id == Participant.id),
+            )
+            .filter(SessionParticipant.session_id == session_id)
+            .all()
+        )
+        participants = [
+            {"participant": participant, "link": link, "pdf_path": pdf_path}
+            for link, participant, pdf_path in rows
+        ]
+        import_errors = flask_session.pop("import_errors", None)
+        if csa_account:
+            can_manage = csa_can_manage_participants(csa_account, sess)
+        mapping, _ = get_template_mapping(sess)
+        if mapping:
+            badge_filename = mapping.badge_filename
     return render_template(
         "session_detail.html",
         session=sess,
