@@ -41,10 +41,8 @@
   <div>Contact Email: {{ shipment.contact_email|default('', true) }}</div>
   <div>Contact Phone: {{ shipment.contact_phone|default('', true) }}</div>
   {% if shipment.address_line1 %}
-  <div>Address: {{ shipment.address_line1 }}{% if shipment.address_line2 %} {{ shipment.address_line2 }}{% endif %}, {{ shipment.city }} {{ shipment.state }} {{ shipment.postal_code }}, {{ shipment.country }}</div>
-  {% else %}
-  <div>Digital only</div>
-  {% endif %}
+
+
   <div>Shipping location:
     {% if can_manage and not readonly %}
       {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
@@ -67,6 +65,9 @@
       {{ sess.shipping_location.country|default('', true) }}
     {% endif %}
   </div>
+  {% else %}
+  <div>Digital only</div>
+  {% endif %}
   </div>
   <br>
   <div class="kt-card">
