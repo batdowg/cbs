@@ -332,10 +332,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **/profile**: staff edit `User.full_name`, `User.title`, and Certificate Name; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
 - **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
 - **Sessions & Settings**: all language pickers and labels show human names; templates use global `lang_label` helper to render codes; database stores codes; deactivated languages are not selectable; sort by configured order.
-- **Materials**: physical components UI:
-  - **All Physical** → 4 checkboxes visible and auto-checked (editable)
-  - **Mixed** → 4 visible, unchecked
-  - **All Digital / SIM Only** → 4 visible, disabled
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
 - **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
 - The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
@@ -351,8 +347,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
 - Materials order header displays `Material Order <session_id> - <session_title>` with client name and delivery region, CRM, facilitators, and SFC project link. A **Shipping details** section lists contact, email, phone, and address (or “Digital only” when absent).
 - Materials orders have global statuses: **New, In progress, Ordered, Shipped, Delivered, Cancelled, On hold**. Ordered ⇒ session `ready_for_delivery=true`; Delivered ⇒ session `status=Finalized`.
-- Session Materials page uses inline-editable Material Items with a single Save; Order date derives from creation time and is read-only; Status is read-only and shown in the title; Courier, Tracking, and Ship date fields render below the items table.
-- Apply Defaults is enabled only when Order Type = “KT-Run Standard materials” and Material Sets > 0 (disabled tooltip: “Select # of Material sets first.”). The action keeps the selected Material format and sets quantities: defaults marked “Per learner” use Material Sets, “Per order” use 1. The Materials item picker no longer shows a “Show all” checkbox on the session page.
+- Session Materials page uses inline-editable Material Items with per-row Language and Format selects and quantity, saved with a single action; Order date derives from creation time and is read-only; Status is read-only and shown in the title; Courier, Tracking, and Ship date fields render below the items table.
+- Apply Defaults is enabled only when Order Type = “KT-Run Standard materials” and Material Sets > 0 (disabled tooltip: “Select # of Material sets first.”). The action keeps the selected Material format and adds any missing items from defaults using “Per learner” → Material Sets and “Per order” → 1 without altering existing rows. The Materials item picker no longer shows a “Show all” checkbox on the session page.
 - POST `/sessions/<session_id>/materials/deliver` sets status to **Delivered** (403 on repeat with friendly flash); POST `/sessions/<session_id>/materials/undeliver` reverts to **In progress**.
 - **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
 - **Simulation Outline** shown when Order Type = Simulation or the Workshop Type is simulation-based.
@@ -458,14 +454,15 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Contractor menu/capabilities updated per §1.2/§1.4.  
 - Materials dashboard documented to current behavior.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
+- Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options`.
 - Workshop Type edit default-materials picker filters by `Language.name`, posts
   `material_option_id`, and hides "Bulk" options unless "Show all" is checked.
-- Session Materials page provides an **Apply Defaults** button that upserts
-  `workshop_type_material_defaults` for the session's workshop type, delivery
-  type, region, and language as `material_order_items` with quantity from
-  `session.material_sets` (when >0) or the current participant count. Existing
-  rows are updated with the new quantity and simulation outline defaults force
-  Digital format. Items support inline quantity edits, per-row removal, and a
-  searchable picker to add new items.
+- Session Materials page provides an **Apply Defaults** button that adds any
+  missing `workshop_type_material_defaults` for the session's workshop type,
+  delivery type, region, and language as `material_order_items` using the
+  default format and quantity basis (Material Sets for “Per learner”, 1 for “Per
+  order”). Existing rows remain unchanged. Items support inline quantity,
+  language, and format edits, per-row removal, and a searchable picker to add
+  new items.
 - Workshop Type default-material rows drop the "Remove" checkbox in favor of a
   per-row delete action (`POST /workshop-types/defaults/<id>/delete`).

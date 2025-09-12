@@ -19,7 +19,7 @@
 {% set facs = [] %}
 {% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
 {% for fac in sess.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
-<h1>Materials Order — {{ sess.title }} ({{ status }})</h1>
+<h1>Material Order {{ sess.id }} - {{ sess.title }} ({{ status }})</h1>
 <form method="post">
   <input type="hidden" name="action" value="update_header">
   <div class="kt-card">
@@ -111,20 +111,6 @@
       {% else %}{{ fmt|default('', true) }}{% endif %}
     </label>
   </div>
-  <fieldset class="components">
-    <legend>Physical components</legend>
-    {% for key,label in physical_components %}
-      <label>
-        <input type="checkbox" name="components" value="{{ key }}"
-               {% if key in selected_components %}checked{% endif %}
-               {% if fmt in ['ALL_DIGITAL','SIM_ONLY'] %}disabled{% endif %}>
-        {{ label }}
-      </label><br>
-    {% endfor %}
-    {% if components_required and errors.get('components') %}
-      <div class="error">Select physical components</div>
-  {% endif %}
-  </fieldset>
   <div>Order date: {{ shipment.created_at.date() if shipment.created_at else '' }}</div>
   <div>Latest arrival date:
     {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
@@ -154,7 +140,7 @@
   {% set tooltip = 'Select # of Material sets first.' if (shipment.material_sets or 0) == 0 else '' %}
   <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
   {% endif %}
-  <table border="1" cellpadding="4" cellspacing="0" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}">
+  <table border="1" cellpadding="4" cellspacing="0" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}" data-default-formats='{{ default_formats | tojson }}'>
     <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th>{% if can_manage %}<th></th>{% endif %}</tr>
     {% for item in order_items %}
     <tr data-existing>
@@ -162,8 +148,28 @@
         <input type="hidden" name="items[{{ item.id }}][id]" value="{{ item.id }}">
         <input type="hidden" name="items[{{ item.id }}][option_id]" value="{{ item.catalog_ref.split(':')[1] if item.catalog_ref }}">
       </td>
-      <td>{{ item.language | lang_label }}<input type="hidden" name="items[{{ item.id }}][language]" value="{{ item.language }}"></td>
-      <td>{{ item.format }}<input type="hidden" name="items[{{ item.id }}][format]" value="{{ item.format }}"></td>
+      <td>
+        {% if can_manage %}
+        <select name="items[{{ item.id }}][language]" class="lang-select">
+          {% for code,label in language_options %}
+            <option value="{{ code }}" {% if item.language==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        {{ item.language | lang_label }}
+        {% endif %}
+      </td>
+      <td>
+        {% if can_manage %}
+        <select name="items[{{ item.id }}][format]" class="fmt-select">
+          {% for f in row_format_choices %}
+            <option value="{{ f }}" {% if item.format==f %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        {{ item.format }}
+        {% endif %}
+      </td>
       {% if can_manage %}
       <td><input type="number" name="items[{{ item.id }}][quantity]" value="{{ item.quantity }}" class="qty-input" min="0" style="width:4em"></td>
       <td><button type="button" class="btn btn-sm btn-danger remove-row">Remove</button><input type="hidden" name="items[{{ item.id }}][delete]" value="0" class="delete-flag"></td>
@@ -181,8 +187,21 @@
         <input type="hidden" name="items[__index__][option_id]" class="material-id">
         <datalist id="materials-__index__" class="materials-list"></datalist>
       </td>
-      <td>{{ sess.workshop_language | lang_label }}<input type="hidden" name="items[__index__][language]" value="{{ sess.workshop_language }}"></td>
-      <td>{{ fmt }}<input type="hidden" name="items[__index__][format]" value="{{ fmt }}"></td>
+      <td>
+        <select name="items[__index__][language]" class="lang-select">
+          {% for code,label in language_options %}
+            <option value="{{ code }}" {% if code==sess.workshop_language %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="items[__index__][format]" class="fmt-select">
+          <option value=""></option>
+          {% for f in row_format_choices %}
+            <option value="{{ f }}">{{ f }}</option>
+          {% endfor %}
+        </select>
+      </td>
       <td><input type="number" name="items[__index__][quantity]" class="qty-input" min="0" style="width:4em"></td>
       <td><button type="button" class="btn btn-sm btn-danger remove-row" style="display:none">Remove</button><input type="hidden" name="items[__index__][delete]" value="0" class="delete-flag"></td>
     </tr>
@@ -238,24 +257,15 @@
   (function(){
     const fmtSel = document.querySelector('select[name="materials_format"]');
     const orderSel = document.querySelector('select[name="order_type"]');
-    const boxes = [...document.querySelectorAll('input[name="components"]')];
     const setsInput = document.querySelector('input[name="material_sets"]');
     const applyBtn = document.getElementById('apply-defaults-btn');
-    const defaultsForm = document.getElementById('defaults-form');
     const hiddenFmt = document.getElementById('defaults-format');
     function syncFmt(){ if(hiddenFmt && fmtSel) hiddenFmt.value = fmtSel.value; }
-    function applyState(autoCheck = false){
-      const fmt = fmtSel?.value || '';
-      const disable = (fmt === 'ALL_DIGITAL' || fmt === 'SIM_ONLY');
-      boxes.forEach(b => { b.disabled = disable; if(disable){ b.checked = false; } });
-      if(autoCheck && fmt === 'ALL_PHYSICAL') boxes.forEach(b => b.checked = true);
-    }
     function applyAutoFormat(){
       if(!fmtSel) return;
       if(orderSel?.value === 'Simulation' && !fmtSel.value){
         fmtSel.value = 'SIM_ONLY';
       }
-      applyState();
     }
     function updateApply(){
       if(!applyBtn) return;
@@ -263,11 +273,11 @@
       const isStandard = orderSel?.value === 'KT-Run Standard materials';
       applyBtn.disabled = !isStandard || sets === 0;
       applyBtn.title = sets === 0 ? 'Select # of Material sets first.' : '';
+      syncFmt();
     }
-    fmtSel && fmtSel.addEventListener('change', () => {applyState(true); syncFmt(); updateApply();});
+    fmtSel && fmtSel.addEventListener('change', () => {syncFmt(); updateApply();});
     orderSel && orderSel.addEventListener('change', () => {applyAutoFormat(); updateApply();});
     setsInput && setsInput.addEventListener('input', updateApply);
-    syncFmt();
     applyAutoFormat();
     updateApply();
   })();

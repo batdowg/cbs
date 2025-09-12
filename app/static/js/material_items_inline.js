@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function(){
   var delivery = table.dataset.delivery || '';
   var lang = table.dataset.lang || '';
   var capacity = parseInt(table.dataset.capacity || '0', 10);
+  var defaultFormats = {};
+  try { defaultFormats = JSON.parse(table.dataset.defaultFormats || '{}'); } catch(e) {}
   var pickerUrl = '/workshop-types/material-options';
   var newIndex = 1;
   function selectedIds(){
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var hidden = row.querySelector('.material-id');
     var list = row.querySelector('.materials-list');
     var qty = row.querySelector('.qty-input');
+    var fmtSel = row.querySelector('.fmt-select');
     var removeBtn = row.querySelector('.remove-row');
     var delFlag = row.querySelector('.delete-flag');
     if(label){
@@ -50,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if(hidden.value && !row.dataset.completed){
           row.dataset.completed = '1';
           removeBtn.style.display = '';
+          if(fmtSel){ fmtSel.value = defaultFormats[hidden.value] || ''; }
           if(!qty.value) qty.value = getDefaultQty();
           qty.focus();
           appendBlankRow();
