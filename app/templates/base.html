@@ -13,6 +13,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pills.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tabs.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pagination.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chips.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/empty.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
   <style>
     body {
       margin:0;
@@ -49,10 +56,10 @@
             'info':'info',
             'success':'success',
             'warning':'warning',
-            'error':'error',
-            'danger':'error'
-          }.get(cat, 'info') %}
-          <div class="flash flash-{{ cat }}" role="alert" aria-live="polite" tabindex="0">{{ msg }}<button type="button" class="flash-close" aria-label="Close">×</button></div>
+          'error':'error',
+          'danger':'error'
+        }.get(cat, 'info') %}
+          <div class="flash flash-{{ cat }}" role="alert" aria-live="polite" tabindex="0">{{ msg }}<button type="button" class="flash-close btn-icon" aria-label="Close">×</button></div>
         {% endfor %}
       </div>
       {% endif %}

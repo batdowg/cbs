@@ -60,9 +60,14 @@
 {% if session.delivered and not session.finalized and not session.cancelled %}
 <form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>
 {% endif %}
-{% if not session.materials_only and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}| <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>{% endif %}
- | <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </p>
+<nav class="kt-tabs">
+  <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" aria-current="page">Details</a>
+  {% if not session.materials_only and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+  <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>
+  {% endif %}
+  <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
+</nav>
 {% endif %}
 {% if not session.materials_only %}
 <div>

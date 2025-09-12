@@ -1,0 +1,19 @@
+/* Empty state pattern */
+.empty-state {
+  text-align: center;
+  padding: var(--space-6) 0;
+  color: var(--kt-muted);
+}
+.empty-state .empty-icon {
+  font-size: 3rem;
+  color: var(--kt-border);
+  margin-bottom: var(--space-2);
+}
+.empty-state h2 {
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  margin: 0 0 var(--space-2) 0;
+  color: var(--kt-text);
+}
+.empty-state p {
+  margin: 0;
+}

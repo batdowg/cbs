@@ -1,0 +1,25 @@
+/* Page-level tab styles */
+.kt-tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--kt-border);
+  margin-bottom: var(--space-4);
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+.kt-tabs a {
+  padding: var(--space-2) 0;
+  color: var(--kt-info);
+  text-decoration: none;
+}
+.kt-tabs a:hover {
+  text-decoration: underline;
+}
+.kt-tabs a:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+.kt-tabs a[aria-current="page"] {
+  color: var(--kt-text);
+  border-bottom: 2px solid var(--kt-primary);
+  text-decoration: none;
+}
