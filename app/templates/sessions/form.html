@@ -34,7 +34,7 @@
       </select>
     </label></div>
     <div style="margin-top:8px;">
-      <button type="submit" name="action" value="materials_only">No workshop, material order only</button>
+      <button type="submit" id="materials-only-btn" name="action" value="materials_only">No workshop, material order only</button>
     </div>
   </fieldset>
   <fieldset>
@@ -205,6 +205,14 @@
   var langSelect = document.querySelector('select[name="workshop_language"]');
   var typeSelect = document.querySelector('select[name="workshop_type_id"]');
   var simDiv = document.getElementById('sim-outline');
+  var materialsBtn = document.getElementById('materials-only-btn');
+  if(materialsBtn){
+    materialsBtn.addEventListener('click', function(){
+      document.querySelectorAll('fieldset:not(:first-of-type) [required]').forEach(function(el){
+        el.removeAttribute('required');
+      });
+    });
+  }
   function filterTypes(){
     if(!langSelect || !typeSelect){ return; }
     var lang = langSelect.value;

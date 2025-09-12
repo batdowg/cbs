@@ -337,6 +337,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
 - Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle.
 - **Materials-only orders** share the session form. `/sessions/new` shows an **Order Information** section (Title, Client with CRM, Region, Language) with a **No workshop, material order only** button that creates a hidden session (`materials_only = true`, `delivery_type = "Material Order"`) and redirects to that session's Materials Order page. Certificates and badges are unaffected and remain gated.
+- Clicking **No workshop, material order only** removes `required` constraints from later form fields so only Order Information entries are enforced before submission.
 - When `materials_only = true`, training-session features (participants, prework, certificates) are hidden/denied.
 - Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
@@ -452,7 +453,7 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
 - Contractor menu/capabilities updated per §1.2/§1.4.
 - Materials dashboard documented to current behavior.
-- Session detail pages render a minimal order view for materials-only sessions and guard full details with `{% if not session.materials_only %}`.
+- Session detail pages render a minimal order view for materials-only sessions and guard full details with `{% if not session.materials_only %}`; workshop-type and facilitator sections now use `{% if %}` guards to avoid null dereferences.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
 - Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options` and used wherever the item is selected.
 - Workshop Type edit default-materials dropdown filters by `Language.name`, posts `material_option_id`, and hides "Bulk" options (no "Show all").
