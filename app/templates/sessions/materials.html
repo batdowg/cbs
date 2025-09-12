@@ -24,8 +24,8 @@
   <input type="hidden" name="action" value="update_header">
   <div class="kt-card">
     <h2 class="kt-card-title">Order details</h2>
-    <div>Client: {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
-    <div>CRM: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
+    <div>Client : {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
+    <div>CRM &ensp: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
     <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
     <div>SFC Project link:
       {% if sess.client and sess.client.sfc_link %}
@@ -43,9 +43,9 @@
   </div>
   <div class="kt-card">
     <h2 class="kt-card-title">Shipping details</h2>
-  <div>Contact person: {{ shipment.contact_name|default('', true) }}</div>
-  <div>Contact Email: {{ shipment.contact_email|default('', true) }}</div>
-  <div>Contact Phone: {{ shipment.contact_phone|default('', true) }}</div>
+  <div>Contact person : {{ shipment.contact_name|default('', true) }}</div>
+  <div>Contact Email&ensp;: {{ shipment.contact_email|default('', true) }}</div>
+  <div>Contact Phone : {{ shipment.contact_phone|default('', true) }}</div>
   {% if shipment.address_line1 %}
 
 
