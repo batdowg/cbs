@@ -99,6 +99,7 @@ def create_resource():
         name=name,
         type=rtype,
         resource_value=resource_value,
+        description_html=cleaned["description"],
         active=cleaned["active"],
     )
     res.workshop_types = WorkshopType.query.filter(WorkshopType.id.in_(cleaned["workshop_type_ids"])).all()
@@ -154,6 +155,7 @@ def update_resource(res_id: int):
     res.name = name
     res.type = rtype
     res.active = cleaned["active"]
+    res.description_html = cleaned["description"]
     if rtype == "DOCUMENT":
         file = cleaned["file"]
         if file and getattr(file, "filename", ""):

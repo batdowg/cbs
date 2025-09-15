@@ -17,6 +17,7 @@ from app.models import (
     User,
 )
 from app.forms.resource_forms import slugify_filename
+from app.shared.html import sanitize_html
 
 
 @pytest.fixture
@@ -51,8 +52,20 @@ def test_my_resources_view(app):
         db.session.flush()
         link = SessionParticipant(session_id=sess.id, participant_id=p.id)
         db.session.add(link)
-        link_res = Resource(name="LinkR", type="LINK", resource_value="https://kt.com", active=True)
-        doc_res = Resource(name="DocR", type="DOCUMENT", resource_value="doc.pdf", active=True)
+        link_res = Resource(
+            name="LinkR",
+            type="LINK",
+            resource_value="https://kt.com",
+            active=True,
+            description_html=sanitize_html("<p>Link <script>bad</script></p>"),
+        )
+        doc_res = Resource(
+            name="DocR",
+            type="DOCUMENT",
+            resource_value="doc.pdf",
+            active=True,
+            description_html="",
+        )
         link_res.workshop_types.append(wt)
         doc_res.workshop_types.append(wt)
         db.session.add_all([link_res, doc_res])
@@ -67,6 +80,8 @@ def test_my_resources_view(app):
     html = resp.get_data(as_text=True)
     assert "Type A" in html
     assert "LinkR" in html and "https://kt.com" in html
+    assert "<summary>Description</summary>" in html
+    assert "<script" not in html
     assert "/resources/doc.pdf" in html
 
 

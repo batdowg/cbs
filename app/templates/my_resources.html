@@ -13,6 +13,12 @@
         {% else %}
           <a href="{{ r.resource_value }}" target="_blank">{{ r.name }}</a>
         {% endif %}
+        {% if r.description_html %}
+          <details>
+            <summary>Description</summary>
+            {{ r.description_html | safe }}
+          </details>
+        {% endif %}
       </li>
     {% endfor %}
     </ul>
