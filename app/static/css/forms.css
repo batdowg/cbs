@@ -70,10 +70,10 @@ select:focus {
 select[multiple],
 .form-multiselect {
   height: auto;
-  min-height: 200px;
-  overflow-y: auto;
+  min-height: 200px; /* ~8 rows */
   padding: 8px 12px;
   line-height: 1.3;
+  overflow-y: auto;
   border-radius: inherit;
 }
 
@@ -207,19 +207,10 @@ input[type="checkbox"] + label {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: 12px;
+  column-gap: 10px;
   row-gap: 8px;
 }
 
 .field-row .form-group {
-  margin: 0; /* gaps come from the row */
-}
-
-/* Optional width helpers for long/short controls inside a row */
-.field-row .grow {
-  flex: 1 1 280px;
-}
-
-.field-row .shrink {
-  flex: 0 0 auto;
+  margin: 0; /* spacing comes from gaps */
 }
