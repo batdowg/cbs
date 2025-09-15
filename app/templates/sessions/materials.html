@@ -35,17 +35,21 @@
     <div>CRM &ensp;: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
     <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
     <div class="field-row">
-      <div>SFC Project link:
+      <div class="form-group label-top grow">
+        <label for="sfc-link">SFC Project link</label>
         {% if sess.client and sess.client.sfc_link %}
-          {{ sess.client.sfc_link }}
+          <div>{{ sess.client.sfc_link }}</div>
         {% elif not csa_view %}
-          <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
+          <input type="url" name="sfc_link" id="sfc-link" value="{{ sess.client.sfc_link or '' }}">
         {% endif %}
       </div>
-      <div>Latest arrival date:
+      <div class="form-group label-top">
+        <label for="arrival-date">Latest arrival date</label>
         {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
-          <input type="date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
-        {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
+          <input type="date" name="arrival_date" id="arrival-date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
+        {% else %}
+          <div>{{ shipment.arrival_date|default('', true) }}</div>
+        {% endif %}
       </div>
     </div>
     <div>Order date: {{ shipment.created_at.date() if shipment.created_at else '' }}</div>
@@ -60,7 +64,7 @@
       {% if can_manage and not readonly %}
         {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
         <div class="field-row">
-          <select name="shipping_location_id" id="shipping-location-select">
+          <select name="shipping_location_id" id="shipping-location-select" class="grow">
             <option value=""></option>
             {% for loc in shipping_locations %}
 
@@ -68,8 +72,8 @@
             {% endfor %}
           </select>
           {% if sess.client_id %}
-          <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
-          <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+          <a href="#" id="add-shipping-location" class="shrink" style="font-size:smaller">Add</a>
+          <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" class="shrink" style="font-size:smaller">Edit locations</a>
           {% endif %}
         </div>
       {% endif %}
@@ -93,47 +97,49 @@
     <h2 class="kt-card-title">Order components</h2>
     <h3>{% if sess.workshop_type %}{{ sess.workshop_type.code }} — {{ sess.workshop_type.name }}{% endif %} ({{ sess.delivery_type|default('', true) }})</h3>
     <div class="field-row">
-      <div>Order type:
-      {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
-        {% set ot_val = form.get('order_type') if form else shipment.order_type %}
-        <select name="order_type">
-          <option value="">— select —</option>
-          {% for ot in order_types %}
-            <option value="{{ ot }}" {% if ot_val==ot %}selected{% endif %}>{{ ot }}</option>
-          {% endfor %}
-        </select>
-      {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
-      </div>
-      <div id="sim-outline" {% if not show_sim_outline %}style="display:none"{% endif %}>
-        <label>Simulation Outline
-          <select name="simulation_outline_id">
+      <div class="form-group label-top">
+        <label for="order-type">Order type</label>
+        {% if can_edit_materials_header('order_type', current_user, shipment) and not readonly %}
+          {% set ot_val = form.get('order_type') if form else shipment.order_type %}
+          <select name="order_type" id="order-type">
             <option value="">— select —</option>
-            {% for o in simulation_outlines %}
-              {% set so_val = form.get('simulation_outline_id') if form else sess.simulation_outline_id %}
-              <option value="{{ o.id }}" {% if so_val|int==o.id %}selected{% endif %}>
-                {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
-              </option>
+            {% for ot in order_types %}
+              <option value="{{ ot }}" {% if ot_val==ot %}selected{% endif %}>{{ ot }}</option>
             {% endfor %}
           </select>
-        </label>
+        {% else %}
+          <div>{{ shipment.order_type|default('', true) }}</div>
+        {% endif %}
       </div>
-      <div>
-        <label>Material format
-          {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
-            {% set fmt_val = form.get('materials_format') if form else fmt %}
-            <select name="materials_format" id="materials-format">
-              <option value=""></option>
-              {% for key, label in material_formats %}
-                <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          {% else %}{{ fmt|default('', true) }}{% endif %}
-        </label>
+      <div id="sim-outline" class="form-group label-top" {% if not show_sim_outline %}style="display:none"{% endif %}>
+        <label for="simulation-outline-id">Simulation Outline</label>
+        <select name="simulation_outline_id" id="simulation-outline-id">
+          <option value="">— select —</option>
+          {% for o in simulation_outlines %}
+            {% set so_val = form.get('simulation_outline_id') if form else sess.simulation_outline_id %}
+            <option value="{{ o.id }}" {% if so_val|int==o.id %}selected{% endif %}>
+              {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
+            </option>
+          {% endfor %}
+        </select>
       </div>
-      <div id="material-sets" {% if shipment.order_type=='Simulation' %}style="display:none"{% endif %}>
-        <label>Material Sets
-          <input type="number" name="material_sets" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">
-        </label>
+      <div class="form-group label-top grow">
+        <label for="materials-format">Material format</label>
+        {% if can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
+          {% set fmt_val = form.get('materials_format') if form else fmt %}
+          <select name="materials_format" id="materials-format">
+            <option value=""></option>
+            {% for key, label in material_formats %}
+              <option value="{{ key }}" {% if fmt_val==key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <div>{{ fmt|default('', true) }}</div>
+        {% endif %}
+      </div>
+      <div id="material-sets" class="form-group label-top shrink" {% if shipment.order_type=='Simulation' %}style="display:none"{% endif %}>
+        <label for="material-sets-input">Material Sets</label>
+        <input type="number" name="material_sets" id="material-sets-input" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">
       </div>
     </div>
   <div id="credits-field" data-sim="{{ 1 if sim_base else 0 }}" {% if not show_credits %}style="display:none"{% endif %}>

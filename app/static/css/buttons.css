@@ -118,16 +118,16 @@ input[type="reset"]:disabled,
   border-color: color-mix(in srgb, var(--kt-accent-green) 70%, black);
 }
 
-a.btn,
-a.btn:link,
-a.btn:visited {
+.btn,
+.btn:link,
+.btn:visited {
   color: #fff;
   text-decoration: none;
 }
 
-a.btn:hover,
-a.btn:active,
-a.btn:focus {
+.btn:hover,
+.btn:active,
+.btn:focus {
   color: #fff;
   text-decoration: none;
 }

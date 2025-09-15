@@ -7,16 +7,18 @@
     <legend>Order Information</legend>
     {% set _title = title_override if title_override is not none else session.title %}
     <div><label>Title* <input type="text" name="title" value="{{ _title or '' }}" required></label></div>
-    <div><label class="field-row">Client*
-      <select name="client_id" id="client-select" required>
-        <option value="">--Select--</option>
-        {% for c in clients %}
-        <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
-      <a href="#" id="add-client" class="button">Add Client</a>
-      <span>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></span>
-    </label>
+    <div>
+      <label for="client-select">Client*</label>
+      <div class="field-row">
+        <select name="client_id" id="client-select" required class="grow">
+          <option value="">--Select--</option>
+          {% for c in clients %}
+          <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        <a href="#" id="add-client" class="button shrink">Add Client</a>
+      </div>
+      <div>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></div>
     </div>
     <div class="field-row">
       <label>Region*
@@ -68,7 +70,7 @@
       </select>
     </label></div>
     <div class="field-row">
-      <label>Workshop Location
+      <label class="grow">Workshop Location
         <select name="workshop_location_id" id="workshop-location-select">
           <option value=""></option>
           {% for loc in workshop_locations %}
@@ -76,7 +78,7 @@
           {% endfor %}
         </select>
       </label>
-      <a href="#" id="add-workshop-location">Add</a>
+      <a href="#" id="add-workshop-location" class="shrink">Add</a>
     </div>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
     <div class="field-row"><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
