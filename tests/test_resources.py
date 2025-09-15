@@ -1,8 +1,11 @@
+import io
 import os
+import shutil
 import sys
 
-import pytest
 from datetime import date
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -16,8 +19,12 @@ from app.models import (
     Resource,
     User,
 )
-from app.forms.resource_forms import slugify_filename
 from app.shared.html import sanitize_html
+from app.shared.storage_resources import (
+    resource_fs_dir,
+    resource_web_url,
+    sanitize_filename,
+)
 
 
 @pytest.fixture
@@ -31,15 +38,17 @@ def app():
         db.session.remove()
 
 
-def test_resource_validation_and_slug(app):
+@pytest.mark.smoke
+def test_resource_validation_and_sanitize(app):
     with app.app_context():
         r = Resource(name="Link", type="LINK", resource_value="https://example.com")
         r.validate()
         r2 = Resource(name="Doc", type="DOCUMENT", resource_value="")
         with pytest.raises(ValueError):
             r2.validate()
-        fname = slugify_filename("DA Template", "My File.XLSX")
-        assert fname == "da-template.xlsx"
+        fname = sanitize_filename("My File.XLSX")
+        assert fname.endswith(".xlsx")
+        assert ".." not in fname
 
 
 def test_my_resources_view(app):
@@ -87,6 +96,49 @@ def test_my_resources_view(app):
     assert "<script>bad</script>" not in html
     assert "/resources/doc.pdf" in html
     assert "Download PDF" in html
+
+
+@pytest.mark.smoke
+def test_resource_file_upload_persists(app):
+    with app.app_context():
+        admin = User(email="admin@example.com", is_admin=True)
+        wt = WorkshopType(code="UPL", name="Upload WT", cert_series="fn")
+        db.session.add_all([admin, wt])
+        db.session.commit()
+        admin_id = admin.id
+        wt_id = wt.id
+
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = admin_id
+
+    data = {
+        "name": "Upload Resource",
+        "type": "DOCUMENT",
+        "link": "",
+        "active": "y",
+        "description": "<p>Upload</p>",
+        "workshop_types": [str(wt_id)],
+    }
+    upload_name = "Test Plan.PDF"
+    response = client.post(
+        "/settings/resources/new",
+        data={**data, "file": (io.BytesIO(b"hello world"), upload_name)},
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        res = Resource.query.filter_by(name="Upload Resource").one()
+        expected_filename = sanitize_filename(upload_name)
+        expected_url = resource_web_url(res.id, expected_filename)
+        assert res.resource_value == expected_url
+        fs_path = os.path.join(resource_fs_dir(res.id), expected_filename)
+        assert os.path.exists(fs_path)
+        with open(fs_path, "rb") as stored:
+            assert stored.read() == b"hello world"
+        shutil.rmtree(resource_fs_dir(res.id), ignore_errors=True)
 
 
 def test_my_resources_staff_empty(app):

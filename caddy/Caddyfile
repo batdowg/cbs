@@ -9,6 +9,9 @@ cbs.ktapps.net {
   handle /certificates/* {
     file_server
   }
+  handle /resources/* {
+    file_server
+  }
   handle /badges/* {
     file_server
   }
