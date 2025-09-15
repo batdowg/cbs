@@ -40,6 +40,7 @@ from .shared.constants import LANGUAGE_NAMES
 from .shared.time import fmt_dt, fmt_time, fmt_time_range_with_tz
 from .shared.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
 from .shared.nav import build_menu
+from .shared.storage_resources import resource_fs_dir, resource_fs_path, resources_root
 from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor
 from .shared.languages import code_to_label
 
@@ -92,6 +93,36 @@ def create_app():
         if os.path.isfile(site_path):
             return send_from_directory(site_dir, filename, as_attachment=True)
         return send_from_directory(asset_dir, filename, as_attachment=True)
+
+    @app.get("/resources/<path:subpath>")
+    def resource_file(subpath: str):
+        safe_subpath = (subpath or "").strip("/\\")
+        if not safe_subpath:
+            abort(404)
+
+        parts = safe_subpath.split("/", 1)
+        file_path: str
+        directory: str
+
+        if len(parts) == 2 and parts[0].isdigit():
+            resource_id = int(parts[0])
+            filename = parts[1].strip("/\\")
+            if not filename or "/" in filename or "\\" in filename:
+                abort(404)
+            directory = resource_fs_dir(resource_id)
+            file_path = resource_fs_path(resource_id, filename)
+            relative_name = os.path.basename(file_path)
+        else:
+            if "/" in safe_subpath or "\\" in safe_subpath:
+                abort(404)
+            directory = resources_root()
+            relative_name = safe_subpath
+            file_path = os.path.join(directory, relative_name)
+
+        if not os.path.isfile(file_path):
+            abort(404)
+
+        return send_from_directory(directory, relative_name, conditional=True)
 
     @app.context_processor
     def inject_user():

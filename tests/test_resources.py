@@ -138,7 +138,11 @@ def test_resource_file_upload_persists(app):
         assert os.path.exists(fs_path)
         with open(fs_path, "rb") as stored:
             assert stored.read() == b"hello world"
-        shutil.rmtree(resource_fs_dir(res.id), ignore_errors=True)
+
+    download = client.get(expected_url)
+    assert download.status_code == 200
+    assert download.data == b"hello world"
+    shutil.rmtree(resource_fs_dir(res.id), ignore_errors=True)
 
 
 def test_my_resources_staff_empty(app):

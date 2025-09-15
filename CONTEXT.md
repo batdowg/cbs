@@ -343,7 +343,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Resources include an optional rich-text **Description** stored as sanitized HTML and entered in Settings via a Trix editor; on **My Resources** the resource title toggles a collapsible panel whose expanded state shows the link/file tile followed by the sanitized description.
 - Workshop types are de-duplicated by ID in application code to avoid SQL `DISTINCT` on JSON columns such as `supported_languages`.
 - `/my-resources` gracefully renders an empty state when no resources are available (never 500s).
-- Uploaded files persist under `/srv/resources/<resource_id>/<sanitized_filename>` and are publicly served by Caddy at `/resources/<resource_id>/<sanitized_filename>`; filenames are sanitized (slugged + short hash) to avoid traversal/collisions. Certificate and badge storage paths remain unchanged.
+
+- Uploaded files persist under `/srv/resources/<resource_id>/<sanitized_filename>` and are publicly served by Caddy at `/resources/<resource_id>/<sanitized_filename>`; filenames are sanitized (slugged + short hash) to avoid traversal/collisions. Flask exposes the same `/resources/...` path as a development/test fallback when Caddy isn't fronting the app. Certificate and badge storage paths remain unchanged.
 - Settings → Resources edit view surfaces the current uploaded file with a download link when present; My Resources prefers the file tile when a stored file URL exists and falls back to the external link otherwise.
 
 ---
