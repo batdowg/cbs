@@ -83,7 +83,7 @@ def test_my_resources_view(app):
     assert "https://kt.com" in html
     assert 'details class="resource-item"' in html
     assert "Open resource" in html
-    assert '<div class="resource-description">' in html
+    assert '<div class="resource-description rich-text">' in html
     assert "<script>bad</script>" not in html
     assert "/resources/doc.pdf" in html
     assert "Download PDF" in html
