@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Resource{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.js"></script>
+{% endblock %}
 {% block content %}
 <h1>{% if resource %}Edit{% else %}New{% endif %} Resource</h1>
 <form method="post" enctype="multipart/form-data">
@@ -14,9 +18,9 @@
   </label><br>
   <label>Link <input type="url" name="link" value="{{ resource.resource_value if resource and resource.type in ['LINK','APP'] else '' }}"></label><br>
   <label>File <input type="file" name="file"></label><br>
-  <label>Description<br>
-    <textarea name="description" rows="4">{{ resource.description_html | safe if resource else '' }}</textarea>
-  </label><br>
+  <label>Description</label><br>
+  <input type="hidden" id="description" name="description" value="{{ resource.description_html |e if resource else '' }}">
+  <trix-editor input="description"></trix-editor><br>
   <fieldset>
     <legend>Workshop Types</legend>
     {% set selected = [] %}
