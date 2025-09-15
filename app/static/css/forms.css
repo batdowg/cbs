@@ -35,32 +35,32 @@ textarea,
   border-radius: var(--radius-md, 12px);
 }
 
-/* Single-line control sizing */
+/* Single-line controls: spacing + alignment */
 input[type="text"],
 input[type="email"],
 input[type="url"],
 input[type="tel"],
-input[type="number"],
 input[type="search"],
 input[type="password"],
+input[type="number"],
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"],
 select,
 .form-control {
   box-sizing: border-box;
-  height: var(--field-h);
-  line-height: calc(var(--field-h) - 2px);
-  padding: var(--field-py) var(--field-px);
+  height: var(--field-h, 40px);
+  line-height: calc(var(--field-h, 40px) - 2px);
+  padding: var(--field-py, 8px) var(--field-px, 12px);
   border-radius: var(--radius-md, 12px);
-  margin-right: 0;
-  margin-bottom: 0;
   vertical-align: middle;
+  margin-right: 10px;   /* <- gives universal horizontal gap */
+  margin-bottom: 8px;   /* modest vertical rhythm */
 }
 
 select {
-  padding-right: calc(var(--field-px) * 2 + 1.5em);
-  background-position: right var(--field-px) center;
+  padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
+  background-position: right var(--field-px, 12px) center;
 }
 
 select:focus {
@@ -70,23 +70,23 @@ select:focus {
 select[multiple],
 .form-multiselect {
   height: auto;
-  min-height: 200px; /* ~8 rows */
+  min-height: 200px;
+  overflow-y: auto;
   padding: 8px 12px;
   line-height: 1.3;
-  overflow-y: auto;
-  border-radius: inherit;
+  border-radius: var(--radius-md, 12px);
 }
 
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
-  padding-right: calc(var(--field-px) * 2 + 1.5em);
+  padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
 }
 
 textarea {
-  min-height: calc(var(--field-h) * 2);
+  min-height: calc(var(--field-h, 40px) * 2);
   line-height: 1.4;
-  padding: var(--field-py) var(--field-px);
+  padding: var(--field-py, 8px) var(--field-px, 12px);
   border-radius: var(--radius-md, 12px);
 }
 
@@ -114,7 +114,8 @@ textarea[readonly] {
 label {
   font-family: 'Raleway', sans-serif;
   color: var(--kt-text);
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .form-group {
@@ -124,14 +125,9 @@ label {
 }
 
 .form-group > label {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--field-h);
+  margin-right: 6px;
   margin-bottom: 0;
-}
-
-.form-group.label-top > label {
-  align-items: flex-start;
+  vertical-align: middle;
 }
 
 .form-help {
@@ -201,16 +197,4 @@ input[type="checkbox"] + label {
   flex-wrap: wrap;
   column-gap: var(--gap-x);
   row-gap: var(--gap-y);
-}
-
-.field-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 10px;
-  row-gap: 8px;
-}
-
-.field-row .form-group {
-  margin: 0; /* spacing comes from gaps */
 }

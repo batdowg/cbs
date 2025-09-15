@@ -7,7 +7,7 @@
     <legend>Order Information</legend>
     {% set _title = title_override if title_override is not none else session.title %}
     <div><label>Title* <input type="text" name="title" value="{{ _title or '' }}" required></label></div>
-    <div><label class="field-row">Client*
+    <div><label>Client*
       <select name="client_id" id="client-select" required>
         <option value="">--Select--</option>
         {% for c in clients %}
@@ -18,7 +18,7 @@
       <span>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></span>
     </label>
     </div>
-    <div class="field-row">
+    <div>
       <label>Region*
         <select name="region" required>
           <option value="">--Select--</option>
@@ -67,7 +67,7 @@
         {% endfor %}
       </select>
     </label></div>
-    <div class="field-row">
+    <div>
       <label>Workshop Location
         <select name="workshop_location_id" id="workshop-location-select">
           <option value=""></option>
@@ -79,14 +79,19 @@
       <a href="#" id="add-workshop-location">Add</a>
     </div>
     <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
-    <div class="field-row"><label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
-    <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
-    <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label></div><div class="form-help">End date must be the same day or after the start date.</div>
+    <div>
+      <label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
+      <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
+      <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label>
+    </div>
+    <div class="form-help">End date must be the same day or after the start date.</div>
     {% if past_warning %}
     <div style="color:red;"><label><input type="checkbox" id="ack-past-check" required> The selected start date is in the past. I'm sure.</label></div>
     {% endif %}
-    <div class="field-row"><label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label>
-    <label>End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label></div>
+    <div>
+      <label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label>
+      <label>End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label>
+    </div>
     <div><label>Timezone
       <select name="timezone">
         <option value="">--Select--</option>

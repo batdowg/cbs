@@ -102,8 +102,8 @@ Every functional change must update this file **in the same PR**.
 ## 0.8 Form Controls
 - Inputs, selects, textareas, radios, checkboxes, file controls, and helper/error text follow KT tokens for color, spacing, and focus rings.
 - Styles live in `/static/css/forms.css` and load globally.
-- Adjacent single-line controls include default 10px horizontal and 8px vertical gaps via `--gap-x`/`--gap-y`; inline actions like "Add" or "Edit" links sit 8px away.
-- `.filters`, `.filter-row`, and `.field-row` provide optional flex wrapping with these gaps via `column-gap`/`row-gap`.
+- Single-line controls include default 10px horizontal and 8px vertical margins to keep adjacent fields separated; inline actions like "Add" or "Edit" links sit 8px away.
+- `.filters` and `.filter-row` provide optional flex wrapping with these gaps via `column-gap`/`row-gap`.
 
 ## 0.9 Navigation & Breadcrumbs
 - Header and main navigation use `/static/css/nav.css` with `--kt-bg` background, `--kt-text`/`--kt-info` links, and Raleway headings.
