@@ -1,0 +1,23 @@
+{% if not wt %}
+<div><label>Code <input type="text" name="code" required></label></div>
+{% else %}
+<div><label>Code <input type="text" name="code" value="{{ wt.code }}" readonly></label></div>
+{% endif %}
+<div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
+<div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
+<div><label><input type="checkbox" name="simulation_based" {% if wt and wt.simulation_based %}checked{% endif %}> Simulation based</label></div>
+<div><label>Supported languages
+  <select name="supported_languages" multiple>
+    {% for code,label in language_options %}
+    <option value="{{ code }}" {% if wt and code in (wt.supported_languages or []) %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</label></div>
+<div><label>Certificate series
+  <select name="cert_series" required>
+    {% for s in series %}
+    <option value="{{ s.code }}" {% if wt and wt.cert_series==s.code %}selected{% endif %}>{{ s.code }} &ndash; {{ s.name }}</option>
+    {% endfor %}
+  </select>
+</label></div>
+<div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>

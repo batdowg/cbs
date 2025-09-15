@@ -183,17 +183,6 @@ def materials_view(
             else "KT-Run Standard materials"
         )
         db.session.commit()
-    if (
-        shipment.materials_option_id is None
-        and sess.workshop_type
-        and sess.workshop_type.default_materials_option_id
-    ):
-        shipment.materials_option_id = sess.workshop_type.default_materials_option_id
-        if shipment.order_type == "KT-Run Modular materials":
-            opt = db.session.get(MaterialsOption, shipment.materials_option_id)
-            if opt:
-                shipment.materials_options = [opt]
-        db.session.commit()
     if not shipment.material_sets:
         shipment.material_sets = sess.capacity or 0
         db.session.commit()

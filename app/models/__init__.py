@@ -169,11 +169,6 @@ class WorkshopType(db.Model):
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
-    default_materials_option_id = db.Column(
-        db.Integer,
-        db.ForeignKey("materials_options.id", ondelete="SET NULL"),
-    )
-    default_materials_option = db.relationship("MaterialsOption")
     supported_languages = db.Column(db.JSON, nullable=False, default=lambda: ["en"])
     cert_series = db.Column(db.String(16), nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())

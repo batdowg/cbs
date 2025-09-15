@@ -13,126 +13,10 @@
 {% endif %}
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% if not wt %}
-  <div><label>Code <input type="text" name="code" required></label></div>
-  {% else %}
-  <div><label>Code <input type="text" name="code" value="{{ wt.code }}" readonly></label></div>
-  {% endif %}
-  <div><label>Name <input type="text" name="name" value="{{ wt.name if wt else '' }}" required></label></div>
-  <div><label>Status <input type="text" name="status" value="{{ wt.status if wt else 'active' }}"></label></div>
-  <div><label><input type="checkbox" name="simulation_based" {% if wt and wt.simulation_based %}checked{% endif %}> Simulation based</label></div>
-  <div><label>Supported languages
-    <select name="supported_languages" multiple>
-      {% for code,label in language_options %}
-      <option value="{{ code }}" {% if wt and code in (wt.supported_languages or []) %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Default Materials Type
-    <select name="default_materials_option_id">
-      <option value=""></option>
-      {% for opt in materials_options %}
-      <option value="{{ opt.id }}" {% if wt and wt.default_materials_option_id==opt.id %}selected{% endif %}>{{ opt.title }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Certificate series
-    <select name="cert_series" required>
-      {% for s in series %}
-      <option value="{{ s.code }}"{% if wt and wt.cert_series==s.code %} selected{% endif %}>{{ s.code }} &ndash; {{ s.name }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
-  {% if wt %}
-  <h2 id="defaults">Default Materials</h2>
-  <table class="kt-table" id="defaults-table">
-    <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Actions</th></tr>
-    {% for d in defaults %}
-    <tr data-row="{{ d.id }}"{% if loop.last %} data-blank-row="true"{% endif %}>
-      <td>
-        <select name="defaults[{{ d.id }}][delivery_type]" class="delivery-select" data-row="{{ d.id }}">
-          {% for opt in delivery_choices %}
-          <option value="{{ opt }}" {% if d.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[{{ d.id }}][region_code]">
-          {% for code,label in regions %}
-          <option value="{{ code }}" {% if d.region_code==code %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[{{ d.id }}][language]" class="lang-select" data-row="{{ d.id }}">
-          {% for code,label in language_options if code in supported_langs %}
-          <option value="{{ code }}" {% if d.language==code %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        {% set sel = selected_opts.get(d.id) %}
-        <select name="defaults[{{ d.id }}][material_option_id]" class="material-select" data-row="{{ d.id }}">
-          <option value=""></option>
-          {% if sel %}<option value="{{ sel.id }}" selected>{{ sel.label }}</option>{% endif %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[{{ d.id }}][default_format]">
-          {% for opt in format_choices %}
-          <option value="{{ opt }}" {% if d.default_format==opt %}selected{% endif %}>{{ opt }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td><input type="checkbox" name="defaults[{{ d.id }}][active]" {% if d.active %}checked{% endif %}></td>
-      <td>{% if not loop.last %}<button type="button" class="btn btn-sm btn-danger delete-default" data-id="{{ d.id }}" data-url="{{ url_for('workshop_types.delete_default_row', default_id=d.id) }}">Delete</button>{% endif %}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  <template id="default-row-template">
-    <tr data-row="__index__" data-blank-row="true">
-      <td>
-        <select name="defaults[__index__][delivery_type]" class="delivery-select" data-row="__index__">
-          {% for opt in delivery_choices %}
-          <option value="{{ opt }}">{{ opt }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[__index__][region_code]">
-          {% for code,label in regions %}
-          <option value="{{ code }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[__index__][language]" class="lang-select" data-row="__index__">
-          {% for code,label in language_options if code in supported_langs %}
-          <option value="{{ code }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td>
-        <select name="defaults[__index__][material_option_id]" class="material-select" data-row="__index__">
-          <option value=""></option>
-        </select>
-      </td>
-      <td>
-        <select name="defaults[__index__][default_format]">
-          {% for opt in format_choices %}
-          <option value="{{ opt }}">{{ opt }}</option>
-          {% endfor %}
-        </select>
-      </td>
-      <td><input type="checkbox" name="defaults[__index__][active]" checked></td>
-      <td></td>
-    </tr>
-  </template>
-  {% endif %}
+  {% include 'workshop_types/_fields.html' %}
+  {% include 'workshop_types/_defaults_table.html' %}
   <button type="submit">Save</button>
 </form>
-{% if wt %}
 <script src="{{ url_for('static', filename='js/material_picker.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -144,5 +28,4 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 });
 </script>
-{% endif %}
 {% endblock %}

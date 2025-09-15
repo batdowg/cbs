@@ -169,17 +169,30 @@ def new_type(current_user):
         .order_by(CertificateTemplateSeries.code)
         .all()
     )
-    materials_options = (
-        MaterialsOption.query.filter_by(is_active=True)
-        .order_by(MaterialsOption.title)
-        .all()
+    language_options = get_language_options()
+    regions = get_region_options()
+    supported_langs = [code for code, _ in language_options]
+    blank_row = SimpleNamespace(
+        id="new0",
+        delivery_type=DELIVERY_CHOICES[0] if DELIVERY_CHOICES else "",
+        region_code=regions[0][0] if regions else "",
+        language=supported_langs[0] if supported_langs else "",
+        default_format=FORMAT_CHOICES[0] if FORMAT_CHOICES else "",
+        active=True,
     )
+    defaults_view = [blank_row]
     return render_template(
         "workshop_types/form.html",
         wt=None,
-        language_options=get_language_options(),
+        current_user=current_user,
+        language_options=language_options,
         series=series,
-        materials_options=materials_options,
+        defaults=defaults_view,
+        selected_opts={},
+        regions=regions,
+        delivery_choices=DELIVERY_CHOICES,
+        format_choices=FORMAT_CHOICES,
+        supported_langs=supported_langs,
     )
 
 
@@ -215,10 +228,58 @@ def create_type(current_user):
         supported_languages=langs or ["en"],
         cert_series=series_code,
     )
-    dmo = request.form.get("default_materials_option_id")
-    wt.default_materials_option_id = int(dmo) if dmo else None
     db.session.add(wt)
     db.session.flush()
+    pattern = re.compile(r"defaults\[(.+?)\]\[(.+?)\]")
+    form_defaults: dict[str, dict[str, str]] = {}
+    for key, value in request.form.items():
+        m = pattern.fullmatch(key)
+        if m:
+            row, field = m.groups()
+            form_defaults.setdefault(row, {})[field] = value
+    for row_key, data in form_defaults.items():
+        delivery_type = data.get("delivery_type") or ""
+        region_code = data.get("region_code") or ""
+        language = data.get("language") or ""
+        opt_val = data.get("material_option_id") or ""
+        default_format = data.get("default_format") or ""
+        active = bool(data.get("active"))
+        if not opt_val:
+            continue
+        if not all([delivery_type, region_code, language, default_format]):
+            flash("All fields required", "error")
+            db.session.rollback()
+            return redirect(url_for("workshop_types.new_type") + "#defaults")
+        try:
+            opt_id = int(opt_val)
+        except ValueError:
+            flash(f"Invalid material item (row {row_key})", "error")
+            db.session.rollback()
+            return redirect(url_for("workshop_types.new_type") + "#defaults")
+        opt = db.session.get(MaterialsOption, opt_id)
+        if not opt:
+            flash(f"Invalid material item (row {row_key})", "error")
+            db.session.rollback()
+            return redirect(url_for("workshop_types.new_type") + "#defaults")
+        rule = WorkshopTypeMaterialDefault(
+            workshop_type_id=wt.id,
+            delivery_type=delivery_type,
+            region_code=region_code,
+            language=language,
+            catalog_ref=f"materials_options:{opt_id}",
+            default_format=default_format,
+            quantity_basis=opt.quantity_basis,
+            active=active,
+        )
+        db.session.add(rule)
+        db.session.flush()
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action="wt_material_default_create",
+                details=f"id={rule.id} wt={wt.id}",
+            )
+        )
     db.session.add(
         AuditLog(
             user_id=current_user.id,
@@ -240,11 +301,6 @@ def edit_type(type_id: int, current_user):
     series = (
         CertificateTemplateSeries.query.filter_by(is_active=True)
         .order_by(CertificateTemplateSeries.code)
-        .all()
-    )
-    materials_options = (
-        MaterialsOption.query.filter_by(is_active=True)
-        .order_by(MaterialsOption.title)
         .all()
     )
     language_options = get_language_options()
@@ -301,7 +357,6 @@ def edit_type(type_id: int, current_user):
         language_options=language_options,
         supported_langs=supported_langs,
         series=series,
-        materials_options=materials_options,
         defaults=defaults_view,
         selected_opts=selected_opts,
         regions=regions,
@@ -324,8 +379,6 @@ def update_type(type_id: int, current_user):
     wt.simulation_based = bool(request.form.get("simulation_based"))
     langs = request.form.getlist("supported_languages")
     wt.supported_languages = langs or ["en"]
-    dmo = request.form.get("default_materials_option_id")
-    wt.default_materials_option_id = int(dmo) if dmo else None
     series_code = (request.form.get("cert_series") or "").strip()
     if not series_code:
         flash("Certificate series required", "error")
