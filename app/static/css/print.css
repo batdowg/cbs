@@ -1,35 +1,36 @@
 @media print {
-  /* Hide navigation and chrome */
-  .kt-sidebar,
-  nav,
   header,
+  nav,
+  .kt-sidebar,
+  .side-nav,
+  .flash,
   .flashes,
+  .btn,
+  .pagination,
   .view-banner {
     display: none !important;
   }
 
   body {
-    margin: 0;
     color: #000;
     background: #fff;
   }
 
-  .content {
-    padding: 0;
-  }
-
-  a {
-    color: #000;
-    text-decoration: underline;
-  }
-
-  /* Ensure tables print cleanly */
   .kt-table {
-    overflow: visible;
+    border-collapse: collapse;
   }
 
   .kt-table th,
   .kt-table td {
-    border: 1px solid #000;
+    border: 1px solid var(--kt-border);
+    padding: 6px 8px;
+  }
+
+  .col-actions {
+    display: none;
+  }
+
+  a[href]::after {
+    content: "";
   }
 }
