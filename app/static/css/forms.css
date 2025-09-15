@@ -4,8 +4,8 @@
   --field-h: 40px;
   --field-px: 12px;
   --field-py: 8px;
-  --gap-x: 8px; /* was 12px */
-  --gap-y: 8px; /* was 12px */
+  --gap-x: 10px;
+  --gap-y: 8px;
 }
 /* Inline action/link spacing */
 select + a,
@@ -53,16 +53,9 @@ select,
   line-height: calc(var(--field-h) - 2px);
   padding: var(--field-py) var(--field-px);
   border-radius: var(--radius-md, 12px);
-  margin-right: var(--gap-x);
+  margin-right: 0;
   margin-bottom: 0;
   vertical-align: middle;
-}
-
-/* Trim extra right margin when a control naturally fills the row */
-.form-control:last-child,
-select:last-child,
-input:last-child {
-  margin-right: 0;
 }
 
 select {
@@ -115,7 +108,9 @@ label {
 }
 
 .form-group {
+  margin-right: var(--gap-x);
   margin-bottom: var(--gap-y);
+  vertical-align: top;
 }
 
 .form-group > label {
