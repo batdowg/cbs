@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
+
+from sqlalchemy import event
 from sqlalchemy.orm import validates
 
 from ..app import db
+from ..shared.storage_resources import remove_resource_dir, remove_resource_file
 
 resource_workshop_types = db.Table(
     "resource_workshop_types",
@@ -43,9 +47,25 @@ class Resource(db.Model):
 
     @property
     def public_url(self) -> str | None:
-        if self.type == "DOCUMENT" and self.resource_value:
-            return f"/resources/{self.resource_value}"
+        if self.type == "DOCUMENT":
+            value = (self.resource_value or "").strip()
+            if not value:
+                return None
+            if value.startswith(("http://", "https://")):
+                return value
+            if value.startswith("/"):
+                return value
+            return f"/resources/{value}"
         return self.resource_value
+
+    @property
+    def document_filename(self) -> str | None:
+        if self.type != "DOCUMENT" or not self.resource_value:
+            return None
+        value = self.resource_value.strip()
+        if not value:
+            return None
+        return os.path.basename(value)
 
     @validates("type")
     def _normalize_type(self, key, value):
@@ -63,3 +83,9 @@ class Resource(db.Model):
                 raise ValueError("filename required")
         else:
             raise ValueError("invalid resource type")
+
+
+@event.listens_for(Resource, "after_delete")
+def _cleanup_resource_files(mapper, connection, target):
+    remove_resource_file(target.id, getattr(target, "resource_value", None))
+    remove_resource_dir(target.id)

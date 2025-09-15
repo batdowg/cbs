@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Optional
 
 from flask import (
     Blueprint,
@@ -14,13 +15,69 @@ from flask import (
     url_for,
 )
 from sqlalchemy import func
+from werkzeug.datastructures import FileStorage
 
 from ..app import db, User
 from ..models import Resource, WorkshopType, AuditLog
-from ..forms.resource_forms import slugify_filename, validate_resource_form
-from ..shared.storage import ensure_dir
+from ..forms.resource_forms import validate_resource_form
+from ..shared.storage import write_atomic
+from ..shared.storage_resources import (
+    remove_resource_dir,
+    resource_fs_dir,
+    resource_path_from_value,
+    resource_web_url,
+    sanitize_filename,
+)
 
 bp = Blueprint("settings_resources", __name__, url_prefix="/settings/resources")
+
+
+def _set_file_metadata(resource: Resource, filename: str, size: Optional[int], content_type: Optional[str]) -> None:
+    if hasattr(resource, "file_name"):
+        resource.file_name = filename
+    if hasattr(resource, "file_size"):
+        resource.file_size = size
+    if hasattr(resource, "file_content_type"):
+        resource.file_content_type = content_type
+
+
+def _clear_file_metadata(resource: Resource) -> None:
+    if hasattr(resource, "file_name"):
+        resource.file_name = None
+    if hasattr(resource, "file_size"):
+        resource.file_size = None
+    if hasattr(resource, "file_content_type"):
+        resource.file_content_type = None
+
+
+def _save_document_file(resource: Resource, upload: FileStorage) -> tuple[str, Optional[int], Optional[str], str]:
+    filename = sanitize_filename(getattr(upload, "filename", "") or "resource")
+    directory = resource_fs_dir(resource.id)
+    os.makedirs(directory, mode=0o755, exist_ok=True)
+    stream = getattr(upload, "stream", None)
+    if stream and hasattr(stream, "seek"):
+        try:
+            stream.seek(0)
+        except Exception:
+            pass
+    data = upload.read()
+    dest_path = os.path.join(directory, filename)
+    write_atomic(dest_path, data)
+    os.chmod(dest_path, 0o644)
+    size = len(data) if isinstance(data, (bytes, bytearray)) else None
+    content_type = getattr(upload, "mimetype", None) or getattr(upload, "content_type", None)
+    return filename, size, content_type, dest_path
+
+
+def _remove_previous_file(resource: Resource, previous_value: Optional[str], new_path: str) -> None:
+    old_path = resource_path_from_value(resource.id, previous_value)
+    if not old_path:
+        return
+    try:
+        if os.path.abspath(old_path) != os.path.abspath(new_path) and os.path.isfile(old_path):
+            os.remove(old_path)
+    except FileNotFoundError:
+        pass
 
 
 def _current_user(require_edit: bool = False) -> "User | Response":
@@ -87,23 +144,25 @@ def create_resource():
             flash(e, "error")
         return redirect(url_for("settings_resources.new_resource"))
     rtype = cleaned["type"]
-    if rtype == "DOCUMENT":
-        file = cleaned["file"]
-        filename = slugify_filename(name, file.filename)
-        ensure_dir("/srv/resources")
-        file.save(os.path.join("/srv/resources", filename))
-        resource_value = filename
-    else:
-        resource_value = cleaned["link"]
+    initial_value: Optional[str] = None if rtype == "DOCUMENT" else cleaned["link"]
     res = Resource(
         name=name,
         type=rtype,
-        resource_value=resource_value,
+        resource_value=initial_value,
         description_html=cleaned["description"],
         active=cleaned["active"],
     )
     res.workshop_types = WorkshopType.query.filter(WorkshopType.id.in_(cleaned["workshop_type_ids"])).all()
     db.session.add(res)
+    db.session.flush()
+    if rtype == "DOCUMENT":
+        file = cleaned["file"]
+        if file and getattr(file, "filename", ""):
+            filename, size, content_type, _new_path = _save_document_file(res, file)
+            res.resource_value = resource_web_url(res.id, filename)
+            _set_file_metadata(res, filename, size, content_type)
+        else:
+            _clear_file_metadata(res)
     db.session.add(AuditLog(user_id=current_user.id, action="resource_create", details=name))
     db.session.commit()
     flash("Resource created", "success")
@@ -152,6 +211,8 @@ def update_resource(res_id: int):
             flash(e, "error")
         return redirect(url_for("settings_resources.edit_resource", res_id=res_id))
     rtype = cleaned["type"]
+    previous_type = res.type
+    previous_value = res.resource_value
     res.name = name
     res.type = rtype
     res.active = cleaned["active"]
@@ -159,12 +220,24 @@ def update_resource(res_id: int):
     if rtype == "DOCUMENT":
         file = cleaned["file"]
         if file and getattr(file, "filename", ""):
-            filename = slugify_filename(name, file.filename)
-            ensure_dir("/srv/resources")
-            file.save(os.path.join("/srv/resources", filename))
-            res.resource_value = filename
+            filename, size, content_type, new_path = _save_document_file(res, file)
+            _remove_previous_file(res, previous_value, new_path)
+            res.resource_value = resource_web_url(res.id, filename)
+            _set_file_metadata(res, filename, size, content_type)
+        elif previous_type != "DOCUMENT":
+            res.resource_value = None
+            _clear_file_metadata(res)
     else:
         res.resource_value = cleaned["link"]
+        if previous_type == "DOCUMENT":
+            old_path = resource_path_from_value(res.id, previous_value)
+            remove_resource_dir(res.id)
+            if old_path and os.path.isfile(old_path):
+                try:
+                    os.remove(old_path)
+                except FileNotFoundError:
+                    pass
+            _clear_file_metadata(res)
     res.workshop_types = WorkshopType.query.filter(WorkshopType.id.in_(cleaned["workshop_type_ids"])).all()
     db.session.add(AuditLog(user_id=current_user.id, action="resource_update", details=name))
     db.session.commit()
