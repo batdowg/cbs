@@ -294,7 +294,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 - `workshop_type_material_defaults` maps `(workshop_type_id, delivery_type, region_code, language)` to a `catalog_ref` material item, `default_format` (Digital/Physical/Self-paced), and `active`. Quantity basis derives from the referenced Material Item.
 - `material_order_items` snapshot per-session ordered items with title, description, SKU, language, format, quantity, and processed state.
-- Managed inline on the **Workshop Type edit page** under a “Default Materials” section (`/workshop-types/<id>/edit#defaults`). Legacy `/workshop-types/<id>/defaults` redirects here.
+- Managed inline on the **Workshop Type** form under a “Default Materials” section (`/workshop-types/new` and `/workshop-types/<id>/edit#defaults`). Legacy `/workshop-types/<id>/defaults` redirects here.
 - Material item dropdown labels each choice as `<Family> • <ItemTitle>` with optional language tags `• [en, es]`; “KT-Run Standard materials” and “KT-Run Modular materials” display as “Standard” and “Modular.”
 - The dropdown filters items by the row’s Language and excludes the “Client-run Bulk order” catalog; no “Show all” toggle.
 - The edit page header links to **Prework** as a separate action; the H1 remains “Edit Workshop Type.”
@@ -359,13 +359,13 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Region default**: `/sessions/new` preselects the current user's Region when available; users may change it before saving.
 - **Sessions & Settings**: all language pickers and labels show human names; templates use global `lang_label` helper to render codes; database stores codes; deactivated languages are not selectable; sort by configured order.
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
-- **Workshop Type** settings include a **Default Materials Type** used to pre-fill the Materials order for newly created sessions.
-- The Workshop Type edit page also provides a **Default Materials** tab mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
-- Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle.
+ - The **"Default Materials Type"** dropdown has been removed; Workshop Types rely solely on the Default Materials table.
+ - The Workshop Type edit page and **New Workshop Type** view include a **Default Materials** table mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
+ - Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle. Quantity basis comes from Materials Settings and is not editable on Workshop Types.
 - **Materials-only orders** share the session form. `/sessions/new` shows an **Order Information** section (Title, Client with CRM, Region, Language) with a **No workshop, material order only** button that creates a hidden session (`materials_only = true`, `delivery_type = "Material Order"`) and redirects to that session's Materials Order page. Certificates and badges are unaffected and remain gated.
 - Clicking **No workshop, material order only** removes `required` constraints from later form fields so only Order Information entries are enforced before submission.
 - When `materials_only = true`, training-session features (participants, prework, certificates) are hidden/denied.
-- Default Materials-only **Order Type** = “Client-run Bulk order”; after selecting Order Type, the session's Workshop Type default pre-fills **Materials Type**.
+ - Default Materials-only **Order Type** = “Client-run Bulk order”.
 - **Material Sets** integer field (hidden only when Order Type = Simulation).
 - Material Sets default equals the Session Capacity when set; otherwise 0.
 - **# of credits (2 teams per credit)** integer field (default 2; shown when Order Type = Simulation or the Workshop Type is simulation-based).
