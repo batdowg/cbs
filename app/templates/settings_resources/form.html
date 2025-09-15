@@ -14,6 +14,9 @@
   </label><br>
   <label>Link <input type="url" name="link" value="{{ resource.resource_value if resource and resource.type in ['LINK','APP'] else '' }}"></label><br>
   <label>File <input type="file" name="file"></label><br>
+  <label>Description<br>
+    <textarea name="description" rows="4">{{ resource.description_html | safe if resource else '' }}</textarea>
+  </label><br>
   <fieldset>
     <legend>Workshop Types</legend>
     {% set selected = [] %}

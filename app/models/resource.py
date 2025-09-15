@@ -29,6 +29,7 @@ class Resource(db.Model):
     name = db.Column(db.String(255), nullable=False)
     type = db.Column(db.String(20), nullable=False)
     resource_value = db.Column(db.String(2048))
+    description_html = db.Column(db.Text)
     active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 

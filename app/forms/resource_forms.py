@@ -4,6 +4,8 @@ import os
 import re
 from typing import Iterable
 
+from ..shared.html import sanitize_html
+
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".pptx", ".csv", ".txt", ".html"}
 
 
@@ -26,7 +28,16 @@ def validate_resource_form(data: dict, files: dict, *, require_file: bool = Fals
     file = files.get("file")
     active = bool(data.get("active"))
     wt_ids = [int(x) for x in data.getlist("workshop_types") if x.isdigit()]
-    cleaned.update(name=name, type=rtype, link=link, file=file, active=active, workshop_type_ids=wt_ids)
+    description = sanitize_html(data.get("description") or "")
+    cleaned.update(
+        name=name,
+        type=rtype,
+        link=link,
+        file=file,
+        active=active,
+        workshop_type_ids=wt_ids,
+        description=description,
+    )
 
     if not name:
         errors.append("Name required")
