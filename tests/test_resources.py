@@ -79,10 +79,14 @@ def test_my_resources_view(app):
     resp = client.get("/my-resources")
     html = resp.get_data(as_text=True)
     assert "Type A" in html
-    assert "LinkR" in html and "https://kt.com" in html
-    assert "<summary>Description</summary>" in html
-    assert "<script" not in html
+    assert '<summary class="resource-summary">LinkR</summary>' in html
+    assert "https://kt.com" in html
+    assert 'details class="resource-item"' in html
+    assert "Open resource" in html
+    assert '<div class="resource-description rich-text">' in html
+    assert "<script>bad</script>" not in html
     assert "/resources/doc.pdf" in html
+    assert "Download PDF" in html
 
 
 def test_my_resources_staff_empty(app):

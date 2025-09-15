@@ -4,24 +4,60 @@
 <h1>My Resources</h1>
 {% if grouped %}
   {% for wt, items in grouped %}
-    <h2>{{ wt.name }}</h2>
-    <ul>
-    {% for r in items %}
-      <li>
-        {% if r.type == 'DOCUMENT' %}
-          <a href="{{ r.public_url }}" download>{{ r.name }}</a>
-        {% else %}
-          <a href="{{ r.resource_value }}" target="_blank">{{ r.name }}</a>
-        {% endif %}
-        {% if r.description_html %}
-          <details>
-            <summary>Description</summary>
-            {{ r.description_html | safe }}
-          </details>
-        {% endif %}
-      </li>
-    {% endfor %}
-    </ul>
+    <section class="resource-group">
+      <h2>{{ wt.name }}</h2>
+      <div class="resource-list">
+      {% for r in items %}
+        {% set public_url = r.public_url %}
+        {% set filename = r.resource_value.rsplit('/', 1)[-1] if r.resource_value else '' %}
+        {% set ext = filename.rsplit('.', 1)[-1]|lower if '.' in filename else '' %}
+        {% set is_image = ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'] %}
+        {% set is_pdf = ext == 'pdf' %}
+        <details class="resource-item">
+          <summary class="resource-summary">{{ r.name }}</summary>
+          <div class="resource-panel">
+            <div class="resource-tile">
+              {% if r.type == 'DOCUMENT' %}
+                <a href="{{ public_url }}" download class="resource-file-link">
+                  {% if is_image %}
+                    <img src="{{ public_url }}" alt="" class="resource-thumb">
+                  {% else %}
+                    <span class="resource-icon" aria-hidden="true">
+                      {% if is_pdf %}
+                        📄
+                      {% else %}
+                        ⬇️
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                  <span class="resource-file-text">
+                    <span class="resource-file-name">{{ filename or r.name }}</span>
+                    <span class="resource-file-meta">
+                      {% if is_image %}
+                        Download image
+                      {% elif is_pdf %}
+                        Download PDF
+                      {% else %}
+                        Download file
+                      {% endif %}
+                    </span>
+                  </span>
+                </a>
+              {% else %}
+                <span class="resource-icon" aria-hidden="true">🔗</span>
+                <a href="{{ r.resource_value }}" target="_blank" rel="noopener" class="btn btn-secondary">Open resource</a>
+              {% endif %}
+            </div>
+            {% if r.description_html %}
+              <div class="resource-description rich-text">
+                {{ r.description_html | safe }}
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      {% endfor %}
+      </div>
+    </section>
   {% endfor %}
 {% else %}
   <p>No resources available.</p>
