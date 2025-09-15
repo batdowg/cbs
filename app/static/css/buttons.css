@@ -118,6 +118,34 @@ input[type="reset"]:disabled,
   border-color: color-mix(in srgb, var(--kt-accent-green) 70%, black);
 }
 
+a.btn,
+a.btn:link,
+a.btn:visited {
+  color: #fff;
+  text-decoration: none;
+}
+
+a.btn:hover,
+a.btn:active,
+a.btn:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn a,
+.btn a:link,
+.btn a:visited {
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn a:hover,
+.btn a:active,
+.btn a:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
 .btn-sm {
   padding: var(--space-1) var(--space-2);
   font-size: 0.875rem;

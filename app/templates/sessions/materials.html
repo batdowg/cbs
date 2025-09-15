@@ -42,13 +42,13 @@
           <input type="url" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
         {% endif %}
       </div>
-      <div>Order date: {{ shipment.created_at.date() if shipment.created_at else '' }}</div>
       <div>Latest arrival date:
         {% if can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
           <input type="date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
         {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
       </div>
     </div>
+    <div>Order date: {{ shipment.created_at.date() if shipment.created_at else '' }}</div>
   </div>
   <div class="kt-card">
     <h2 class="kt-card-title">Shipping details</h2>
@@ -130,12 +130,12 @@
           {% else %}{{ fmt|default('', true) }}{% endif %}
         </label>
       </div>
+      <div id="material-sets" {% if shipment.order_type=='Simulation' %}style="display:none"{% endif %}>
+        <label>Material Sets
+          <input type="number" name="material_sets" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">
+        </label>
+      </div>
     </div>
-  <div id="material-sets" {% if shipment.order_type=='Simulation' %}style="display:none"{% endif %}>
-    <label>Material Sets
-      <input type="number" name="material_sets" min="0" value="{{ form.get('material_sets') if form else (shipment.material_sets or 0) }}">
-    </label>
-  </div>
   <div id="credits-field" data-sim="{{ 1 if sim_base else 0 }}" {% if not show_credits %}style="display:none"{% endif %}>
     <label># of credits (2 teams per credit)
       <input type="number" name="credits" min="0" value="{{ form.get('credits') if form else (shipment.credits or 2) }}">
