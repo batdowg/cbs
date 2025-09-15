@@ -62,23 +62,40 @@
     <th>{{ sort_link('Client','client') }}</th>
     <th>{{ sort_link('Location','location') }}</th>
     <th>{{ sort_link('Workshop Type','workshop_type') }}</th>
-    <th>{{ sort_link('Start Date','start_date') }}</th>
-    <th>{{ sort_link('Status','status') }}</th>
-    <th>{{ sort_link('Region','region') }}</th>
+    <th class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
+    <th class="cell-nowrap">{{ sort_link('Status','status') }}</th>
+    <th class="cell-nowrap">{{ sort_link('Region','region') }}</th>
     <th class="col-actions">Actions</th>
   </tr>
   {% for s in sessions %}
   <tr>
-    <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a></td>
-    <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
-    <td>{{ s.location }}</td>
-    <td>{% if s.workshop_type %}{{ s.workshop_type.code }} — {{ s.workshop_type.name }}{% endif %}</td>
-    <td>{{ s.start_date }}</td>
-    <td>{{ s.computed_status }}</td>
-    <td>{{ s.region }}</td>
+    <td>
+      <span class="cell-ellipsis" title="{{ s.title }}">
+        <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+      </span>
+    </td>
+    <td>
+      {% if s.client %}
+        <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if s.location %}
+        <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if s.workshop_type %}
+        {% set workshop_label = s.workshop_type.code ~ ' — ' ~ s.workshop_type.name %}
+        <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
+      {% endif %}
+    </td>
+    <td class="cell-nowrap">{{ s.start_date }}</td>
+    <td class="cell-nowrap">{{ s.computed_status }}</td>
+    <td class="cell-nowrap">{{ s.region }}</td>
     <td class="col-actions">
       {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
-        <a class="btn btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
       {% endif %}
     </td>
   </tr>

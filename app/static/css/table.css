@@ -45,4 +45,22 @@
 
 .kt-table .col-actions .btn {
   margin-left: .25rem;
+  padding: 4px 10px;
+  font-size: .9rem;
+}
+
+.kt-table .col-actions .btn:first-child {
+  margin-left: 0;
+}
+
+.cell-nowrap {
+  white-space: nowrap;
+}
+
+.cell-ellipsis {
+  max-width: 48ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
