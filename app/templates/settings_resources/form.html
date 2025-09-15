@@ -31,7 +31,7 @@
       <label>
         <input type="checkbox" name="workshop_types" value="{{ wt.id }}"
                {% if wt.id in selected %}checked{% endif %}>
-        {{ wt.name }}
+        {{ wt.code }}
       </label>
     {% endfor %}
   </fieldset>
