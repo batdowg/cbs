@@ -1,19 +1,11 @@
 from __future__ import annotations
 
 import os
-import re
 from typing import Iterable
 
 from ..shared.html import sanitize_html
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".pptx", ".csv", ".txt", ".html"}
-
-
-def slugify_filename(name: str, filename: str) -> str:
-    base, ext = os.path.splitext(filename)
-    ext = ext.lower()
-    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    return f"{slug}{ext}"
 
 
 def validate_resource_form(data: dict, files: dict, *, require_file: bool = False) -> tuple[list[str], dict]:
