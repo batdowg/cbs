@@ -220,6 +220,12 @@ def list_orders():
         else:
             workshop_code = sess.code or ""
 
+        bulk_receiver_email = ""
+        if ship_loc and ship_loc.contact_email:
+            bulk_receiver_email = ship_loc.contact_email
+        elif shipment.contact_email:
+            bulk_receiver_email = shipment.contact_email
+
         rows.append(
             {
                 "order_id": shipment.id,
@@ -244,8 +250,7 @@ def list_orders():
                     physical_processor_email,
                 ),
                 "arrival_date": shipment.arrival_date,
-                "bulk_receiver": shipment.contact_name
-                or (ship_loc.contact_name if ship_loc else ""),
+                "bulk_receiver": bulk_receiver_email,
                 "outline": outline_label,
                 "credits": shipment.credits,
                 "teams": (shipment.credits * 2) if shipment.credits is not None else None,
