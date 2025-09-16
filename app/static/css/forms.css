@@ -164,6 +164,22 @@ label {
   display: block;
 }
 
+.form-align .form-align__static {
+  display: inline-block;
+  min-height: var(--field-h, 40px);
+  line-height: calc(var(--field-h, 40px) - 2px);
+  padding: var(--field-py, 8px) 0;
+  vertical-align: middle;
+}
+
+.form-align .form-align__static--block {
+  display: block;
+  min-height: 0;
+  line-height: 1.4;
+  padding: 0;
+  margin-top: 4px;
+}
+
 .form-align .form-align__note {
   margin-left: 8px;
 }
