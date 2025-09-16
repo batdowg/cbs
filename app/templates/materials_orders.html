@@ -30,6 +30,8 @@
     </select>
   </label>
   <button type="submit">Filter</button>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="dir" value="{{ dir }}">
 </form>
 <p>
   {% if show_closed %}
@@ -43,28 +45,54 @@
 {% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
 {% if status %}{% set base = base + '&status=' + status %}{% endif %}
 {% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
-<div class="kt-table-wrapper">
-<table class="kt-table">
-  <tr>
-    <th><a href="?sort=title{{ base }}">Workshop title</a></th>
-    <th><a href="?sort=client{{ base }}">Client</a></th>
-    <th><a href="?sort=workshop_type{{ base }}">Workshop</a></th>
-    <th><a href="?sort=arrival_date{{ base }}">Latest Arrival Date</a></th>
-    <th><a href="?sort=order_type{{ base }}">Materials Order type</a></th>
-    <th><a href="?sort=materials_status{{ base }}">Materials order status</a></th>
-    <th><a href="?sort=session_status{{ base }}">Workshop status</a></th>
-  </tr>
-  {% for row in rows %}
-  <tr>
-    <td><a href="{{ url_for('materials.materials_view', session_id=row.session_id)}}">{{ row.title }}</a></td>
-    <td>{{ row.client }}</td>
-    <td>{{ row.workshop_type }}</td>
-    <td>{{ row.arrival_date }}</td>
-    <td>{{ row.order_type }}</td>
-    <td><span class="pill pill--{{ row.materials_status|lower|replace(' ', '') }}">{{ row.materials_status }}</span></td>
-    <td><span class="pill pill--{{ row.session_status|lower|replace(' ', '') }}">{{ row.session_status }}</span></td>
-  </tr>
-  {% endfor %}
-</table>
+{% if current_user and current_user.id %}
+  {% set storage_key = 'cbs.materials.columns.' ~ current_user.id %}
+{% else %}
+  {% set storage_key = 'cbs.materials.columns' %}
+{% endif %}
+<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-chooser-label="Choose columns">
+  <div class="table-toolbar">
+    <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
+  </div>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr>
+          {% macro sort_link(label, field) -%}
+            {% set is_sorted = sort == field %}
+            {% set next_dir = 'desc' if is_sorted and dir == 'asc' else 'asc' %}
+            <a href="?sort={{ field }}&dir={{ next_dir }}{{ base }}">{{ label }}</a>
+          {%- endmacro %}
+          <th scope="col" data-column-key="order_id" data-column-label="Order ID" data-column-required="true" class="cell-nowrap">{{ sort_link('Order ID','order_id') }}</th>
+          <th scope="col" data-column-key="title" data-column-label="Workshop title" data-column-required="true">{{ sort_link('Workshop title','title') }}</th>
+          <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
+          <th scope="col" data-column-key="workshop_type" data-column-label="Workshop">{{ sort_link('Workshop','workshop_type') }}</th>
+          <th scope="col" data-column-key="arrival_date" data-column-label="Latest Arrival Date" class="cell-nowrap">{{ sort_link('Latest Arrival Date','arrival_date') }}</th>
+          <th scope="col" data-column-key="order_type" data-column-label="Materials Order type">{{ sort_link('Materials Order type','order_type') }}</th>
+          <th scope="col" data-column-key="materials_status" data-column-label="Materials order status">{{ sort_link('Materials order status','materials_status') }}</th>
+          <th scope="col" data-column-key="session_status" data-column-label="Workshop status">{{ sort_link('Workshop status','session_status') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td data-column-key="order_id" class="cell-nowrap">{{ row.order_id }}</td>
+          <td data-column-key="title"><a href="{{ url_for('materials.materials_view', session_id=row.session_id)}}">{{ row.title }}</a></td>
+          <td data-column-key="client">{{ row.client }}</td>
+          <td data-column-key="workshop_type">{{ row.workshop_type }}</td>
+          <td data-column-key="arrival_date" class="cell-nowrap">{{ row.arrival_date }}</td>
+          <td data-column-key="order_type">{{ row.order_type }}</td>
+          <td data-column-key="materials_status"><span class="pill pill--{{ row.materials_status|lower|replace(' ', '') }}">{{ row.materials_status }}</span></td>
+          <td data-column-key="session_status"><span class="pill pill--{{ row.session_status|lower|replace(' ', '') }}">{{ row.session_status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/column_chooser.js') }}" defer></script>
 {% endblock %}

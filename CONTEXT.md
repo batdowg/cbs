@@ -380,7 +380,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Each Material Item row includes a **Processed** checkbox that records the current user and a `yyyy-mm-dd HH:MM UTC` timestamp when checked; unchecking clears the stamp.
 - Apply Defaults is enabled only when Order Type = “KT-Run Standard materials” and Material Sets > 0 (disabled tooltip: “Select # of Material sets first.”). The action keeps the selected Material format and adds any missing items from defaults using each item's Quantity basis (“Per learner” → Material Sets, “Per order” → 1) without altering existing rows. The Materials selector is a dropdown with no “Show all” checkbox.
 - POST `/sessions/<session_id>/materials/deliver` sets status to **Delivered** (403 on repeat with friendly flash); POST `/sessions/<session_id>/materials/undeliver` reverts to **In progress**.
-- **Sessions list**: sortable columns (Title, Client, Location, Workshop Type, Start Date, Status, Region) with filters for keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
+- **Sessions list**: sortable columns with default order **ID, Title, Client, Location, Workshop Type, Start Date, Status, Region, Actions**. Title links to the session detail; the new **ID** column is the integer session id (plain text) and remains the first column. Filters cover keyword (Title/Client/Location), Status, Region, Delivery Type, and Start-date range; sort/filter state persists within `/sessions`.
+- **Sessions column chooser**: the “Columns” button opens a keyboard-accessible popover that lets users toggle optional columns and drag to reorder them. **ID** and **Title** are locked on and remain the first two columns. Choices persist per browser via `localStorage` under `cbs.sessions.columns.<user_id>` (falls back to `cbs.sessions.columns` when no user id is available). Reset clears storage and restores the default order without affecting filters or sort state.
 - **Simulation Outline** shown when Order Type = Simulation or the Workshop Type is simulation-based.
 - Material format is always visible. If **Order Type** = “Simulation” and no value is set, default to **SIM Only**. Non-editable roles see the value read-only.
 - **Order Type** = “KT-Run Modular materials” → **Materials Type** becomes multi-select and all selected modules are shown; other order types remain single-select.
@@ -415,7 +416,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 # 9. Materials Dashboard (current behavior)
 
 - **Default sort**: **Latest Arrival Date ascending** (earliest due first).  
-- **Columns**: Session, Client, Workshop Type, Latest Arrival, Format, Physical Components, Status, Ship Date, Courier/Tracking.
+- **Columns**: default order **Order ID, Workshop title, Client, Workshop, Latest Arrival Date, Materials Order type, Materials order status, Workshop status** with a fixed **Order ID** column (SessionShipping id) leading and Title always visible/linking to the materials detail page.
+- **Column chooser**: matches the Workshops dashboard behavior. Optional columns can be hidden or reordered, while **Order ID** and **Workshop title** stay visible and leading. Preferences persist under `localStorage` key `cbs.materials.columns.<user_id>` (fallback `cbs.materials.columns`). Resetting clears the stored preference only; sorting/filtering continue to function normally.
 - **Filters** (currently implemented): status, format. (Future: date range, components, type, facilitator.)  
 - **Row actions** per permissions: Open, Edit, Mark Shipped, Mark Delivered.
 
