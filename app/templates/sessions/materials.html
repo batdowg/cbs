@@ -29,102 +29,107 @@
 </nav>
 <form method="post">
   <input type="hidden" name="action" value="update_header">
-  <div class="kt-card">
+  <div class="kt-card form-align">
     <h2 class="kt-card-title">Order details</h2>
-    <div>Client : {% if sess.client %}{{ sess.client.name }}{% endif %}{% if sess.region %}, {{ sess.region }}{% endif %}</div>
-    <div>CRM &ensp;: {% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</div>
-    <div>Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
-    <div class="form-align">
-      {% set show_sfc_input = (not (sess.client and sess.client.sfc_link)) and not csa_view %}
-      <div class="form-align__row">
-        {% if show_sfc_input %}
-        <label class="form-align__label" for="sfc-link">SFC Project link</label>
-        {% else %}
-        <span class="form-align__label">SFC Project link</span>
-        {% endif %}
-        <div class="form-align__control">
-          {% if sess.client and sess.client.sfc_link %}
-            {{ sess.client.sfc_link }}
-          {% elif not csa_view %}
-            <input type="url" id="sfc-link" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
-          {% endif %}
-        </div>
+    {% set client_display = sess.client.name|default('', true) if sess.client else '' %}
+    {% if sess.region %}{% set client_display = client_display ~ (', ' if client_display else '') ~ sess.region %}{% endif %}
+    <div class="form-row">
+      <label>Client</label>
+      <div class="form-field">
+        <span class="form-display">{{ client_display }}</span>
       </div>
-      {% set show_arrival_input = can_edit_materials_header('arrival_date', current_user, shipment) and not readonly %}
-      <div class="form-align__row">
-        {% if show_arrival_input %}
-        <label class="form-align__label" for="arrival-date">Latest arrival date</label>
-        {% else %}
-        <span class="form-align__label">Latest arrival date</span>
+    </div>
+    <div class="form-row">
+      <label>CRM</label>
+      <div class="form-field">
+        <span class="form-display">{% if sess.client and sess.client.crm %}{{ sess.client.crm.full_name or sess.client.crm.email }}{% endif %}</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Facilitator(s)</label>
+      <div class="form-field">
+        <span class="form-display">{% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+    </div>
+    {% set show_sfc_input = (not (sess.client and sess.client.sfc_link)) and not csa_view %}
+    <div class="form-row">
+      <label{% if show_sfc_input %} for="sfc-link"{% endif %}>SFC Project link</label>
+      <div class="form-field">
+        {% if sess.client and sess.client.sfc_link %}
+          <span class="form-display">{{ sess.client.sfc_link }}</span>
+        {% elif not csa_view %}
+          <input type="url" id="sfc-link" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
         {% endif %}
-        <div class="form-align__control">
-          {% if show_arrival_input %}
-            <input type="date" id="arrival-date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
-          {% else %}{{ shipment.arrival_date|default('', true) }}{% endif %}
+      </div>
+    </div>
+    {% set show_arrival_input = can_edit_arrival and not readonly %}
+    <div class="form-row">
+      <label{% if show_arrival_input %} for="arrival-date"{% endif %}>Latest arrival date</label>
+      <div class="form-field">
+        {% if show_arrival_input %}
+          <input type="date" id="arrival-date" name="arrival_date" value="{{ form.get('arrival_date') if form else (shipment.arrival_date.isoformat() if shipment.arrival_date else '') }}">
+        {% else %}
+          <span class="form-display">{{ shipment.arrival_date|default('', true) }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Order date</label>
+      <div class="form-field">
+        <span class="form-display">{{ shipment.created_at.date() if shipment.created_at else '' }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="kt-card form-align">
+    <h2 class="kt-card-title">Shipping details</h2>
+    {% set can_edit_shipping = can_manage and not readonly %}
+    <div class="form-row">
+      <label{% if can_manage %} for="shipping-location-select"{% endif %}>Shipping location</label>
+      <div class="form-field">
+        {% if can_manage %}
+          {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
+          <select name="shipping_location_id" id="shipping-location-select"{% if not can_edit_shipping %} disabled{% endif %}>
+            <option value=""></option>
+            {% for loc in shipping_locations %}
+
+            <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title|default(loc.display_name(), true) }}</option>
+            {% endfor %}
+          </select>
+          {% if can_edit_shipping and sess.client_id %}
+          <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
+          <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
+          {% endif %}
+        {% endif %}
+        <div id="shipping-location-display" class="form-display form-display--block">
+
+        {% if sess.shipping_location %}
+          Attn: {{ sess.shipping_location.contact_name|default('', true) }}<br>
+          {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
+          {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
+          {{ sess.shipping_location.country|default('', true) }}
+        {% elif readonly %}
+          Digital only
+        {% endif %}
+
         </div>
       </div>
     </div>
-    <div>Order date: {{ shipment.created_at.date() if shipment.created_at else '' }}</div>
-  </div>
-  <div class="kt-card">
-    <h2 class="kt-card-title">Shipping details</h2>
-    <div class="form-align">
-      <div class="form-align__row form-align__row--top">
-
-        {% set can_edit_shipping = can_manage and not readonly %}
-        {% if can_manage %}
-        <label class="form-align__label" for="shipping-location-select">Shipping location</label>
-        {% else %}
-        <span class="form-align__label">Shipping location</span>
-        {% endif %}
-        <div class="form-align__control">
-          {% if can_manage %}
-            {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
-            <div>
-              <select name="shipping_location_id" id="shipping-location-select"{% if not can_edit_shipping %} disabled{% endif %}>
-                <option value=""></option>
-                {% for loc in shipping_locations %}
-
-                <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title|default(loc.display_name(), true) }}</option>
-                {% endfor %}
-              </select>
-              {% if can_edit_shipping and sess.client_id %}
-              <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
-              <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
-              {% endif %}
-            </div>
-          {% endif %}
-          <div id="shipping-location-display" class="form-align__static form-align__static--block">
-
-          {% if sess.shipping_location %}
-            Attn: {{ sess.shipping_location.contact_name|default('', true) }}<br>
-            {{ sess.shipping_location.address_line1|default('', true) }}{% if sess.shipping_location.address_line2 %} {{ sess.shipping_location.address_line2 }}{% endif %}<br>
-            {{ sess.shipping_location.city|default('', true) }} {{ sess.shipping_location.state|default('', true) }} {{ sess.shipping_location.postal_code|default('', true) }}<br>
-            {{ sess.shipping_location.country|default('', true) }}
-          {% elif readonly %}
-            Digital only
-          {% endif %}
-
-          </div>
-        </div>
+    <div class="form-row">
+      <label>Contact person</label>
+      <div class="form-field">
+        <span id="ship-contact-name" class="form-display">{{ shipment.contact_name|default('', true) }}</span>
       </div>
-      <div class="form-align__row">
-        <span class="form-align__label">Contact person</span>
-        <div class="form-align__control">
-          <span id="ship-contact-name" class="form-align__static">{{ shipment.contact_name|default('', true) }}</span>
-        </div>
+    </div>
+    <div class="form-row">
+      <label>Contact email</label>
+      <div class="form-field">
+        <span id="ship-contact-email" class="form-display">{{ shipment.contact_email|default('', true) }}</span>
       </div>
-      <div class="form-align__row">
-        <span class="form-align__label">Contact email</span>
-        <div class="form-align__control">
-          <span id="ship-contact-email" class="form-align__static">{{ shipment.contact_email|default('', true) }}</span>
-        </div>
-      </div>
-      <div class="form-align__row">
-        <span class="form-align__label">Contact phone</span>
-        <div class="form-align__control">
-          <span id="ship-contact-phone" class="form-align__static">{{ shipment.contact_phone|default('', true) }}</span>
-        </div>
+    </div>
+    <div class="form-row">
+      <label>Contact phone</label>
+      <div class="form-field">
+        <span id="ship-contact-phone" class="form-display">{{ shipment.contact_phone|default('', true) }}</span>
       </div>
     </div>
   </div>

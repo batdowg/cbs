@@ -219,6 +219,21 @@ label {
     margin-left: 0;
     padding-left: 0;
   }
+
+  .form-align .form-row {
+    display: block;
+  }
+
+  .form-align .form-row > label {
+    width: 100%;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 4px;
+  }
+
+  .form-align .form-row > .form-field {
+    display: block;
+  }
 }
 
 .error,
@@ -282,4 +297,42 @@ input[type="checkbox"] + label {
   flex-wrap: wrap;
   column-gap: var(--gap-x);
   row-gap: var(--gap-y);
+}
+
+.form-align {
+  --label-w: 180px;
+  --label-pad: 8px;
+}
+
+.form-align .form-row {
+  margin-bottom: 8px;
+}
+
+.form-align .form-row > label {
+  display: inline-block;
+  width: var(--label-w);
+  text-align: right;
+  padding-right: var(--label-pad);
+  vertical-align: middle;
+  margin: 0;
+}
+
+.form-align .form-row > .form-field {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.form-display {
+  display: inline-block;
+  min-height: var(--field-h, 40px);
+  line-height: var(--field-h, 40px);
+  padding: 0 2px;
+}
+
+.form-display--block {
+  display: block;
+  min-height: 0;
+  line-height: 1.4;
+  padding: 0;
+  margin-top: 4px;
 }
