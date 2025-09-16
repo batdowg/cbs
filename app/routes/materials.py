@@ -187,6 +187,10 @@ def materials_view(
         shipment.material_sets = sess.capacity or 0
         db.session.commit()
     readonly = view_only or bool(shipment.delivered_at)
+    can_manage = can_manage_shipment(current_user)
+    can_edit_arrival = can_edit_materials_header(
+        "arrival_date", current_user, shipment
+    )
     fmt = shipment.materials_format or (
         "SIM_ONLY" if shipment.order_type == "Simulation" else ""
     )
@@ -215,7 +219,7 @@ def materials_view(
         if readonly:
             abort(403)
         action = request.form.get("action")
-        if not can_manage_shipment(current_user):
+        if not can_manage:
             abort(403)
         if action == "update_header":
             ship_id = request.form.get("shipping_location_id")
@@ -298,7 +302,8 @@ def materials_view(
                         readonly=readonly,
                         current_user=current_user,
                         can_edit_materials_header=can_edit_materials_header,
-                        can_manage=can_manage_shipment(current_user),
+                        can_manage=can_manage,
+                        can_edit_arrival=can_edit_arrival,
                         can_mark_delivered=can_mark_delivered(current_user),
                         shipping_locations=shipping_locations,
                         material_formats=material_format_choices(),
@@ -445,7 +450,8 @@ def materials_view(
         readonly=readonly,
         current_user=current_user,
         can_edit_materials_header=can_edit_materials_header,
-        can_manage=can_manage_shipment(current_user),
+        can_manage=can_manage,
+        can_edit_arrival=can_edit_arrival,
         can_mark_delivered=can_mark_delivered(current_user),
         shipping_locations=shipping_locations,
         material_formats=material_format_choices(),

@@ -66,3 +66,4 @@ def test_materials_edit_shows_shipping_selector_for_finalized_session(app):
     html = resp.data.decode()
     assert 'name="shipping_location_id"' in html
     assert 'id="add-shipping-location"' in html
+    assert 'name="arrival_date"' in html
