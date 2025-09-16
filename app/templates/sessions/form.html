@@ -6,34 +6,47 @@
   <fieldset>
     <legend>Order Information</legend>
     {% set _title = title_override if title_override is not none else session.title %}
-    <div><label>Title* <input type="text" name="title" value="{{ _title or '' }}" required></label></div>
-    <div><label>Client*
-      <select name="client_id" id="client-select" required>
-        <option value="">--Select--</option>
-        {% for c in clients %}
-        <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
-      <a href="#" id="add-client" class="button">Add Client</a>
-      <span>CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></span>
-    </label>
-    </div>
-    <div>
-      <label>Region*
-        <select name="region" required>
-          <option value="">--Select--</option>
-          {% for opt in ['NA','EU','SEA','Other'] %}
-          <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>Workshop language*
-        <select name="workshop_language" required>
-          {% for code,label in workshop_languages %}
-          <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </label>
+    <div class="form-align">
+      <div class="form-align__row">
+        <label class="form-align__label" for="title">Title*</label>
+        <div class="form-align__control">
+          <input type="text" id="title" name="title" value="{{ _title or '' }}" required>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="client-select">Client*</label>
+        <div class="form-align__control">
+          <select name="client_id" id="client-select" required>
+            <option value="">--Select--</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+          <a href="#" id="add-client" class="button">Add Client</a>
+          <span class="form-align__note">CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></span>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="region">Region*</label>
+        <div class="form-align__control">
+          <select name="region" id="region" required>
+            <option value="">--Select--</option>
+            {% for opt in ['NA','EU','SEA','Other'] %}
+            <option value="{{ opt }}" {% if session and session.region==opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="workshop-language">Workshop language*</label>
+        <div class="form-align__control">
+          <select name="workshop_language" id="workshop-language" required>
+            {% for code,label in workshop_languages %}
+            <option value="{{ code }}" {% if session.workshop_language==code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
     </div>
     <div style="margin-top:8px;">
       <button type="submit" id="materials-only-btn" name="action" value="materials_only">No workshop, material order only</button>
@@ -41,97 +54,148 @@
   </fieldset>
   <fieldset>
     <legend>Workshop details</legend>
-    <div><label>Workshop*
-      <select name="workshop_type_id" required>
-        <option value="">--Select--</option>
-        {% for wt in workshop_types %}
-        <option value="{{ wt.id }}" data-langs="{{ wt.supported_languages|join(' ') if wt.supported_languages else '' }}" data-sim="{{ 1 if wt.simulation_based else 0 }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
-        {% endfor %}
-      </select>
-    </label></div>
-    <div id="sim-outline" {% if not (workshop_type and workshop_type.simulation_based) %}style="display:none"{% endif %}><label>{% if workshop_type and workshop_type.simulation_based %}Simulation Outline{% endif %}
-      <select name="simulation_outline_id">
-        <option value="">— select —</option>
-        {% for o in simulation_outlines %}
-          {% set so_val = form.simulation_outline_id|int if form else session.simulation_outline_id %}
-          <option value="{{ o.id }}" {% if so_val == o.id %}selected{% endif %}>
-            {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
-          </option>
-        {% endfor %}
-      </select></label></div>
-    <div><label>Delivery Type*
-      <select name="delivery_type" required>
-        <option value="">--Select--</option>
-        {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
-        <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
-        {% endfor %}
-      </select>
-    </label></div>
-    <div>
-      <label>Workshop Location
-        <select name="workshop_location_id" id="workshop-location-select">
-          <option value=""></option>
-          {% for loc in workshop_locations %}
-          <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <a href="#" id="add-workshop-location">Add</a>
-    </div>
-    <div><label>Capacity* <input type="number" name="capacity" value="{{ session.capacity or 16 }}" required></label></div>
-    <div>
-      <label>Start Date* <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required></label>
-      <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
-      <label>End Date* <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required></label>
-    </div>
-    <div class="form-help">End date must be the same day or after the start date.</div>
-    {% if past_warning %}
-    <div style="color:red;"><label><input type="checkbox" id="ack-past-check" required> The selected start date is in the past. I'm sure.</label></div>
-    {% endif %}
-    <div>
-      <label>Daily Start Time <input type="time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}"></label>
-      <label>End Time <input type="time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}"></label>
-    </div>
-    <div><label>Timezone
-      <select name="timezone">
-        <option value="">--Select--</option>
-        {% for tz in timezones %}
-        <option value="{{ tz }}" {% if session.timezone==tz %}selected{% endif %}>{{ tz }}</option>
-        {% endfor %}
-      </select>
-    </label></div><br>
-    <div><label>Lead Facilitator
-      <select name="lead_facilitator_id">
-        <option value="">--Select--</option>
-        {% for u in facilitators %}
-        <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
-        {% endfor %}
-      </select>
-    </label></div>
-    <div><label><input type="checkbox" id="include-all-fac" {% if include_all_facilitators %}checked{% endif %}> Include out-of-region facilitators</label></div>
-    <div>Additional Facilitators:
-      <div id="additional-facilitators">
-        {% set adds = session.facilitators if session else [] %}
-        {% if adds %}
-          {% for fac in adds %}
-          <select name="additional_facilitators">
+    <div class="form-align">
+      <div class="form-align__row">
+        <label class="form-align__label" for="workshop-type">Workshop*</label>
+        <div class="form-align__control">
+          <select name="workshop_type_id" id="workshop-type" required>
             <option value="">--Select--</option>
-            {% for u in facilitators %}
-            <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+            {% for wt in workshop_types %}
+            <option value="{{ wt.id }}" data-langs="{{ wt.supported_languages|join(' ') if wt.supported_languages else '' }}" data-sim="{{ 1 if wt.simulation_based else 0 }}" {% if session and session.workshop_type_id==wt.id %}selected{% endif %}>{{ wt.code }}</option>
             {% endfor %}
           </select>
-          {% endfor %}
-        {% else %}
-          <select name="additional_facilitators">
-            <option value="">--Select--</option>
-            {% for u in facilitators %}
-            <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
-            {% endfor %}
-          </select>
-        {% endif %}
+        </div>
       </div>
-      <button type="button" id="add-fac">Add another facilitator</button>
-    </div><br>
+      <div id="sim-outline" class="form-align__row" {% if not (workshop_type and workshop_type.simulation_based) %}style="display:none"{% endif %}>
+        <label class="form-align__label" for="simulation-outline-id">Simulation Outline</label>
+        <div class="form-align__control">
+          <select name="simulation_outline_id" id="simulation-outline-id">
+            <option value="">— select —</option>
+            {% for o in simulation_outlines %}
+              {% set so_val = form.simulation_outline_id|int if form else session.simulation_outline_id %}
+              <option value="{{ o.id }}" {% if so_val == o.id %}selected{% endif %}>
+                {{ o.number }} — {{ o.skill }} — {{ o.descriptor }} ({{ o.level }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="delivery-type">Delivery Type*</label>
+        <div class="form-align__control">
+          <select name="delivery_type" id="delivery-type" required>
+            <option value="">--Select--</option>
+            {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
+            <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="workshop-location-select">Workshop Location</label>
+        <div class="form-align__control">
+          <select name="workshop_location_id" id="workshop-location-select">
+            <option value=""></option>
+            {% for loc in workshop_locations %}
+            <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
+            {% endfor %}
+          </select>
+          <a href="#" id="add-workshop-location">Add</a>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="capacity">Capacity*</label>
+        <div class="form-align__control">
+          <input type="number" id="capacity" name="capacity" value="{{ session.capacity or 16 }}" required>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="start-date">Start Date*</label>
+        <div class="form-align__control">
+          <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required>
+          <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="end-date">End Date*</label>
+        <div class="form-align__control">
+          <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required>
+        </div>
+      </div>
+      <div class="form-help">End date must be the same day or after the start date.</div>
+      {% if past_warning %}
+      <div class="form-align__row form-align__row--checkbox" style="color:red;">
+        <div class="form-align__control">
+          <label><input type="checkbox" id="ack-past-check" required> The selected start date is in the past. I'm sure.</label>
+        </div>
+      </div>
+      {% endif %}
+      <div class="form-align__row">
+        <label class="form-align__label" for="daily-start-time">Daily Start Time</label>
+        <div class="form-align__control">
+          <input type="time" id="daily-start-time" name="daily_start_time" value="{{ daily_start_time_str or '08:00' }}">
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="daily-end-time">End Time</label>
+        <div class="form-align__control">
+          <input type="time" id="daily-end-time" name="daily_end_time" value="{{ daily_end_time_str or '17:00' }}">
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="timezone">Timezone</label>
+        <div class="form-align__control">
+          <select name="timezone" id="timezone">
+            <option value="">--Select--</option>
+            {% for tz in timezones %}
+            <option value="{{ tz }}" {% if session.timezone==tz %}selected{% endif %}>{{ tz }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-align__row">
+        <label class="form-align__label" for="lead-facilitator">Lead Facilitator</label>
+        <div class="form-align__control">
+          <select name="lead_facilitator_id" id="lead-facilitator">
+            <option value="">--Select--</option>
+            {% for u in facilitators %}
+            <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-align__row form-align__row--checkbox">
+        <div class="form-align__control">
+          <label><input type="checkbox" id="include-all-fac" {% if include_all_facilitators %}checked{% endif %}> Include out-of-region facilitators</label>
+        </div>
+      </div>
+      <div class="form-align__row form-align__row--top">
+        <label class="form-align__label" for="additional-facilitators">Additional Facilitators</label>
+        <div class="form-align__control">
+          <div id="additional-facilitators">
+            {% set adds = session.facilitators if session else [] %}
+            {% if adds %}
+              {% for fac in adds %}
+              <select name="additional_facilitators">
+                <option value="">--Select--</option>
+                {% for u in facilitators %}
+                <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+                {% endfor %}
+              </select>
+              {% endfor %}
+            {% else %}
+              <select name="additional_facilitators">
+                <option value="">--Select--</option>
+                {% for u in facilitators %}
+                <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </div>
+          <button type="button" id="add-fac">Add another facilitator</button>
+        </div>
+      </div>
+    </div>
     <div><label>Notes & Special instructions<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
   </fieldset>
   {% if session.id %}
