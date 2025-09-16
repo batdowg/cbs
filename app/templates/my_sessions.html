@@ -4,32 +4,68 @@
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
   {% if current_user %}
-  <table class="kt-table">
-    <tr>
-      <th>Title</th>
-      <th>Client</th>
-      <th>Location</th>
-      <th>Workshop Type</th>
-      <th>Dates</th>
-      <th>Region</th>
-      <th>Delivery Type</th>
-      <th>Status</th>
-      <th>Actions</th>
-    </tr>
-    {% for s in sessions %}
-    <tr>
-      <td>{{ s.title }}</td>
-      <td>{% if s.client %}{{ s.client.name }}{% endif %}</td>
-      <td>{{ s.location }}</td>
-      <td>{% if s.workshop_type %}{{ s.workshop_type.code }} / {{ s.workshop_type.name }}{% endif %}</td>
-      <td>{{ s.start_date }} to {{ s.end_date }}; {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
-      <td>{{ s.region }}</td>
-      <td>{{ s.delivery_type }}</td>
-      <td>{{ s.computed_status }}</td>
-      <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
-    </tr>
-    {% endfor %}
-  </table>
+    {% if current_user.id %}
+      {% set storage_key = 'cbs.mysessions.columns.' ~ current_user.id %}
+      {% set width_key = 'cbs.mysessions.colwidths.' ~ current_user.id %}
+    {% else %}
+      {% set storage_key = 'cbs.mysessions.columns' %}
+      {% set width_key = 'cbs.mysessions.colwidths' %}
+    {% endif %}
+    <div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
+      <div class="table-toolbar">
+        <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
+      </div>
+      <div class="kt-table-wrapper">
+        <table class="kt-table">
+          <thead>
+            <tr>
+              <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true" class="cell-nowrap">ID</th>
+              <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">Title</th>
+              <th scope="col" data-column-key="client" data-column-label="Client">Client</th>
+              <th scope="col" data-column-key="location" data-column-label="Location">Location</th>
+              <th scope="col" data-column-key="workshop_type" data-column-label="Workshop Type">Workshop Type</th>
+              <th scope="col" data-column-key="dates" data-column-label="Dates">Dates</th>
+              <th scope="col" data-column-key="region" data-column-label="Region">Region</th>
+              <th scope="col" data-column-key="delivery_type" data-column-label="Delivery Type">Delivery Type</th>
+              <th scope="col" data-column-key="status" data-column-label="Status">Status</th>
+              <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sessions %}
+            <tr>
+              <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
+              <td data-column-key="title">
+                <span class="cell-ellipsis" title="{{ s.title }}">
+                  <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+                </span>
+              </td>
+              <td data-column-key="client">
+                {% if s.client %}
+                  <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
+                {% endif %}
+              </td>
+              <td data-column-key="location">
+                {% if s.location %}
+                  <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
+                {% endif %}
+              </td>
+              <td data-column-key="workshop_type">
+                {% if s.workshop_type %}
+                  <span class="cell-ellipsis" title="{{ s.workshop_type.code }} / {{ s.workshop_type.name }}">{{ s.workshop_type.code }} / {{ s.workshop_type.name }}</span>
+                {% endif %}
+              </td>
+              <td data-column-key="dates" class="cell-nowrap">{{ s.start_date }} to {{ s.end_date }}; {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
+              <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
+              <td data-column-key="delivery_type">{{ s.delivery_type }}</td>
+              <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
+              <td data-column-key="actions" class="col-actions"><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   {% else %}
   <table class="kt-table">
     <tr>
@@ -71,4 +107,11 @@
   <p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Hide closed/cancelled</a></p>
   {% endif %}
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  {% if current_user %}
+    <script src="{{ url_for('static', filename='js/column_chooser.js') }}" defer></script>
+  {% endif %}
 {% endblock %}

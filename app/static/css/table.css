@@ -22,6 +22,7 @@
 .kt-table thead th {
   background: color-mix(in srgb, var(--kt-info) 15%, var(--kt-bg));
   color: var(--kt-text);
+  position: relative;
 }
 
 .kt-table tbody td {
@@ -197,4 +198,41 @@
 .column-chooser__reset {
   padding: 0;
   font-size: 0.9rem;
+}
+
+.column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 2;
+  touch-action: none;
+}
+
+.column-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--kt-border);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.kt-table thead th:hover .column-resize-handle::after,
+.kt-table thead th:focus-within .column-resize-handle::after,
+.dashboard-table.is-resizing .column-resize-handle::after {
+  opacity: 1;
+}
+
+.dashboard-table.is-resizing,
+.dashboard-table.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
