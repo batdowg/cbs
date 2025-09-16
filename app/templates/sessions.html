@@ -53,10 +53,12 @@
 
 {% if current_user and current_user.id %}
   {% set storage_key = 'cbs.sessions.columns.' ~ current_user.id %}
+  {% set width_key = 'cbs.sessions.colwidths.' ~ current_user.id %}
 {% else %}
   {% set storage_key = 'cbs.sessions.columns' %}
+  {% set width_key = 'cbs.sessions.colwidths' %}
 {% endif %}
-<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-chooser-label="Choose columns">
+<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
   <div class="table-toolbar">
     <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
   </div>

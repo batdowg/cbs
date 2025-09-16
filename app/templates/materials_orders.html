@@ -47,10 +47,12 @@
 {% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
 {% if current_user and current_user.id %}
   {% set storage_key = 'cbs.materials.columns.' ~ current_user.id %}
+  {% set width_key = 'cbs.materials.colwidths.' ~ current_user.id %}
 {% else %}
   {% set storage_key = 'cbs.materials.columns' %}
+  {% set width_key = 'cbs.materials.colwidths' %}
 {% endif %}
-<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-chooser-label="Choose columns">
+<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
   <div class="table-toolbar">
     <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
   </div>
@@ -75,7 +77,7 @@
           <th scope="col" data-column-key="arrival_date" data-column-label="Latest arrival" class="cell-nowrap">{{ sort_link('Latest arrival','arrival_date') }}</th>
           <th scope="col" data-column-key="bulk_receiver" data-column-label="Bulk order receiver" data-column-default-hidden="true">{{ sort_link('Bulk order receiver','bulk_receiver') }}</th>
           <th scope="col" data-column-key="outline" data-column-label="Outline" data-column-default-hidden="true">{{ sort_link('Outline','outline') }}</th>
-          <th scope="col" data-column-key="teams" data-column-label="Teams" data-column-default-hidden="true">{{ sort_link('Teams','teams') }}</th>
+          <th scope="col" data-column-key="teams" data-column-label="Credits/Teams" data-column-default-hidden="true">{{ sort_link('Credits/Teams','teams') }}</th>
           <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
           <th scope="col" data-column-key="learners" data-column-label="Learner list" data-column-default-hidden="true">Learner list</th>
           <th scope="col" data-column-key="region" data-column-label="Region" data-column-default-hidden="true">{{ sort_link('Region','region') }}</th>
@@ -112,7 +114,13 @@
           <td data-column-key="arrival_date" class="cell-nowrap">{{ row.arrival_date|default('', true) }}</td>
           <td data-column-key="bulk_receiver">{{ row.bulk_receiver }}</td>
           <td data-column-key="outline">{{ row.outline }}</td>
-          <td data-column-key="teams" class="cell-nowrap">{% if row.teams is not none %}{{ row.teams }}{% endif %}</td>
+          <td data-column-key="teams" class="cell-nowrap">
+            {% if row.credits is not none %}
+              {{ row.credits }} / {{ row.teams }}
+            {% else %}
+              — / —
+            {% endif %}
+          </td>
           <td data-column-key="facilitators">
             {% if row.facilitators %}
               <span class="cell-ellipsis" title="{{ row.facilitators|join(', ') }}">{{ row.facilitators|join(', ') }}</span>

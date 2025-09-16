@@ -247,6 +247,7 @@ def list_orders():
                 "bulk_receiver": shipment.contact_name
                 or (ship_loc.contact_name if ship_loc else ""),
                 "outline": outline_label,
+                "credits": shipment.credits,
                 "teams": (shipment.credits * 2) if shipment.credits is not None else None,
                 "facilitators": facilitator_names,
                 "learners": learners,
@@ -255,6 +256,14 @@ def list_orders():
                 "workshop_status": sess.computed_status,
             }
         )
+
+    reverse = direction == "desc"
+
+    def credits_sort_key(row):
+        value = row["credits"]
+        if value is None:
+            return float("-inf") if reverse else float("inf")
+        return value
 
     key_funcs = {
         "order_id": lambda r: r["order_id"],
@@ -270,13 +279,12 @@ def list_orders():
         "arrival_date": lambda r: r["arrival_date"] or date.min,
         "bulk_receiver": lambda r: (r["bulk_receiver"] or "").lower(),
         "outline": lambda r: (r["outline"] or "").lower(),
-        "teams": lambda r: r["teams"] if r["teams"] is not None else -1,
+        "teams": credits_sort_key,
         "region": lambda r: (r["region"] or "").lower(),
         "shipping_title": lambda r: (r["shipping_title"] or "").lower(),
         "workshop_status": lambda r: (r["workshop_status"] or "").lower(),
         "session_status": lambda r: (r["workshop_status"] or "").lower(),
     }
-    reverse = direction == "desc"
     rows.sort(key=key_funcs.get(sort, key_funcs["arrival_date"]), reverse=reverse)
 
     clients = Client.query.order_by(Client.name).all()

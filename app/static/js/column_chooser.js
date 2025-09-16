@@ -7,6 +7,8 @@
         return String(value).replace(/[\s!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, '\\$&');
       };
 
+  var MIN_COLUMN_WIDTH = 80;
+
   function storageAvailable() {
     try {
       var testKey = '__cbs__';
@@ -31,6 +33,8 @@
     this.panelId = 'column-chooser-' + Math.random().toString(36).slice(2, 9);
     this.label = container.getAttribute('data-chooser-label') || 'Choose columns';
     this.storageKey = container.getAttribute('data-storage-key') || '';
+    this.widthStorageKey =
+      container.getAttribute('data-width-storage-key') || '';
 
     this.columns = this.collectColumns();
     if (!this.columns.length) {
@@ -63,13 +67,25 @@
     );
 
     this.state = this.loadState();
+    this.widthState = this.loadWidths();
     this.controlMap = new Map();
     this.draggedItem = null;
     this.draggedKey = null;
+    this.isResizing = false;
+    this.resizingKey = null;
+    this.resizingWidth = null;
+    this.resizeStartX = 0;
+    this.resizeStartWidth = 0;
+    this.resizeMinWidth = MIN_COLUMN_WIDTH;
+    this.boundHandleMouseMove = null;
+    this.boundHandleMouseUp = null;
+    this.previousBodyCursor = '';
+    this.previousBodyUserSelect = '';
 
     this.buildPanel();
     this.syncListToState(this.state);
     this.applyState(this.state);
+    this.initResizeHandles();
     this.bindEvents();
     container.dataset.columnChooserInitialized = 'true';
   }
@@ -132,6 +148,37 @@
     return state;
   };
 
+  TableColumnChooser.prototype.loadWidths = function () {
+    var widths = Object.create(null);
+    if (!canUseStorage || !this.widthStorageKey) {
+      return widths;
+    }
+    try {
+      var raw = window.localStorage.getItem(this.widthStorageKey);
+      if (!raw) {
+        return widths;
+      }
+      var data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        this.columns.forEach(
+          function (col) {
+            var value = data[col.key];
+            if (value === undefined || value === null) {
+              return;
+            }
+            var numeric = Number(value);
+            if (isFinite(numeric) && numeric > 0) {
+              widths[col.key] = numeric;
+            }
+          }.bind(this)
+        );
+      }
+    } catch (err) {
+      // ignore malformed storage
+    }
+    return widths;
+  };
+
   TableColumnChooser.prototype.saveState = function () {
     if (!canUseStorage || !this.storageKey) {
       return;
@@ -146,6 +193,38 @@
     };
     try {
       window.localStorage.setItem(this.storageKey, JSON.stringify(payload));
+    } catch (err) {
+      // storage full or unavailable; ignore
+    }
+  };
+
+  TableColumnChooser.prototype.saveWidths = function () {
+    if (!canUseStorage || !this.widthStorageKey) {
+      return;
+    }
+    var payload = {};
+    var hasValues = false;
+    if (!this.widthState) {
+      this.widthState = Object.create(null);
+    }
+    Object.keys(this.widthState).forEach(
+      function (key) {
+        var value = this.widthState[key];
+        if (typeof value === 'number' && isFinite(value) && value > 0) {
+          payload[key] = Math.round(value);
+          hasValues = true;
+        }
+      }.bind(this)
+    );
+    try {
+      if (hasValues) {
+        window.localStorage.setItem(
+          this.widthStorageKey,
+          JSON.stringify(payload)
+        );
+      } else {
+        window.localStorage.removeItem(this.widthStorageKey);
+      }
     } catch (err) {
       // storage full or unavailable; ignore
     }
@@ -181,6 +260,7 @@
         this.setColumnVisibility(col.key, visible);
       }.bind(this)
     );
+    this.applyWidths();
     this.updateControlStates();
   };
 
@@ -211,13 +291,92 @@
 
   TableColumnChooser.prototype.setColumnVisibility = function (key, visible) {
     var selector = '[data-column-key="' + cssEscape(key) + '"]';
+    this.table.querySelectorAll(selector).forEach(
+      function (cell) {
+        if (visible) {
+          cell.removeAttribute('data-column-hidden');
+          if (cell.tagName === 'TH') {
+            if (cell.dataset.originalAriaSort) {
+              cell.setAttribute('aria-sort', cell.dataset.originalAriaSort);
+              delete cell.dataset.originalAriaSort;
+            }
+            if (cell.dataset.originalSortClasses) {
+              cell.dataset.originalSortClasses.split(' ').forEach(function (cls) {
+                if (cls) {
+                  cell.classList.add(cls);
+                }
+              });
+              delete cell.dataset.originalSortClasses;
+            }
+          }
+        } else {
+          cell.setAttribute('data-column-hidden', 'true');
+          if (cell.tagName === 'TH') {
+            if (!cell.dataset.originalAriaSort && cell.hasAttribute('aria-sort')) {
+              cell.dataset.originalAriaSort = cell.getAttribute('aria-sort');
+            }
+            cell.removeAttribute('aria-sort');
+            if (!cell.dataset.originalSortClasses) {
+              var classes = (cell.className || '').split(/\s+/);
+              var stored = classes.filter(function (cls) {
+                return cls && cls.toLowerCase().indexOf('sort') !== -1;
+              });
+              if (stored.length) {
+                cell.dataset.originalSortClasses = stored.join(' ');
+              }
+            }
+            if (cell.dataset.originalSortClasses) {
+              cell.dataset.originalSortClasses.split(' ').forEach(function (cls) {
+                if (cls) {
+                  cell.classList.remove(cls);
+                }
+              });
+            }
+          }
+        }
+      }
+    );
+  };
+
+  TableColumnChooser.prototype.applyWidths = function () {
+    if (!this.table) {
+      return;
+    }
+    if (!this.widthState) {
+      this.widthState = Object.create(null);
+    }
+    var self = this;
+    this.columns.forEach(function (col) {
+      self.applyWidth(col.key, self.widthState[col.key]);
+    });
+  };
+
+  TableColumnChooser.prototype.applyWidth = function (key, width) {
+    var selector = '[data-column-key="' + cssEscape(key) + '"]';
     this.table.querySelectorAll(selector).forEach(function (cell) {
-      if (visible) {
-        cell.removeAttribute('data-column-hidden');
+      if (typeof width === 'number' && isFinite(width) && width > 0) {
+        var px = Math.round(width);
+        cell.style.width = px + 'px';
+        cell.style.minWidth = px + 'px';
+        cell.style.maxWidth = px + 'px';
       } else {
-        cell.setAttribute('data-column-hidden', 'true');
+        cell.style.width = '';
+        cell.style.minWidth = '';
+        cell.style.maxWidth = '';
       }
     });
+  };
+
+  TableColumnChooser.prototype.setStoredWidth = function (key, width) {
+    if (!this.widthState) {
+      this.widthState = Object.create(null);
+    }
+    if (typeof width === 'number' && isFinite(width) && width > 0) {
+      this.widthState[key] = Math.round(width);
+    } else {
+      delete this.widthState[key];
+    }
+    this.saveWidths();
   };
 
   TableColumnChooser.prototype.buildPanel = function () {
@@ -544,6 +703,126 @@
     this.list.appendChild(fragment);
   };
 
+  TableColumnChooser.prototype.initResizeHandles = function () {
+    if (!this.table) {
+      return;
+    }
+    var headerRow = this.table.querySelector('thead tr');
+    if (!headerRow) {
+      return;
+    }
+    var self = this;
+    headerRow.querySelectorAll('[data-column-key]').forEach(function (th) {
+      var key = th.getAttribute('data-column-key');
+      if (!key) {
+        return;
+      }
+      if (th.getAttribute('data-column-resize-disabled') === 'true') {
+        th.dataset.resizeHandleInitialized = 'true';
+        return;
+      }
+      if (th.dataset.resizeHandleInitialized === 'true') {
+        return;
+      }
+      th.dataset.resizeHandleInitialized = 'true';
+      if (!th.style.position) {
+        th.style.position = 'relative';
+      }
+      var handle = document.createElement('span');
+      handle.className = 'column-resize-handle';
+      handle.setAttribute('aria-hidden', 'true');
+      handle.addEventListener(
+        'mousedown',
+        function (event) {
+          self.startColumnResize(event, key);
+        }
+      );
+      th.appendChild(handle);
+    });
+  };
+
+  TableColumnChooser.prototype.startColumnResize = function (event, key) {
+    if (this.isResizing) {
+      return;
+    }
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+    var headerSelector = 'thead [data-column-key="' + cssEscape(key) + '"]';
+    var headerCell = this.table.querySelector(headerSelector);
+    if (!headerCell) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.isResizing = true;
+    this.resizingKey = key;
+    this.resizeStartX = event.clientX;
+    this.resizeStartWidth = headerCell.offsetWidth;
+    this.resizingWidth = Math.round(this.resizeStartWidth);
+    var minAttr = headerCell.getAttribute('data-column-min-width');
+    var minWidth = parseInt(minAttr, 10);
+    if (!isFinite(minWidth) || minWidth <= 0) {
+      minWidth = MIN_COLUMN_WIDTH;
+    }
+    this.resizeMinWidth = minWidth;
+    this.previousBodyCursor = document.body.style.cursor || '';
+    this.previousBodyUserSelect = document.body.style.userSelect || '';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    this.container.classList.add('is-resizing');
+    this.boundHandleMouseMove = this.onColumnResize.bind(this);
+    this.boundHandleMouseUp = this.stopColumnResize.bind(this);
+    document.addEventListener('mousemove', this.boundHandleMouseMove);
+    document.addEventListener('mouseup', this.boundHandleMouseUp);
+    window.addEventListener('blur', this.boundHandleMouseUp);
+  };
+
+  TableColumnChooser.prototype.onColumnResize = function (event) {
+    if (!this.isResizing || !this.resizingKey) {
+      return;
+    }
+    event.preventDefault();
+    var delta = event.clientX - this.resizeStartX;
+    var width = this.resizeStartWidth + delta;
+    if (width < this.resizeMinWidth) {
+      width = this.resizeMinWidth;
+    }
+    this.resizingWidth = Math.round(width);
+    this.applyWidth(this.resizingKey, this.resizingWidth);
+  };
+
+  TableColumnChooser.prototype.stopColumnResize = function (event) {
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+    if (!this.isResizing) {
+      return;
+    }
+    if (this.boundHandleMouseMove) {
+      document.removeEventListener('mousemove', this.boundHandleMouseMove);
+    }
+    if (this.boundHandleMouseUp) {
+      document.removeEventListener('mouseup', this.boundHandleMouseUp);
+      window.removeEventListener('blur', this.boundHandleMouseUp);
+    }
+    this.boundHandleMouseMove = null;
+    this.boundHandleMouseUp = null;
+    this.container.classList.remove('is-resizing');
+    document.body.style.cursor = this.previousBodyCursor || '';
+    document.body.style.userSelect = this.previousBodyUserSelect || '';
+    this.previousBodyCursor = '';
+    this.previousBodyUserSelect = '';
+    if (this.resizingKey) {
+      this.setStoredWidth(this.resizingKey, this.resizingWidth);
+    }
+    this.isResizing = false;
+    this.resizingKey = null;
+    this.resizingWidth = null;
+    this.resizeStartX = 0;
+    this.resizeStartWidth = 0;
+  };
+
   TableColumnChooser.prototype.open = function () {
     if (!this.panel.hidden) {
       return;
@@ -583,9 +862,17 @@
   };
 
   TableColumnChooser.prototype.reset = function () {
+    this.stopColumnResize();
     if (canUseStorage && this.storageKey) {
       try {
         window.localStorage.removeItem(this.storageKey);
+      } catch (err) {
+        // ignore
+      }
+    }
+    if (canUseStorage && this.widthStorageKey) {
+      try {
+        window.localStorage.removeItem(this.widthStorageKey);
       } catch (err) {
         // ignore
       }
@@ -594,6 +881,7 @@
       order: [],
       hidden: new Set(this.defaultHidden),
     };
+    this.widthState = Object.create(null);
     this.syncListToState(this.state);
     this.applyState(this.state);
   };
