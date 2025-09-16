@@ -63,7 +63,7 @@
             {% set next_dir = 'desc' if is_sorted and dir == 'asc' else 'asc' %}
             <a href="?sort={{ field }}&dir={{ next_dir }}{{ base }}">{{ label }}</a>
           {%- endmacro %}
-          <th scope="col" data-column-key="order_id" data-column-label="Order ID" data-column-required="true" class="cell-nowrap">{{ sort_link('Order ID','order_id') }}</th>
+          <th scope="col" data-column-key="order_id" data-column-label="ID" data-column-required="true" class="cell-nowrap">{{ sort_link('Order ID','order_id') }}</th>
           <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">{{ sort_link('Title','title') }}</th>
           <th scope="col" data-column-key="status" data-column-label="Status">{{ sort_link('Status','status') }}</th>
           <th scope="col" data-column-key="start_date" data-column-label="Workshop start date">{{ sort_link('Workshop start date','start_date') }}</th>
