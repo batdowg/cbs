@@ -112,13 +112,17 @@
           <td data-column-key="processed_digital">{{ row.processed_digital_display }}</td>
           <td data-column-key="processed_physical">{{ row.processed_physical_display }}</td>
           <td data-column-key="arrival_date">{{ row.arrival_date|default('', true) }}</td>
-          <td data-column-key="bulk_receiver">{{ row.bulk_receiver }}</td>
+          <td data-column-key="bulk_receiver">
+            {% if row.bulk_receiver %}
+              <span class="cell-wrap" title="{{ row.bulk_receiver }}">{{ row.bulk_receiver }}</span>
+            {% endif %}
+          </td>
           <td data-column-key="outline">{{ row.outline }}</td>
           <td data-column-key="teams">
-            {% if row.credits is not none %}
+            {% if row.has_outline and row.credits is not none %}
               {{ row.credits }} / {{ row.teams }}
             {% else %}
-              — / —
+              —
             {% endif %}
           </td>
           <td data-column-key="facilitators">
