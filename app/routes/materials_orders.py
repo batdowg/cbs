@@ -252,6 +252,7 @@ def list_orders():
                 "arrival_date": shipment.arrival_date,
                 "bulk_receiver": bulk_receiver_email,
                 "outline": outline_label,
+                "has_outline": bool(sess.simulation_outline_id),
                 "credits": shipment.credits,
                 "teams": (shipment.credits * 2) if shipment.credits is not None else None,
                 "facilitators": facilitator_names,
@@ -266,7 +267,7 @@ def list_orders():
 
     def credits_sort_key(row):
         value = row["credits"]
-        if value is None:
+        if (not row.get("has_outline")) or value is None:
             return float("-inf") if reverse else float("inf")
         return value
 
