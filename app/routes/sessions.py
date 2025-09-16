@@ -32,7 +32,6 @@ from ..models import (
     WorkshopType,
     AuditLog,
     SessionShipping,
-    MaterialOrderItem,
     ClientWorkshopLocation,
     SimulationOutline,
     PreworkTemplate,
@@ -40,7 +39,7 @@ from ..models import (
     PreworkEmailLog,
 )
 from ..shared.time import now_utc, fmt_time, fmt_dt
-from sqlalchemy import or_, func, case
+from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload, selectinload
 from ..shared.certificates import (
     render_certificate,
@@ -335,32 +334,15 @@ def list_sessions(current_user):
 
     material_status_map: dict[int, str] = {}
     if session_ids:
-        shipment_stats = (
-            db.session.query(
-                SessionShipping.session_id,
-                func.count(MaterialOrderItem.id).label("item_count"),
-                func.sum(
-                    case((MaterialOrderItem.processed.is_(True), 1), else_=0)
-                ).label("processed_count"),
-            )
-            .outerjoin(
-                MaterialOrderItem,
-                MaterialOrderItem.session_id == SessionShipping.session_id,
+        shipments = (
+            SessionShipping.query.with_entities(
+                SessionShipping.session_id, SessionShipping.status
             )
             .filter(SessionShipping.session_id.in_(session_ids))
-            .group_by(SessionShipping.session_id)
             .all()
         )
-        for row in shipment_stats:
-            item_count = int(row.item_count or 0)
-            processed_count = int(row.processed_count or 0)
-            if item_count == 0 or processed_count == 0:
-                status_label = "Not processed"
-            elif processed_count < item_count:
-                status_label = "Partially processed"
-            else:
-                status_label = "Processed"
-            material_status_map[row.session_id] = status_label
+        for session_id_value, status_value in shipments:
+            material_status_map[session_id_value] = status_value or ""
 
     if sort == "status":
         sessions.sort(key=lambda s: (s.computed_status or "").lower(), reverse=reverse)
