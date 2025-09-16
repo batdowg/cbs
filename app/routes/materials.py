@@ -30,6 +30,7 @@ from ..shared.materials import material_format_choices
 from ..shared.languages import get_language_options
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
+CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -37,7 +38,7 @@ ORDER_TYPES = [
     "KT-Run Standard materials",
     "KT-Run Modular materials",
     "KT-Run LDI materials",
-    "Client-run Bulk order",
+    CLIENT_RUN_BULK_ORDER,
     "Simulation",
 ]
 
@@ -52,6 +53,10 @@ ORDER_STATUSES = [
     "Cancelled",
     "On hold",
 ]
+
+
+def is_client_run_bulk_order(order_type: str | None) -> bool:
+    return (order_type or "").strip().lower() == CLIENT_RUN_BULK_ORDER.lower()
 
 
 def can_manage_shipment(user: User | None) -> bool:
@@ -187,7 +192,7 @@ def materials_view(
     db.session.commit()
     if shipment.order_type is None:
         shipment.order_type = (
-            "Client-run Bulk order"
+            CLIENT_RUN_BULK_ORDER
             if sess.materials_only
             else "KT-Run Standard materials"
         )
@@ -512,7 +517,7 @@ def materials_view(
             if finalize:
                 shipment.status = "Finalized"
                 sess.ready_for_delivery = True
-                if shipment.order_type == "Client-run Bulk order":
+                if is_client_run_bulk_order(shipment.order_type):
                     sess.status = "Closed"
                 flash("Materials order finalized", "success")
             else:
@@ -633,7 +638,7 @@ def apply_defaults(
                 continue
             bulk = "bulk"
             if (
-                obj.order_type == "Client-run Bulk order"
+                is_client_run_bulk_order(obj.order_type)
                 or (obj.title and bulk in obj.title.lower())
                 or (obj.description and bulk in obj.description.lower())
             ):

@@ -309,7 +309,7 @@ def test_materials_order_finalize_sets_session_flags(app):
         assert db.session.get(Session, session_id).ready_for_delivery is False
     finalize_data = {
         "action": "finalize",
-        "order_type": "Client-run Bulk order",
+        "order_type": "Client-Run Bulk order",
         "materials_format": "",
         "material_sets": "0",
         "credits": "2",
@@ -322,11 +322,12 @@ def test_materials_order_finalize_sets_session_flags(app):
         shipment = SessionShipping.query.filter_by(session_id=session_id).first()
         sess_obj = db.session.get(Session, session_id)
         assert shipment.status == "Finalized"
+        assert shipment.order_type == "Client-Run Bulk order"
         assert sess_obj.ready_for_delivery is True
         assert sess_obj.status == "Closed"
     change_data = {
         "action": "update_header",
-        "order_type": "Client-run Bulk order",
+        "order_type": "Client-Run Bulk order",
         "materials_format": "",
         "material_sets": "3",
         "credits": "2",
