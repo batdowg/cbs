@@ -186,7 +186,8 @@ def materials_view(
     if not shipment.material_sets:
         shipment.material_sets = sess.capacity or 0
         db.session.commit()
-    readonly = view_only or bool(shipment.delivered_at)
+    session_locked = sess.status in {"Closed", "Cancelled"}
+    readonly = view_only or session_locked
     can_manage = can_manage_shipment(current_user)
     can_edit_arrival = can_edit_materials_header(
         "arrival_date", current_user, shipment
