@@ -74,7 +74,7 @@
           </th>
           <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
           <th scope="col" data-column-key="location" data-column-label="Location">{{ sort_link('Location','location') }}</th>
-          <th scope="col" data-column-key="workshop_type.code" data-column-label="Workshop">{{ sort_link('Workshop','workshop_type') }}</th>
+          <th scope="col" data-column-key="workshop_type" data-column-label="Workshop">{{ sort_link('Workshop','workshop_type') }}</th>
           <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
           <th scope="col" data-column-key="start_date" data-column-label="Start Date" class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
           <th scope="col" data-column-key="status" data-column-label="Status" class="cell-nowrap">{{ sort_link('Status','status') }}</th>
@@ -105,7 +105,7 @@
           </td>
           <td data-column-key="workshop_type">
             {% if s.workshop_type %}
-              {% set workshop_label = s.workshop_type.code ~ ' — ' ~ s.workshop_type.name %}
+              {% set workshop_label = s.workshop_type.code %}
               <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
             {% endif %}
           </td>
