@@ -136,6 +136,75 @@ label {
   margin-top: 4px;
 }
 
+/* Scoped form alignment utility */
+.form-align {
+  --form-align-label-width: 220px;
+  --form-align-gap: 12px;
+}
+
+.form-align .form-align__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--gap-y, 8px);
+}
+
+.form-align .form-align__row--top {
+  align-items: flex-start;
+}
+
+.form-align .form-align__label {
+  flex: 0 0 var(--form-align-label-width);
+  max-width: var(--form-align-label-width);
+  text-align: right;
+  padding-right: var(--form-align-gap);
+}
+
+.form-align .form-align__control {
+  display: block;
+}
+
+.form-align .form-align__note {
+  margin-left: 8px;
+}
+
+.form-align > .form-help,
+.form-align .form-align__help {
+  margin-left: calc(var(--form-align-label-width) + var(--form-align-gap));
+}
+
+.form-align .form-align__row--checkbox {
+  align-items: center;
+  padding-left: calc(var(--form-align-label-width) + var(--form-align-gap));
+}
+
+.form-align .form-align__row--checkbox .form-align__control {
+  display: inline-block;
+}
+
+@media (max-width: 720px) {
+  .form-align .form-align__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-align .form-align__label {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 4px;
+  }
+
+  .form-align > .form-help,
+  .form-align .form-align__help,
+  .form-align .form-align__row--checkbox {
+    margin-left: 0;
+    padding-left: 0;
+  }
+}
+
 .error,
 .invalid-feedback {
   color: var(--kt-accent-red);
