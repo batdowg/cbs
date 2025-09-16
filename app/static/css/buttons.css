@@ -160,6 +160,32 @@ input[type="reset"]:disabled,
   margin-right: .5ch;
 }
 
+.dashboard-table [data-column-chooser-toggle].btn-secondary,
+.column-chooser__close.btn-secondary,
+.add-proc-user.btn-secondary,
+.resource-panel .btn-secondary {
+  background-color: var(--kt-primary);
+  border-color: var(--kt-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.dashboard-table [data-column-chooser-toggle].btn-secondary:hover:not(:disabled),
+.column-chooser__close.btn-secondary:hover:not(:disabled),
+.add-proc-user.btn-secondary:hover:not(:disabled),
+.resource-panel .btn-secondary:hover:not(:disabled) {
+  background-color: var(--kt-primary-hover);
+  border-color: var(--kt-primary-hover);
+}
+
+.dashboard-table [data-column-chooser-toggle].btn-secondary:active:not(:disabled),
+.column-chooser__close.btn-secondary:active:not(:disabled),
+.add-proc-user.btn-secondary:active:not(:disabled),
+.resource-panel .btn-secondary:active:not(:disabled) {
+  background-color: #004a9b;
+  border-color: #004a9b;
+}
+
 /* Icon-only buttons */
 .btn-icon {
   padding: var(--space-2);
