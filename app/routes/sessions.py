@@ -268,6 +268,7 @@ def list_sessions(current_user):
     sort = request.args.get("sort", "start_date")
     direction = request.args.get("dir", "asc")
     columns = {
+        "id": Session.id,
         "title": Session.title,
         "client": Client.name,
         "location": Session.location,

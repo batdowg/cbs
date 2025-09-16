@@ -52,6 +52,7 @@ def list_orders():
         mstatus = sh.status
         rows.append(
             {
+                "order_id": sh.id,
                 "client": client.name if client else "",
                 "title": sess.title,
                 "workshop_type": wt.name if wt else "",
@@ -63,6 +64,7 @@ def list_orders():
             }
         )
     key_funcs = {
+        "order_id": lambda r: r["order_id"],
         "client": lambda r: (r["client"] or "").lower(),
         "title": lambda r: (r["title"] or "").lower(),
         "workshop_type": lambda r: (r["workshop_type"] or "").lower(),

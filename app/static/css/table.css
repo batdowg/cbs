@@ -64,3 +64,137 @@
   white-space: nowrap;
   display: block;
 }
+
+.kt-table [data-column-hidden] {
+  display: none;
+}
+
+.dashboard-table {
+  position: relative;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  position: relative;
+}
+
+.column-chooser-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  width: min(320px, 90vw);
+  background: var(--kt-bg);
+  border: 1px solid var(--kt-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  padding: var(--space-3);
+  z-index: 20;
+}
+
+.column-chooser__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.column-chooser__title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.column-chooser__hint {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 0.9rem;
+  color: var(--kt-muted);
+}
+
+.column-chooser__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.column-chooser__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+.column-chooser__item[data-required='true'] {
+  opacity: 0.75;
+}
+
+.column-chooser__item.is-drag-over {
+  outline: 2px dashed var(--kt-info);
+}
+
+.column-chooser__item.is-dragging {
+  opacity: 0.6;
+}
+
+.column-chooser__drag {
+  font-size: 1rem;
+  color: var(--kt-muted);
+  cursor: grab;
+}
+
+.column-chooser__item[data-required='true'] .column-chooser__drag {
+  cursor: not-allowed;
+  color: var(--kt-border);
+}
+
+.column-chooser__check {
+  margin: 0;
+}
+
+.column-chooser__label {
+  flex: 1;
+}
+
+.column-chooser__moves {
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.column-chooser__move {
+  border: 1px solid var(--kt-border);
+  background: var(--kt-bg);
+  border-radius: var(--radius-md);
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.column-chooser__move span {
+  display: inline-block;
+  min-width: 0.75rem;
+}
+
+.column-chooser__move[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.column-chooser__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+.column-chooser__reset {
+  padding: 0;
+  font-size: 0.9rem;
+}

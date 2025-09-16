@@ -51,55 +51,78 @@
   <a href="{{ url_for('sessions.list_sessions') }}">Clear</a>
 </form><br>
 
-<div class="kt-table-wrapper">
-<table class="kt-table">
-  <tr>
-    {% macro sort_link(label, field) -%}
-      {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
-      <a href="{{ url_for('sessions.list_sessions', sort=field, dir=dir, **base_params) }}">{{ label }}</a>
-    {%- endmacro %}
-    <th>{{ sort_link('Title','title') }}</th>
-    <th>{{ sort_link('Client','client') }}</th>
-    <th>{{ sort_link('Location','location') }}</th>
-    <th>{{ sort_link('Workshop Type','workshop_type') }}</th>
-    <th class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
-    <th class="cell-nowrap">{{ sort_link('Status','status') }}</th>
-    <th class="cell-nowrap">{{ sort_link('Region','region') }}</th>
-    <th class="col-actions">Actions</th>
-  </tr>
-  {% for s in sessions %}
-  <tr>
-    <td>
-      <span class="cell-ellipsis" title="{{ s.title }}">
-        <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
-      </span>
-    </td>
-    <td>
-      {% if s.client %}
-        <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
-      {% endif %}
-    </td>
-    <td>
-      {% if s.location %}
-        <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
-      {% endif %}
-    </td>
-    <td>
-      {% if s.workshop_type %}
-        {% set workshop_label = s.workshop_type.code ~ ' — ' ~ s.workshop_type.name %}
-        <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
-      {% endif %}
-    </td>
-    <td class="cell-nowrap">{{ s.start_date }}</td>
-    <td class="cell-nowrap">{{ s.computed_status }}</td>
-    <td class="cell-nowrap">{{ s.region }}</td>
-    <td class="col-actions">
-      {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
-        <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
-      {% endif %}
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+{% if current_user and current_user.id %}
+  {% set storage_key = 'cbs.sessions.columns.' ~ current_user.id %}
+{% else %}
+  {% set storage_key = 'cbs.sessions.columns' %}
+{% endif %}
+<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-chooser-label="Choose columns">
+  <div class="table-toolbar">
+    <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
+  </div>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr>
+          {% macro sort_link(label, field) -%}
+            {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
+            <a href="{{ url_for('sessions.list_sessions', sort=field, dir=dir, **base_params) }}">{{ label }}</a>
+          {%- endmacro %}
+          <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true" class="cell-nowrap">{{ sort_link('ID','id') }}</th>
+          <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">
+            {{ sort_link('Title','title') }}
+          </th>
+          <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
+          <th scope="col" data-column-key="location" data-column-label="Location">{{ sort_link('Location','location') }}</th>
+          <th scope="col" data-column-key="workshop_type" data-column-label="Workshop Type">{{ sort_link('Workshop Type','workshop_type') }}</th>
+          <th scope="col" data-column-key="start_date" data-column-label="Start Date" class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
+          <th scope="col" data-column-key="status" data-column-label="Status" class="cell-nowrap">{{ sort_link('Status','status') }}</th>
+          <th scope="col" data-column-key="region" data-column-label="Region" class="cell-nowrap">{{ sort_link('Region','region') }}</th>
+          <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
+          <td data-column-key="title">
+            <span class="cell-ellipsis" title="{{ s.title }}">
+              <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+            </span>
+          </td>
+          <td data-column-key="client">
+            {% if s.client %}
+              <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
+            {% endif %}
+          </td>
+          <td data-column-key="location">
+            {% if s.location %}
+              <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
+            {% endif %}
+          </td>
+          <td data-column-key="workshop_type">
+            {% if s.workshop_type %}
+              {% set workshop_label = s.workshop_type.code ~ ' — ' ~ s.workshop_type.name %}
+              <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
+            {% endif %}
+          </td>
+          <td data-column-key="start_date" class="cell-nowrap">{{ s.start_date }}</td>
+          <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
+          <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
+          <td data-column-key="actions" class="col-actions">
+            {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+              <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/column_chooser.js') }}" defer></script>
 {% endblock %}
