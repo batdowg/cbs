@@ -30,6 +30,7 @@ from ..shared.materials import material_format_choices
 from ..shared.languages import get_language_options
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
+CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -37,19 +38,25 @@ ORDER_TYPES = [
     "KT-Run Standard materials",
     "KT-Run Modular materials",
     "KT-Run LDI materials",
-    "Client-run Bulk order",
+    CLIENT_RUN_BULK_ORDER,
     "Simulation",
 ]
 
 ORDER_STATUSES = [
     "New",
     "In progress",
+    "Processed",
+    "Finalized",
     "Ordered",
     "Shipped",
     "Delivered",
     "Cancelled",
     "On hold",
 ]
+
+
+def is_client_run_bulk_order(order_type: str | None) -> bool:
+    return (order_type or "").strip().lower() == CLIENT_RUN_BULK_ORDER.lower()
 
 
 def can_manage_shipment(user: User | None) -> bool:
@@ -138,6 +145,13 @@ def _parse_date(val: str | None):
         return None
 
 
+def _set_if_changed(obj, attr: str, value) -> bool:
+    if getattr(obj, attr) != value:
+        setattr(obj, attr, value)
+        return True
+    return False
+
+
 @bp.route("", methods=["GET", "POST"])
 @materials_access
 def materials_view(
@@ -178,7 +192,7 @@ def materials_view(
     db.session.commit()
     if shipment.order_type is None:
         shipment.order_type = (
-            "Client-run Bulk order"
+            CLIENT_RUN_BULK_ORDER
             if sess.materials_only
             else "KT-Run Standard materials"
         )
@@ -222,10 +236,16 @@ def materials_view(
         action = request.form.get("action")
         if not can_manage:
             abort(403)
-        if action == "update_header":
+        if action in {"update_header", "finalize"}:
+            finalize = action == "finalize"
             ship_id = request.form.get("shipping_location_id")
+            header_changed = False
+            items_changed = False
             if ship_id is not None:
-                sess.shipping_location_id = int(ship_id) if ship_id else None
+                new_ship_id = int(ship_id) if ship_id else None
+                if sess.shipping_location_id != new_ship_id:
+                    sess.shipping_location_id = new_ship_id
+                    header_changed = True
             fields = CSA_FIELDS | {
                 "courier",
                 "tracking",
@@ -243,17 +263,21 @@ def materials_view(
                 if not can_edit_materials_header(field, current_user, shipment):
                     continue
                 if field in {"ship_date", "arrival_date", "order_date"}:
-                    setattr(shipment, field, _parse_date(val))
+                    header_changed |= _set_if_changed(
+                        shipment, field, _parse_date(val)
+                    )
                 elif field == "materials_format":
-                    setattr(shipment, field, val or None)
+                    header_changed |= _set_if_changed(shipment, field, val or None)
                 elif field in {"material_sets", "credits"}:
                     try:
                         num_val = int(val) if val else 0
                     except ValueError:
                         num_val = 0
-                    setattr(shipment, field, max(0, num_val))
+                    header_changed |= _set_if_changed(
+                        shipment, field, max(0, num_val)
+                    )
                 else:
-                    setattr(shipment, field, val or None)
+                    header_changed |= _set_if_changed(shipment, field, val or None)
             show_sim_outline = shipment.order_type == "Simulation" or sim_base
             show_credits = shipment.order_type == "Simulation" or sim_base
             errors: dict[str, str] = {}
@@ -262,33 +286,64 @@ def materials_view(
             )
             if show_sim_outline:
                 so_id = request.form.get("simulation_outline_id")
-                sess.simulation_outline_id = int(so_id) if so_id else None
-            shipment.client_shipping_location_id = sess.shipping_location_id
+                new_so = int(so_id) if so_id else None
+                if sess.simulation_outline_id != new_so:
+                    sess.simulation_outline_id = new_so
+                    header_changed = True
+            header_changed |= _set_if_changed(
+                shipment, "client_shipping_location_id", sess.shipping_location_id
+            )
             if sess.shipping_location:
-                shipment.contact_name = sess.shipping_location.contact_name
-                shipment.contact_phone = sess.shipping_location.contact_phone
-                shipment.contact_email = sess.shipping_location.contact_email
-                shipment.address_line1 = sess.shipping_location.address_line1
-                shipment.address_line2 = sess.shipping_location.address_line2
-                shipment.city = sess.shipping_location.city
-                shipment.state = sess.shipping_location.state
-                shipment.postal_code = sess.shipping_location.postal_code
-                shipment.country = sess.shipping_location.country
+                header_changed |= _set_if_changed(
+                    shipment, "contact_name", sess.shipping_location.contact_name
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "contact_phone", sess.shipping_location.contact_phone
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "contact_email", sess.shipping_location.contact_email
+                )
+                header_changed |= _set_if_changed(
+                    shipment,
+                    "address_line1",
+                    sess.shipping_location.address_line1,
+                )
+                header_changed |= _set_if_changed(
+                    shipment,
+                    "address_line2",
+                    sess.shipping_location.address_line2,
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "city", sess.shipping_location.city
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "state", sess.shipping_location.state
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "postal_code", sess.shipping_location.postal_code
+                )
+                header_changed |= _set_if_changed(
+                    shipment, "country", sess.shipping_location.country
+                )
             else:
-                shipment.contact_name = None
-                shipment.contact_phone = None
-                shipment.contact_email = None
-                shipment.address_line1 = None
-                shipment.address_line2 = None
-                shipment.city = None
-                shipment.state = None
-                shipment.postal_code = None
-                shipment.country = None
+                header_changed |= _set_if_changed(shipment, "contact_name", None)
+                header_changed |= _set_if_changed(shipment, "contact_phone", None)
+                header_changed |= _set_if_changed(shipment, "contact_email", None)
+                header_changed |= _set_if_changed(shipment, "address_line1", None)
+                header_changed |= _set_if_changed(shipment, "address_line2", None)
+                header_changed |= _set_if_changed(shipment, "city", None)
+                header_changed |= _set_if_changed(shipment, "state", None)
+                header_changed |= _set_if_changed(shipment, "postal_code", None)
+                header_changed |= _set_if_changed(shipment, "country", None)
             if original_order_type != shipment.order_type:
-                shipment.materials_option_id = None
-                shipment.materials_options = []
+                if shipment.materials_option_id is not None:
+                    shipment.materials_option_id = None
+                    header_changed = True
+                if shipment.materials_options:
+                    shipment.materials_options = []
+                    header_changed = True
             if shipment.order_type == "Simulation" and not shipment.materials_format:
-                shipment.materials_format = "SIM_ONLY"
+                header_changed |= _set_if_changed(shipment, "materials_format", "SIM_ONLY")
             if errors:
                 db.session.rollback()
                 form = request.form
@@ -360,18 +415,29 @@ def materials_view(
                     item = existing.pop(item_id)
                     if delete_flag or qty <= 0:
                         db.session.delete(item)
+                        items_changed = True
                     else:
-                        item.quantity = qty
-                        item.language = lang
-                        item.format = fmt_val
+                        if item.quantity != qty:
+                            item.quantity = qty
+                            items_changed = True
+                        if item.language != lang:
+                            item.language = lang
+                            items_changed = True
+                        if item.format != fmt_val:
+                            item.format = fmt_val
+                            items_changed = True
                         if processed_flag and not item.processed:
                             item.processed = True
                             item.processed_at = datetime.now(timezone.utc)
-                            item.processed_by_id = current_user.id if current_user else None
+                            item.processed_by_id = (
+                                current_user.id if current_user else None
+                            )
+                            items_changed = True
                         elif not processed_flag and item.processed:
                             item.processed = False
                             item.processed_at = None
                             item.processed_by_id = None
+                            items_changed = True
                     continue
                 if delete_flag or not option_id:
                     continue
@@ -391,17 +457,27 @@ def materials_view(
                     format=fmt_val,
                 ).first()
                 if dup:
-                    dup.quantity = qty
-                    dup.language = lang
-                    dup.format = fmt_val
+                    if dup.quantity != qty:
+                        dup.quantity = qty
+                        items_changed = True
+                    if dup.language != lang:
+                        dup.language = lang
+                        items_changed = True
+                    if dup.format != fmt_val:
+                        dup.format = fmt_val
+                        items_changed = True
                     if processed_flag and not dup.processed:
                         dup.processed = True
                         dup.processed_at = datetime.now(timezone.utc)
-                        dup.processed_by_id = current_user.id if current_user else None
+                        dup.processed_by_id = (
+                            current_user.id if current_user else None
+                        )
+                        items_changed = True
                     elif not processed_flag and dup.processed:
                         dup.processed = False
                         dup.processed_at = None
                         dup.processed_by_id = None
+                        items_changed = True
                     continue
                 item = MaterialOrderItem(
                     session_id=sess.id,
@@ -418,9 +494,36 @@ def materials_view(
                     item.processed_at = datetime.now(timezone.utc)
                     item.processed_by_id = current_user.id if current_user else None
                 db.session.add(item)
+                items_changed = True
+
+            if not finalize and shipment.status != "Finalized":
+                if (header_changed or items_changed) and (
+                    not shipment.status
+                    or shipment.status in {"New", "Processed"}
+                ):
+                    shipment.status = "In progress"
+                db.session.flush()
+                current_items = MaterialOrderItem.query.filter_by(
+                    session_id=sess.id
+                ).all()
+                has_items = bool(current_items)
+                all_processed = has_items and all(i.processed for i in current_items)
+                if all_processed and shipment.status != "Finalized":
+                    if shipment.status != "Processed":
+                        shipment.status = "Processed"
+                elif not all_processed and shipment.status == "Processed":
+                    shipment.status = "In progress"
+
+            if finalize:
+                shipment.status = "Finalized"
+                sess.ready_for_delivery = True
+                if is_client_run_bulk_order(shipment.order_type):
+                    sess.status = "Closed"
+                flash("Materials order finalized", "success")
+            else:
+                flash("Saved", "info")
 
             db.session.commit()
-            flash("Saved", "info")
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "mark_shipped":
             if not shipment.ship_date:
@@ -535,7 +638,7 @@ def apply_defaults(
                 continue
             bulk = "bulk"
             if (
-                obj.order_type == "Client-run Bulk order"
+                is_client_run_bulk_order(obj.order_type)
                 or (obj.title and bulk in obj.title.lower())
                 or (obj.description and bulk in obj.description.lower())
             ):

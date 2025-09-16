@@ -28,7 +28,6 @@
   <a href="{{ url_for('materials.materials_view', session_id=sess.id) }}" aria-current="page">Materials Order</a>
 </nav>
 <form method="post">
-  <input type="hidden" name="action" value="update_header">
   <div class="kt-card form-align">
     <h2 class="kt-card-title">Order details</h2>
     {% set client_display = sess.client.name|default('', true) if sess.client else '' %}
@@ -304,7 +303,8 @@
       <input type="text" name="tracking" value="{{ form.get('tracking') if form else (shipment.tracking or '') }}">
     {% else %}{{ shipment.tracking|default('', true) }}{% endif %}
   </div>
-  <button type="submit" {% if readonly %}disabled{% endif %}>Save</button>
+  <button type="submit" name="action" value="update_header" class="btn btn-primary" {% if readonly %}disabled{% endif %}>Save</button>
+  <button type="submit" name="action" value="finalize" class="btn btn-secondary" {% if readonly %}disabled{% endif %}>Ready for Delivery/Finalized</button>
 </form>
 {% if can_manage %}
 <form id="defaults-form" method="post" action="{{ url_for('materials.apply_defaults', session_id=sess.id) }}">
