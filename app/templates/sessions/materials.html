@@ -70,23 +70,25 @@
     <h2 class="kt-card-title">Shipping details</h2>
     <div class="form-align">
       <div class="form-align__row form-align__row--top">
-        {% if can_manage and not readonly %}
+
+        {% set can_edit_shipping = can_manage and not readonly %}
+        {% if can_manage %}
         <label class="form-align__label" for="shipping-location-select">Shipping location</label>
         {% else %}
         <span class="form-align__label">Shipping location</span>
         {% endif %}
         <div class="form-align__control">
-          {% if can_manage and not readonly %}
+          {% if can_manage %}
             {% set loc_val = form.get('shipping_location_id') if form else sess.shipping_location_id %}
             <div>
-              <select name="shipping_location_id" id="shipping-location-select">
+              <select name="shipping_location_id" id="shipping-location-select"{% if not can_edit_shipping %} disabled{% endif %}>
                 <option value=""></option>
                 {% for loc in shipping_locations %}
 
                 <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title|default(loc.display_name(), true) }}</option>
                 {% endfor %}
               </select>
-              {% if sess.client_id %}
+              {% if can_edit_shipping and sess.client_id %}
               <a href="#" id="add-shipping-location" style="font-size:smaller">Add</a>
               <a href="{{ url_for('clients.edit_client', client_id=sess.client_id, section='shipping', next=url_for('materials.materials_view', session_id=sess.id)) }}" style="font-size:smaller">Edit locations</a>
               {% endif %}

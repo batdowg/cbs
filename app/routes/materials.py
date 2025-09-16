@@ -186,7 +186,7 @@ def materials_view(
     if not shipment.material_sets:
         shipment.material_sets = sess.capacity or 0
         db.session.commit()
-    readonly = view_only or sess.finalized or bool(shipment.delivered_at)
+    readonly = view_only or bool(shipment.delivered_at)
     fmt = shipment.materials_format or (
         "SIM_ONLY" if shipment.order_type == "Simulation" else ""
     )
