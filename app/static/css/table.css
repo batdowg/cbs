@@ -66,6 +66,12 @@
   display: block;
 }
 
+.cell-wrap {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .kt-table [data-column-hidden] {
   display: none;
 }
