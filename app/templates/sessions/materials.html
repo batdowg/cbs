@@ -70,6 +70,7 @@
     <h2 class="kt-card-title">Shipping details</h2>
     <div class="form-align">
       <div class="form-align__row form-align__row--top">
+
         {% set can_edit_shipping = can_manage and not readonly %}
         {% if can_manage %}
         <label class="form-align__label" for="shipping-location-select">Shipping location</label>
