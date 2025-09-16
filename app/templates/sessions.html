@@ -75,8 +75,11 @@
           <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
           <th scope="col" data-column-key="location" data-column-label="Location">{{ sort_link('Location','location') }}</th>
           <th scope="col" data-column-key="workshop_type" data-column-label="Workshop Type">{{ sort_link('Workshop Type','workshop_type') }}</th>
+          <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
           <th scope="col" data-column-key="start_date" data-column-label="Start Date" class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
           <th scope="col" data-column-key="status" data-column-label="Status" class="cell-nowrap">{{ sort_link('Status','status') }}</th>
+          <th scope="col" data-column-key="material_order_status" data-column-label="Material order status" data-column-default-hidden="true">{{ sort_link('Material order status','material_order_status') }}</th>
+          <th scope="col" data-column-key="csa_name" data-column-label="CSA Name" data-column-default-hidden="true">{{ sort_link('CSA Name','csa_name') }}</th>
           <th scope="col" data-column-key="region" data-column-label="Region" class="cell-nowrap">{{ sort_link('Region','region') }}</th>
           <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
         </tr>
@@ -106,8 +109,26 @@
               <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
             {% endif %}
           </td>
+          <td data-column-key="facilitators">
+            {% set facs = facilitator_map.get(s.id, []) %}
+            {% if facs %}
+              <span class="cell-ellipsis" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
+            {% endif %}
+          </td>
           <td data-column-key="start_date" class="cell-nowrap">{{ s.start_date }}</td>
           <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
+          <td data-column-key="material_order_status" class="cell-nowrap">
+            {% set mo_status = material_status_map.get(s.id) %}
+            {% if mo_status %}
+              <span class="pill pill--{{ mo_status|lower|replace(' ', '') }}">{{ mo_status }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td data-column-key="csa_name">
+            {% set csa_name = csa_display_map.get(s.id) %}
+            {% if csa_name %}
+              <span class="cell-ellipsis" title="{{ csa_name }}">{{ csa_name }}</span>
+            {% endif %}
+          </td>
           <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
           <td data-column-key="actions" class="col-actions">
             {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}

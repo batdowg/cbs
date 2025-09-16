@@ -32,6 +32,7 @@ from ..models import (
     WorkshopType,
     AuditLog,
     SessionShipping,
+    MaterialOrderItem,
     ClientWorkshopLocation,
     SimulationOutline,
     PreworkTemplate,
@@ -39,7 +40,8 @@ from ..models import (
     PreworkEmailLog,
 )
 from ..shared.time import now_utc, fmt_time, fmt_dt
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, case
+from sqlalchemy.orm import joinedload, selectinload
 from ..shared.certificates import (
     render_certificate,
     render_for_session,
@@ -192,7 +194,18 @@ def list_sessions(current_user):
     base_params.pop("dir", None)
     flask_session["sessions_list_args"] = params
 
-    query = db.session.query(Session).outerjoin(Client).outerjoin(WorkshopType)
+    query = (
+        db.session.query(Session)
+        .outerjoin(Client)
+        .outerjoin(WorkshopType)
+        .options(
+            joinedload(Session.client),
+            joinedload(Session.workshop_type),
+            joinedload(Session.csa_account),
+            joinedload(Session.lead_facilitator),
+            selectinload(Session.facilitators),
+        )
+    )
     if not show_global and current_user.region:
         query = query.filter(Session.region == current_user.region)
 
@@ -276,19 +289,91 @@ def list_sessions(current_user):
         "start_date": Session.start_date,
         "status": None,
         "region": Session.region,
+        "material_order_status": None,
+        "csa_name": None,
     }
-    if sort == "status":
-        sessions = query.all()
-        sessions.sort(key=lambda s: s.computed_status)
-        if direction == "desc":
-            sessions.reverse()
-    else:
+    reverse = direction == "desc"
+    special_sorts = {"status", "material_order_status", "csa_name"}
+    if sort not in special_sorts:
         col = columns.get(sort) or Session.start_date
-        if direction == "desc":
-            query = query.order_by(col.desc())
-        else:
-            query = query.order_by(col.asc())
-        sessions = query.all()
+        query = query.order_by(col.desc() if reverse else col.asc())
+    sessions = query.all()
+
+    session_ids = [s.id for s in sessions]
+    facilitator_map: dict[int, list[str]] = {}
+    csa_display_map: dict[int, str] = {}
+    for sess in sessions:
+        names: list[str] = []
+        seen_ids: set[int] = set()
+        if sess.lead_facilitator and sess.lead_facilitator.id:
+            seen_ids.add(sess.lead_facilitator.id)
+            display = (
+                (sess.lead_facilitator.full_name or "").strip()
+                or (sess.lead_facilitator.email or "").strip()
+            )
+            if display:
+                names.append(display)
+        extra_facilitators = sorted(
+            sess.facilitators,
+            key=lambda u: (u.full_name or u.email or "").lower(),
+        )
+        for fac in extra_facilitators:
+            if not fac or not fac.id or fac.id in seen_ids:
+                continue
+            seen_ids.add(fac.id)
+            display = (fac.full_name or "").strip() or (fac.email or "").strip()
+            if display:
+                names.append(display)
+        facilitator_map[sess.id] = names
+        csa_display = ""
+        if sess.csa_account:
+            csa_display = (
+                (sess.csa_account.full_name or "").strip()
+                or (sess.csa_account.email or "").strip()
+            )
+        csa_display_map[sess.id] = csa_display
+
+    material_status_map: dict[int, str] = {}
+    if session_ids:
+        shipment_stats = (
+            db.session.query(
+                SessionShipping.session_id,
+                func.count(MaterialOrderItem.id).label("item_count"),
+                func.sum(
+                    case((MaterialOrderItem.processed.is_(True), 1), else_=0)
+                ).label("processed_count"),
+            )
+            .outerjoin(
+                MaterialOrderItem,
+                MaterialOrderItem.session_id == SessionShipping.session_id,
+            )
+            .filter(SessionShipping.session_id.in_(session_ids))
+            .group_by(SessionShipping.session_id)
+            .all()
+        )
+        for row in shipment_stats:
+            item_count = int(row.item_count or 0)
+            processed_count = int(row.processed_count or 0)
+            if item_count == 0 or processed_count == 0:
+                status_label = "Not processed"
+            elif processed_count < item_count:
+                status_label = "Partially processed"
+            else:
+                status_label = "Processed"
+            material_status_map[row.session_id] = status_label
+
+    if sort == "status":
+        sessions.sort(key=lambda s: (s.computed_status or "").lower(), reverse=reverse)
+    elif sort == "material_order_status":
+        sessions.sort(
+            key=lambda s: (material_status_map.get(s.id) or "").lower(),
+            reverse=reverse,
+        )
+    elif sort == "csa_name":
+        sessions.sort(
+            key=lambda s: (csa_display_map.get(s.id) or "").lower(),
+            reverse=reverse,
+        )
 
     return render_template(
         "sessions.html",
@@ -298,6 +383,9 @@ def list_sessions(current_user):
         base_params=base_params,
         sort=sort,
         direction=direction,
+        facilitator_map=facilitator_map,
+        material_status_map=material_status_map,
+        csa_display_map=csa_display_map,
     )
 
 

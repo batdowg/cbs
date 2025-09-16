@@ -12,6 +12,8 @@ from flask import (
 )
 from urllib.parse import urlparse
 
+from sqlalchemy.orm import joinedload
+
 from ..app import db, User
 from ..models import (
     Client,
@@ -171,6 +173,7 @@ def edit_client(client_id, current_user, csa_account):
                     abort(404)
             else:
                 loc = ClientShippingLocation(client_id=client_id)
+            loc.title = request.form.get("title") or None
             loc.contact_name = request.form.get("contact_name") or None
             loc.contact_phone = request.form.get("contact_phone") or None
             loc.contact_email = request.form.get("contact_email") or None
@@ -209,6 +212,7 @@ def edit_client(client_id, current_user, csa_account):
     )
     shipping_locations = (
         ClientShippingLocation.query.filter_by(client_id=client_id)
+        .options(joinedload(ClientShippingLocation.client))
         .order_by(ClientShippingLocation.id)
         .all()
     )
@@ -327,6 +331,7 @@ def inline_shipping_location(client_id, current_user, csa_account):
     loc.contact_name = request.form.get("contact_name") or None
     loc.contact_phone = request.form.get("contact_phone") or None
     loc.contact_email = request.form.get("contact_email") or None
+    loc.title = request.form.get("title") or None
     loc.address_line1 = address_line1
     loc.address_line2 = request.form.get("address_line2") or None
     loc.city = request.form.get("city") or None
@@ -340,6 +345,7 @@ def inline_shipping_location(client_id, current_user, csa_account):
     return {
         "id": loc.id,
         "display": loc.display_name(),
+        "title": loc.title,
         "contact_name": loc.contact_name,
         "contact_phone": loc.contact_phone,
         "contact_email": loc.contact_email,

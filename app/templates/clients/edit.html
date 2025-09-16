@@ -80,9 +80,10 @@
 <hr>
 <h2 id="shipping-section">Shipping Locations</h2>
 <table class="kt-table">
-  <tr><th>Contact</th><th>Email/Phone</th><th>Address</th><th>Active</th><th>Actions</th></tr>
+  <tr><th>Title</th><th>Contact</th><th>Email/Phone</th><th>Address</th><th>Active</th><th>Actions</th></tr>
   {% for loc in shipping_locations %}
   <tr>
+    <td>{{ loc.title|default(loc.computed_title(), true) }}</td>
     <td>{{ loc.contact_name|default('', true) }}</td>
     <td>{{ loc.contact_email|default('', true) }} {{ loc.contact_phone|default('', true) }}</td>
     <td>{{ loc.address_line1|default('', true) }} {{ loc.city|default('', true) }} {{ loc.country|default('', true) }}</td>
@@ -106,6 +107,7 @@
   <input type="hidden" name="form" value="shipping">
   {% if edit_sl %}<input type="hidden" name="loc_id" value="{{ edit_sl.id }}">{% endif %}
   {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <div><label>Title <input type="text" name="title" value="{{ edit_sl.title|default('', true) if edit_sl else '' }}"></label></div>
   <div><label>Contact Name <input type="text" name="contact_name" value="{{ edit_sl.contact_name|default('', true) if edit_sl else '' }}"></label></div>
   <div><label>Contact Phone <input type="text" name="contact_phone" value="{{ edit_sl.contact_phone|default('', true) if edit_sl else '' }}"></label></div>
   <div><label>Contact Email <input type="email" name="contact_email" value="{{ edit_sl.contact_email|default('', true) if edit_sl else '' }}"></label></div>

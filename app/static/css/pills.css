@@ -32,6 +32,21 @@
   background: color-mix(in srgb, var(--kt-accent-green) 20%, var(--kt-bg));
 }
 
+.pill--notprocessed {
+  border-color: var(--kt-border);
+  background: color-mix(in srgb, var(--kt-border) 25%, var(--kt-bg));
+}
+
+.pill--partiallyprocessed {
+  border-color: var(--kt-accent-yellow);
+  background: color-mix(in srgb, var(--kt-accent-yellow) 20%, var(--kt-bg));
+}
+
+.pill--processed {
+  border-color: var(--kt-accent-green);
+  background: color-mix(in srgb, var(--kt-accent-green) 20%, var(--kt-bg));
+}
+
 .badge {
   display: inline-block;
   padding: 0 var(--space-2);
