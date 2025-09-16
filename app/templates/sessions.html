@@ -70,7 +70,7 @@
             {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
             <a href="{{ url_for('sessions.list_sessions', sort=field, dir=dir, **base_params) }}">{{ label }}</a>
           {%- endmacro %}
-          <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true" class="cell-nowrap">{{ sort_link('ID','id') }}</th>
+          <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true">{{ sort_link('ID','id') }}</th>
           <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">
             {{ sort_link('Title','title') }}
           </th>
@@ -78,48 +78,48 @@
           <th scope="col" data-column-key="location" data-column-label="Location">{{ sort_link('Location','location') }}</th>
           <th scope="col" data-column-key="workshop_type" data-column-label="Workshop">{{ sort_link('Workshop','workshop_type') }}</th>
           <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
-          <th scope="col" data-column-key="start_date" data-column-label="Start Date" class="cell-nowrap">{{ sort_link('Start Date','start_date') }}</th>
-          <th scope="col" data-column-key="status" data-column-label="Status" class="cell-nowrap">{{ sort_link('Status','status') }}</th>
+          <th scope="col" data-column-key="start_date" data-column-label="Start Date">{{ sort_link('Start Date','start_date') }}</th>
+          <th scope="col" data-column-key="status" data-column-label="Status">{{ sort_link('Status','status') }}</th>
           <th scope="col" data-column-key="material_order_status" data-column-label="Material order status" data-column-default-hidden="true">{{ sort_link('Material order status','material_order_status') }}</th>
           <th scope="col" data-column-key="csa_name" data-column-label="CSA Name" data-column-default-hidden="true">{{ sort_link('CSA Name','csa_name') }}</th>
-          <th scope="col" data-column-key="region" data-column-label="Region" class="cell-nowrap">{{ sort_link('Region','region') }}</th>
+          <th scope="col" data-column-key="region" data-column-label="Region">{{ sort_link('Region','region') }}</th>
           <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for s in sessions %}
         <tr>
-          <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
+          <td data-column-key="id">{{ s.id }}</td>
           <td data-column-key="title">
-            <span class="cell-ellipsis" title="{{ s.title }}">
+            <span class="cell-wrap" title="{{ s.title }}">
               <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
             </span>
           </td>
           <td data-column-key="client">
             {% if s.client %}
-              <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
+              <span class="cell-wrap" title="{{ s.client.name }}">{{ s.client.name }}</span>
             {% endif %}
           </td>
           <td data-column-key="location">
             {% if s.location %}
-              <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
+              <span class="cell-wrap" title="{{ s.location }}">{{ s.location }}</span>
             {% endif %}
           </td>
           <td data-column-key="workshop_type">
             {% if s.workshop_type %}
               {% set workshop_label = s.workshop_type.code %}
-              <span class="cell-ellipsis" title="{{ workshop_label }}">{{ workshop_label }}</span>
+              <span class="cell-wrap" title="{{ workshop_label }}">{{ workshop_label }}</span>
             {% endif %}
           </td>
           <td data-column-key="facilitators">
             {% set facs = facilitator_map.get(s.id, []) %}
             {% if facs %}
-              <span class="cell-ellipsis" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
+              <span class="cell-wrap" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
             {% endif %}
           </td>
-          <td data-column-key="start_date" class="cell-nowrap">{{ s.start_date }}</td>
-          <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
-          <td data-column-key="material_order_status" class="cell-nowrap">
+          <td data-column-key="start_date">{{ s.start_date }}</td>
+          <td data-column-key="status">{{ s.computed_status }}</td>
+          <td data-column-key="material_order_status">
             {% set mo_status = material_status_map.get(s.id) %}
             {% if mo_status %}
               <span class="pill pill--{{ mo_status|lower|replace(' ', '') }}">{{ mo_status }}</span>
@@ -128,10 +128,10 @@
           <td data-column-key="csa_name">
             {% set csa_name = csa_display_map.get(s.id) %}
             {% if csa_name %}
-              <span class="cell-ellipsis" title="{{ csa_name }}">{{ csa_name }}</span>
+              <span class="cell-wrap" title="{{ csa_name }}">{{ csa_name }}</span>
             {% endif %}
           </td>
-          <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
+          <td data-column-key="region">{{ s.region }}</td>
           <td data-column-key="actions" class="col-actions">
             {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
               <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
