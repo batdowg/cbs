@@ -115,7 +115,7 @@
           <input type="date" id="start-date" name="start_date" value="{{ session.start_date or '' }}" required>
           <input type="hidden" name="ack_past" id="ack-past" value="{{ form.ack_past if form else '' }}">
         </div>
-        <label class="form-align__label" for="end-date">End Date*</label>
+        <label for="end-date">End Date*</label>
         <div class="form-align__control">
           <input type="date" id="end-date" name="end_date" value="{{ session.end_date or '' }}" min="{{ session.start_date or '' }}" required>
         </div>
