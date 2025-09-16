@@ -64,7 +64,7 @@
             <option value=""></option>
             {% for loc in shipping_locations %}
 
-            <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.display_name() }}</option>
+            <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title|default(loc.display_name(), true) }}</option>
             {% endfor %}
           </select>
           {% if sess.client_id %}
@@ -249,6 +249,7 @@
 {% endif %}
 <dialog id="shipping-dialog">
   <form id="shipping-inline-form">
+    <div><label>Title <input type="text" name="title"></label></div>
     <div><label>Contact Name <input type="text" name="contact_name"></label></div>
     <div><label>Contact Phone <input type="text" name="contact_phone"></label></div>
     <div><label>Contact Email <input type="email" name="contact_email"></label></div>
@@ -347,7 +348,7 @@
         .then(([status,data])=>{
           if(status==200 && data.id){
             var o=document.createElement('option');
-            o.value=data.id; o.textContent=data.display;
+            o.value=data.id; o.textContent=data.title || data.display;
             o.dataset.contact = data.contact_name || '';
             o.dataset.email = data.contact_email || '';
             o.dataset.phone = data.contact_phone || '';

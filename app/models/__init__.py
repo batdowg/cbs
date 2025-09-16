@@ -211,6 +211,7 @@ class ClientShippingLocation(db.Model):
         db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
     )
     client = db.relationship("Client", backref="shipping_locations")
+    title = db.Column(db.String(255))
     contact_name = db.Column(db.String(255))
     contact_phone = db.Column(db.String(50))
     contact_email = db.Column(db.String(255))
@@ -241,6 +242,22 @@ class ClientShippingLocation(db.Model):
             self.country,
         ]
         return " / ".join([p for p in parts if p])
+
+    def computed_title(self) -> str:  # pragma: no cover - simple helper
+        if self.title:
+            return self.title
+        summary: list[str] = []
+        if self.client and self.client.name:
+            summary.append(self.client.name)
+        if self.city:
+            summary.append(self.city)
+        elif self.address_line1:
+            summary.append(self.address_line1)
+        elif self.contact_name:
+            summary.append(self.contact_name)
+        if not summary:
+            return self.display_name()
+        return " / ".join(summary[:2])
 
 
 class ClientWorkshopLocation(db.Model):
