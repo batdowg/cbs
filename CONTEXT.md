@@ -434,7 +434,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **Columns**: default order **Order ID, Title, Status, Workshop start date, Client, Order type, Workshop, Latest arrival date, Workshop status** with Order ID leading and Title linking to the materials detail page. Additional optional columns surface Processed timestamps, Bulk Receiver, Outline, Credits/Teams (shown as `<credits> / <teams>` only when the session has a Simulation Outline; otherwise the column shows `—`; teams stay calculated as two per credit), Facilitator(s), Learner list, Region, and Shipping location title via the chooser noted above. Bulk Receiver entries wrap so long contact names or emails remain visible within the column width.
 - **Column chooser**: matches the Workshops dashboard behavior; see §7 for chooser details.
 - **Data prep**: dashboard queries join clients, workshop types, shipping locations, facilitators, and participant names in bulk and use SQL window functions to surface the latest processed Digital/Physical timestamps per order.
-- **Filters** (currently implemented): status, format. (Future: date range, components, type, facilitator.)  
+- **Filters** (currently implemented): status, format. (Future: date range, components, type, facilitator.)
+- **Workshop Status** defaults to **not Closed** (excludes `Session.status = 'Closed'`) until the user explicitly changes the filter. The Show/Hide Closed toggle mutates the `workshop_status` query param (`not_closed` ↔ `all`) and the toolbar shows a chip while the exclusion is active.
 - **Row actions** per permissions: Open, Edit, Mark Shipped, Mark Delivered.
 
 ---
@@ -506,7 +507,7 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - “KT Staff” is a derived condition; any stored boolean is deprecated and must not drive logic.  
 - CSA password default is **`KTRocks!CSA`**; other participants **`KTRocks!`**.  
 - Contractor menu/capabilities updated per §1.2/§1.5.
-- Materials dashboard documented to current behavior.
+- Materials dashboard documented to current behavior (default hides Closed workshops via the Workshop Status filter).
 - Session detail pages render a minimal order view for materials-only sessions and guard full details with `{% if not session.materials_only %}`; workshop-type and facilitator sections now use `{% if %}` guards to avoid null dereferences.
 - Added no-op Alembic revision `0053_cert_template_badge_image` to maintain migration continuity for certificate-template badge filenames.
 - Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options` and used wherever the item is selected.

@@ -32,19 +32,22 @@
   <button type="submit">Filter</button>
   <input type="hidden" name="sort" value="{{ sort }}">
   <input type="hidden" name="dir" value="{{ dir }}">
+  {% if workshop_status_param is not none %}
+  <input type="hidden" name="workshop_status" value="{{ workshop_status_param }}">
+  {% endif %}
 </form>
 <p>
-  {% if show_closed %}
-    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status) }}">Hide closed sessions</a>
+  {% if workshop_status_filter == 'not_closed' %}
+    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, sort=sort, dir=dir, workshop_status='all') }}">Show closed sessions</a>
   {% else %}
-    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, closed=1) }}">Show closed sessions</a>
+    <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, sort=sort, dir=dir, workshop_status='not_closed') }}">Hide closed sessions</a>
   {% endif %}
 </p>
 {% set base = '' %}
 {% if client_id %}{% set base = base + '&client_id=' + client_id|string %}{% endif %}
 {% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
 {% if status %}{% set base = base + '&status=' + status %}{% endif %}
-{% if show_closed %}{% set base = base + '&closed=1' %}{% endif %}
+{% if workshop_status_param is not none %}{% set base = base + '&workshop_status=' + workshop_status_param|urlencode %}{% endif %}
 {% if current_user and current_user.id %}
   {% set storage_key = 'cbs.materials.columns.' ~ current_user.id %}
   {% set width_key = 'cbs.materials.colwidths.' ~ current_user.id %}
@@ -55,6 +58,9 @@
 <div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
   <div class="table-toolbar">
     <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
+    {% if workshop_status_chip_label %}
+      <span class="chip chip--selected">{{ workshop_status_chip_label }}</span>
+    {% endif %}
   </div>
   <div class="kt-table-wrapper">
     <table class="kt-table">

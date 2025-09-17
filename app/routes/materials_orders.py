@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from flask import Blueprint, abort, redirect, render_template, request, session as flask_session, url_for
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import aliased, joinedload, selectinload
 
 from ..app import db, User
@@ -34,7 +34,29 @@ def list_orders():
     client_id = request.args.get("client_id", type=int)
     order_type = request.args.get("order_type")
     status = request.args.get("status")
-    show_closed = request.args.get("closed") == "1"
+    workshop_status_arg = request.args.get("workshop_status")
+    closed_flag = request.args.get("closed")
+    if workshop_status_arg is None and closed_flag is not None:
+        workshop_status_arg = "all" if closed_flag == "1" else "not_closed"
+    if workshop_status_arg is None:
+        workshop_status_filter = "not_closed"
+        workshop_status_param = None
+    else:
+        normalized = workshop_status_arg.strip()
+        lower = normalized.lower()
+        compact = lower.replace(" ", "_")
+        if not normalized or lower == "all":
+            workshop_status_filter = "all"
+            workshop_status_param = "all"
+        elif compact in {"not_closed", "not-closed"}:
+            workshop_status_filter = "not_closed"
+            workshop_status_param = "not_closed"
+        elif lower == "closed":
+            workshop_status_filter = "Closed"
+            workshop_status_param = "Closed"
+        else:
+            workshop_status_filter = normalized
+            workshop_status_param = normalized
     sort = request.args.get("sort", "arrival_date")
     direction = request.args.get("dir", "asc")
 
@@ -108,8 +130,10 @@ def list_orders():
         )
     )
 
-    if not show_closed:
-        query = query.filter(Session.finalized.is_(False))
+    if workshop_status_filter == "not_closed":
+        query = query.filter(or_(Session.status.is_(None), Session.status != "Closed"))
+    elif workshop_status_filter == "Closed":
+        query = query.filter(Session.status == "Closed")
     query = query.filter(Session.cancelled.is_(False))
 
     if client_id:
@@ -294,6 +318,13 @@ def list_orders():
     rows.sort(key=key_funcs.get(sort, key_funcs["arrival_date"]), reverse=reverse)
 
     clients = Client.query.order_by(Client.name).all()
+
+    if workshop_status_filter == "not_closed":
+        workshop_status_chip_label = "Status: not Closed"
+    elif workshop_status_filter in {"all", None}:
+        workshop_status_chip_label = None
+    else:
+        workshop_status_chip_label = f"Status: {workshop_status_filter}"
     return render_template(
         "materials_orders.html",
         rows=rows,
@@ -305,5 +336,7 @@ def list_orders():
         status=status,
         sort=sort,
         dir=direction,
-        show_closed=show_closed,
+        workshop_status_filter=workshop_status_filter,
+        workshop_status_param=workshop_status_param,
+        workshop_status_chip_label=workshop_status_chip_label,
     )
