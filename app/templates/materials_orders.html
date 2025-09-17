@@ -36,13 +36,13 @@
   <input type="hidden" name="workshop_status" value="{{ workshop_status_param }}">
   {% endif %}
 </form>
-<p>
+
   {% if workshop_status_filter == 'not_closed' %}
     <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, sort=sort, dir=dir, workshop_status='all') }}">Show closed sessions</a>
   {% else %}
     <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, sort=sort, dir=dir, workshop_status='not_closed') }}">Hide closed sessions</a>
   {% endif %}
-</p>
+
 {% set base = '' %}
 {% if client_id %}{% set base = base + '&client_id=' + client_id|string %}{% endif %}
 {% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
