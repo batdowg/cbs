@@ -424,6 +424,8 @@ class Session(db.Model):
             return "Cancelled"
         if self.on_hold:
             return "On Hold"
+        if self.status == "Closed":
+            return "Closed"
         if self.finalized:
             return "Finalized"
         if self.delivered:
