@@ -325,6 +325,7 @@ def test_materials_order_finalize_sets_session_flags(app):
         assert shipment.order_type == "Client-Run Bulk order"
         assert sess_obj.ready_for_delivery is True
         assert sess_obj.status == "Closed"
+        assert sess_obj.computed_status == "Closed"
     change_data = {
         "action": "update_header",
         "order_type": "Client-Run Bulk order",
@@ -342,3 +343,4 @@ def test_materials_order_finalize_sets_session_flags(app):
         assert shipment.status == "Finalized"
         assert sess_obj.ready_for_delivery is True
         assert sess_obj.status == "Closed"
+        assert sess_obj.computed_status == "Closed"
