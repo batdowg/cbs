@@ -19,6 +19,7 @@ from ..models import (
     Participant,
 )
 from .materials import ORDER_TYPES, ORDER_STATUSES, can_manage_shipment, is_view_only
+from ..shared.sessions_lifecycle import has_materials
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
 
@@ -144,6 +145,28 @@ def list_orders():
         query = query.filter(SessionShipping.status == status)
 
     shipments = query.all()
+
+    session_ids = [sess.id for (_, sess, *_rest) in shipments]
+    order_items_map: dict[int, list[MaterialOrderItem]] = {}
+    if session_ids:
+        order_items = (
+            MaterialOrderItem.query.filter(
+                MaterialOrderItem.session_id.in_(session_ids)
+            ).all()
+        )
+        for item in order_items:
+            order_items_map.setdefault(item.session_id, []).append(item)
+
+    filtered_shipments = []
+    for record in shipments:
+        shipment, sess, *_rest = record
+        if has_materials(
+            sess,
+            shipment=shipment,
+            order_items=order_items_map.get(sess.id),
+        ):
+            filtered_shipments.append(record)
+    shipments = filtered_shipments
 
     session_ids = [sess.id for (_, sess, *_rest) in shipments]
     participant_map: dict[int, list[str]] = {}
@@ -325,9 +348,12 @@ def list_orders():
         workshop_status_chip_label = None
     else:
         workshop_status_chip_label = f"Status: {workshop_status_filter}"
+    total_rows = len(rows)
+
     return render_template(
         "materials_orders.html",
         rows=rows,
+        total_rows=total_rows,
         clients=clients,
         order_types=ORDER_TYPES,
         statuses=ORDER_STATUSES,

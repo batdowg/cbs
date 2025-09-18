@@ -49,22 +49,26 @@
   <input type="hidden" name="dir" value="{{ direction }}">
   <button type="submit">Filter</button>
   <a href="{{ url_for('sessions.list_sessions') }}">Clear</a>
-</form><br>
+</form>
 
-{% if current_user and current_user.id %}
-  {% set storage_key = 'cbs.sessions.columns.' ~ current_user.id %}
-  {% set width_key = 'cbs.sessions.colwidths.' ~ current_user.id %}
+<p class="table-summary">Showing {{ total_sessions }} workshops</p>
+{% if not sessions %}
+  <p class="empty-state">No workshops match the current filters.</p>
 {% else %}
-  {% set storage_key = 'cbs.sessions.columns' %}
-  {% set width_key = 'cbs.sessions.colwidths' %}
-{% endif %}
-<div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
-  <div class="table-toolbar">
-    <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
-  </div>
-  <div class="kt-table-wrapper">
-    <table class="kt-table">
-      <thead>
+  {% if current_user and current_user.id %}
+    {% set storage_key = 'cbs.sessions.columns.' ~ current_user.id %}
+    {% set width_key = 'cbs.sessions.colwidths.' ~ current_user.id %}
+  {% else %}
+    {% set storage_key = 'cbs.sessions.columns' %}
+    {% set width_key = 'cbs.sessions.colwidths' %}
+  {% endif %}
+  <div class="dashboard-table" data-column-chooser data-storage-key="{{ storage_key }}" data-width-storage-key="{{ width_key }}" data-chooser-label="Choose columns">
+    <div class="table-toolbar">
+      <button type="button" class="btn btn-secondary btn-sm" data-column-chooser-toggle aria-haspopup="dialog" aria-expanded="false">Columns</button>
+    </div>
+    <div class="kt-table-wrapper">
+      <table class="kt-table">
+        <thead>
         <tr>
           {% macro sort_link(label, field) -%}
             {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
@@ -86,63 +90,64 @@
           <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
         </tr>
       </thead>
-      <tbody>
-        {% for s in sessions %}
-        <tr>
-          <td data-column-key="id">{{ s.id }}</td>
-          <td data-column-key="title">
-            <span class="cell-wrap" title="{{ s.title }}">
-              <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
-            </span>
-          </td>
-          <td data-column-key="client">
-            {% if s.client %}
-              <span class="cell-wrap" title="{{ s.client.name }}">{{ s.client.name }}</span>
-            {% endif %}
-          </td>
-          <td data-column-key="location">
-            {% if s.location %}
-              <span class="cell-wrap" title="{{ s.location }}">{{ s.location }}</span>
-            {% endif %}
-          </td>
-          <td data-column-key="workshop_type">
-            {% if s.workshop_type %}
-              {% set workshop_label = s.workshop_type.code %}
-              <span class="cell-wrap" title="{{ workshop_label }}">{{ workshop_label }}</span>
-            {% endif %}
-          </td>
-          <td data-column-key="facilitators">
-            {% set facs = facilitator_map.get(s.id, []) %}
-            {% if facs %}
-              <span class="cell-wrap" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
-            {% endif %}
-          </td>
-          <td data-column-key="start_date">{{ s.start_date }}</td>
-          <td data-column-key="status">{{ s.computed_status }}</td>
-          <td data-column-key="material_order_status">
-            {% set mo_status = material_status_map.get(s.id) %}
-            {% if mo_status %}
-              <span class="pill pill--{{ mo_status|lower|replace(' ', '') }}">{{ mo_status }}</span>
-            {% else %}—{% endif %}
-          </td>
-          <td data-column-key="csa_name">
-            {% set csa_name = csa_display_map.get(s.id) %}
-            {% if csa_name %}
-              <span class="cell-wrap" title="{{ csa_name }}">{{ csa_name }}</span>
-            {% endif %}
-          </td>
-          <td data-column-key="region">{{ s.region }}</td>
-          <td data-column-key="actions" class="col-actions">
-            {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
-              <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td data-column-key="id">{{ s.id }}</td>
+            <td data-column-key="title">
+              <span class="cell-wrap" title="{{ s.title }}">
+                <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+              </span>
+            </td>
+            <td data-column-key="client">
+              {% if s.client %}
+                <span class="cell-wrap" title="{{ s.client.name }}">{{ s.client.name }}</span>
+              {% endif %}
+            </td>
+            <td data-column-key="location">
+              {% if s.location %}
+                <span class="cell-wrap" title="{{ s.location }}">{{ s.location }}</span>
+              {% endif %}
+            </td>
+            <td data-column-key="workshop_type">
+              {% if s.workshop_type %}
+                {% set workshop_label = s.workshop_type.code %}
+                <span class="cell-wrap" title="{{ workshop_label }}">{{ workshop_label }}</span>
+              {% endif %}
+            </td>
+            <td data-column-key="facilitators">
+              {% set facs = facilitator_map.get(s.id, []) %}
+              {% if facs %}
+                <span class="cell-wrap" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
+              {% endif %}
+            </td>
+            <td data-column-key="start_date">{{ s.start_date }}</td>
+            <td data-column-key="status">{{ s.computed_status }}</td>
+            <td data-column-key="material_order_status">
+              {% set mo_status = material_status_map.get(s.id) %}
+              {% if mo_status %}
+                <span class="pill pill--{{ mo_status|lower|replace(' ', '') }}">{{ mo_status }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td data-column-key="csa_name">
+              {% set csa_name = csa_display_map.get(s.id) %}
+              {% if csa_name %}
+                <span class="cell-wrap" title="{{ csa_name }}">{{ csa_name }}</span>
+              {% endif %}
+            </td>
+            <td data-column-key="region">{{ s.region }}</td>
+            <td data-column-key="actions" class="col-actions">
+              {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+                <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

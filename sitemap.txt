@@ -5,7 +5,8 @@
 /logout                  – Clear session
 
 /home                    – Signed-in landing (Admin keeps overview; Delivery/Contractor/CRM-only redirect to /my-sessions)
-/sessions                – Staff/CSA: list with filters
+/sessions                – Staff/CSA: list with filters; excludes Material only sessions
+/materials               – Materials dashboard; shows only materials-enabled sessions (includes Material only orders)
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
 /workshops/<id>         – Workshop runner view (Delivery/Contractor; also used when a user has KT Facilitator among roles; Material only sessions redirect to /sessions/<id>)

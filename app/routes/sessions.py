@@ -70,6 +70,7 @@ from ..shared.acl import (
 from ..shared.languages import get_language_options
 from ..shared.sessions_lifecycle import (
     enforce_material_only_rules,
+    is_material_only,
     is_material_only_session,
 )
 
@@ -312,7 +313,8 @@ def list_sessions(current_user):
     if sort not in special_sorts:
         col = columns.get(sort) or Session.start_date
         query = query.order_by(col.desc() if reverse else col.asc())
-    sessions = query.all()
+    sessions = [s for s in query.all() if not is_material_only(s)]
+    total_sessions = len(sessions)
 
     session_ids = [s.id for s in sessions]
     facilitator_map: dict[int, list[str]] = {}
@@ -376,6 +378,7 @@ def list_sessions(current_user):
     return render_template(
         "sessions.html",
         sessions=sessions,
+        total_sessions=total_sessions,
         show_global=show_global,
         params=params,
         base_params=base_params,
