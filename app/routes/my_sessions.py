@@ -59,11 +59,13 @@ def list_my_sessions():
             if (s.lead_facilitator_id == user.id)
             or any(f.id == user.id for f in getattr(s, "facilitators", []))
         }
+        use_workshop_view = user.is_kt_delivery or user.is_kt_contractor
         return render_template(
             "my_sessions.html",
             sessions=sessions,
             show_all=show_all,
             assigned_session_ids=assigned_session_ids,
+            workshop_link_for_facilitator=use_workshop_view,
         )
     elif account_id:
         account = db.session.get(ParticipantAccount, account_id)

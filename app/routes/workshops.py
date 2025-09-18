@@ -68,6 +68,7 @@ def workshop_view(session_id: int, current_user):
 
     participants: list[dict[str, object]] = []
     badge_filename = None
+    import_errors = None
     if not session.materials_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
@@ -84,6 +85,7 @@ def workshop_view(session_id: int, current_user):
             {"participant": participant, "link": link, "pdf_path": pdf_path}
             for link, participant, pdf_path in rows
         ]
+        import_errors = flask_session.pop("import_errors", None)
         mapping, _ = get_template_mapping(session)
         if mapping:
             badge_filename = mapping.badge_filename
@@ -93,4 +95,5 @@ def workshop_view(session_id: int, current_user):
         session=session,
         participants=participants,
         badge_filename=badge_filename,
+        import_errors=import_errors,
     )

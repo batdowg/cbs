@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+from urllib.parse import urlparse
 from functools import wraps
 from datetime import date, time, datetime, timedelta
 import secrets
@@ -69,6 +70,17 @@ from ..shared.acl import (
 from ..shared.languages import get_language_options
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
+
+
+def _redirect_after_participant_action(
+    session_id: int, default_endpoint: str = "sessions.session_detail"
+):
+    next_url = request.form.get("next") or request.args.get("next")
+    if next_url:
+        parsed = urlparse(next_url)
+        if parsed.scheme == "" and parsed.netloc == "" and next_url.startswith("/"):
+            return redirect(next_url)
+    return redirect(url_for(default_endpoint, session_id=session_id))
 
 
 def _fmt_offset(delta):
@@ -1352,13 +1364,13 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     email = (request.form.get("email") or "").strip().lower()
     full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
     if not email:
         flash("Email required", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     user = User.query.filter(func.lower(User.email) == email).first()
     participant = (
         db.session.query(Participant)
@@ -1440,7 +1452,7 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
                 "success",
             )
     flash("Participant added", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return _redirect_after_participant_action(session_id)
 
 
 @bp.route(
@@ -1463,7 +1475,7 @@ def edit_participant(
         abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -1479,9 +1491,12 @@ def edit_participant(
         participant.title = title or None
         db.session.commit()
         flash("Participant updated", "success")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     return render_template(
-        "participant_edit.html", session_id=session_id, participant=participant
+        "participant_edit.html",
+        session_id=session_id,
+        participant=participant,
+        next_url=request.args.get("next"),
     )
 
 
@@ -1509,7 +1524,7 @@ def remove_participant(
         abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -1519,7 +1534,7 @@ def remove_participant(
         db.session.delete(link)
         db.session.commit()
         flash("Participant removed", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return _redirect_after_participant_action(session_id)
 
 
 @bp.get("/<int:session_id>/participants/sample-csv")
@@ -1557,11 +1572,11 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
         abort(403)
     if sess.participants_locked():
         flash("Participants are locked for this session.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     file = request.files.get("file")
     if not file or not file.filename.endswith(".csv"):
         flash("CSV file required", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     text = file.read().decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(text))
     imported = 0
@@ -1627,7 +1642,7 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
             )
     flask_session["import_errors"] = errors
     flash(f"Imported {imported}, skipped {len(errors)}", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return _redirect_after_participant_action(session_id)
 
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/generate")
@@ -1638,7 +1653,7 @@ def generate_single(session_id: int, participant_id: int, current_user):
         abort(404)
     if not sess.delivered or sess.cancelled:
         flash("Delivered required before generating certificates", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     link = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id, participant_id=participant_id)
@@ -1659,7 +1674,7 @@ def generate_single(session_id: int, participant_id: int, current_user):
             flash("No participant account", "error")
     else:
         flash("Participant updated", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return _redirect_after_participant_action(session_id)
 
 
 @bp.post("/<int:session_id>/generate")
@@ -1670,10 +1685,10 @@ def generate_bulk(session_id: int, current_user):
         abort(404)
     if not sess.delivered or sess.cancelled:
         flash("Delivered required before generating certificates", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return _redirect_after_participant_action(session_id)
     count, _ = render_for_session(session_id)
     flash(f"Generated {count} certificates", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return _redirect_after_participant_action(session_id)
 
 
 @bp.route("/<int:session_id>/prework", methods=["GET", "POST"])

@@ -4,7 +4,7 @@
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
   {% if current_user %}
-    {% set can_use_workshop_view = (current_user.is_kt_delivery or current_user.is_kt_contractor) and not (current_user.is_app_admin or current_user.is_admin or current_user.is_kcrm) %}
+    {% set can_use_workshop_view = workshop_link_for_facilitator if workshop_link_for_facilitator is defined else False %}
     {% set facilitator_session_ids = assigned_session_ids if assigned_session_ids is defined else [] %}
     {% if current_user.id %}
       {% set storage_key = 'cbs.mysessions.columns.' ~ current_user.id %}
