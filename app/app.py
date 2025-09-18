@@ -25,6 +25,7 @@ from .models import (
     User,
     ParticipantAccount,
     Session,
+    SessionShipping,
     Client,
     Language,
     Participant,
@@ -240,6 +241,23 @@ def create_app():
                 return redirect(url_for("materials_orders.list_orders"))
             query = db.session.query(Session)
             query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
+            query = query.outerjoin(
+                SessionShipping, SessionShipping.session_id == Session.id
+            )
+            bulk_order = "client-run bulk order"
+            material_order = "material order"
+            query = query.filter(
+                or_(
+                    SessionShipping.order_type.is_(None),
+                    func.lower(func.trim(SessionShipping.order_type)) != bulk_order,
+                )
+            )
+            query = query.filter(
+                or_(
+                    Session.delivery_type.is_(None),
+                    func.lower(func.trim(Session.delivery_type)) != material_order,
+                )
+            )
             if active_view == "DELIVERY":
                 query = query.filter(
                     or_(
