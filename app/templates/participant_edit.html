@@ -2,11 +2,15 @@
 {% block title %}Edit Participant{% endblock %}
 {% block content %}
 <h1>Edit Participant</h1>
+{% set back_url = next_url if next_url else url_for('sessions.session_detail', session_id=session_id) %}
 <form method="post">
+  {% if next_url %}
+  <input type="hidden" name="next" value="{{ next_url }}">
+  {% endif %}
   <div><label>Email <input type="email" value="{{ participant.email }}" readonly></label></div>
   <div><label>Full name <input type="text" name="full_name" value="{{ participant.full_name }}"></label></div>
   <div><label>Title <input type="text" name="title" value="{{ participant.title }}"></label></div>
   <button type="submit">Save</button>
 </form>
-<p><a href="{{ url_for('sessions.session_detail', session_id=session_id) }}">Back</a></p>
+<p><a href="{{ back_url }}">Back</a></p>
 {% endblock %}

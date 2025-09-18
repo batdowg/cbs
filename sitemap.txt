@@ -8,11 +8,11 @@
 /sessions                – Staff/CSA: list with filters
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
-/workshops/<id>         – Workshop View (read-only) for assigned facilitators
+/workshops/<id>         – Workshop runner view (Delivery/Contractor; also used when a user has KT Facilitator among roles)
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
 /sessions/<id>/participants – Add/edit/CSV import participants
-/my-sessions             – Facilitators/CRM/CSA: sessions relevant to them
+/my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view)
 /my-certificates         – Learner portal: download own PDFs
 /profile                 – Learner profile (full name, certificate name)
 /my-resources            – Learner portal: grouped resources by Workshop Type

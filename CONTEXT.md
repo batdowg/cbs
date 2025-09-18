@@ -190,6 +190,8 @@ Roles control permissions; Views control menu visibility.
   - My Profile
   - Logout
 
+Delivery (KT Facilitator) and Contractor accounts open the workshop runner view when selecting sessions from **My Sessions**. Other staff and CSA roles continue to the staff session detail page.
+
 ## 1.3 View Selector
 Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not.
 
@@ -231,6 +233,7 @@ Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selecto
 
 | Route | Method | Roles | Session Status | Notes |
 |-------|--------|-------|----------------|-------|
+| `/workshops/<id>` | GET | Delivery, Contractor (assigned) | Any (assigned; materials-only sessions show empty state) | Workshop runner view with overview + participant management |
 | `/sessions/<id>/prework` | GET/POST | SysAdmin, Admin, CRM, Delivery, Contractor (assigned) | Any | Staff access only |
 | `/sessions/<id>/participants/add` | POST | CSA (assigned) | Until Ready for Delivery | Uses `csa_can_manage_participants` |
 | `/sessions/<id>/generate` | POST | SysAdmin, Admin, CRM, Delivery, Contractor | Delivered | Generates certificates |
@@ -318,8 +321,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Add/remove participants **until Ready for Delivery**; read-only after.
 
 ## 4.3 Delivery (facilitator)
-- **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Title/Open links hand off to `/workshops/<session_id>` when the user is assigned as lead or co-facilitator; other staff retain the `/sessions/<id>` detail link.
-- **Workshop View** (`/workshops/<session_id>`): read-only session overview that mirrors the staff detail header in a compact two-column layout. Shows participants and certificate links without edit/remove actions, hides Materials/Settings navigation, and includes placeholder cards for Facilitator Resources and Prework Summary. Materials-only sessions render an empty state message instead of workshop details.
+- **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Delivery (KT Facilitator) and Contractor accounts always open `/workshops/<session_id>` for sessions where they are lead or co-facilitators, even when they also hold Admin/CRM roles. Other staff retain the `/sessions/<id>` detail link.
+- **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. Resources remain facilitator-only placeholder content; Prework Summary stays a placeholder. Materials-only sessions render an empty state message instead of workshop details.
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.
@@ -488,6 +491,8 @@ Each feature package contains `routes/`, `models/`, `services/` (business rules)
 - `flags.py` – simple feature-flag registry for experimental work.
 
 Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and lists each route, owning module, and required permission.
+
+- Workshop runner view template: `app/templates/sessions/workshop_view.html`.
 
 ---
 
