@@ -241,22 +241,19 @@ def create_app():
                 return redirect(url_for("materials_orders.list_orders"))
             query = db.session.query(Session)
             query = query.filter(Session.status.notin_(["Closed", "Cancelled"]))
-            query = query.outerjoin(
-                SessionShipping, SessionShipping.session_id == Session.id
-            )
             bulk_order = "client-run bulk order"
             material_order = "material order"
-            query = query.filter(
-                or_(
-                    SessionShipping.order_type.is_(None),
-                    func.lower(func.trim(SessionShipping.order_type)) != bulk_order,
-                )
+            normalized_order_type = func.lower(func.trim(SessionShipping.order_type))
+            bulk_exists = (
+                db.session.query(SessionShipping.id)
+                .filter(SessionShipping.session_id == Session.id)
+                .filter(normalized_order_type == bulk_order)
+                .correlate(Session)
             )
+            query = query.filter(~bulk_exists.exists())
+            normalized_delivery_type = func.lower(func.trim(Session.delivery_type))
             query = query.filter(
-                or_(
-                    Session.delivery_type.is_(None),
-                    func.lower(func.trim(Session.delivery_type)) != material_order,
-                )
+                func.coalesce(normalized_delivery_type, "") != material_order
             )
             if active_view == "DELIVERY":
                 query = query.filter(
