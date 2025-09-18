@@ -16,6 +16,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from ..app import db, User
 from ..models import Client, Participant, Session, SessionParticipant, Certificate
 from ..shared.acl import is_delivery, is_contractor
+from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
 
 bp = Blueprint("workshops", __name__, url_prefix="/workshops")
@@ -56,6 +57,8 @@ def workshop_view(session_id: int, current_user):
     if not session:
         abort(404)
 
+    material_only = is_material_only_session(session)
+
     is_assigned = False
     if session.lead_facilitator_id and session.lead_facilitator_id == current_user.id:
         is_assigned = True
@@ -66,10 +69,14 @@ def workshop_view(session_id: int, current_user):
         flash("Workshop view is available to assigned facilitators only.", "error")
         abort(403)
 
+    if material_only:
+        flash("Material only sessions use the session detail view.", "info")
+        return redirect(url_for("sessions.session_detail", session_id=session.id))
+
     participants: list[dict[str, object]] = []
     badge_filename = None
     import_errors = None
-    if not session.materials_only:
+    if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
             .join(Participant, SessionParticipant.participant_id == Participant.id)

@@ -28,6 +28,10 @@ from ..models import (
 )
 from ..shared.materials import material_format_choices
 from ..shared.languages import get_language_options
+from ..shared.sessions_lifecycle import (
+    enforce_material_only_rules,
+    is_material_only_session,
+)
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
 CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
@@ -193,7 +197,7 @@ def materials_view(
     if shipment.order_type is None:
         shipment.order_type = (
             CLIENT_RUN_BULK_ORDER
-            if sess.materials_only
+            if is_material_only_session(sess)
             else "KT-Run Standard materials"
         )
         db.session.commit()
@@ -523,6 +527,7 @@ def materials_view(
             else:
                 flash("Saved", "info")
 
+            enforce_material_only_rules(sess)
             db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "mark_shipped":

@@ -33,7 +33,6 @@ bp = Blueprint("my_sessions", __name__, url_prefix="/my-sessions")
 def list_my_sessions():
     show_all = request.args.get("all") == "1"
     query = db.session.query(Session)
-    query = query.filter(Session.materials_only.is_(False))
     user_id = flask_session.get("user_id")
     account_id = flask_session.get("participant_account_id")
     if user_id:

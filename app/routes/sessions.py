@@ -68,6 +68,10 @@ from ..shared.acl import (
     session_start_dt_utc,
 )
 from ..shared.languages import get_language_options
+from ..shared.sessions_lifecycle import (
+    enforce_material_only_rules,
+    is_material_only_session,
+)
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -442,7 +446,7 @@ def new_session(current_user):
                 client_id=int(cid) if cid else None,
                 region=region,
                 workshop_language=workshop_language,
-                delivery_type="Material Order",
+                delivery_type="Material only",
                 start_date=date.today(),
                 end_date=date.today(),
                 materials_only=True,
@@ -452,6 +456,7 @@ def new_session(current_user):
             db.session.add(
                 SessionShipping(session_id=sess.id, created_by=current_user.id)
             )
+            enforce_material_only_rules(sess)
             db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=sess.id))
         missing = []
@@ -692,6 +697,7 @@ def new_session(current_user):
                 details=f"session_id={sess.id}",
             )
         )
+        enforce_material_only_rules(sess)
         db.session.commit()
         _maybe_send_csa_assign(sess, password=csa_password)
         if sess.ready_for_delivery:
@@ -1082,6 +1088,7 @@ def edit_session(session_id: int, current_user):
                     details=f"{flag}:{old}->{new}",
                 )
             )
+        enforce_material_only_rules(sess)
         db.session.commit()
         _maybe_send_csa_assign(sess, password=csa_password)
         if new_ready and not old_ready:
@@ -1181,7 +1188,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     start_dt_utc = session_start_dt_utc(sess)
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
-    if not sess.materials_only:
+    if not is_material_only_session(sess):
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
             .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -1316,6 +1323,7 @@ def finalize_session(session_id: int, current_user):
                 details="finalized:False->True",
             )
         )
+        enforce_material_only_rules(sess)
         db.session.commit()
         render_for_session(session_id)
     flash("Session finalized", "success")

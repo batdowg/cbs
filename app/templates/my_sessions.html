@@ -36,7 +36,8 @@
           <tbody>
             {% for s in sessions %}
             <tr>
-              {% set use_workshop_view = can_use_workshop_view and (s.id in facilitator_session_ids) %}
+              {% set is_material_only = (s.delivery_type|default('', true)|lower == 'material only') or s.materials_only %}
+              {% set use_workshop_view = can_use_workshop_view and (s.id in facilitator_session_ids) and not is_material_only %}
               <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
               <td data-column-key="title">
                 <span class="cell-ellipsis" title="{{ s.title }}">
