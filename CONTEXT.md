@@ -142,6 +142,13 @@ Roles control permissions; Views control menu visibility.
 
 ## 1.2 Views & Menus
 
+### 1.2.1 Home & view defaults
+
+- Users with **Delivery** or **Contractor** land on `/my-sessions`. Delivery-only staff (no Admin/CRM roles) see the selector with **Delivery** (default), Session Admin, Learner; Contractors do not see a selector.
+- Users with **CRM** but no Delivery/Contractor land on `/my-sessions` with default view **Session Manager** and selector options Session Manager, Material Manager, Learner. Their My Sessions table is scoped to sessions whose client CRM matches the user.
+- Staff who have Delivery plus other roles still land on `/my-sessions` and retain the full selector; facilitator-linked sessions continue opening `/workshops/<id>`.
+- Admin-only staff (no CRM/Delivery) keep the existing `/home` landing and selector behavior.
+
 - **Admin**
   - Home
   - New Order

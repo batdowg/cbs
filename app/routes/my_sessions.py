@@ -22,6 +22,7 @@ from ..models import (
     PreworkAssignment,
     Certificate,
 )
+from ..shared.acl import is_admin, is_contractor, is_delivery, is_kcrm
 from .learner import login_required
 
 bp = Blueprint("my_sessions", __name__, url_prefix="/my-sessions")
@@ -42,24 +43,29 @@ def list_my_sessions():
             )
         user = db.session.get(User, user_id)
         query = query.options(selectinload(Session.facilitators))
-        sessions = (
-            query.filter(
+        is_delivery_role = is_delivery(user)
+        is_contractor_role = is_contractor(user)
+        is_crm_only = is_kcrm(user) and not (
+            is_delivery_role or is_contractor_role or is_admin(user)
+        )
+        if is_crm_only:
+            query = query.filter(Session.client.has(Client.crm_user_id == user.id))
+        else:
+            query = query.filter(
                 or_(
                     Session.lead_facilitator_id == user.id,
                     Session.facilitators.any(User.id == user.id),
                     Session.client.has(Client.crm_user_id == user.id),
                 )
             )
-            .order_by(Session.start_date)
-            .all()
-        )
+        sessions = query.order_by(Session.start_date).all()
         assigned_session_ids = {
             s.id
             for s in sessions
             if (s.lead_facilitator_id == user.id)
             or any(f.id == user.id for f in getattr(s, "facilitators", []))
         }
-        use_workshop_view = user.is_kt_delivery or user.is_kt_contractor
+        use_workshop_view = is_delivery_role or is_contractor_role
         return render_template(
             "my_sessions.html",
             sessions=sessions,
