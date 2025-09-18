@@ -400,6 +400,7 @@ def create_app():
     from .routes.settings_simulations import bp as settings_simulations_bp
     from .routes.settings_languages import bp as settings_languages_bp
     from .routes.sessions import bp as sessions_bp
+    from .routes.workshops import bp as workshops_bp
     from .routes.my_sessions import bp as my_sessions_bp
     from .routes.csa import bp as csa_bp
     from .routes.workshop_types import bp as workshop_types_bp
@@ -420,6 +421,7 @@ def create_app():
     app.register_blueprint(settings_simulations_bp)
     app.register_blueprint(settings_languages_bp)
     app.register_blueprint(sessions_bp)
+    app.register_blueprint(workshops_bp)
     app.register_blueprint(my_sessions_bp)
     app.register_blueprint(csa_bp)
     app.register_blueprint(workshop_types_bp)

@@ -318,7 +318,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Add/remove participants **until Ready for Delivery**; read-only after.
 
 ## 4.3 Delivery (facilitator)
-- **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes).
+- **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Title/Open links hand off to `/workshops/<session_id>` when the user is assigned as lead or co-facilitator; other staff retain the `/sessions/<id>` detail link.
+- **Workshop View** (`/workshops/<session_id>`): read-only session overview that mirrors the staff detail header in a compact two-column layout. Shows participants and certificate links without edit/remove actions, hides Materials/Settings navigation, and includes placeholder cards for Facilitator Resources and Prework Summary. Materials-only sessions render an empty state message instead of workshop details.
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.

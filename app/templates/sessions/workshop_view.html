@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Workshop {{ session.title }}{% endblock %}
+{% block content %}
+<h1>{{ session.title }}</h1>
+<p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Back to My Sessions</a></p>
+{% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
+{% set facs = [] %}
+{% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
+{% if session.facilitators %}
+  {% for fac in session.facilitators %}{% if fac not in facs %}{% set _ = facs.append(fac) %}{% endif %}{% endfor %}
+{% endif %}
+{% if session.materials_only %}
+<div class="kt-card">
+  <div class="empty-state">
+    <p>Workshop features not available on materials-only sessions.</p>
+  </div>
+</div>
+{% else %}
+<section class="kt-card">
+  <h2 class="kt-card-title">Workshop overview</h2>
+  <div class="grid grid-2 gap-md">
+    <div class="grid gap-sm">
+      <div><strong>Client:</strong> {% if session.client %}{{ session.client.name }}{% else %}—{% endif %}</div>
+      <div><strong>CRM:</strong> {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% else %}—{% endif %}</div>
+      <div>
+        <strong>Facilitator(s):</strong>
+        {% if facs %}
+          {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div><strong>Workshop Type:</strong> {% if session.workshop_type %}{{ session.workshop_type.code }} – {{ session.workshop_type.name }}{% else %}—{% endif %}</div>
+      <div><strong>Simulation:</strong> {{ session.simulation_outline.label if session.simulation_outline else '—' }}</div>
+      <div><strong>Dates:</strong> {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}</div>
+      <div><strong>Workshop language:</strong> {{ session.workshop_language | lang_label }}</div>
+    </div>
+    <div class="grid gap-sm">
+      <div><strong>Delivery Type:</strong> {{ session.delivery_type or '—' }}</div>
+      <div>
+        <strong>Workshop Location:</strong>
+        {% if session.workshop_location %}
+          {% if session.workshop_location.is_virtual %}
+            {{ session.workshop_location.label }}
+          {% else %}
+            {{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div><strong>Shipping Location:</strong> {{ session.shipping_location.display_name() if session.shipping_location else '—' }}</div>
+      <div><strong>Notes:</strong> {{ session.notes or session.description or '—' }}</div>
+      <div><strong>Status:</strong> {{ session.computed_status }}</div>
+      <div><strong>Materials ordered:</strong> {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Ready for delivery:</strong> {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Workshop info sent:</strong> {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Delivered:</strong> {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Finalized:</strong> {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}</div>
+    </div>
+  </div>
+</section>
+
+<section class="kt-card">
+  <h2 class="kt-card-title">Resources (facilitators)</h2>
+  <div class="empty-state">
+    <p>Facilitator resources will be available in a future update.</p>
+  </div>
+</section>
+
+<section class="kt-card">
+  <h2 class="kt-card-title">Prework summary</h2>
+  <div class="empty-state">
+    <p>Prework summaries will be available in a future update.</p>
+  </div>
+</section>
+
+<section class="kt-card">
+  <h2 class="kt-card-title">Participants</h2>
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Full Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Title</th>
+        <th scope="col">Completion Date</th>
+        <th scope="col">Certificate</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in participants %}
+      <tr>
+        <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
+        <td>{{ row.participant.email }}</td>
+        <td>{{ row.participant.title }}</td>
+        <td>{{ row.link.completion_date or '—' }}</td>
+        <td>
+          {% if row.pdf_path %}
+            {% if badge_filename %}
+              {% set badge_url = '/badges/' ~ badge_filename %}
+              <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
+              <a href="{{ badge_url }}" download>Badge</a>
+            {% endif %}
+            <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5">No participants added yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}
