@@ -48,6 +48,10 @@
 {% if order_type %}{% set base = base + '&order_type=' + order_type|urlencode %}{% endif %}
 {% if status %}{% set base = base + '&status=' + status %}{% endif %}
 {% if workshop_status_param is not none %}{% set base = base + '&workshop_status=' + workshop_status_param|urlencode %}{% endif %}
+<p class="table-summary">Showing {{ total_rows }} materials-enabled sessions</p>
+{% if not rows %}
+  <p class="empty-state">No materials-enabled sessions match the current filters.</p>
+{% else %}
 {% if current_user and current_user.id %}
   {% set storage_key = 'cbs.materials.columns.' ~ current_user.id %}
   {% set width_key = 'cbs.materials.colwidths.' ~ current_user.id %}
@@ -162,6 +166,7 @@
     </table>
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
