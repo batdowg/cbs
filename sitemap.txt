@@ -4,7 +4,7 @@
 /login                   – Alias to front door
 /logout                  – Clear session
 
-/home                    – Signed-in landing (role-aware overview)
+/home                    – Signed-in landing (Admin keeps overview; Delivery/Contractor/CRM-only redirect to /my-sessions)
 /sessions                – Staff/CSA: list with filters
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
@@ -12,7 +12,7 @@
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
 /sessions/<id>/participants – Add/edit/CSV import participants
-/my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view)
+/my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view; CRM-only scoped to client CRM owner)
 /my-certificates         – Learner portal: download own PDFs
 /profile                 – Learner profile (full name, certificate name)
 /my-resources            – Learner portal: grouped resources by Workshop Type

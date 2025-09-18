@@ -38,7 +38,12 @@ from .models import resource  # ensures app/models/resource.py is imported
 from .shared.rbac import app_admin_required
 from .shared.constants import LANGUAGE_NAMES
 from .shared.time import fmt_dt, fmt_time, fmt_time_range_with_tz
-from .shared.views import get_active_view, STAFF_VIEWS, CSA_VIEWS
+from .shared.views import (
+    CSA_VIEWS,
+    get_active_view,
+    get_default_view,
+    get_view_options,
+)
 from .shared.nav import build_menu
 from .shared.storage_resources import resource_fs_dir, resource_fs_path, resources_root
 from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor
@@ -199,11 +204,7 @@ def create_app():
             )
         active_view = get_active_view(user, request, is_csa)
         nav_menu = build_menu(active_view)
-        view_opts = []
-        if user and not is_contractor(user) and (
-            is_admin(user) or is_kcrm(user) or is_delivery(user)
-        ):
-            view_opts = STAFF_VIEWS
+        view_opts = get_view_options(user) if user else []
         return {
             "current_user": user,
             "current_account": account,
@@ -226,6 +227,14 @@ def create_app():
         account_id = session.get("participant_account_id")
         if user_id:
             user = db.session.get(User, user_id)
+            if not user:
+                return redirect(url_for("auth.login"))
+            has_delivery = is_delivery(user)
+            is_contractor_role = is_contractor(user)
+            if has_delivery or is_contractor_role:
+                return redirect(url_for("my_sessions.list_my_sessions"))
+            if is_kcrm(user) and not (has_delivery or is_contractor_role):
+                return redirect(url_for("my_sessions.list_my_sessions"))
             active_view = get_active_view(user, request)
             if active_view == "MATERIAL_MANAGER":
                 return redirect(url_for("materials_orders.list_orders"))
@@ -292,10 +301,19 @@ def create_app():
 
     @app.route("/settings/view", methods=["GET", "POST"])
     def settings_view():
-        view = request.form.get("view") or request.args.get("view", "")
+        view = (request.form.get("view") or request.args.get("view", "")).upper()
         resp = redirect(url_for("home"))
-        allowed = STAFF_VIEWS if session.get("user_id") else ["LEARNER"]
-        if not session.get("user_id"):
+        allowed: list[str]
+        user_id = session.get("user_id")
+        if user_id:
+            user = db.session.get(User, user_id)
+            if user:
+                allowed = get_view_options(user)
+                if not allowed:
+                    allowed = [get_default_view(user)]
+            else:
+                allowed = []
+        else:
             account_id = session.get("participant_account_id")
             if (
                 account_id
@@ -304,7 +322,9 @@ def create_app():
                 .first()
             ):
                 allowed = CSA_VIEWS
-        if view in allowed:
+            else:
+                allowed = ["LEARNER"]
+        if view and view in allowed:
             resp.set_cookie("active_view", view, samesite="Lax")
         else:
             resp.delete_cookie("active_view")
