@@ -9,6 +9,7 @@ from flask import (
     url_for,
 )
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 from datetime import date
 
 from ..app import db, User
@@ -40,6 +41,7 @@ def list_my_sessions():
                 Session.finalized.is_(False), Session.cancelled.is_(False)
             )
         user = db.session.get(User, user_id)
+        query = query.options(selectinload(Session.facilitators))
         sessions = (
             query.filter(
                 or_(
@@ -51,7 +53,18 @@ def list_my_sessions():
             .order_by(Session.start_date)
             .all()
         )
-        return render_template("my_sessions.html", sessions=sessions, show_all=show_all)
+        assigned_session_ids = {
+            s.id
+            for s in sessions
+            if (s.lead_facilitator_id == user.id)
+            or any(f.id == user.id for f in getattr(s, "facilitators", []))
+        }
+        return render_template(
+            "my_sessions.html",
+            sessions=sessions,
+            show_all=show_all,
+            assigned_session_ids=assigned_session_ids,
+        )
     elif account_id:
         account = db.session.get(ParticipantAccount, account_id)
         if not account:

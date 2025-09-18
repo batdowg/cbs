@@ -8,6 +8,7 @@
 /sessions                – Staff/CSA: list with filters
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
+/workshops/<id>         – Workshop View (read-only) for assigned facilitators
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
 /sessions/<id>/participants – Add/edit/CSV import participants

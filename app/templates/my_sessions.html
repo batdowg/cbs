@@ -4,6 +4,8 @@
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
 {% if sessions %}
   {% if current_user %}
+    {% set can_use_workshop_view = (current_user.is_kt_delivery or current_user.is_kt_contractor) and not (current_user.is_app_admin or current_user.is_admin or current_user.is_kcrm) %}
+    {% set facilitator_session_ids = assigned_session_ids if assigned_session_ids is defined else [] %}
     {% if current_user.id %}
       {% set storage_key = 'cbs.mysessions.columns.' ~ current_user.id %}
       {% set width_key = 'cbs.mysessions.colwidths.' ~ current_user.id %}
@@ -34,10 +36,15 @@
           <tbody>
             {% for s in sessions %}
             <tr>
+              {% set use_workshop_view = can_use_workshop_view and (s.id in facilitator_session_ids) %}
               <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
               <td data-column-key="title">
                 <span class="cell-ellipsis" title="{{ s.title }}">
-                  <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+                  {% if use_workshop_view %}
+                    <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">{{ s.title }}</a>
+                  {% else %}
+                    <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+                  {% endif %}
                 </span>
               </td>
               <td data-column-key="client">
@@ -59,7 +66,13 @@
               <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
               <td data-column-key="delivery_type">{{ s.delivery_type }}</td>
               <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
-              <td data-column-key="actions" class="col-actions"><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+              <td data-column-key="actions" class="col-actions">
+                {% if use_workshop_view %}
+                  <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">Open</a>
+                {% else %}
+                  <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
