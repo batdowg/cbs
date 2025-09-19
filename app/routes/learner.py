@@ -31,8 +31,7 @@ from ..models import (
     PreworkAssignment,
     PreworkAnswer,
 )
-from ..models import Resource, WorkshopType
-from ..models import resource_workshop_types
+from ..models import Resource, resource_workshop_types
 from ..shared.languages import get_language_options
 from ..shared.certificates import get_template_mapping
 
@@ -110,32 +109,37 @@ def my_resources():
         )
         email = (account.email or "").lower() if account else ""
     today = date.today()
-    wt_query = (
-        db.session.query(WorkshopType)
-        .join(Session, Session.workshop_type_id == WorkshopType.id)
-        .join(
-            SessionParticipant,
-            SessionParticipant.session_id == Session.id,
-        )
+    sessions = (
+        db.session.query(Session)
+        .options(joinedload(Session.workshop_type))
+        .join(SessionParticipant, SessionParticipant.session_id == Session.id)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
         .filter(func.lower(Participant.email) == email)
         .filter(Session.start_date != None, Session.start_date <= today)
-        .order_by(WorkshopType.name)
         .all()
     )
-    seen_ids: set[int] = set()
-    wtypes = []
-    for wt in wt_query:
-        if wt.id not in seen_ids:
-            wtypes.append(wt)
-            seen_ids.add(wt.id)
-    grouped = []
-    for wt in wtypes:
+    workshop_languages: dict[int, set[str]] = {}
+    workshop_types: dict[int, "WorkshopType"] = {}
+    for sess in sessions:
+        wt = sess.workshop_type
+        if not wt:
+            continue
+        workshop_types.setdefault(wt.id, wt)
+        lang = (sess.workshop_language or "en")
+        workshop_languages.setdefault(wt.id, set()).add(lang)
+    grouped: list[tuple["WorkshopType", list[Resource]]] = []
+    for wt_id, wt in sorted(
+        ((wt_id, wt) for wt_id, wt in workshop_types.items()),
+        key=lambda item: item[1].name,
+    ):
+        languages = workshop_languages.get(wt_id, {"en"})
         try:
             items = (
                 Resource.query.filter(Resource.active == True)
                 .join(resource_workshop_types)
-                .filter(resource_workshop_types.c.workshop_type_id == wt.id)
+                .filter(resource_workshop_types.c.workshop_type_id == wt_id)
+                .filter(Resource.language.in_(languages))
+                .filter(Resource.audience.in_(["Participant", "Both"]))
                 .order_by(Resource.name)
                 .all()
             )

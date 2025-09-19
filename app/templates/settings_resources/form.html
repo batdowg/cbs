@@ -16,6 +16,22 @@
       <option value="APP" {% if cur=='APP' %}selected{% endif %}>App</option>
     </select>
   </label><br>
+  <label>Audience
+    {% set current_audience = resource.audience if resource else 'Participant' %}
+    <select name="audience">
+      {% for choice in audience_choices %}
+        <option value="{{ choice }}" {% if current_audience == choice %}selected{% endif %}>{{ choice }}</option>
+      {% endfor %}
+    </select>
+  </label><br>
+  <label>Language
+    {% set current_lang = resource.language if resource else default_language %}
+    <select name="language">
+      {% for code, label in language_options %}
+        <option value="{{ code }}" {% if current_lang == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label><br>
   <label>Link <input type="url" name="link" value="{{ resource.resource_value if resource and resource.type in ['LINK','APP'] else '' }}"></label><br>
   <label>File <input type="file" name="file"></label><br>
   {% if resource and resource.public_url %}

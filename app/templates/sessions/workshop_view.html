@@ -158,9 +158,67 @@
 
 <section class="kt-card">
   <h2 class="kt-card-title">Resources (facilitators)</h2>
-  <div class="empty-state">
-    <p>Facilitator resources will be available in a future update.</p>
-  </div>
+  {% if facilitator_resources %}
+    <div class="resource-list">
+      {% for r in facilitator_resources %}
+        {% set public_url = r.public_url %}
+        {% set filename = r.document_filename or (r.resource_value.rsplit('/', 1)[-1] if r.resource_value else '') %}
+        {% set ext = filename.rsplit('.', 1)[-1]|lower if '.' in filename else '' %}
+        {% set is_image = ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'] %}
+        {% set is_pdf = ext == 'pdf' %}
+        <details class="resource-item" open>
+          <summary class="resource-summary">{{ r.name }}</summary>
+          <div class="resource-panel">
+            <div class="resource-tile">
+              {% if r.type == 'DOCUMENT' and public_url %}
+                <a href="{{ public_url }}" download class="resource-file-link">
+                  {% if is_image %}
+                    <img src="{{ public_url }}" alt="" class="resource-thumb">
+                  {% else %}
+                    <span class="resource-icon" aria-hidden="true">
+                      {% if is_pdf %}
+                        📄
+                      {% else %}
+                        ⬇️
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                  <span class="resource-file-text">
+                    <span class="resource-file-name">{{ filename or r.name }}</span>
+                    <span class="resource-file-meta">
+                      {% if is_image %}
+                        Download image
+                      {% elif is_pdf %}
+                        Download PDF
+                      {% else %}
+                        Download file
+                      {% endif %}
+                    </span>
+                  </span>
+                </a>
+              {% else %}
+                <span class="resource-icon" aria-hidden="true">🔗</span>
+                {% if r.resource_value %}
+                  <a href="{{ r.resource_value }}" target="_blank" rel="noopener" class="btn btn-secondary">Open resource</a>
+                {% else %}
+                  <span class="resource-file-name">No file uploaded.</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            {% if r.description_html %}
+              <div class="resource-description rich-text">
+                {{ r.description_html | safe }}
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No resources available.</p>
+    </div>
+  {% endif %}
 </section>
 
 <section class="kt-card">

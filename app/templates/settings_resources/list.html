@@ -4,14 +4,38 @@
 <div class="kt-card">
 <h1 class="kt-card-title">Resources</h1>
 <p><a href="{{ url_for('settings_resources.new_resource') }}">New Resource</a></p>
+<form method="get" class="filters">
+  <div class="filter-row">
+    <label>Audience
+      <select name="audience">
+        <option value="">All audiences</option>
+        {% for choice in audience_choices %}
+          <option value="{{ choice }}" {% if selected_audience == choice %}selected{% endif %}>{{ choice }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Language
+      <select name="language">
+        <option value="">All languages</option>
+        {% for code, label in language_options %}
+          <option value="{{ code }}" {% if selected_language == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+    <a href="{{ url_for('settings_resources.list_resources') }}" class="btn btn-link">Clear</a>
+  </div>
+</form>
 <table class="kt-table">
   <tr>
-    <th>Name</th><th>Type</th><th>Target</th><th>Workshop Types</th><th>Active</th><th>Actions</th>
+    <th>Name</th><th>Type</th><th>Audience</th><th>Language</th><th>Target</th><th>Workshop Types</th><th>Active</th><th>Actions</th>
   </tr>
   {% for r in resources %}
   <tr>
     <td>{{ r.name }}</td>
     <td>{{ r.type }}</td>
+    <td>{{ r.audience }}</td>
+    <td>{{ r.language | lang_label }}</td>
     <td>
       {% if r.type == 'DOCUMENT' %}
         {{ r.resource_value }}
