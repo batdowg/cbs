@@ -1,0 +1,19 @@
+<section class="kt-card">
+  <h2 class="kt-card-title">Prework summary</h2>
+  {% if prework_summary %}
+    {% for group in prework_summary %}
+      {% if group.responses %}
+        <h3 class="kt-card-title">{{ group.question }}</h3>
+        <ul>
+          {% for response in group.responses %}
+            <li><strong>{{ response.name }}</strong>{% if response.answer_text %}; {{ response.answer_text }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p>No prework submitted yet.</p>
+    </div>
+  {% endif %}
+</section>

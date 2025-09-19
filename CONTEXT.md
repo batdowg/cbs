@@ -285,6 +285,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `prework_questions` (fk template_id, text, kind enum TEXT/LIST, min_items, max_items, index)
 - `prework_assignments` (session × participant; snapshot; due_date; status)
 - `prework_answers` (assignment_id, question snapshot, text, item_index)
+- Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces).
 
 ## 3.3 Resources
 - `resources` (name, type enum LINK/DOCUMENT/APP, value/url/path, `description_html`, `language` code, `audience` enum Participant/Facilitator/Both, active)
@@ -329,7 +330,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 4.3 Delivery (facilitator)
 - **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Delivery (KT Facilitator) and Contractor accounts always open `/workshops/<session_id>` for sessions where they are lead or co-facilitators, even when they also hold Admin/CRM roles. Other staff retain the `/sessions/<id>` detail link.
-- **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view (expanded by default) and showing the standard empty-state copy when none match. Prework Summary stays a placeholder. Materials-only sessions render an empty state message instead of workshop details.
+  - **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view (expanded by default) and showing the standard empty-state copy when none match. A Prework summary card groups responses by question using ';' separators. Materials-only sessions render an empty state message instead of workshop details.
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.

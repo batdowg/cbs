@@ -73,6 +73,7 @@ from ..shared.sessions_lifecycle import (
     is_material_only,
     is_material_only_session,
 )
+from ..shared.prework_summary import get_session_prework_summary
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -1993,4 +1994,5 @@ def session_prework(session_id: int):
         rows=rows,
         template=template,
         any_assignment=any_assignment,
+        prework_summary=get_session_prework_summary(sess.id),
     )

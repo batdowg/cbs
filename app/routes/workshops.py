@@ -24,6 +24,7 @@ from ..models import (
     resource_workshop_types,
 )
 from ..shared.acl import is_delivery, is_contractor
+from ..shared.prework_summary import get_session_prework_summary
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
 
@@ -124,4 +125,5 @@ def workshop_view(session_id: int, current_user):
         badge_filename=badge_filename,
         import_errors=import_errors,
         facilitator_resources=facilitator_resources,
+        prework_summary=get_session_prework_summary(session.id),
     )
