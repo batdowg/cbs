@@ -35,6 +35,20 @@ class Resource(db.Model):
     resource_value = db.Column(db.String(2048))
     description_html = db.Column(db.Text)
     active = db.Column(db.Boolean, nullable=False, default=True)
+    language = db.Column(
+        db.String(8), nullable=False, default="en", server_default="en"
+    )
+    audience = db.Column(
+        db.Enum(
+            "Participant",
+            "Facilitator",
+            "Both",
+            name="resource_audience",
+        ),
+        nullable=False,
+        default="Participant",
+        server_default="Participant",
+    )
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     workshop_types = db.relationship(
@@ -44,6 +58,7 @@ class Resource(db.Model):
     )
 
     TYPE_CHOICES = ("LINK", "DOCUMENT", "APP")
+    AUDIENCE_CHOICES = ("Participant", "Facilitator", "Both")
 
     @property
     def public_url(self) -> str | None:
@@ -73,6 +88,29 @@ class Resource(db.Model):
         if value not in self.TYPE_CHOICES:
             raise ValueError("invalid resource type")
         return value
+
+    @validates("audience")
+    def _normalize_audience(self, key, value):
+        mapping = {
+            "participant": "Participant",
+            "facilitator": "Facilitator",
+            "both": "Both",
+        }
+        normalized = mapping.get((value or "").strip().lower())
+        if not normalized:
+            raise ValueError("invalid resource audience")
+        return normalized
+
+    @validates("language")
+    def _normalize_language(self, key, value):
+        language_code = (value or "en").strip().lower()
+        if not language_code:
+            language_code = "en"
+        from ..shared.languages import LANG_CODE_NAMES
+
+        if language_code not in LANG_CODE_NAMES:
+            raise ValueError("invalid resource language")
+        return language_code
 
     def validate(self) -> None:
         if self.type in {"LINK", "APP"}:

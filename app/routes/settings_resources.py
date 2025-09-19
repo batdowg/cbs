@@ -28,8 +28,16 @@ from ..shared.storage_resources import (
     resource_web_url,
     sanitize_filename,
 )
+from ..shared.languages import get_language_options, LANG_CODE_NAMES
 
 bp = Blueprint("settings_resources", __name__, url_prefix="/settings/resources")
+
+
+def _language_choices() -> list[tuple[str, str]]:
+    opts = get_language_options()
+    if not opts:
+        opts = sorted(LANG_CODE_NAMES.items(), key=lambda item: item[1])
+    return opts
 
 
 def _set_file_metadata(resource: Resource, filename: str, size: Optional[int], content_type: Optional[str]) -> None:
@@ -106,10 +114,23 @@ def list_resources():
     current_user = _current_user()
     if isinstance(current_user, Response):
         return current_user
-    resources = Resource.query.order_by(Resource.name).all()
+    language_options = _language_choices()
+    selected_audience = (request.args.get("audience") or "").strip()
+    selected_language = (request.args.get("language") or "").strip().lower()
+    language_codes = {code for code, _ in language_options}
+    query = Resource.query.order_by(Resource.name)
+    if selected_audience in Resource.AUDIENCE_CHOICES:
+        query = query.filter(Resource.audience == selected_audience)
+    if selected_language and selected_language in language_codes:
+        query = query.filter(Resource.language == selected_language)
+    resources = query.all()
     return render_template(
         "settings_resources/list.html",
         resources=resources,
+        audience_choices=Resource.AUDIENCE_CHOICES,
+        selected_audience=selected_audience if selected_audience in Resource.AUDIENCE_CHOICES else "",
+        language_options=language_options,
+        selected_language=selected_language if selected_language in language_codes else "",
         active_nav="settings",
         active_section="resources",
     )
@@ -121,10 +142,14 @@ def new_resource():
     if isinstance(current_user, Response):
         return current_user
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
+    language_options = _language_choices()
     return render_template(
         "settings_resources/form.html",
         resource=None,
         workshop_types=workshop_types,
+        language_options=language_options,
+        audience_choices=Resource.AUDIENCE_CHOICES,
+        default_language="en",
         active_nav="settings",
         active_section="resources",
     )
@@ -151,6 +176,8 @@ def create_resource():
         resource_value=initial_value,
         description_html=cleaned["description"],
         active=cleaned["active"],
+        language=cleaned["language"],
+        audience=cleaned["audience"],
     )
     res.workshop_types = WorkshopType.query.filter(WorkshopType.id.in_(cleaned["workshop_type_ids"])).all()
     db.session.add(res)
@@ -178,10 +205,14 @@ def edit_resource(res_id: int):
     if not res:
         abort(404)
     workshop_types = WorkshopType.query.order_by(WorkshopType.name).all()
+    language_options = _language_choices()
     return render_template(
         "settings_resources/form.html",
         resource=res,
         workshop_types=workshop_types,
+        language_options=language_options,
+        audience_choices=Resource.AUDIENCE_CHOICES,
+        default_language=res.language or "en",
         active_nav="settings",
         active_section="resources",
     )
@@ -217,6 +248,8 @@ def update_resource(res_id: int):
     res.type = rtype
     res.active = cleaned["active"]
     res.description_html = cleaned["description"]
+    res.language = cleaned["language"]
+    res.audience = cleaned["audience"]
     if rtype == "DOCUMENT":
         file = cleaned["file"]
         if file and getattr(file, "filename", ""):

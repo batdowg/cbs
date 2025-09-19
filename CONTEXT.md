@@ -287,7 +287,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `prework_answers` (assignment_id, question snapshot, text, item_index)
 
 ## 3.3 Resources
-- `resources` (name, type enum LINK/DOCUMENT/APP, value/url/path, active)
+- `resources` (name, type enum LINK/DOCUMENT/APP, value/url/path, `description_html`, `language` code, `audience` enum Participant/Facilitator/Both, active)
 - `workshop_type_resources` (m:n; unique pair)
 
 ## 3.4 Certificates
@@ -329,7 +329,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 4.3 Delivery (facilitator)
 - **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Delivery (KT Facilitator) and Contractor accounts always open `/workshops/<session_id>` for sessions where they are lead or co-facilitators, even when they also hold Admin/CRM roles. Other staff retain the `/sessions/<id>` detail link.
-- **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. Resources remain facilitator-only placeholder content; Prework Summary stays a placeholder. Materials-only sessions render an empty state message instead of workshop details.
+- **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view (expanded by default) and showing the standard empty-state copy when none match. Prework Summary stays a placeholder. Materials-only sessions render an empty state message instead of workshop details.
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.
@@ -348,10 +348,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 6. Resources
 
-- Managed at **Settings → Resources**; mapped to Workshop Types.
-- Learner/CSA **My Resources** shows only workshop types associated with sessions for that participant **whose start date has passed**.
+- Managed at **Settings → Resources**; mapped to Workshop Types with per-resource language and audience selectors. The list view adds Audience/Language filters and surfaces both columns alongside Name/Type/Target/Workshop Types/Active.
+- Learner/CSA **My Resources** shows only workshop types associated with sessions for that participant **whose start date has passed** and filters resources to `audience ∈ {Participant, Both}` with `resource.language` matching any started session for that workshop type.
 - Staff see the “My Resources” navigation link only if they're assigned to at least one session; they may still visit `/my-resources` directly without participant records, and the page returns HTTP 200 with an empty state when no resources apply.
 - Resources include an optional rich-text **Description** stored as sanitized HTML and entered in Settings via a Trix editor; on **My Resources** the resource title toggles a collapsible panel whose expanded state shows the link/file tile followed by the sanitized description.
+- Facilitator Workshop View uses the same tile styling, auto-expanding each item, and restricts visibility to facilitator/Both audiences for the session language; the learner view remains unchanged visually.
 - Workshop types are de-duplicated by ID in application code to avoid SQL `DISTINCT` on JSON columns such as `supported_languages`.
 - `/my-resources` gracefully renders an empty state when no resources are available (never 500s).
 

@@ -14,7 +14,15 @@ from flask import (
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..app import db, User
-from ..models import Client, Participant, Session, SessionParticipant, Certificate
+from ..models import (
+    Client,
+    Participant,
+    Session,
+    SessionParticipant,
+    Certificate,
+    Resource,
+    resource_workshop_types,
+)
 from ..shared.acl import is_delivery, is_contractor
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
@@ -73,6 +81,18 @@ def workshop_view(session_id: int, current_user):
         flash("Material only sessions use the session detail view.", "info")
         return redirect(url_for("sessions.session_detail", session_id=session.id))
 
+    facilitator_resources: list[Resource] = []
+    if session.workshop_type_id:
+        facilitator_resources = (
+            Resource.query.filter(Resource.active == True)
+            .join(resource_workshop_types)
+            .filter(resource_workshop_types.c.workshop_type_id == session.workshop_type_id)
+            .filter(Resource.language == (session.workshop_language or "en"))
+            .filter(Resource.audience.in_(["Facilitator", "Both"]))
+            .order_by(Resource.name)
+            .all()
+        )
+
     participants: list[dict[str, object]] = []
     badge_filename = None
     import_errors = None
@@ -103,4 +123,5 @@ def workshop_view(session_id: int, current_user):
         participants=participants,
         badge_filename=badge_filename,
         import_errors=import_errors,
+        facilitator_resources=facilitator_resources,
     )

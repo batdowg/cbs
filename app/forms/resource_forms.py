@@ -4,6 +4,7 @@ import os
 from typing import Iterable
 
 from ..shared.html import sanitize_html
+from ..shared.languages import LANG_CODE_NAMES
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".pptx", ".csv", ".txt", ".html"}
 
@@ -21,6 +22,17 @@ def validate_resource_form(data: dict, files: dict, *, require_file: bool = Fals
     active = bool(data.get("active"))
     wt_ids = [int(x) for x in data.getlist("workshop_types") if x.isdigit()]
     description = sanitize_html(data.get("description") or "")
+    audience_raw = (data.get("audience") or "").strip().lower()
+    language_raw = (data.get("language") or "").strip().lower()
+    audience_map = {
+        "participant": "Participant",
+        "facilitator": "Facilitator",
+        "both": "Both",
+    }
+    audience = audience_map.get(audience_raw, "Participant" if not audience_raw else None)
+    language = language_raw or "en"
+    if language not in LANG_CODE_NAMES:
+        language = None
     cleaned.update(
         name=name,
         type=rtype,
@@ -29,6 +41,8 @@ def validate_resource_form(data: dict, files: dict, *, require_file: bool = Fals
         active=active,
         workshop_type_ids=wt_ids,
         description=description,
+        audience=audience or "Participant",
+        language=language or "en",
     )
 
     if not name:
@@ -47,4 +61,9 @@ def validate_resource_form(data: dict, files: dict, *, require_file: bool = Fals
             _, ext = os.path.splitext(file.filename)
             if ext.lower() not in ALLOWED_EXTENSIONS:
                 errors.append("Invalid file type")
+    if audience is None:
+        errors.append("Invalid audience")
+    if language is None:
+        errors.append("Invalid language")
+        cleaned["language"] = "en"
     return errors, cleaned

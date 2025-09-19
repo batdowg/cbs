@@ -41,8 +41,16 @@ def app():
 @pytest.mark.smoke
 def test_resource_validation_and_sanitize(app):
     with app.app_context():
-        r = Resource(name="Link", type="LINK", resource_value="https://example.com")
+        r = Resource(
+            name="Link",
+            type="LINK",
+            resource_value="https://example.com",
+            audience="both",
+            language="EN",
+        )
         r.validate()
+        assert r.audience == "Both"
+        assert r.language == "en"
         r2 = Resource(name="Doc", type="DOCUMENT", resource_value="")
         with pytest.raises(ValueError):
             r2.validate()
@@ -55,7 +63,13 @@ def test_my_resources_view(app):
     with app.app_context():
         wt = WorkshopType(code="ABC", name="Type A", cert_series="fn")
         today = date.today()
-        sess = Session(title="S1", workshop_type=wt, start_date=today, end_date=today)
+        sess = Session(
+            title="S1",
+            workshop_type=wt,
+            start_date=today,
+            end_date=today,
+            workshop_language="en",
+        )
         p = Participant(email="p@example.com", full_name="P")
         db.session.add_all([wt, sess, p])
         db.session.flush()
@@ -67,6 +81,8 @@ def test_my_resources_view(app):
             resource_value="https://kt.com",
             active=True,
             description_html=sanitize_html("<p>Link <script>bad</script></p>"),
+            audience="Participant",
+            language="en",
         )
         doc_res = Resource(
             name="DocR",
@@ -74,10 +90,30 @@ def test_my_resources_view(app):
             resource_value="doc.pdf",
             active=True,
             description_html="",
+            audience="Both",
+            language="en",
+        )
+        hidden_res = Resource(
+            name="Hidden",
+            type="LINK",
+            resource_value="https://hidden",  # should be filtered
+            active=True,
+            audience="Facilitator",
+            language="en",
+        )
+        foreign_lang = Resource(
+            name="Foreign",
+            type="LINK",
+            resource_value="https://foreign",
+            active=True,
+            audience="Participant",
+            language="es",
         )
         link_res.workshop_types.append(wt)
         doc_res.workshop_types.append(wt)
-        db.session.add_all([link_res, doc_res])
+        hidden_res.workshop_types.append(wt)
+        foreign_lang.workshop_types.append(wt)
+        db.session.add_all([link_res, doc_res, hidden_res, foreign_lang])
         account = ParticipantAccount(email="p@example.com", full_name="P")
         db.session.add(account)
         db.session.commit()
@@ -96,6 +132,8 @@ def test_my_resources_view(app):
     assert "<script>bad</script>" not in html
     assert "/resources/doc.pdf" in html
     assert "Download PDF" in html
+    assert "https://hidden" not in html
+    assert "https://foreign" not in html
 
 
 @pytest.mark.smoke
@@ -119,6 +157,8 @@ def test_resource_file_upload_persists(app):
         "active": "y",
         "description": "<p>Upload</p>",
         "workshop_types": [str(wt_id)],
+        "audience": "Facilitator",
+        "language": "en",
     }
     upload_name = "Test Plan.PDF"
     response = client.post(
@@ -193,3 +233,71 @@ def test_staff_nav_shows_my_resources_with_session(app):
         sess_data["user_id"] = user_id
     resp = client.get("/home")
     assert b"My Resources" in resp.data
+
+
+def test_workshop_view_facilitator_resources(app):
+    with app.app_context():
+        facilitator = User(email="fac@example.com", is_kt_delivery=True)
+        facilitator.set_password("x")
+        wt = WorkshopType(code="WRK", name="Workshop", cert_series="fn")
+        sess = Session(
+            title="Fac Session",
+            workshop_type=wt,
+            start_date=date.today(),
+            end_date=date.today(),
+            workshop_language="en",
+            lead_facilitator=facilitator,
+        )
+        sess.facilitators = [facilitator]
+        fac_only = Resource(
+            name="FacOnly",
+            type="LINK",
+            resource_value="https://fac",
+            active=True,
+            audience="Facilitator",
+            language="en",
+        )
+        both = Resource(
+            name="BothR",
+            type="DOCUMENT",
+            resource_value="doc.pdf",
+            active=True,
+            audience="Both",
+            language="en",
+        )
+        participant_only = Resource(
+            name="ParticipantOnly",
+            type="LINK",
+            resource_value="https://participant",
+            active=True,
+            audience="Participant",
+            language="en",
+        )
+        other_lang = Resource(
+            name="OtherLang",
+            type="LINK",
+            resource_value="https://es",
+            active=True,
+            audience="Facilitator",
+            language="es",
+        )
+        fac_only.workshop_types.append(wt)
+        both.workshop_types.append(wt)
+        participant_only.workshop_types.append(wt)
+        other_lang.workshop_types.append(wt)
+        db.session.add_all(
+            [facilitator, wt, sess, fac_only, both, participant_only, other_lang]
+        )
+        db.session.commit()
+        session_id = sess.id
+        facilitator_id = facilitator.id
+
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = facilitator_id
+    resp = client.get(f"/workshops/{session_id}")
+    html = resp.get_data(as_text=True)
+    assert "FacOnly" in html
+    assert "BothR" in html
+    assert "ParticipantOnly" not in html
+    assert "OtherLang" not in html

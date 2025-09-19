@@ -9,14 +9,14 @@
 /materials               – Materials dashboard; shows only materials-enabled sessions (includes Material only orders)
 /sessions/new            – Create session (staff only)
 /sessions/<id>           – Session detail (overview + tabs)
-/workshops/<id>         – Workshop runner view (Delivery/Contractor; also used when a user has KT Facilitator among roles; Material only sessions redirect to /sessions/<id>)
+/workshops/<id>         – Workshop runner view (Delivery/Contractor; also used when a user has KT Facilitator among roles; Materials card hidden for materials-only sessions which redirect to /sessions/<id>; Resources card lists session-language facilitator/Both resources)
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
 /sessions/<id>/participants – Add/edit/CSV import participants
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view; CRM-only scoped to client CRM owner)
 /my-certificates         – Learner portal: download own PDFs
 /profile                 – Learner profile (full name, certificate name)
-/my-resources            – Learner portal: grouped resources by Workshop Type
+/my-resources            – Learner portal: grouped resources by Workshop Type (Participant/Both resources matching session languages)
 
 # Settings (Admin/SysAdmin)
 /settings                – Landing (cards/links)
@@ -35,7 +35,7 @@
   /settings/materials    – Materials Options (by order_type; languages, formats)
   /settings/languages    – Languages list (active, sort)
   /mail-settings         – SMTP configuration, processors mapping, test send
-  /settings/resources    – Manage resources (name, type, link/file, workshop types)
+  /settings/resources    – Manage resources (name, type, language, audience, link/file, workshop types; filters by audience/language)
 
 # Badges & cert files
 /badges/<filename>       – Static badge image from /srv/badges or app/assets/badges
