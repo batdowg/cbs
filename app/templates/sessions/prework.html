@@ -7,6 +7,7 @@
   <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}" aria-current="page">Prework</a>
   <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </nav>
+{% include "sessions/_prework_summary.html" %}
 <form method="post">
   <input type="hidden" name="action" value="toggle_no_prework">
   <label><input type="checkbox" name="no_prework" value="1" {% if session.no_prework %}checked{% endif %}> No prework for this workshop</label>
