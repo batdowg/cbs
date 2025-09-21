@@ -74,6 +74,11 @@ from ..shared.sessions_lifecycle import (
     is_material_only_session,
 )
 from ..shared.prework_summary import get_session_prework_summary
+from ..shared.prework_status import get_participant_prework_status
+from ..services.prework_invites import (
+    PreworkSendError,
+    send_prework_invites,
+)
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
 
@@ -1742,6 +1747,12 @@ def session_prework(session_id: int):
         action = request.form.get("action")
         account_cache: dict[str, ParticipantAccount] = {}
 
+        def _redirect_after_action() -> Response:
+            next_url = request.form.get("next")
+            if next_url:
+                return redirect(next_url)
+            return redirect(url_for("sessions.session_prework", session_id=session_id))
+
         def prepare_assignment(account: ParticipantAccount) -> PreworkAssignment | None:
             if not template:
                 return None
@@ -1781,66 +1792,6 @@ def session_prework(session_id: int):
                 )
                 db.session.add(assignment)
             return assignment
-
-        def send_mail(
-            assignment: PreworkAssignment,
-            account: ParticipantAccount,
-            temp_password: str | None,
-        ) -> bool:
-            token = secrets.token_urlsafe(16)
-            assignment.magic_token_hash = hashlib.sha256(
-                (token + current_app.secret_key).encode()
-            ).hexdigest()
-            assignment.magic_token_expires = now_utc() + timedelta(
-                days=MAGIC_LINK_TTL_DAYS
-            )
-            db.session.flush()
-            link = url_for(
-                "auth.prework_magic",
-                assignment_id=assignment.id,
-                token=token,
-                _external=True,
-                _scheme="https",
-            )
-            subject = f"Prework for Workshop: {sess.title}"
-            body = render_template(
-                "email/prework.txt",
-                session=sess,
-                assignment=assignment,
-                link=link,
-                account=account,
-                temp_password=temp_password,
-            )
-            html_body = render_template(
-                "email/prework.html",
-                session=sess,
-                assignment=assignment,
-                link=link,
-                account=account,
-                temp_password=temp_password,
-            )
-            try:
-                res = emailer.send(account.email, subject, body, html=html_body)
-            except Exception as e:  # pragma: no cover - defensive
-                res = {"ok": False, "detail": str(e)}
-            if res.get("ok"):
-                assignment.status = "SENT"
-                assignment.sent_at = now_utc()
-                db.session.add(
-                    PreworkEmailLog(
-                        assignment_id=assignment.id,
-                        to_email=account.email,
-                        subject=subject,
-                    )
-                )
-                current_app.logger.info(
-                    f'[MAIL-OUT] prework session={sess.id} pa={account.id} to={account.email} subject="{subject}"'
-                )
-                return True
-            current_app.logger.info(
-                f"[MAIL-FAIL] prework session={sess.id} pa={account.id} to={account.email} error=\"{res.get('detail')}\""
-            )
-            return False
 
         if action == "toggle_no_prework":
             sess.no_prework = _cb(request.form.get("no_prework"))
@@ -1929,62 +1880,61 @@ def session_prework(session_id: int):
 
         if action == "resend":
             pid = int(request.form.get("participant_id"))
-            participant = db.session.get(Participant, pid)
-            account, temp_password = ensure_participant_account(
-                participant, account_cache
-            )
-            assignment = prepare_assignment(account)
-            if assignment and assignment.status == "WAIVED":
-                flash("Participant is waived", "error")
-                return redirect(
-                    url_for("sessions.session_prework", session_id=session_id)
+            try:
+                result = send_prework_invites(
+                    sess, [pid], allow_completed_resend=True
                 )
-            if assignment:
-                send_mail(assignment, account, temp_password)
-            db.session.commit()
-            return redirect(url_for("sessions.session_prework", session_id=session_id))
+            except PreworkSendError as exc:
+                flash(str(exc), "error")
+                return _redirect_after_action()
+            if result.any_failure:
+                flash("Some emails failed; check logs", "error")
+            elif result.sent_count:
+                flash("Prework sent", "success")
+            else:
+                flash("No participants eligible for prework", "info")
+            return _redirect_after_action()
 
         if action == "send_all":
-            if sess.no_prework:
-                flash("Prework disabled for this workshop", "error")
-                return redirect(
-                    url_for("sessions.session_prework", session_id=session_id)
-                )
-            if not template:
-                flash("No active prework template", "error")
-                return redirect(
-                    url_for("sessions.session_prework", session_id=session_id)
-                )
-            any_fail = False
-            for p, _ in participants:
-                try:
-                    account, temp_password = ensure_participant_account(
-                        p, account_cache
-                    )
-                except ValueError:
-                    continue
-                assignment = prepare_assignment(account)
-                if assignment and assignment.status == "WAIVED":
-                    continue
-                if assignment and not send_mail(assignment, account, temp_password):
-                    any_fail = True
-            db.session.commit()
-            if any_fail:
+            try:
+                result = send_prework_invites(sess)
+            except PreworkSendError as exc:
+                flash(str(exc), "error")
+                return _redirect_after_action()
+            if result.any_failure:
                 flash("Some emails failed; check logs", "error")
+            elif result.sent_count:
+                flash(
+                    f"Sent prework to {result.sent_count} participant(s)",
+                    "success",
+                )
             else:
-                flash("Prework assignments sent", "success")
-            return redirect(url_for("sessions.session_prework", session_id=session_id))
+                flash("No participants eligible for prework", "info")
+            return _redirect_after_action()
 
         flash("Unknown action", "error")
-        return redirect(url_for("sessions.session_prework", session_id=session_id))
+        return _redirect_after_action()
     rows = []
     any_assignment = False
+    statuses = get_participant_prework_status(sess.id)
+    assignment_ids = [
+        status.assignment_id
+        for status in statuses.values()
+        if status and status.assignment_id
+    ]
+    assignment_map: dict[int, PreworkAssignment] = {}
+    if assignment_ids:
+        assignment_map = {
+            a.id: a
+            for a in PreworkAssignment.query.filter(
+                PreworkAssignment.id.in_(assignment_ids)
+            ).all()
+        }
     for p, account in participants:
         assignment = None
-        if account:
-            assignment = PreworkAssignment.query.filter_by(
-                session_id=sess.id, participant_account_id=account.id
-            ).first()
+        status = statuses.get(p.id)
+        if status and status.assignment_id:
+            assignment = assignment_map.get(status.assignment_id)
         if assignment:
             any_assignment = True
         rows.append((p, account, assignment))
@@ -1995,4 +1945,81 @@ def session_prework(session_id: int):
         template=template,
         any_assignment=any_assignment,
         prework_summary=get_session_prework_summary(sess.id),
+    )
+
+
+@bp.post("/<int:session_id>/prework/send")
+@staff_required
+def send_prework(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+
+    if is_contractor(current_user) or is_delivery(current_user):
+        if not (
+            sess.lead_facilitator_id == current_user.id
+            or any(f.id == current_user.id for f in sess.facilitators)
+        ):
+            abort(403)
+
+    payload = request.get_json(silent=True) if request.is_json else None
+    if payload and isinstance(payload, dict):
+        raw_ids = payload.get("participant_ids")
+    else:
+        raw_ids = request.form.getlist("participant_ids[]") or request.form.getlist(
+            "participant_ids"
+        )
+
+    participant_ids = None
+    if raw_ids:
+        participant_ids = []
+        for value in raw_ids:
+            try:
+                participant_ids.append(int(value))
+            except (TypeError, ValueError):
+                continue
+        if not participant_ids:
+            participant_ids = None
+
+    wants_json = False
+    accept = request.headers.get("Accept", "")
+    if request.is_json or "application/json" in accept:
+        wants_json = True
+
+    try:
+        result = send_prework_invites(sess, participant_ids)
+    except PreworkSendError as exc:
+        if wants_json:
+            return {"error": str(exc)}, 400
+        flash(str(exc), "error")
+        return redirect(
+            request.form.get("next")
+            or request.args.get("next")
+            or request.referrer
+            or url_for("sessions.session_prework", session_id=session_id)
+        )
+
+    if wants_json:
+        status_code = 200 if not result.any_failure else 207
+        return {
+            "sent_count": result.sent_count,
+            "skipped_count": result.skipped_count,
+            "failure_count": result.failure_count,
+        }, status_code
+
+    if result.any_failure:
+        flash("Some emails failed; check logs", "error")
+    elif result.sent_count:
+        flash(
+            f"Sent prework to {result.sent_count} participant(s)",
+            "success",
+        )
+    else:
+        flash("No participants eligible for prework", "info")
+
+    return redirect(
+        request.form.get("next")
+        or request.args.get("next")
+        or request.referrer
+        or url_for("sessions.session_prework", session_id=session_id)
     )
