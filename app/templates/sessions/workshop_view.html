@@ -67,6 +67,12 @@
 
 <section class="kt-card">
   <h2 class="kt-card-title">Participants</h2>
+  {% if can_send_prework %}
+  <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="margin-bottom: var(--space-3);">
+    <input type="hidden" name="next" value="{{ workshop_return }}">
+    <button type="submit" class="btn btn-secondary">Send prework to all not submitted</button>
+  </form>
+  {% endif %}
   {% if can_manage_participants %}
   <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
     <input type="hidden" name="next" value="{{ workshop_return }}">
@@ -98,6 +104,7 @@
         <th scope="col">Full Name</th>
         <th scope="col">Email</th>
         <th scope="col">Title</th>
+        <th scope="col">Prework</th>
         <th scope="col">Completion Date</th>
         <th scope="col">Certificate</th>
         <th scope="col">Actions</th>
@@ -109,6 +116,26 @@
         <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
         <td>{{ row.participant.email }}</td>
         <td>{{ row.participant.title }}</td>
+        <td>
+          {% set status = row.prework_status %}
+          {% set is_waived = status and status.status == 'WAIVED' %}
+          {% if status and status.is_submitted %}
+            Submitted{% if status.completed_at %} ({{ status.completed_at.date() | fmt_dt }}){% endif %}
+          {% else %}
+            {% if is_waived %}
+              Not submitted (waived)
+            {% else %}
+              Not submitted
+            {% endif %}
+            {% if can_send_prework and not is_waived %}
+            <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="display:inline-block;margin-left:var(--space-2);">
+              <input type="hidden" name="next" value="{{ workshop_return }}">
+              <input type="hidden" name="participant_ids[]" value="{{ row.participant.id }}">
+              <button type="submit" class="btn btn-secondary btn-sm">Send prework</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        </td>
         <td>
           <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
             <input type="hidden" name="next" value="{{ workshop_return }}">
@@ -141,7 +168,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="6">No participants added yet.</td>
+        <td colspan="7">No participants added yet.</td>
       </tr>
       {% endfor %}
     </tbody>

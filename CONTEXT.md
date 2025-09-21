@@ -342,8 +342,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Configured per **Workshop Type** (rich text + questions).  
 - Session **Send Prework** (staff) provisions participant accounts (see defaults in §2.2) and emails access.
   - Allowed roles: Sys Admin, Admin, CRM, Delivery, Contractor.
-- “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.  
+- “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.
 - Participant prework hidden after session starts.
+- Workshop View Participants card shows a Prework column (Submitted with completion date or Not submitted). KT staff and assigned facilitators can send individual prework reminders or bulk-send to all not submitted learners directly from the Workshop View.
 
 ---
 

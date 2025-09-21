@@ -23,8 +23,9 @@ from ..models import (
     Resource,
     resource_workshop_types,
 )
-from ..shared.acl import is_delivery, is_contractor
+from ..shared.acl import is_delivery, is_contractor, is_kt_staff
 from ..shared.prework_summary import get_session_prework_summary
+from ..shared.prework_status import get_participant_prework_status
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
 
@@ -109,14 +110,26 @@ def workshop_view(session_id: int, current_user):
             .filter(SessionParticipant.session_id == session_id)
             .all()
         )
+        statuses = get_participant_prework_status(session.id)
         participants = [
-            {"participant": participant, "link": link, "pdf_path": pdf_path}
+            {
+                "participant": participant,
+                "link": link,
+                "pdf_path": pdf_path,
+                "prework_status": statuses.get(participant.id),
+            }
             for link, participant, pdf_path in rows
         ]
         import_errors = flask_session.pop("import_errors", None)
         mapping, _ = get_template_mapping(session)
         if mapping:
             badge_filename = mapping.badge_filename
+
+    can_send_prework = bool(
+        is_kt_staff(current_user)
+        or is_delivery(current_user)
+        or is_contractor(current_user)
+    )
 
     return render_template(
         "sessions/workshop_view.html",
@@ -126,4 +139,6 @@ def workshop_view(session_id: int, current_user):
         import_errors=import_errors,
         facilitator_resources=facilitator_resources,
         prework_summary=get_session_prework_summary(session.id),
+        can_send_prework=can_send_prework,
+        current_user=current_user,
     )
