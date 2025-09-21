@@ -146,6 +146,18 @@ input[type="reset"]:disabled,
   text-decoration: none;
 }
 
+.btn.btn-secondary,
+.btn.btn-secondary:link,
+.btn.btn-secondary:visited {
+  color: var(--kt-text);
+}
+
+.btn.btn-secondary:hover,
+.btn.btn-secondary:active,
+.btn.btn-secondary:focus {
+  color: var(--kt-text);
+}
+
 .btn-sm {
   padding: var(--space-1) var(--space-2);
   font-size: 0.875rem;
