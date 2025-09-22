@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from functools import wraps
 
 from flask import (
@@ -60,6 +61,7 @@ def workshop_view(session_id: int, current_user):
             joinedload(Session.simulation_outline),
             joinedload(Session.workshop_location),
             joinedload(Session.shipping_location),
+            selectinload(Session.attendance_records),
         )
         .filter(Session.id == session_id)
         .one_or_none()
@@ -98,6 +100,8 @@ def workshop_view(session_id: int, current_user):
     participants: list[dict[str, object]] = []
     badge_filename = None
     import_errors = None
+    attendance_days: list[int] = []
+    attendance_map: dict[int, dict[int, bool]] = {}
     if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
@@ -120,6 +124,18 @@ def workshop_view(session_id: int, current_user):
             }
             for link, participant, pdf_path in rows
         ]
+        attendance_days = list(
+            range(1, (session.number_of_class_days or 0) + 1)
+        )
+        if attendance_days:
+            attendance_map = defaultdict(dict)
+            for record in session.attendance_records:
+                attendance_map[record.participant_id][record.day_index] = bool(
+                    record.attended
+                )
+            for entry in participants:
+                participant_id = entry["participant"].id
+                entry["attendance"] = attendance_map.get(participant_id, {})
         import_errors = flask_session.pop("import_errors", None)
         mapping, _ = get_template_mapping(session)
         if mapping:
@@ -129,6 +145,15 @@ def workshop_view(session_id: int, current_user):
         is_kt_staff(current_user)
         or is_delivery(current_user)
         or is_contractor(current_user)
+    )
+
+    can_manage_attendance = bool(
+        attendance_days
+        and (
+            is_kt_staff(current_user)
+            or is_delivery(current_user)
+            or is_contractor(current_user)
+        )
     )
 
     return render_template(
@@ -141,4 +166,6 @@ def workshop_view(session_id: int, current_user):
         prework_summary=get_session_prework_summary(session.id),
         can_send_prework=can_send_prework,
         current_user=current_user,
+        attendance_days=attendance_days,
+        can_manage_attendance=can_manage_attendance,
     )

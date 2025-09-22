@@ -101,30 +101,73 @@
   </div>
   {% endif %}
   {% endif %}
-  <table class="kt-table">
-    <thead>
-      <tr>
-        <th scope="col">Full Name</th>
-        <th scope="col">Email</th>
-        <th scope="col">Title</th>
-        <th scope="col">Prework</th>
-        <th scope="col">Completion Date</th>
-        <th scope="col">Certificate</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in participants %}
-      <tr>
-        <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
-        <td>{{ row.participant.email }}</td>
-        <td>{{ row.participant.title }}</td>
-        <td>
-          {% set status = row.prework_status %}
-          {% set is_waived = status and status.status == 'WAIVED' %}
-          {% if status and status.is_submitted %}
-            Submitted{% if status.completed_at %} ({{ status.completed_at.date() | fmt_dt }}){% endif %}
-          {% else %}
+  {% set attendance_toggle_url = url_for('sessions.toggle_attendance', session_id=session.id) %}
+  {% set attendance_mark_all_url = url_for('sessions.mark_all_attendance', session_id=session.id) %}
+  <div class="attendance-manager"
+       {% if can_manage_attendance %}
+       data-attendance-table
+       data-toggle-url="{{ attendance_toggle_url }}"
+       data-mark-all-url="{{ attendance_mark_all_url }}"
+       {% endif %}>
+    {% if can_manage_attendance %}
+    <div class="table-toolbar">
+      <button type="button" class="btn btn-secondary" data-mark-all-attended>Mark all attended</button>
+    </div>
+    {% endif %}
+    <div class="kt-table-wrapper">
+      <table class="kt-table{% if attendance_days %} attendance-table{% endif %}">
+        <thead>
+          <tr>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Full Name</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Email</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
+            {% if attendance_days %}
+            <th scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
+            {% endif %}
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Prework</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Completion Date</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Certificate</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Actions</th>
+          </tr>
+          {% if attendance_days %}
+          <tr>
+            {% for day in attendance_days %}
+            <th scope="col">Day {{ day }}</th>
+            {% endfor %}
+          </tr>
+          {% endif %}
+        </thead>
+        <tbody>
+          {% for row in participants %}
+          <tr>
+            <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
+            <td>{{ row.participant.email }}</td>
+            <td>{{ row.participant.title }}</td>
+            {% if attendance_days %}
+              {% set attendance = row.attendance if row.attendance is defined else {} %}
+              {% for day in attendance_days %}
+              <td class="attendance-cell">
+                {% if can_manage_attendance %}
+                <input type="checkbox"
+                       class="attendance-checkbox"
+                       data-attendance-checkbox
+                       data-participant-id="{{ row.participant.id }}"
+                       data-participant-name="{{ row.participant.full_name or row.participant.email }}"
+                       data-day-index="{{ day }}"
+                       aria-label="Day {{ day }} attendance for {{ row.participant.full_name or row.participant.email }}"
+                       {% if attendance.get(day) %}checked{% endif %}>
+                {% else %}
+                  {{ 'Yes' if attendance.get(day) else '—' }}
+                {% endif %}
+              </td>
+              {% endfor %}
+            {% endif %}
+            <td>
+              {% set status = row.prework_status %}
+              {% set is_waived = status and status.status == 'WAIVED' %}
+              {% if status and status.is_submitted %}
+                Submitted{% if status.completed_at %} ({{ status.completed_at.date() | fmt_dt }}){% endif %}
+              {% else %}
             {% if is_waived %}
               Not submitted (waived)
             {% else %}
@@ -139,43 +182,45 @@
             {% endif %}
           {% endif %}
         </td>
-        <td>
-          <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
-            <input type="hidden" name="next" value="{{ workshop_return }}">
-            <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
-            <button type="submit" class="btn btn-secondary" name="action" value="save">Save</button>
-            {% if session.delivered %}
-            <button type="submit" class="btn btn-secondary" name="action" value="generate">Generate</button>
-            {% endif %}
-          </form>
-        </td>
-        <td>
-          {% if row.pdf_path %}
-            {% if badge_filename %}
-              {% set badge_url = '/badges/' ~ badge_filename %}
-              <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
-              <a href="{{ badge_url }}" download>Badge</a>
-            {% endif %}
-            <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
-          {% endif %}
-        </td>
-        <td>
-          {% if can_manage_participants %}
-          <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id, next=workshop_return) }}">Edit</a>
-          <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
-            <input type="hidden" name="next" value="{{ workshop_return }}">
-            <button type="submit" class="btn btn-danger  btn-sm">Remove</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="7">No participants added yet.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            <td>
+              <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
+                <input type="hidden" name="next" value="{{ workshop_return }}">
+                <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
+                <button type="submit" class="btn btn-secondary" name="action" value="save">Save</button>
+                {% if session.delivered %}
+                <button type="submit" class="btn btn-secondary" name="action" value="generate">Generate</button>
+                {% endif %}
+              </form>
+            </td>
+            <td>
+              {% if row.pdf_path %}
+                {% if badge_filename %}
+                  {% set badge_url = '/badges/' ~ badge_filename %}
+                  <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
+                  <a href="{{ badge_url }}" download>Badge</a>
+                {% endif %}
+                <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+              {% endif %}
+            </td>
+            <td>
+              {% if can_manage_participants %}
+              <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id, next=workshop_return) }}">Edit</a>
+              <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
+                <input type="hidden" name="next" value="{{ workshop_return }}">
+                <button type="submit" class="btn btn-danger  btn-sm">Remove</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="{{ 7 + (attendance_days|length if attendance_days else 0) }}">No participants added yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
   {% if session.delivered %}
   <form action="{{ url_for('sessions.generate_bulk', session_id=session.id) }}" method="post">
     <input type="hidden" name="next" value="{{ workshop_return }}">
@@ -253,4 +298,9 @@
 
 {% include "sessions/_prework_summary.html" %}
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
 {% endblock %}
