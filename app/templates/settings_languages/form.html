@@ -9,6 +9,15 @@
   <div>Sort order:
     <input type="number" name="sort_order" value="{{ lang.sort_order if lang else 100 }}">
   </div>
+  <div>Allowed fonts:
+    <select name="allowed_fonts" multiple size="8" style="min-width: 220px;">
+      {% set selections = selected_fonts or [] %}
+      {% for code, label in font_options %}
+        <option value="{{ code }}" {% if code in selections %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <p class="form-help">Hold Ctrl (Windows) or Command (Mac) to select multiple fonts.</p>
+  </div>
   {% if lang %}
   <div>Status:
     <input type="checkbox" name="is_active" value="1" {% if lang.is_active %}checked{% endif %}>

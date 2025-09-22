@@ -43,6 +43,55 @@
     </tr>
     {% endfor %}
   </table>
+  <h2>Layout</h2>
+  {% for size in ['A4','LETTER'] %}
+    {% set size_layout = layout[size] %}
+    {% set details = size_layout['details'] %}
+    <fieldset style="margin-bottom:1.5em;">
+      <legend>{{ size }} layout</legend>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+        {% for key, label in {'name':'Learner name','workshop':'Workshop name','date':'Completion date'}.items() %}
+          <div>
+            <label for="layout-{{ size }}-{{ key }}-font">{{ label }} font</label><br>
+            <select id="layout-{{ size }}-{{ key }}-font" name="layout_{{ size }}_{{ key }}_font">
+              {% for font_code, font_label in font_options %}
+                <option value="{{ font_code }}" {% if size_layout[key]['font'] == font_code %}selected{% endif %}>{{ font_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="layout-{{ size }}-{{ key }}-y">{{ label }} Y (mm)</label><br>
+            <input id="layout-{{ size }}-{{ key }}-y" type="number" step="0.1" name="layout_{{ size }}_{{ key }}_y" value="{{ '%.1f'|format(size_layout[key]['y_mm']) }}">
+          </div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:1em;">
+        <label>
+          <input type="checkbox" name="layout_{{ size }}_details_enabled" value="1" {% if details.enabled %}checked{% endif %}>
+          Enable details panel
+        </label>
+      </div>
+      <div style="margin-top:0.5em; display:flex; gap:12px; flex-wrap:wrap;">
+        <div>
+          <label for="layout-{{ size }}-details-side">Panel side</label><br>
+          <select id="layout-{{ size }}-details-side" name="layout_{{ size }}_details_side">
+            {% for side in detail_sides %}
+              <option value="{{ side }}" {% if details.side == side %}selected{% endif %}>{{ side.title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="layout-{{ size }}-details-variables">Panel variables</label><br>
+          <select id="layout-{{ size }}-details-variables" name="layout_{{ size }}_details_variables" multiple size="{{ detail_variables|length }}" style="min-width:200px;">
+            {% for var in detail_variables %}
+              <option value="{{ var }}" {% if var in details.variables %}selected{% endif %}>{{ var.replace('_',' ')|title }}</option>
+            {% endfor %}
+          </select>
+          <p class="form-help">Selected order is the display order.</p>
+        </div>
+      </div>
+    </fieldset>
+  {% endfor %}
   <p><button type="submit">Save</button></p>
 </form>
 {% endblock %}

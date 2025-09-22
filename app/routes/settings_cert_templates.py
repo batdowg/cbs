@@ -18,6 +18,16 @@ from ..app import db
 from ..models import CertificateTemplateSeries, CertificateTemplate
 from ..shared.rbac import manage_users_required
 from ..shared.languages import get_language_options
+from ..shared.certificates_layout import (
+    DETAIL_SIDES,
+    DETAIL_VARIABLES,
+    PAGE_HEIGHT_MM,
+    filter_detail_variables,
+    filter_font_codes,
+    get_default_size_layout,
+    get_font_options,
+    sanitize_series_layout,
+)
 
 bp = Blueprint(
     "settings_cert_templates", __name__, url_prefix="/settings/cert-templates"
@@ -112,6 +122,7 @@ def edit_templates(series_id: int, current_user):
             if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))
         ]
     )
+    layout = sanitize_series_layout(series.layout_config)
     return render_template(
         "settings_cert_templates/templates.html",
         series=series,
@@ -120,6 +131,10 @@ def edit_templates(series_id: int, current_user):
         files=files,
         badges=badges,
         badge_mapping=badge_mapping,
+        layout=layout,
+        font_options=get_font_options(),
+        detail_variables=DETAIL_VARIABLES,
+        detail_sides=DETAIL_SIDES,
     )
 
 
@@ -215,6 +230,55 @@ def update_templates(series_id: int, current_user):
     if not series:
         abort(404)
     languages = get_language_options()
+    layout_errors: list[str] = []
+    new_layout: dict[str, dict] = {}
+    for size in ["A4", "LETTER"]:
+        defaults = get_default_size_layout(size)
+        size_layout: dict[str, object] = {}
+        for key in ["name", "workshop", "date"]:
+            font_val = request.form.get(f"layout_{size}_{key}_font") or defaults[key]["font"]
+            filtered_font = filter_font_codes([font_val])
+            if filtered_font:
+                font = filtered_font[0]
+            else:
+                font = defaults[key]["font"]
+            y_raw = (request.form.get(f"layout_{size}_{key}_y") or "").strip()
+            if y_raw:
+                try:
+                    y_val = float(y_raw)
+                except ValueError:
+                    layout_errors.append(f"{size} {key.title()} Y position must be a number")
+                    y_val = defaults[key]["y_mm"]
+                else:
+                    max_y = PAGE_HEIGHT_MM.get(size, 300)
+                    if y_val < 0 or y_val > max_y:
+                        layout_errors.append(
+                            f"{size} {key.title()} Y position must be between 0 and {max_y}"
+                        )
+                        y_val = defaults[key]["y_mm"]
+            else:
+                y_val = defaults[key]["y_mm"]
+            size_layout[key] = {"font": font, "y_mm": y_val}
+        enabled = bool(request.form.get(f"layout_{size}_details_enabled"))
+        side = (request.form.get(f"layout_{size}_details_side") or "LEFT").upper()
+        if side not in DETAIL_SIDES:
+            side = "LEFT"
+        variables = filter_detail_variables(
+            request.form.getlist(f"layout_{size}_details_variables")
+        )
+        size_layout["details"] = {
+            "enabled": enabled,
+            "side": side,
+            "variables": variables,
+        }
+        new_layout[size] = size_layout
+
+    if layout_errors:
+        for msg in layout_errors:
+            flash(msg, "error")
+        return redirect(url_for("settings_cert_templates.edit_templates", series_id=series.id))
+
+    series.layout_config = new_layout
     for code, _ in languages:
         badge_filename = (request.form.get(f"badge_{code}") or "").strip() or None
         for size in ["A4", "LETTER"]:

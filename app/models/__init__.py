@@ -7,6 +7,7 @@ from sqlalchemy.orm import validates
 from ..app import db
 from ..shared.passwords import hash_password, check_password
 from ..shared.constants import ROLE_ATTRS
+from ..shared.certificates_layout import DEFAULT_LANGUAGE_FONT_CODES
 
 from .simulation import SimulationOutline  # noqa: E402,F401
 
@@ -155,6 +156,11 @@ class Language(db.Model):
     name = db.Column(db.String(120), unique=True, nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.SmallInteger, nullable=False, default=100)
+    allowed_fonts = db.Column(
+        db.JSON,
+        nullable=False,
+        default=lambda: DEFAULT_LANGUAGE_FONT_CODES.copy(),
+    )
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
 
@@ -536,6 +542,7 @@ class CertificateTemplateSeries(db.Model):
     code = db.Column(db.String(16), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    layout_config = db.Column(db.JSON, nullable=False, default=dict)
 
 
 class CertificateTemplate(db.Model):
