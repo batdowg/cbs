@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import io
+import os
+import zipfile
 from urllib.parse import urlparse
 from collections import defaultdict
 from functools import wraps
@@ -19,6 +21,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session as flask_session,
     url_for,
     current_app,
@@ -90,6 +93,18 @@ from ..services.attendance import (
 )
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
+
+
+def _user_can_edit_session(user: User | None) -> bool:
+    return bool(
+        user
+        and (
+            is_admin(user)
+            or is_kcrm(user)
+            or is_delivery(user)
+            or is_contractor(user)
+        )
+    )
 
 
 def _redirect_after_participant_action(
@@ -1384,7 +1399,8 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     start_dt_utc = session_start_dt_utc(sess)
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
-    if not is_material_only_session(sess):
+    material_only = is_material_only_session(sess)
+    if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
             .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -1444,7 +1460,43 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         badge_filename=badge_filename,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
+        can_edit_session=_user_can_edit_session(current_user),
+        material_only_session=material_only,
     )
+
+
+@bp.post("/<int:session_id>/mark-delivered")
+@staff_required
+def mark_delivered(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    if is_material_only_session(sess):
+        flash("Delivered not available for material-only sessions.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    if sess.cancelled:
+        flash("Cancelled sessions cannot be marked delivered.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+    if sess.delivered:
+        flash("Session already marked delivered.", "info")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+    sess.delivered = True
+    if not sess.delivered_at:
+        sess.delivered_at = datetime.utcnow()
+    enforce_material_only_rules(sess)
+
+    db.session.add(
+        AuditLog(
+            user_id=current_user.id,
+            session_id=session_id,
+            action="lifecycle_flip",
+            details="delivered:False->True",
+        )
+    )
+    db.session.commit()
+    flash("Session marked delivered", "success")
+    return redirect(url_for("sessions.session_detail", session_id=session_id))
 
 
 @bp.post("/<int:session_id>/assign-csa")
@@ -1920,6 +1972,50 @@ def generate_bulk(session_id: int, current_user):
     count, _ = render_for_session(session_id)
     flash(f"Generated {count} certificates", "success")
     return _redirect_after_participant_action(session_id)
+
+
+@bp.get("/<int:session_id>/certificates/export")
+@staff_required
+def export_certificates_zip(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    cert_root = os.path.join(site_root, "certificates")
+    pdf_files: list[str] = []
+    if os.path.isdir(cert_root):
+        for year_name in sorted(os.listdir(cert_root)):
+            year_dir = os.path.join(cert_root, year_name)
+            if not os.path.isdir(year_dir):
+                continue
+            session_dir = os.path.join(year_dir, str(sess.id))
+            if not os.path.isdir(session_dir):
+                continue
+            for filename in sorted(os.listdir(session_dir)):
+                full_path = os.path.join(session_dir, filename)
+                if not os.path.isfile(full_path):
+                    continue
+                if not filename.lower().endswith(".pdf"):
+                    continue
+                pdf_files.append(full_path)
+
+    if not pdf_files:
+        flash("No certificates found to export.", "error")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file_path in pdf_files:
+            archive.write(file_path, arcname=os.path.basename(file_path))
+    buffer.seek(0)
+    filename = f"session-{sess.id}-certificates.zip"
+    return send_file(
+        buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @bp.route("/<int:session_id>/prework", methods=["GET", "POST"])

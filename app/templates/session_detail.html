@@ -7,6 +7,14 @@
 <h1>{{ session.title }}</h1>
 <p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
+<div class="session-status-actions" style="margin: var(--space-2) 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);">
+  <span><strong>Status:</strong> {{ session.computed_status }}</span>
+  {% if can_edit_session and not material_only_session and not session.delivered and not session.cancelled %}
+  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline">
+    <button type="submit" class="btn btn-success">Delivered</button>
+  </form>
+  {% endif %}
+</div>
 {% set facs = [] %}
 {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
 {% if session.facilitators %}
@@ -66,14 +74,13 @@
 </p>
 <nav class="kt-tabs">
   <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" aria-current="page">Details</a>
-  {% if not session.materials_only and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+  {% if not material_only_session and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
   <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>
   {% endif %}
   <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
 </nav>
 {% endif %}
-{% if not session.materials_only %}
-{% set import_input_id = 'participant-import-' ~ session.id %}
+{% if not material_only_session %}
 {% set participants_return = url_for('sessions.session_detail', session_id=session.id) %}
 <div>
   <h2>Client Session Administrator</h2>
@@ -90,6 +97,11 @@
 </div>
 <div class="kt-card">
 <h2 class="kt-card-title">Participants</h2>
+{% if can_edit_session %}
+  <div class="card-actions" style="margin-bottom: var(--space-3);">
+    <a class="btn btn-secondary" href="{{ url_for('sessions.export_certificates_zip', session_id=session.id) }}">Export all certificates (zip)</a>
+  </div>
+{% endif %}
 {% if csa_view %}
   {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
   <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
@@ -101,9 +113,8 @@
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ participants_return }}">
-    <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
-    <label for="{{ import_input_id }}" class="btn">Import CSV</label>
-    <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+    <input type="file" name="file" accept=".csv" required onchange="if (this.form) { if (this.form.requestSubmit) { this.form.requestSubmit(); } else { this.form.submit(); } }">
+    <p><a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a></p>
   </form>
   {% if import_errors %}
   <div>
@@ -157,9 +168,8 @@
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ participants_return }}">
-    <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
-    <label for="{{ import_input_id }}" class="btn">Import CSV</label>
-    <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+    <input type="file" name="file" accept=".csv" required onchange="if (this.form) { if (this.form.requestSubmit) { this.form.requestSubmit(); } else { this.form.submit(); } }">
+    <p><a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a></p>
   </form>
   {% if import_errors %}
   <div>

@@ -280,6 +280,12 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `session_facilitators` (m:n users↔sessions)
 - `session_participants` (m:n participant_accounts↔sessions + per-person status)
 
+### Sessions – Staff shortcuts
+
+- Session Detail exposes a **Delivered** button in the header for staff with edit rights on non–material only sessions; it posts to mark the session delivered without opening the edit form.
+- The Participants card shows an **Export all certificates (zip)** button for staff, streaming a zip of existing certificate PDFs from `/srv/certificates/<year>/<session_id>/` without regenerating files.
+- Participant CSV import on Session Detail uses a single file chooser that auto-submits and preserves the existing success/error flash behavior.
+
 ## 3.2 Prework
 - `prework_templates` (by workshop type; rich text info)
 - `prework_questions` (fk template_id, text, kind enum TEXT/LIST, min_items, max_items, index)
