@@ -3,6 +3,7 @@
 :root {
   --field-h: 40px;
   --field-px: 12px;
+  --field-date-left: 2px;
   --field-py: 8px;
   --gap-x: 10px;
   --gap-y: 8px;
@@ -86,17 +87,19 @@ input[type="datetime-local"] {
   width: 14ch;
   max-width: 160px;
   padding-right: calc(var(--field-px, 12px) + 0.5rem);
+  padding-left: var(--field-date-left, 8px);
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   margin: 0;
+  margin-right: -0.125rem;
   padding: 0.125rem;
 }
 
 input[type="date"]::-webkit-datetime-edit,
 input[type="datetime-local"]::-webkit-datetime-edit {
-  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-px, 12px);
+  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-date-left, 8px);
 }
 
 .kt-date--wide[type="date"],
