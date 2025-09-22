@@ -70,14 +70,14 @@ input[type="reset"]:disabled,
 }
 
 .btn-secondary {
-  background-color: #fff;
+  background-color: #009CDE19;
   border-color: var(--kt-border);
   color: var(--kt-text);
   font-weight: 500;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: rgba(0, 156, 222, 0.1);
+  background-color: #009CDE;
 }
 
 .btn-secondary:active:not(:disabled) {
