@@ -1,0 +1,21 @@
+{% macro yes_no(value, highlight=False) -%}
+  {%- if highlight -%}
+    {%- if value -%}
+      <span class="lifecycle-status lifecycle-status--positive">Yes</span>
+    {%- else -%}
+      <span class="lifecycle-status lifecycle-status--negative">No</span>
+    {%- endif -%}
+  {%- else -%}
+    {%- if value -%}Yes{%- else -%}No{%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro delivered(value, highlight=False, finalized=False) -%}
+  {%- if finalized -%}
+    {%- if value -%}Yes{%- else -%}No{%- endif -%}
+  {%- elif highlight and value -%}
+    <span class="lifecycle-status lifecycle-status--positive">Yes</span>
+  {%- else -%}
+    {%- if value -%}Yes{%- else -%}No{%- endif -%}
+  {%- endif -%}
+{%- endmacro %}

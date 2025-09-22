@@ -19,3 +19,15 @@
 .gap-lg {
   gap: var(--space-6);
 }
+
+.lifecycle-status {
+  font-weight: 600;
+}
+
+.lifecycle-status--positive {
+  color: var(--kt-accent-green);
+}
+
+.lifecycle-status--negative {
+  color: var(--kt-accent-red);
+}
