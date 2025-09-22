@@ -109,6 +109,19 @@
           <input type="number" id="capacity" name="capacity" value="{{ session.capacity or 16 }}" required>
         </div>
       </div>
+      {% set days_value = form.get('number_of_class_days') if form else None %}
+      {% if days_value is not none and days_value != '' %}
+        {% set display_days = days_value %}
+      {% else %}
+        {% set display_days = session.number_of_class_days or 1 %}
+      {% endif %}
+      <div class="form-align__row">
+        <label class="form-align__label" for="number-of-class-days"># of class days*</label>
+        <div class="form-align__control">
+          <input type="number" id="number-of-class-days" name="number_of_class_days" min="1" max="10" value="{{ display_days }}" required>
+        </div>
+      </div>
+      <div class="form-help">Manual count; non-training days may exist between training days.</div>
       <div class="form-align__row">
         <label class="form-align__label" for="start-date">Start Date*</label>
         <div class="form-align__control">

@@ -531,6 +531,7 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Material Settings items include a **Quantity basis** (`Per learner`/`Per order`) stored on `materials_options` and used wherever the item is selected.
 - Workshop Type edit default-materials dropdown filters by `Language.name`, posts `material_option_id`, and hides "Bulk" options (no "Show all").
 - Session Materials page provides an **Apply Defaults** button that adds any missing `workshop_type_material_defaults` for the session's workshop type, delivery type, region, and language as `material_order_items` using each item's quantity basis (Material Sets for “Per learner”, 1 for “Per order”). Existing rows remain unchanged. Items support inline quantity, language, and format edits, per-row removal, and a dropdown to add new items.
+- Sessions track a manual `number_of_class_days` (1–10, default 1) edited on the staff session form for future attendance features.
 - Workshop Type default-material rows drop the "Remove" checkbox in favor of a
   per-row delete action (`POST /workshop-types/defaults/<id>/delete`).
 - PO Number field removed from materials orders and underlying storage.
