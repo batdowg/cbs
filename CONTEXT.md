@@ -443,7 +443,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Issued post-delivery. Templates are configured under **Settings → Certificate Templates**, where admins define series and map (language, A4/Letter) → PDF and optional badge **filename**. Workshop Types must select one active series and no longer store any badge value. Generation resolves the mapping for the session's type series and language/size; badges reference files under `app/assets/badges`. If any mapping or file is missing, rendering aborts with a clear error (no auto-fallback).
 - The template-mapping page offers bulk upload buttons for certificate template PDFs and badge WEBP files. Uploads overwrite by filename, refresh dropdown options, and never auto-change existing mappings. Badge uploads also copy files to the site root (`/srv/badges`) for static serving. Access is restricted to Sys Admin/Admin.
 - Paper size derives from session Region (North America → Letter; others → A4).
-- Name line: Y=145 mm; italic; auto-shrink 48→32; centered. On **Letter**, the recipient Name text box is narrowed by **2.5 cm** on the left and **2.5 cm** on the right (total horizontal reduction = 5.0 cm).
+- **Settings → Languages** tracks an Allowed fonts list. Certificate rendering restricts line fonts to the language’s allowed set; if the configured font is missing or disallowed the renderer falls back to the first allowed+available option (or Helvetica) and logs `[CERT-FONT]` once per substituted line.
+- Each certificate series stores per-size layout metadata covering Learner name, Workshop name, and Completion date (font + Y mm). Defaults preserve prior behavior — learner name at 145 mm (auto-shrink 48→32), workshop at 102 mm, date at 83 mm using the session end date — and Letter layouts continue narrowing the learner name text box by **2.5 cm** on both sides (total 5.0 cm).
+- An optional details panel can be enabled per size with Left/Right placement. Selected variables (contact hours, facilitators, dates, location title, class days) render as a multi-line block inside the bottom margin, skipping empty values without aborting generation.
 - Certificates are written to `<certs_root>/<YYYY>/<session_id>/` where `<certs_root>` = `SITE_ROOT/certificates` (default `/srv/certificates`). `YYYY` uses the session start-date year; if missing, use the current year.
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
@@ -456,7 +458,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `--dry-run` lists candidate paths and a summary without deleting.
 - In production, set `ALLOW_CERT_PURGE=1` to enable deletions.
 - One-off CLI `backfill_cert_paths` (run: `python manage.py backfill_cert_paths`) updates legacy `YYYY/<workshop_code>/…` rows when a `YYYY/session_id/…` file exists. Safe to skip if not needed.
-- Workshop line at 102 mm; date line at 83 mm in `d Month YYYY` using session end date.
 - Learner nav shows **My Certificates** only if they own ≥1 certificate; staff see **My Profile → My Certificates** only when they have certificates as participants.
 
 ---
