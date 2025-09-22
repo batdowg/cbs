@@ -85,7 +85,7 @@
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
     <label for="{{ import_input_id }}" class="btn">Import CSV</label> &ensp;
-    <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a><br>
+    <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
   </form>
   {% if import_errors %}
   <div>
