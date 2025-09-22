@@ -1,33 +1,66 @@
 (function () {
-  function showFlash(message, category) {
-    const content = document.querySelector('.content');
-    if (!content) {
+  const NOTICE_DURATION = 3000;
+  const NOTICE_FADE_BUFFER = 400;
+
+  function showNotice(container, message, variant) {
+    if (!container) {
       return;
     }
-    let container = content.querySelector('.flashes');
-    if (!container) {
-      container = document.createElement('div');
-      container.className = 'flashes';
-      content.insertBefore(container, content.firstChild);
+    const host = container.querySelector('[data-attendance-notices]');
+    if (!host) {
+      return;
     }
-    const flash = document.createElement('div');
-    const variant = category || 'info';
-    flash.className = 'flash flash-' + variant;
-    flash.setAttribute('role', 'alert');
-    flash.setAttribute('aria-live', 'polite');
-    flash.tabIndex = 0;
-    flash.appendChild(document.createTextNode(message));
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'flash-close btn-icon';
-    closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.textContent = '×';
-    closeBtn.addEventListener('click', function () {
-      flash.remove();
+
+    if (typeof host._cancelNotice === 'function') {
+      host._cancelNotice();
+    }
+    while (host.firstChild) {
+      host.removeChild(host.firstChild);
+    }
+
+    const notice = document.createElement('div');
+    notice.className = 'attendance-notice';
+    if (variant === 'error') {
+      notice.classList.add('attendance-notice-error');
+    }
+    notice.setAttribute('role', 'status');
+    notice.appendChild(document.createTextNode(message));
+    host.appendChild(notice);
+
+    const fadeTimeout = window.setTimeout(function () {
+      notice.classList.add('is-fading');
+    }, NOTICE_DURATION);
+
+    const removeTimeout = window.setTimeout(function () {
+      if (notice.parentElement === host) {
+        host.removeChild(notice);
+      }
+      if (host._cancelNotice === cancel) {
+        host._cancelNotice = null;
+      }
+    }, NOTICE_DURATION + NOTICE_FADE_BUFFER);
+
+    function cancel() {
+      window.clearTimeout(fadeTimeout);
+      window.clearTimeout(removeTimeout);
+      if (notice.parentElement === host) {
+        host.removeChild(notice);
+      }
+      host._cancelNotice = null;
+    }
+
+    host._cancelNotice = cancel;
+
+    notice.addEventListener('transitionend', function (event) {
+      if (event.propertyName === 'opacity' && notice.classList.contains('is-fading')) {
+        if (notice.parentElement === host) {
+          host.removeChild(notice);
+        }
+        if (host._cancelNotice === cancel) {
+          host._cancelNotice = null;
+        }
+      }
     });
-    flash.appendChild(closeBtn);
-    container.appendChild(flash);
-    flash.focus();
   }
 
   function sendJson(url, payload) {
@@ -59,6 +92,7 @@
   }
 
   function handleToggle(event) {
+    event.preventDefault();
     const checkbox = event.target;
     const container = checkbox.closest('[data-attendance-table]');
     if (!container) {
@@ -70,7 +104,6 @@
     }
     const participantId = checkbox.getAttribute('data-participant-id');
     const dayIndex = checkbox.getAttribute('data-day-index');
-    const participantName = checkbox.getAttribute('data-participant-name') || 'participant';
     const newState = checkbox.checked;
     const previousState = !newState;
     checkbox.disabled = true;
@@ -82,11 +115,11 @@
       .then(function (data) {
         checkbox.checked = Boolean(data.attended);
         checkbox.dataset.lastValue = checkbox.checked ? 'true' : 'false';
-        showFlash('Updated Day ' + dayIndex + ' attendance for ' + participantName + '.', 'success');
+        showNotice(container, 'Saved');
       })
       .catch(function (error) {
         checkbox.checked = previousState;
-        showFlash(error.message || 'Unable to update attendance.', 'error');
+        showNotice(container, error.message || 'Unable to update attendance.', 'error');
       })
       .finally(function () {
         checkbox.disabled = false;
@@ -110,15 +143,10 @@
           checkbox.checked = true;
           checkbox.dataset.lastValue = 'true';
         });
-        const updated = data.updated_count != null ? Number(data.updated_count) : null;
-        if (updated && !Number.isNaN(updated)) {
-          showFlash('Marked attendance for ' + updated + ' entries.', 'success');
-        } else {
-          showFlash('Marked attendance for all participants.', 'success');
-        }
+        showNotice(container, 'All marked attended');
       })
       .catch(function (error) {
-        showFlash(error.message || 'Unable to mark attendance.', 'error');
+        showNotice(container, error.message || 'Unable to mark attendance.', 'error');
       })
       .finally(function () {
         button.disabled = false;
