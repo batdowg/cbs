@@ -80,12 +80,12 @@ select[multiple],
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
-  padding-right: calc(var(--field-px, 5px) * 2 + 1.5em);
+  padding-right: calc(var(--field-px, 1px) * 2 + 1.5em);
 }
 
 .kt-date--tight[type="date"],
 .kt-date--tight[type="datetime-local"] {
-  padding-right: calc(var(--field-px, 12px) + 0.5rem);
+  padding-right: calc(var(--field-px, 2px) + 0.5rem);
 }
 
 .kt-date--tight[type="date"]::-webkit-calendar-picker-indicator,
@@ -96,7 +96,7 @@ input[type="datetime-local"] {
 
 .kt-date--tight[type="date"]::-webkit-datetime-edit,
 .kt-date--tight[type="datetime-local"]::-webkit-datetime-edit {
-  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-px, 12px);
+  padding: var(--field-py, 1px) 0.25rem var(--field-py, 1px) var(--field-px, 2px);
 }
 
 textarea {
