@@ -77,7 +77,7 @@ input[type="reset"]:disabled,
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #009CDE;
+  background-color: #009CDE50;
 }
 
 .btn-secondary:active:not(:disabled) {
