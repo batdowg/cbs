@@ -85,7 +85,7 @@ input[type="datetime-local"] {
 
 .kt-date--tight[type="date"],
 .kt-date--tight[type="datetime-local"] {
-  padding-right: -2;
+  padding-right: calc(var(--field-px, 1px) + 0.5rem);
 }
 
 .kt-date--tight[type="date"]::-webkit-calendar-picker-indicator,
