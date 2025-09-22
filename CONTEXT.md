@@ -104,7 +104,7 @@ Every functional change must update this file **in the same PR**.
 - Styles live in `/static/css/forms.css` and load globally.
 - Single-line controls include default 10px horizontal and 8px vertical margins to keep adjacent fields separated; inline actions like "Add" or "Edit" links sit 8px away.
 - `.filters` and `.filter-row` provide optional flex wrapping with these gaps via `column-gap`/`row-gap`.
-- `.kt-date--tight` trims extra padding around the inline calendar icon while keeping the default control height; applied to Completion Date fields in participant tables.
+- `.kt-date--tight` trims WebKit padding/margins so the inline calendar icon sits near the edge while keeping the default control height; applied to Completion Date fields in participant tables.
 
 ## 0.9 Navigation & Breadcrumbs
 - Header and main navigation use `/static/css/nav.css` with `--kt-bg` background, `--kt-text`/`--kt-info` links, and Raleway headings.
