@@ -394,6 +394,9 @@ class Session(db.Model):
         secondary="session_facilitators",
         backref="facilitated_sessions",
     )
+    attendance_records = db.relationship(
+        "ParticipantAttendance", back_populates="session"
+    )
     client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="SET NULL"))
     client = db.relationship("Client")
     workshop_location_id = db.Column(
@@ -465,6 +468,10 @@ class Participant(db.Model):
     def lower_email(self, key, value):  # pragma: no cover - simple normalizer
         return value.lower()
 
+    attendance_records = db.relationship(
+        "ParticipantAttendance", back_populates="participant"
+    )
+
 
 class SessionParticipant(db.Model):
     __tablename__ = "session_participants"
@@ -479,6 +486,46 @@ class SessionParticipant(db.Model):
         db.UniqueConstraint(
             "session_id", "participant_id", name="uix_session_participant"
         ),
+    )
+
+
+class ParticipantAttendance(db.Model):
+    __tablename__ = "participant_attendance"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    participant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("participants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    day_index = db.Column(db.Integer, nullable=False)
+    attended = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    created_at = db.Column(
+        db.DateTime, nullable=False, server_default=db.func.now()
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+    )
+    __table_args__ = (
+        db.UniqueConstraint(
+            "session_id",
+            "participant_id",
+            "day_index",
+            name="uq_participant_attendance_unique",
+        ),
+    )
+
+    session = db.relationship("Session", back_populates="attendance_records")
+    participant = db.relationship(
+        "Participant", back_populates="attendance_records"
     )
 
 

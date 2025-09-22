@@ -313,6 +313,14 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 ## 3.6 Clients (if present)
 - `clients`, `client_locations` and linkage tables as per migrations.
 
+## 3.7 Attendance storage & endpoints
+- Table: `participant_attendance` (`session_id`, `participant_id`, `day_index`, `attended` boolean default `false`, timestamps). Unique per `(session_id, participant_id, day_index)` with cascade deletes tied to sessions/participants.
+- API:
+  - `POST /sessions/<id>/attendance/toggle` – upserts a single record and returns `{ok, attended}`.
+  - `POST /sessions/<id>/attendance/mark_all_attended` – bulk sets all `day_index` 1..N to attended for the session and returns `{ok, updated_count}`.
+- Auth: Admin/CRM staff or Delivery/Contractor assigned to the session. Learners/CSA accounts receive `403`.
+- Material only sessions (`delivery_type = "Material only"`) reject both endpoints with `403`.
+
 ---
 
 # 4. Gating by Lifecycle

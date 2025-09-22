@@ -14,6 +14,7 @@ from flask import (
     Response,
     abort,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -78,6 +79,12 @@ from ..shared.prework_status import get_participant_prework_status
 from ..services.prework_invites import (
     PreworkSendError,
     send_prework_invites,
+)
+from ..services.attendance import (
+    AttendanceForbiddenError,
+    AttendanceValidationError,
+    mark_all_attended,
+    upsert_attendance,
 )
 
 bp = Blueprint("sessions", __name__, url_prefix="/sessions")
@@ -157,6 +164,25 @@ def _cb(v) -> bool:
     return str(v).strip().lower() in {"1", "y", "yes", "on", "true"}
 
 
+def _require_boolean(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        raise ValueError("Boolean value required")
+    if isinstance(value, (int, float)):
+        if value in (0, 0.0):
+            return False
+        if value in (1, 1.0):
+            return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "1", "yes", "on"}:
+            return True
+        if lowered in {"false", "0", "no", "off"}:
+            return False
+    raise ValueError("Boolean value required")
+
+
 def _maybe_send_csa_assign(sess: Session, password: str | None = None) -> None:
     if not sess.csa_account_id:
         return
@@ -202,6 +228,42 @@ def staff_required(fn):
         ):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
+
+    return wrapper
+
+
+def attendance_edit_required(fn):
+    @wraps(fn)
+    def wrapper(session_id: int, *args, **kwargs):
+        sess = db.session.get(Session, session_id)
+        if not sess:
+            abort(404)
+        user_id = flask_session.get("user_id")
+        if not user_id:
+            if flask_session.get("participant_account_id"):
+                abort(403)
+            return redirect(url_for("auth.login"))
+        current_user = db.session.get(User, user_id)
+        if not current_user or not (
+            is_admin(current_user)
+            or is_kcrm(current_user)
+            or is_delivery(current_user)
+            or is_contractor(current_user)
+        ):
+            abort(403)
+        if is_delivery(current_user) or is_contractor(current_user):
+            if not (
+                sess.lead_facilitator_id == current_user.id
+                or any(f.id == current_user.id for f in sess.facilitators)
+            ):
+                abort(403)
+        return fn(
+            session_id,
+            *args,
+            **kwargs,
+            sess=sess,
+            current_user=current_user,
+        )
 
     return wrapper
 
@@ -2145,3 +2207,73 @@ def send_prework(session_id: int, current_user):
         or request.referrer
         or url_for("sessions.session_prework", session_id=session_id)
     )
+
+
+@bp.post("/<int:session_id>/attendance/toggle")
+@attendance_edit_required
+def toggle_attendance(session_id: int, sess: Session, current_user):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        payload = request.form
+
+    participant_raw = payload.get("participant_id") if payload else None
+    day_raw = payload.get("day_index") if payload else None
+    if participant_raw is None or day_raw is None:
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "participant_id and day_index are required.",
+                }
+            ),
+            400,
+        )
+    try:
+        participant_id = int(participant_raw)
+        day_index = int(day_raw)
+    except (TypeError, ValueError):
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "participant_id and day_index must be integers.",
+                }
+            ),
+            400,
+        )
+
+    try:
+        attended_value = _require_boolean(payload.get("attended") if payload else None)
+    except ValueError:
+        return (
+            jsonify({"ok": False, "error": "attended must be true or false."}),
+            400,
+        )
+
+    try:
+        record = upsert_attendance(sess, participant_id, day_index, attended_value)
+        db.session.commit()
+    except AttendanceForbiddenError as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(exc)}), 403
+    except AttendanceValidationError as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+    return jsonify({"ok": True, "attended": record.attended})
+
+
+@bp.post("/<int:session_id>/attendance/mark_all_attended")
+@attendance_edit_required
+def mark_all_attendance(session_id: int, sess: Session, current_user):
+    try:
+        updated_count = mark_all_attended(sess)
+        db.session.commit()
+    except AttendanceForbiddenError as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(exc)}), 403
+    except AttendanceValidationError as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+    return jsonify({"ok": True, "updated_count": updated_count})

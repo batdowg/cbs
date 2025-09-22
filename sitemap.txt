@@ -15,6 +15,8 @@
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
 /sessions/<id>/edit     – Staff session edit form (manual # of class days 1–10 lives here)
 /sessions/<id>/participants – Add/edit/CSV import participants
+/sessions/<id>/attendance/toggle – POST: toggle per-day attendance (staff or assigned facilitator)
+/sessions/<id>/attendance/mark_all_attended – POST: bulk mark all participants/days attended (staff or assigned facilitator)
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view; CRM-only scoped to client CRM owner)
 /my-certificates         – Learner portal: download own PDFs
 /profile                 – Learner profile (full name, certificate name)
