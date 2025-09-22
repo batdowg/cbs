@@ -320,6 +320,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - `POST /sessions/<id>/attendance/mark_all_attended` – bulk sets all `day_index` 1..N to attended for the session and returns `{ok, updated_count}`.
 - Auth: Admin/CRM staff or Delivery/Contractor assigned to the session. Learners/CSA accounts receive `403`.
 - Material only sessions (`delivery_type = "Material only"`) reject both endpoints with `403`.
+- UI:
+  - `number_of_class_days` controls the Day 1..N columns. Increasing the count surfaces new unchecked days; decreasing hides extra columns without deleting stored attendance rows.
+  - Workshop View (`/workshops/<id>`) and Session Detail (`/sessions/<id>`) show per-participant Day 1..N checkboxes plus a “Mark all attended” bulk action. Controls render for staff and assigned facilitators only.
+  - Learners/CSA never see attendance controls. Certificate generation remains unchanged.
 
 ---
 

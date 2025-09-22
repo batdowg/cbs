@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from urllib.parse import urlparse
+from collections import defaultdict
 from functools import wraps
 from datetime import date, time, datetime, timedelta
 import secrets
@@ -31,6 +32,7 @@ from ..models import (
     Session,
     SessionParticipant,
     Certificate,
+    ParticipantAttendance,
     WorkshopType,
     AuditLog,
     SessionShipping,
@@ -1378,6 +1380,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     participants: list[dict[str, object]] = []
     import_errors = None
     can_manage = False
+    attendance_days: list[int] = []
     start_dt_utc = session_start_dt_utc(sess)
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
@@ -1397,12 +1400,37 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
             {"participant": participant, "link": link, "pdf_path": pdf_path}
             for link, participant, pdf_path in rows
         ]
+        attendance_days = list(
+            range(1, (sess.number_of_class_days or 0) + 1)
+        )
+        if attendance_days:
+            attendance_map = defaultdict(dict)
+            attendance_records = (
+                db.session.query(ParticipantAttendance)
+                .filter(ParticipantAttendance.session_id == session_id)
+                .all()
+            )
+            for record in attendance_records:
+                attendance_map[record.participant_id][record.day_index] = bool(
+                    record.attended
+                )
+            for entry in participants:
+                participant_id = entry["participant"].id
+                entry["attendance"] = attendance_map.get(participant_id, {})
         import_errors = flask_session.pop("import_errors", None)
         if csa_account:
             can_manage = csa_can_manage_participants(csa_account, sess)
         mapping, _ = get_template_mapping(sess)
         if mapping:
             badge_filename = mapping.badge_filename
+    can_manage_attendance = bool(
+        attendance_days
+        and not view_csa
+        and (
+            current_user
+            and (is_kt_staff(current_user) or is_contractor(current_user))
+        )
+    )
     return render_template(
         "session_detail.html",
         session=sess,
@@ -1414,6 +1442,8 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         session_start_dt=start_dt_utc,
         back_params=back_params,
         badge_filename=badge_filename,
+        attendance_days=attendance_days,
+        can_manage_attendance=can_manage_attendance,
     )
 
 
