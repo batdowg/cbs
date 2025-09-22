@@ -245,7 +245,7 @@
             {% endif %}
             <td>
               <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
-                <input type="date" class="kt-date--tight" name="completion_date" value="{{ row.link.completion_date }}">
+                <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
                 <button type="submit" name="action" value="save">Save</button>
                 {% if session.delivered %}
                 <button type="submit" name="action" value="generate">Generate</button>
