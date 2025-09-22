@@ -190,6 +190,7 @@
        data-toggle-url="{{ attendance_toggle_url }}"
        data-mark-all-url="{{ attendance_mark_all_url }}"
        {% endif %}>
+    <div class="attendance-notices" data-attendance-notices aria-live="polite"></div>
     {% if can_manage_attendance %}
     <div class="table-toolbar">
       <button type="button" class="btn btn-secondary" data-mark-all-attended>Mark all attended</button>
