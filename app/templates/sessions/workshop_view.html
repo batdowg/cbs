@@ -1,10 +1,13 @@
 {% extends 'base.html' %}
+{% import 'macros/lifecycle.html' as lifecycle %}
 {% set workshop_code = session.workshop_type.code if session.workshop_type else '—' %}
 {% set delivery_label = session.delivery_type or '—' %}
 {% set status_label = session.computed_status %}
 {% set workshop_heading = session.id ~ ' ' ~ session.title ~ ': ' ~ workshop_code ~ ' (' ~ delivery_label ~ ') - ' ~ status_label %}
 {% block title %}{{ workshop_heading }}{% endblock %}
 {% block content %}
+{% set highlight_lifecycle_fields = (not session.delivered) and (not session.finalized) %}
+{% set highlight_delivered = session.delivered and not session.finalized %}
 <h1>{{ workshop_heading }}</h1>
 <p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Back to My Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
@@ -56,10 +59,10 @@
     <div class="grid gap-sm">
       <div><strong>Shipping Location:</strong> {{ session.shipping_location.display_name() if session.shipping_location else '—' }}</div>
       <div><strong>Notes:</strong> {{ session.notes or session.description or '—' }}</div>
-      <div><strong>Materials ordered:</strong> {{ 'Yes' if session.materials_ordered else 'No' }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}</div>
-      <div><strong>Ready for delivery:</strong> {{ 'Yes' if session.ready_for_delivery else 'No' }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}</div>
-      <div><strong>Workshop info sent:</strong> {{ 'Yes' if session.info_sent else 'No' }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}</div>
-      <div><strong>Delivered:</strong> {{ 'Yes' if session.delivered else 'No' }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Materials ordered:</strong> {{ lifecycle.yes_no(session.materials_ordered, highlight_lifecycle_fields)|safe }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Ready for delivery:</strong> {{ lifecycle.yes_no(session.ready_for_delivery, highlight_lifecycle_fields)|safe }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Workshop info sent:</strong> {{ lifecycle.yes_no(session.info_sent, highlight_lifecycle_fields)|safe }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Delivered:</strong> {{ lifecycle.delivered(session.delivered, highlight_delivered, session.finalized)|safe }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}</div>
       <div><strong>Finalized:</strong> {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}</div>
     </div>
   </div>
