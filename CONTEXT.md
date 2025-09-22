@@ -104,7 +104,7 @@ Every functional change must update this file **in the same PR**.
 - Styles live in `/static/css/forms.css` and load globally.
 - Single-line controls include default 10px horizontal and 8px vertical margins to keep adjacent fields separated; inline actions like "Add" or "Edit" links sit 8px away.
 - `.filters` and `.filter-row` provide optional flex wrapping with these gaps via `column-gap`/`row-gap`.
-- Date/datetime inputs use a compact global style (tight WebKit indicator spacing, ~14ch width with a 160px cap) so fields stay narrow by default; add `.kt-date--wide` when a wider field is necessary. Their left padding is trimmed globally so text sits closer to the edge without affecting height or the calendar icon gutter.
+- Date/datetime inputs use a compact global style (tight WebKit indicator spacing with the icon flush to the right edge, ~14ch width with a 160px cap) so fields stay narrow by default; add `.kt-date--wide` when a wider field is necessary. Their left padding is trimmed globally so text sits closer to the edge without affecting height or the calendar icon gutter.
 
 ## 0.9 Navigation & Breadcrumbs
 - Header and main navigation use `/static/css/nav.css` with `--kt-bg` background, `--kt-text`/`--kt-info` links, and Raleway headings.
