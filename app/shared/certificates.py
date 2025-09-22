@@ -26,6 +26,8 @@ from ..models import (
 from ..shared.certificates_layout import (
     DEFAULT_LANGUAGE_FONT_CODES,
     DETAIL_LABELS,
+    DETAIL_SIZE_MAX_PERCENT,
+    DETAIL_SIZE_MIN_PERCENT,
     SAFE_FALLBACK_FONT,
     sanitize_series_layout,
 )
@@ -37,6 +39,105 @@ LETTER_NAME_INSET_MM = 25
 DEFAULT_BOTTOM_MARGIN_MM = 20
 DETAILS_FONT_SIZE_PT = 12
 DETAILS_LINE_SPACING_PT = 14
+
+DETAIL_RENDER_SEQUENCE: tuple[str, ...] = (
+    "facilitators",
+    "location_title",
+    "dates",
+    "class_days",
+    "contact_hours",
+)
+
+US_COUNTRY_CODES = {
+    "US",
+    "USA",
+    "UNITEDSTATES",
+    "UNITEDSTATESOFAMERICA",
+    "PUERTORICO",
+    "GUAM",
+    "AMERICANSAMOA",
+    "NORTHERNMARIANAISLANDS",
+    "COMMONWEALTHOFTHENORTHERNMARIANAISLANDS",
+    "CNMI",
+    "VIRGINISLANDS",
+    "UNITEDSTATESVIRGINISLANDS",
+    "USVIRGINISLANDS",
+}
+
+US_STATE_NAMES = {
+    "AL": "ALABAMA",
+    "AK": "ALASKA",
+    "AZ": "ARIZONA",
+    "AR": "ARKANSAS",
+    "CA": "CALIFORNIA",
+    "CO": "COLORADO",
+    "CT": "CONNECTICUT",
+    "DE": "DELAWARE",
+    "FL": "FLORIDA",
+    "GA": "GEORGIA",
+    "HI": "HAWAII",
+    "ID": "IDAHO",
+    "IL": "ILLINOIS",
+    "IN": "INDIANA",
+    "IA": "IOWA",
+    "KS": "KANSAS",
+    "KY": "KENTUCKY",
+    "LA": "LOUISIANA",
+    "ME": "MAINE",
+    "MD": "MARYLAND",
+    "MA": "MASSACHUSETTS",
+    "MI": "MICHIGAN",
+    "MN": "MINNESOTA",
+    "MS": "MISSISSIPPI",
+    "MO": "MISSOURI",
+    "MT": "MONTANA",
+    "NE": "NEBRASKA",
+    "NV": "NEVADA",
+    "NH": "NEW HAMPSHIRE",
+    "NJ": "NEW JERSEY",
+    "NM": "NEW MEXICO",
+    "NY": "NEW YORK",
+    "NC": "NORTH CAROLINA",
+    "ND": "NORTH DAKOTA",
+    "OH": "OHIO",
+    "OK": "OKLAHOMA",
+    "OR": "OREGON",
+    "PA": "PENNSYLVANIA",
+    "RI": "RHODE ISLAND",
+    "SC": "SOUTH CAROLINA",
+    "SD": "SOUTH DAKOTA",
+    "TN": "TENNESSEE",
+    "TX": "TEXAS",
+    "UT": "UTAH",
+    "VT": "VERMONT",
+    "VA": "VIRGINIA",
+    "WA": "WASHINGTON",
+    "WV": "WEST VIRGINIA",
+    "WI": "WISCONSIN",
+    "WY": "WYOMING",
+    "DC": "DISTRICT OF COLUMBIA",
+    "PR": "PUERTO RICO",
+    "GU": "GUAM",
+    "VI": "VIRGIN ISLANDS",
+    "MP": "NORTHERN MARIANA ISLANDS",
+    "AS": "AMERICAN SAMOA",
+}
+
+US_STATE_CODES = set(US_STATE_NAMES.keys())
+STATE_NAME_TO_CODE = {name: code for code, name in US_STATE_NAMES.items()}
+STATE_COMPACT_TO_CODE = {
+    re.sub(r"[^A-Z]", "", name): code for code, name in US_STATE_NAMES.items()
+}
+STATE_ALIAS_TO_CODE = {
+    "WASHINGTONDC": "DC",
+    "USVIRGINISLANDS": "VI",
+    "UNITEDSTATESVIRGINISLANDS": "VI",
+    "VIRGINISLANDSUS": "VI",
+    "VIRGINISLANDS": "VI",
+    "NORTHERNMARIANAS": "MP",
+    "COMMONWEALTHOFTHENORTHERNMARIANAISLANDS": "MP",
+    "CNMI": "MP",
+}
 
 
 def slug_certificate_name(name: str) -> str:
@@ -212,10 +313,23 @@ def render_certificate(
                 "details",
             )
             margin_x = mm(DEFAULT_BOTTOM_MARGIN_MM)
-            c.setFont(detail_font, DETAILS_FONT_SIZE_PT)
+            size_percent_raw = details_cfg.get("size_percent", DETAIL_SIZE_MAX_PERCENT)
+            try:
+                size_percent_int = int(size_percent_raw)
+            except (TypeError, ValueError):
+                size_percent_int = DETAIL_SIZE_MAX_PERCENT
+            if size_percent_int < DETAIL_SIZE_MIN_PERCENT or size_percent_int > DETAIL_SIZE_MAX_PERCENT:
+                size_percent_int = max(
+                    DETAIL_SIZE_MIN_PERCENT,
+                    min(size_percent_int, DETAIL_SIZE_MAX_PERCENT),
+                )
+            scale = size_percent_int / 100.0
+            detail_font_size = DETAILS_FONT_SIZE_PT * scale
+            line_spacing = DETAILS_LINE_SPACING_PT * scale
+            c.setFont(detail_font, detail_font_size)
             c.setFillGray(0.3)
             for index, line in enumerate(detail_lines):
-                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + index * DETAILS_LINE_SPACING_PT
+                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + index * line_spacing
                 if details_cfg.get("side", "LEFT") == "RIGHT":
                     c.drawRightString(w - margin_x, y_pos, line)
                 else:
@@ -377,34 +491,36 @@ def _resolve_font(
 
 
 def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str]:
+    selected = {var for var in variables if var in DETAIL_RENDER_SEQUENCE}
+    if not selected:
+        return []
     lines: list[str] = []
-    for key in variables:
-        label = DETAIL_LABELS.get(key)
-        if not label:
-            continue
-        value = _detail_value(session, key)
-        if value:
-            lines.append(f"{label}: {value}")
+    if "facilitators" in selected:
+        facilitators = _format_facilitators(session)
+        if facilitators:
+            lines.append(f"{DETAIL_LABELS['facilitators']}: {facilitators}")
+    if "location_title" in selected:
+        location = _format_location(session)
+        if location:
+            lines.append(location)
+    if "dates" in selected:
+        dates = _format_session_dates(session)
+        if dates:
+            lines.append(dates)
+    class_days = _format_class_days(session) if "class_days" in selected else None
+    contact_hours = (
+        _format_contact_hours(session) if "contact_hours" in selected else None
+    )
+    if class_days and contact_hours:
+        lines.append(
+            f"{DETAIL_LABELS['class_days']}: {class_days} • {DETAIL_LABELS['contact_hours']}: {contact_hours}"
+        )
+    else:
+        if class_days:
+            lines.append(f"{DETAIL_LABELS['class_days']}: {class_days}")
+        if contact_hours:
+            lines.append(f"{DETAIL_LABELS['contact_hours']}: {contact_hours}")
     return lines
-
-
-def _detail_value(session: Session, key: str) -> str | None:
-    if key == "contact_hours":
-        return _format_contact_hours(session)
-    if key == "facilitators":
-        return _format_facilitators(session)
-    if key == "dates":
-        return _format_session_dates(session)
-    if key == "location_title":
-        if session.workshop_location and session.workshop_location.label:
-            return session.workshop_location.label
-        if session.location:
-            return session.location
-        return None
-    if key == "class_days":
-        days = session.number_of_class_days or 0
-        return str(days) if days else None
-    return None
 
 
 def _format_contact_hours(session: Session) -> str | None:
@@ -456,16 +572,86 @@ def _format_session_dates(session: Session) -> str | None:
         start = end
     if not end:
         end = start
-    start_day = start.strftime("%d").lstrip("0") or start.strftime("%d")
-    end_day = end.strftime("%d").lstrip("0") or end.strftime("%d")
-    start_month = start.strftime("%B")
-    end_month = end.strftime("%B")
-    start_year = start.strftime("%Y")
-    end_year = end.strftime("%Y")
+    start_str = _format_single_date(start)
     if start == end:
-        return f"{start_day} {start_month} {start_year}"
-    if start_year == end_year:
-        if start.month == end.month:
-            return f"{start_day}–{end_day} {start_month} {start_year}"
-        return f"{start_day} {start_month} – {end_day} {end_month} {start_year}"
-    return f"{start_day} {start_month} {start_year} – {end_day} {end_month} {end_year}"
+        return start_str
+    end_str = _format_single_date(end)
+    return f"{start_str} – {end_str}"
+
+
+def _format_single_date(value: date) -> str:
+    day = value.strftime("%d").lstrip("0") or value.strftime("%d")
+    month = value.strftime("%B")
+    year = value.strftime("%Y")
+    return f"{day} {month} {year}"
+
+
+def _format_class_days(session: Session) -> str | None:
+    days = session.number_of_class_days or 0
+    return str(days) if days else None
+
+
+def _format_location(session: Session) -> str | None:
+    location = session.workshop_location
+    fallback: str | None = None
+    if location and location.label:
+        fallback = location.label
+    elif session.location:
+        fallback = session.location
+    if not location:
+        return fallback
+    city = (location.city or "").strip()
+    state_value = (location.state or "").strip()
+    country_value = (location.country or "").strip()
+    state_code = _state_abbreviation(state_value)
+    is_us = _is_us_country(country_value) or (
+        not country_value and state_code in US_STATE_CODES
+    )
+    if city and is_us and state_code:
+        return f"{city}, {state_code}"
+    if city and country_value and not is_us:
+        country_display = _format_country(country_value)
+        if country_display:
+            return f"{city}, {country_display}"
+    return fallback
+
+
+def _state_abbreviation(value: str | None) -> str | None:
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    upper = cleaned.upper()
+    if upper in US_STATE_CODES:
+        return upper
+    if upper in STATE_NAME_TO_CODE:
+        return STATE_NAME_TO_CODE[upper]
+    compact = re.sub(r"[^A-Z]", "", upper)
+    if compact in US_STATE_CODES:
+        return compact
+    if compact in STATE_NAME_TO_CODE:
+        return STATE_NAME_TO_CODE[compact]
+    if compact in STATE_COMPACT_TO_CODE:
+        return STATE_COMPACT_TO_CODE[compact]
+    if compact in STATE_ALIAS_TO_CODE:
+        return STATE_ALIAS_TO_CODE[compact]
+    return None
+
+
+def _is_us_country(value: str | None) -> bool:
+    if not value:
+        return False
+    normalized = re.sub(r"[^A-Z]", "", value.upper())
+    return normalized in US_COUNTRY_CODES
+
+
+def _format_country(value: str | None) -> str | None:
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if len(cleaned) == 2 and cleaned.isalpha():
+        return cleaned.upper()
+    return cleaned

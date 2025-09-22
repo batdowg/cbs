@@ -49,12 +49,20 @@ DETAIL_LABELS: dict[str, str] = {
 
 DETAIL_SIDES = ("LEFT", "RIGHT")
 
+DETAIL_SIZE_MIN_PERCENT = 50
+DETAIL_SIZE_MAX_PERCENT = 100
+
 PAGE_HEIGHT_MM = {
     "A4": 297.0,
     "LETTER": 279.4,
 }
 
-_DEFAULT_DETAILS = {"enabled": False, "side": "LEFT", "variables": []}
+_DEFAULT_DETAILS = {
+    "enabled": False,
+    "side": "LEFT",
+    "variables": [],
+    "size_percent": DETAIL_SIZE_MAX_PERCENT,
+}
 
 _DEFAULT_LAYOUT_BY_SIZE = {
     "A4": {
@@ -101,6 +109,17 @@ def ensure_details_config(details: dict | None) -> dict:
             config["side"] = side
         variables = details.get("variables") or []
         config["variables"] = filter_detail_variables(variables)
+        size_percent = details.get("size_percent")
+        try:
+            size_val = int(size_percent)
+        except (TypeError, ValueError):
+            size_val = _DEFAULT_DETAILS["size_percent"]
+        if size_val < DETAIL_SIZE_MIN_PERCENT or size_val > DETAIL_SIZE_MAX_PERCENT:
+            size_val = max(
+                DETAIL_SIZE_MIN_PERCENT,
+                min(size_val, DETAIL_SIZE_MAX_PERCENT),
+            )
+        config["size_percent"] = size_val
     return config
 
 
