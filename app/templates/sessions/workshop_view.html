@@ -79,7 +79,7 @@
     <input type="text" name="full_name" placeholder="Full name">
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
-    <button type="submit">Add Participant</button>
+    <button type="submit" class="btn btn-secondary">Add Participant</button>
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ workshop_return }}">
@@ -140,9 +140,9 @@
           <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
             <input type="hidden" name="next" value="{{ workshop_return }}">
             <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
-            <button type="submit" name="action" value="save">Save</button>
+            <button type="submit" class="btn btn-secondary" name="action" value="save">Save</button>
             {% if session.delivered %}
-            <button type="submit" name="action" value="generate">Generate</button>
+            <button type="submit" class="btn btn-secondary" name="action" value="generate">Generate</button>
             {% endif %}
           </form>
         </td>
@@ -161,7 +161,7 @@
           <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id, next=workshop_return) }}">Edit</a>
           <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
             <input type="hidden" name="next" value="{{ workshop_return }}">
-            <button type="submit">Remove</button>
+            <button type="submit"class="btn btn-secondary" color: #fff>Remove</button>
           </form>
           {% endif %}
         </td>
