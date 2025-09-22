@@ -310,6 +310,9 @@ class Session(db.Model):
     delivery_type = db.Column(db.String(32))
     region = db.Column(db.String(8))
     language = db.Column(db.String(16))
+    number_of_class_days = db.Column(
+        db.Integer, nullable=False, default=1, server_default="1"
+    )
     paper_size = db.Column(
         db.Enum("A4", "LETTER", name="paper_size"),
         nullable=False,

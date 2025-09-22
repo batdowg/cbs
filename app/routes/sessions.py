@@ -458,6 +458,7 @@ def new_session(current_user):
                 delivery_type="Material only",
                 start_date=date.today(),
                 end_date=date.today(),
+                number_of_class_days=1,
                 materials_only=True,
             )
             db.session.add(sess)
@@ -492,6 +493,7 @@ def new_session(current_user):
         capacity_str = request.form.get("capacity")
         if not capacity_str:
             missing.append("Capacity")
+        days_str = request.form.get("number_of_class_days")
         start_date_str = request.form.get("start_date")
         if not start_date_str:
             missing.append("Start date")
@@ -513,6 +515,14 @@ def new_session(current_user):
         )
         daily_end_val = time.fromisoformat(daily_end_str) if daily_end_str else None
         capacity_val = int(capacity_str)
+        if days_str in (None, ""):
+            number_of_class_days = 1
+        else:
+            try:
+                number_of_class_days = int(days_str)
+            except ValueError:
+                number_of_class_days = None
+        participants_count = 0
         materials_ordered = _cb(request.form.get("materials_ordered"))
         ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
         info_sent = _cb(request.form.get("info_sent"))
@@ -536,6 +546,7 @@ def new_session(current_user):
             region=region,
             workshop_language=workshop_language,
             capacity=capacity_val,
+            number_of_class_days=number_of_class_days or 1,
             materials_ordered=materials_ordered,
             ready_for_delivery=ready_for_delivery,
             info_sent=info_sent,
@@ -548,6 +559,58 @@ def new_session(current_user):
             workshop_location=wl,
         )
         sess.workshop_type = wt
+        if number_of_class_days is None:
+            flash('"# of class days" must be a whole number between 1 and 10.', "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    users=users,
+                    workshop_languages=get_language_options(),
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=wt,
+                    form=request.form,
+                ),
+                400,
+            )
+        if number_of_class_days < 1 or number_of_class_days > 10:
+            flash('"# of class days" must be between 1 and 10.', "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    users=users,
+                    workshop_languages=get_language_options(),
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=wt,
+                    form=request.form,
+                ),
+                400,
+            )
         if wt and workshop_language not in (wt.supported_languages or []):
             flash("Selected workshop type does not support chosen language.", "error")
             return (
@@ -574,7 +637,6 @@ def new_session(current_user):
                 ),
                 400,
             )
-        participants_count = 0
         if end_date_val < start_date_val:
             flash("End date must be the same day or after the start date.", "error")
             return (
@@ -775,6 +837,7 @@ def new_session(current_user):
             workshop_language="en",
             timezone=tz,
             capacity=16,
+            number_of_class_days=1,
             client_id=selected_client_id,
             region=current_user.region,
         ),
@@ -902,6 +965,65 @@ def edit_session(session_id: int, current_user):
                 400,
             )
         sess.capacity = request.form.get("capacity") or None
+        days_str = request.form.get("number_of_class_days")
+        if days_str in (None, ""):
+            number_of_class_days = sess.number_of_class_days or 1
+        else:
+            try:
+                number_of_class_days = int(days_str)
+            except (TypeError, ValueError):
+                number_of_class_days = None
+        if number_of_class_days is None:
+            flash('"# of class days" must be a whole number between 1 and 10.', "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    workshop_languages=get_language_options(),
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=sess.workshop_type,
+                    form=request.form,
+                ),
+                400,
+            )
+        if number_of_class_days < 1 or number_of_class_days > 10:
+            flash('"# of class days" must be between 1 and 10.', "error")
+            return (
+                render_template(
+                    "sessions/form.html",
+                    session=sess,
+                    workshop_types=workshop_types,
+                    facilitators=facilitators,
+                    clients=clients,
+                    workshop_languages=get_language_options(),
+                    include_all_facilitators=include_all,
+                    participants_count=participants_count,
+                    today=date.today(),
+                    timezones=TIMEZONES,
+                    workshop_locations=workshop_locations,
+                    title_override=title_arg,
+                    past_warning=False,
+                    daily_start_time_str=daily_start_str,
+                    daily_end_time_str=daily_end_str,
+                    simulation_outlines=simulation_outlines,
+                    workshop_type=sess.workshop_type,
+                    form=request.form,
+                ),
+                400,
+            )
+        sess.number_of_class_days = number_of_class_days
         if start_date_val and end_date_val and end_date_val < start_date_val:
             flash("End date must be the same day or after the start date.", "error")
             return (

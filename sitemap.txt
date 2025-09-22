@@ -13,6 +13,7 @@
 /sessions/<id>/prework  – Staff Prework tab (summary card mirrors workshop view and sits above assignment management/send controls)
 /sessions/<id>/materials – Materials order for the session (inherits Shipping Location)
 /sessions/<id>/materials/apply-defaults – Apply Workshop-Type defaults to Material Items
+/sessions/<id>/edit     – Staff session edit form (manual # of class days 1–10 lives here)
 /sessions/<id>/participants – Add/edit/CSV import participants
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view; CRM-only scoped to client CRM owner)
 /my-certificates         – Learner portal: download own PDFs
