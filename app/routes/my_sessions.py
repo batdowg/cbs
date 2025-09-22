@@ -65,12 +65,18 @@ def list_my_sessions():
             or any(f.id == user.id for f in getattr(s, "facilitators", []))
         }
         use_workshop_view = is_delivery_role or is_contractor_role
+        show_edit_button = bool(
+            is_admin(user)
+            or is_kcrm(user)
+            or (is_delivery_role and not is_contractor_role)
+        )
         return render_template(
             "my_sessions.html",
             sessions=sessions,
             show_all=show_all,
             assigned_session_ids=assigned_session_ids,
             workshop_link_for_facilitator=use_workshop_view,
+            show_edit_button=show_edit_button,
         )
     elif account_id:
         account = db.session.get(ParticipantAccount, account_id)
@@ -104,6 +110,7 @@ def list_my_sessions():
             assignments=assignments,
             certs=certs,
             today=date.today(),
+            show_edit_button=False,
         )
     else:
         return redirect(url_for("auth.login"))

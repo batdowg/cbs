@@ -1481,19 +1481,34 @@ def mark_delivered(session_id: int, current_user):
         flash("Session already marked delivered.", "info")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
 
+    now = datetime.utcnow()
+    flag_changes: list[tuple[str, bool, bool]] = []
+
+    if not sess.ready_for_delivery:
+        flag_changes.append(("ready_for_delivery", bool(sess.ready_for_delivery), True))
+    sess.ready_for_delivery = True
+    if not sess.ready_at:
+        sess.ready_at = now
+
+    flag_changes.append(("delivered", bool(sess.delivered), True))
     sess.delivered = True
     if not sess.delivered_at:
-        sess.delivered_at = datetime.utcnow()
+        sess.delivered_at = now
+
     enforce_material_only_rules(sess)
 
-    db.session.add(
-        AuditLog(
-            user_id=current_user.id,
-            session_id=session_id,
-            action="lifecycle_flip",
-            details="delivered:False->True",
+    for flag, old_value, new_value in flag_changes:
+        if old_value == new_value:
+            continue
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=session_id,
+                action="lifecycle_flip",
+                details=f"{flag}:{old_value}->{new_value}",
+            )
         )
-    )
+
     db.session.commit()
     flash("Session marked delivered", "success")
     return redirect(url_for("sessions.session_detail", session_id=session_id))

@@ -6,6 +6,7 @@
   {% if current_user %}
     {% set can_use_workshop_view = workshop_link_for_facilitator if workshop_link_for_facilitator is defined else False %}
     {% set facilitator_session_ids = assigned_session_ids if assigned_session_ids is defined else [] %}
+    {% set can_edit_sessions = show_edit_button if show_edit_button is defined else False %}
     {% if current_user.id %}
       {% set storage_key = 'cbs.mysessions.columns.' ~ current_user.id %}
       {% set width_key = 'cbs.mysessions.colwidths.' ~ current_user.id %}
@@ -72,6 +73,9 @@
                   <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">Open</a>
                 {% else %}
                   <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a>
+                {% endif %}
+                {% if can_edit_sessions %}
+                  <a href="{{ url_for('sessions.edit_session', session_id=s.id) }}">Edit</a>
                 {% endif %}
               </td>
             </tr>

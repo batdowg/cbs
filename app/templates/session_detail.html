@@ -10,7 +10,7 @@
 <div class="session-status-actions" style="margin: var(--space-2) 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);">
   <span><strong>Status:</strong> {{ session.computed_status }}</span>
   {% if can_edit_session and not material_only_session and not session.delivered and not session.cancelled %}
-  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline">
+  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Are you sure? This can’t be undone');">
     <button type="submit" class="btn btn-success">Delivered</button>
   </form>
   {% endif %}
