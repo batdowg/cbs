@@ -81,7 +81,7 @@
     <input type="text" name="title" placeholder="Title">
     <button type="submit" class="btn btn-secondary">Add Participant</button>
   </form>
-  <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
+  <form margin-bottom: 5px action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
     <label for="{{ import_input_id }}" class="btn">Import CSV</label> &ensp;
