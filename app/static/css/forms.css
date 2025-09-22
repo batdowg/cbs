@@ -83,6 +83,25 @@ input[type="datetime-local"] {
   padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
 }
 
+.kt-date--tight {
+  padding-right: 22px;
+}
+
+input.kt-date--tight {
+  padding-right: 22px;
+}
+
+.kt-date--tight[type="date"]::-webkit-calendar-picker-indicator,
+.kt-date--tight[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  margin: 0 2px 0 0;
+  padding: 0;
+}
+
+.kt-date--tight[type="date"]::-webkit-datetime-edit,
+.kt-date--tight[type="datetime-local"]::-webkit-datetime-edit {
+  padding: 0 8px;
+}
+
 textarea {
   min-height: calc(var(--field-h, 40px) * 2);
   line-height: 1.4;
