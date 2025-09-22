@@ -198,6 +198,7 @@ Roles control permissions; Views control menu visibility.
   - Logout
 
 Delivery (KT Facilitator) and Contractor accounts open the workshop runner view when selecting sessions from **My Sessions**. Other staff and CSA roles continue to the staff session detail page.
+- **My Sessions**: Admin, CRM, and Delivery roles see an **Edit** action per row; Contractors, CSA, and Learner accounts do not.
 
 ## 1.3 View Selector
 Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not.
@@ -398,7 +399,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
  - The Workshop Type edit page and **New Workshop Type** view include a **Default Materials** table mapping Delivery Type × Region × Language to catalog items with a default format and active flag.
  - Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle. Quantity basis comes from Materials Settings and is not editable on Workshop Types.
 - **Materials-only orders** share the session form. `/sessions/new` shows an **Order Information** section (Title, Client with CRM, Region, Language) with a **No workshop, material order only** button that creates a hidden session (`materials_only = true`, `delivery_type = "Material only"`) and redirects to that session's Materials Order page. Certificates and badges are unaffected and remain gated.
-- **Material only invariant**: when `delivery_type = "Material only"`, setting **Ready for delivery** or **Finalized** forces `status = "Closed"`, and `delivered` remains `False`. Workshop view (`/workshops/<id>`) redirects to the staff session detail.
+- **Material only invariant**: when `delivery_type = "Material only"`, setting **Ready for delivery** or **Finalized** forces `status = "Closed"`, and `delivered` remains `False`. Workshop view (`/workshops/<id>`) redirects to the staff session detail. The **Delivered** action is hidden for material-only sessions.
+- Staff **Delivered** action displays “Are you sure? This can’t be undone” and, on confirm, marks both **Ready for delivery** and **Delivered** in a single step.
 - Clicking **No workshop, material order only** removes `required` constraints from later form fields so only Order Information entries are enforced before submission.
 - When `materials_only = true`, training-session features (participants, prework, certificates) are hidden/denied.
  - Default Materials-only **Order Type** = “Client-run Bulk order”.
