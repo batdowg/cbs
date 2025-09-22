@@ -85,18 +85,18 @@ input[type="datetime-local"] {
 
 .kt-date--tight[type="date"],
 .kt-date--tight[type="datetime-local"] {
-  padding-right: calc(var(--field-px, 12px) + 0.875rem);
+  padding-right: calc(var(--field-px, 12px) + 0.5rem);
 }
 
 .kt-date--tight[type="date"]::-webkit-calendar-picker-indicator,
 .kt-date--tight[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  margin: 0 0.0625rem 0 0;
-  padding: 0.2rem;
+  margin: 0;
+  padding: 0.125rem;
 }
 
 .kt-date--tight[type="date"]::-webkit-datetime-edit,
 .kt-date--tight[type="datetime-local"]::-webkit-datetime-edit {
-  padding: var(--field-py, 8px) 0.375rem var(--field-py, 8px) var(--field-px, 12px);
+  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-px, 12px);
 }
 
 textarea {
