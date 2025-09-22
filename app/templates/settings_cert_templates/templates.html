@@ -81,13 +81,30 @@
           </select>
         </div>
         <div>
+          <label for="layout-{{ size }}-details-size-percent">Size %</label><br>
+          <input
+            id="layout-{{ size }}-details-size-percent"
+            type="number"
+            name="layout_{{ size }}_details_size_percent"
+            min="{{ detail_size_min }}"
+            max="{{ detail_size_max }}"
+            step="1"
+            value="{{ details.size_percent }}"
+            style="max-width:6ch;"
+          >
+        </div>
+        <div>
           <label for="layout-{{ size }}-details-variables">Panel variables</label><br>
           <select id="layout-{{ size }}-details-variables" name="layout_{{ size }}_details_variables" multiple size="{{ detail_variables|length }}" style="min-width:200px;">
             {% for var in detail_variables %}
               <option value="{{ var }}" {% if var in details.variables %}selected{% endif %}>{{ var.replace('_',' ')|title }}</option>
             {% endfor %}
           </select>
-          <p class="form-help">Selected order is the display order.</p>
+          <p class="form-help">
+            Size % scales the details lines from 50% to 100% of current text size.<br>
+            Labels are suppressed for Location and Dates.<br>
+            Class days and Contact hours render on one line when both are selected.
+          </p>
         </div>
       </div>
     </fieldset>

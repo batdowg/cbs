@@ -20,6 +20,8 @@ from ..shared.rbac import manage_users_required
 from ..shared.languages import get_language_options
 from ..shared.certificates_layout import (
     DETAIL_SIDES,
+    DETAIL_SIZE_MAX_PERCENT,
+    DETAIL_SIZE_MIN_PERCENT,
     DETAIL_VARIABLES,
     PAGE_HEIGHT_MM,
     filter_detail_variables,
@@ -135,6 +137,8 @@ def edit_templates(series_id: int, current_user):
         font_options=get_font_options(),
         detail_variables=DETAIL_VARIABLES,
         detail_sides=DETAIL_SIDES,
+        detail_size_min=DETAIL_SIZE_MIN_PERCENT,
+        detail_size_max=DETAIL_SIZE_MAX_PERCENT,
     )
 
 
@@ -266,10 +270,32 @@ def update_templates(series_id: int, current_user):
         variables = filter_detail_variables(
             request.form.getlist(f"layout_{size}_details_variables")
         )
+        size_default = defaults["details"]["size_percent"]
+        size_raw = (request.form.get(f"layout_{size}_details_size_percent") or "").strip()
+        size_percent = size_default
+        if size_raw:
+            try:
+                parsed = int(size_raw)
+            except ValueError:
+                layout_errors.append(
+                    f"{size} Details Size % must be a whole number"
+                )
+            else:
+                if not (
+                    DETAIL_SIZE_MIN_PERCENT
+                    <= parsed
+                    <= DETAIL_SIZE_MAX_PERCENT
+                ):
+                    layout_errors.append(
+                        f"{size} Details Size % must be between {DETAIL_SIZE_MIN_PERCENT} and {DETAIL_SIZE_MAX_PERCENT}"
+                    )
+                else:
+                    size_percent = parsed
         size_layout["details"] = {
             "enabled": enabled,
             "side": side,
             "variables": variables,
+            "size_percent": size_percent,
         }
         new_layout[size] = size_layout
 
