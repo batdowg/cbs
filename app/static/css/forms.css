@@ -77,26 +77,32 @@ select[multiple],
   border-radius: var(--radius-md, 12px);
 }
 
+input[type="time"] {
+  padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
+}
+
 input[type="date"],
-input[type="time"],
 input[type="datetime-local"] {
-  padding-right: calc(var(--field-px, 1px) * 2 + 1.5em);
+  width: 14ch;
+  max-width: 160px;
+  padding-right: calc(var(--field-px, 12px) + 0.5rem);
 }
 
-.kt-date--tight[type="date"],
-.kt-date--tight[type="datetime-local"] {
-  padding-right: calc(var(--field-px, 1px) + 0.5rem);
-}
-
-.kt-date--tight[type="date"]::-webkit-calendar-picker-indicator,
-.kt-date--tight[type="datetime-local"]::-webkit-calendar-picker-indicator {
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   margin: 0;
   padding: 0.125rem;
 }
 
-.kt-date--tight[type="date"]::-webkit-datetime-edit,
-.kt-date--tight[type="datetime-local"]::-webkit-datetime-edit {
-  padding: var(--field-py, 1px) 0.25rem var(--field-py, 1px) var(--field-px, 2px);
+input[type="date"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-px, 12px);
+}
+
+.kt-date--wide[type="date"],
+.kt-date--wide[type="datetime-local"] {
+  width: auto;
+  max-width: none;
 }
 
 textarea {
