@@ -191,7 +191,7 @@ def render_certificate(
     template_path = os.path.join(assets_dir, template_file)
     if not os.path.exists(template_path):
         available = sorted(
-            f for f in os.listdir(assets_dir) if f.startswith("fncert_template_")
+            f for f in os.listdir(assets_dir) if f.startswith("fncert_")
         )
         raise FileNotFoundError(
             f"{template_file} not found; available: {', '.join(available)}"
