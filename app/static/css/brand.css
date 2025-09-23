@@ -27,8 +27,8 @@
   --space-6: 24px;
 
   /* Radius */
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 
   /* Focus outline */
   --focus-outline: 2px solid var(--kt-info);
