@@ -3,8 +3,8 @@
 {% block content %}
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
 <form method="post">
-  <fieldset>
-    <legend>Order Information</legend>
+  <div class="kt-card form-align session-form__section">
+    <h2 class="kt-card-title">Order information</h2>
     {% set _title = title_override if title_override is not none else session.title %}
     <div class="form-align">
       <div class="form-align__row">
@@ -51,9 +51,9 @@
     <div style="margin-top:8px;">
       <button type="submit" id="materials-only-btn" name="action" value="materials_only">No workshop, material order only</button>
     </div>
-  </fieldset>
-  <fieldset>
-    <legend>Workshop details</legend>
+  </div>
+  <div class="kt-card form-align session-form__section">
+    <h2 class="kt-card-title">Workshop details</h2>
     <div class="form-align">
       <div class="form-align__row">
         <label class="form-align__label" for="workshop-type">Workshop*</label>
@@ -206,11 +206,11 @@
       </div>
     </div>
     <div><label>Notes & Special instructions<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
-  </fieldset>
+  </div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
-  <fieldset>
-    <legend>Lifecycle</legend>
+  <div class="kt-card session-form__section">
+    <h2 class="kt-card-title">Lifecycle</h2>
     <div><label><input type="checkbox" name="materials_ordered" value="1" {% if session.materials_ordered %}checked{% endif %} {% if disabled_all %}disabled{% endif %} data-base-disabled="{{ 1 if disabled_all else 0 }}"> Materials ordered</label></div>
     {% set ready_base_disabled = disabled_all or participants_count==0 or session.delivered %}
     <div><label><input type="checkbox" name="ready_for_delivery" value="1" {% if session.ready_for_delivery %}checked{% endif %} {% if ready_base_disabled %}disabled{% endif %} data-base-disabled="{{ 1 if ready_base_disabled else 0 }}" title="{% if participants_count==0 %}Add participants before marking Ready for delivery.{% elif session.delivered %}Delivered is set{% endif %}"> Ready for delivery</label></div>
@@ -221,7 +221,7 @@
       {% if not delivered_base_disabled %}<input type="hidden" name="delivered" value="0">{% endif %}
     </div>
     <div><label><input type="checkbox" name="finalized" value="1" {% if session.finalized %}checked{% endif %} {% if disabled_all or not session.delivered %}disabled{% endif %} data-base-disabled="{{ 1 if disabled_all or not session.delivered else 0 }}" title="{% if not session.delivered %}Requires Delivered{% endif %}"> Finalized</label></div>
-  </fieldset>
+  </div>
   <div>Status: <span class="badge">{{ session.computed_status }}</span></div>
   {% endif %}
   {% if not session or not session.id %}
@@ -290,7 +290,7 @@
   var materialsBtn = document.getElementById('materials-only-btn');
   if(materialsBtn){
     materialsBtn.addEventListener('click', function(){
-      document.querySelectorAll('fieldset:not(:first-of-type) [required]').forEach(function(el){
+      document.querySelectorAll('.session-form__section:not(:first-of-type) [required]').forEach(function(el){
         el.removeAttribute('required');
       });
     });

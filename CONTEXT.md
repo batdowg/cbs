@@ -39,6 +39,7 @@ Every functional change must update this file **in the same PR**.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
  - “KT Staff” is a **derived condition** (see §1.4), **not** a stored role.
 - Experimental features must register in `shared.flags` and be disabled by default.
+- `/forgot-password` redirects to `/login?forgot=1` (optionally `&email=`) to surface the forgot-password modal on the unified login page.
 
 ## 0.4 App Conventions & PR Hygiene
 - Keep migrations idempotent and reversible; guard enum/DDL changes carefully.
@@ -96,7 +97,7 @@ Every functional change must update this file **in the same PR**.
   - Radius: `--radius-md: 12px`; `--radius-lg: 16px`
   - Focus outline: `2px solid var(--kt-info)`
 
-- Tables: default `<table>` elements use `/static/css/table.css` with header/stripe/hover tints from `--kt-info`, text colors from `--kt-text` and `--kt-body`, borders `--kt-border`, and cell padding `var(--space-2)`/`var(--space-3)`.
+- Tables: default `<table>` elements use `/static/css/table.css` with header/stripe/hover tints from `--kt-info`, text colors from `--kt-text` and `--kt-body`, borders `--kt-border`, and cell padding `var(--space-2)`/`var(--space-3)`. Empty states render via `shared/_table_empty.html`, which outputs a muted “No data to display” row spanning the table.
 
 ## 0.7 Buttons & Links
 - Native buttons (`button`, `[type=button]`, `[type=submit]`, `[type=reset]`) and elements with `.btn` share KT styling.
@@ -127,6 +128,7 @@ Every functional change must update this file **in the same PR**.
 - Flash messages render as `.flash` elements with variants `.flash-success`, `.flash-error`, `.flash-warning`, and `.flash-info`.
 - Markup: `<div class="flash flash-{{ category }}" role="alert" aria-live="polite" tabindex="0">…</div>`.
 - Styles live in `/static/css/alerts.css` and load globally after `sidebar.css`.
+- Flashes persist for their auto-dismiss window; there is no manual close button.
 
 ## 0.12 Cards
 - `.kt-card` wraps tables or forms for visual grouping using brand tokens.

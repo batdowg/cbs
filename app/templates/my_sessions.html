@@ -2,7 +2,6 @@
 {% block title %}{% if current_user %}My Sessions{% else %}My Workshops{% endif %}{% endblock %}
 {% block content %}
 <h1>{% if current_user %}My Sessions{% else %}My Workshops{% endif %}</h1>
-{% if sessions %}
   {% if current_user %}
     {% set can_use_workshop_view = workshop_link_for_facilitator if workshop_link_for_facilitator is defined else False %}
     {% set facilitator_session_ids = assigned_session_ids if assigned_session_ids is defined else [] %}
@@ -35,89 +34,108 @@
             </tr>
           </thead>
           <tbody>
-            {% for s in sessions %}
-            <tr>
-              {% set is_material_only = (s.delivery_type|default('', true)|lower == 'material only') or s.materials_only %}
-              {% set use_workshop_view = can_use_workshop_view and (s.id in facilitator_session_ids) and not is_material_only %}
-              <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
-              <td data-column-key="title">
-                <span class="cell-ellipsis" title="{{ s.title }}">
-                  {% if use_workshop_view %}
-                    <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">{{ s.title }}</a>
-                  {% else %}
-                    <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+            {% if sessions %}
+              {% for s in sessions %}
+              <tr>
+                {% set is_material_only = (s.delivery_type|default('', true)|lower == 'material only') or s.materials_only %}
+                {% set use_workshop_view = can_use_workshop_view and (s.id in facilitator_session_ids) and not is_material_only %}
+                <td data-column-key="id" class="cell-nowrap">{{ s.id }}</td>
+                <td data-column-key="title">
+                  <span class="cell-ellipsis" title="{{ s.title }}">
+                    {% if use_workshop_view %}
+                      <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">{{ s.title }}</a>
+                    {% else %}
+                      <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
+                    {% endif %}
+                  </span>
+                </td>
+                <td data-column-key="client">
+                  {% if s.client %}
+                    <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
                   {% endif %}
-                </span>
-              </td>
-              <td data-column-key="client">
-                {% if s.client %}
-                  <span class="cell-ellipsis" title="{{ s.client.name }}">{{ s.client.name }}</span>
-                {% endif %}
-              </td>
-              <td data-column-key="location">
-                {% if s.location %}
-                  <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
-                {% endif %}
-              </td>
-              <td data-column-key="workshop_type">
-                {% if s.workshop_type %}
-                  <span class="cell-ellipsis" title="{{ s.workshop_type.code }} / {{ s.workshop_type.name }}">{{ s.workshop_type.code }} / {{ s.workshop_type.name }}</span>
-                {% endif %}
-              </td>
-              <td data-column-key="dates" class="cell-nowrap">{{ s.start_date }} to {{ s.end_date }}; {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
-              <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
-              <td data-column-key="delivery_type">{{ s.delivery_type }}</td>
-              <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
-              <td data-column-key="actions" class="col-actions">
-                {% if use_workshop_view %}
-                  <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">Open</a>
-                {% else %}
-                  <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a>
-                {% endif %}
-                {% if can_edit_sessions %}
-                  <a href="{{ url_for('sessions.edit_session', session_id=s.id) }}">Edit</a>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
+                </td>
+                <td data-column-key="location">
+                  {% if s.location %}
+                    <span class="cell-ellipsis" title="{{ s.location }}">{{ s.location }}</span>
+                  {% endif %}
+                </td>
+                <td data-column-key="workshop_type">
+                  {% if s.workshop_type %}
+                    <span class="cell-ellipsis" title="{{ s.workshop_type.code }} / {{ s.workshop_type.name }}">{{ s.workshop_type.code }} / {{ s.workshop_type.name }}</span>
+                  {% endif %}
+                </td>
+                <td data-column-key="dates" class="cell-nowrap">{{ s.start_date }} to {{ s.end_date }}; {{ s.daily_start_time|fmt_time }}-{{ s.daily_end_time|fmt_time }}</td>
+                <td data-column-key="region" class="cell-nowrap">{{ s.region }}</td>
+                <td data-column-key="delivery_type">{{ s.delivery_type }}</td>
+                <td data-column-key="status" class="cell-nowrap">{{ s.computed_status }}</td>
+                <td data-column-key="actions" class="col-actions">
+                  {% if use_workshop_view %}
+                    <a href="{{ url_for('workshops.workshop_view', session_id=s.id) }}">Open</a>
+                  {% else %}
+                    <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a>
+                  {% endif %}
+                  {% if can_edit_sessions %}
+                    <a href="{{ url_for('sessions.edit_session', session_id=s.id) }}">Edit</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              {% with colspan=10 %}
+
+                {% include 'shared/_table_empty.html' %}
+
+              {% endwith %}
+            {% endif %}
           </tbody>
         </table>
       </div>
     </div>
   {% else %}
-  <table class="kt-table">
-    <tr>
-      <th>Workshop</th>
-      <th>Dates</th>
-      <th>Timezone</th>
-      <th>Location</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-    {% for s in sessions %}
-    <tr>
-      <td>{% if s.workshop_type %}{{ s.workshop_type.name }}{% endif %}</td>
-      <td>{{ s.start_date }} - {{ s.end_date }}</td>
-      <td>{{ s.timezone }}</td>
-      <td>{{ s.workshop_location.label if s.workshop_location else '' }}</td>
-      <td>{% if today < s.start_date %}upcoming{% elif not s.delivered %}started{% else %}delivered{% endif %}</td>
-      <td>
-        {% set assignment = assignments.get(s.id) if assignments else None %}
-        {% if s.delivered and certs.get(s.id) %}
-          <a href="{{ url_for('learner.my_certs') }}">Certificate</a>
-        {% elif s.start_date <= today %}
-          <a href="{{ url_for('learner.my_resources') }}">Resources</a>
-        {% elif assignment and assignment.status != 'WAIVED' %}
-          <a href="{{ url_for('learner.my_prework') }}">Go to Prework</a>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr>
+          <th scope="col">Workshop</th>
+          <th scope="col">Dates</th>
+          <th scope="col">Timezone</th>
+          <th scope="col">Location</th>
+          <th scope="col">Status</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if sessions %}
+          {% for s in sessions %}
+          <tr>
+            <td>{% if s.workshop_type %}{{ s.workshop_type.name }}{% endif %}</td>
+            <td>{{ s.start_date }} - {{ s.end_date }}</td>
+            <td>{{ s.timezone }}</td>
+            <td>{{ s.workshop_location.label if s.workshop_location else '' }}</td>
+            <td>{% if today < s.start_date %}upcoming{% elif not s.delivered %}started{% else %}delivered{% endif %}</td>
+            <td>
+              {% set assignment = assignments.get(s.id) if assignments else None %}
+              {% if s.delivered and certs.get(s.id) %}
+                <a href="{{ url_for('learner.my_certs') }}">Certificate</a>
+              {% elif s.start_date <= today %}
+                <a href="{{ url_for('learner.my_resources') }}">Resources</a>
+              {% elif assignment and assignment.status != 'WAIVED' %}
+                <a href="{{ url_for('learner.my_prework') }}">Go to Prework</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          {% with colspan=6 %}
+
+            {% include 'shared/_table_empty.html' %}
+
+          {% endwith %}
         {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+      </tbody>
+    </table>
+  </div>
   {% endif %}
-{% else %}
-<p>No workshops found.</p>
-{% endif %}
 {% if current_user %}
   {% if not show_all %}
   <p><a href="{{ url_for('my_sessions.list_my_sessions', all=1) }}">Show all</a></p>

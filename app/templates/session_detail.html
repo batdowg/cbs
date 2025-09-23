@@ -129,34 +129,48 @@
   {% elif not csa_can_manage %}
   <p>Participant changes closed.</p>
   {% endif %}
-  <table class="kt-table">
-    <tr><th>Full Name</th><th>Email</th><th>Title</th><th>Certificate</th><th>Actions</th></tr>
-    {% for row in participants %}
-    <tr>
-      <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
-      <td>{{ row.participant.email }}</td>
-      <td>{{ row.participant.title }}</td>
-      <td>
-        {% if row.pdf_path %}
-          {% if badge_filename %}
-            {% set badge_url = '/badges/' ~ badge_filename %}
-            <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
-            <a href="{{ badge_url }}" download>Badge</a>
-          {% endif %}
-          <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr><th scope="col">Full Name</th><th scope="col">Email</th><th scope="col">Title</th><th scope="col">Certificate</th><th scope="col">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% if participants %}
+        {% for row in participants %}
+        <tr>
+          <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
+          <td>{{ row.participant.email }}</td>
+          <td>{{ row.participant.title }}</td>
+          <td>
+            {% if row.pdf_path %}
+              {% if badge_filename %}
+                {% set badge_url = '/badges/' ~ badge_filename %}
+                <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
+                <a href="{{ badge_url }}" download>Badge</a>
+              {% endif %}
+              <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+            {% endif %}
+          </td>
+          <td>
+        {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
+        <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
+        <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
+          <button type="submit">Remove</button>
+        </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+          {% with colspan=5 %}
+
+            {% include 'shared/_table_empty.html' %}
+
+          {% endwith %}
         {% endif %}
-      </td>
-      <td>
-    {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
-    <a href="{{ url_for('sessions.edit_participant', session_id=session.id, participant_id=row.participant.id) }}">Edit</a>
-    <form action="{{ url_for('sessions.remove_participant', session_id=session.id, participant_id=row.participant.id) }}" method="post" style="display:inline">
-      <button type="submit">Remove</button>
-    </form>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+      </tbody>
+    </table>
+  </div>
 {% else %}
   {% if not session.delivered and not session.participants_locked() %}
   <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">

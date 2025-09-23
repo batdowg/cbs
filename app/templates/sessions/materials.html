@@ -216,7 +216,18 @@
   <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
   {% endif %}</h2>
   <table class="kt-table" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}" data-default-formats='{{ default_formats | tojson }}'>
-    <tr><th>Materials</th><th>Language</th><th>Format</th><th>Qty</th><th>Processed</th>{% if can_manage %}<th></th>{% endif %}</tr>
+    <thead>
+      <tr>
+        <th scope="col">Materials</th>
+        <th scope="col">Language</th>
+        <th scope="col">Format</th>
+        <th scope="col">Qty</th>
+        <th scope="col">Processed</th>
+        {% if can_manage %}<th scope="col">Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% if order_items %}
     {% for item in order_items %}
     <tr data-existing>
       <td>{{ item.title_snapshot }}
@@ -260,6 +271,14 @@
       {% endif %}
     </tr>
     {% endfor %}
+    {% else %}
+      {% with colspan=(6 if can_manage else 5) %}
+
+        {% include 'shared/_table_empty.html' %}
+
+      {% endwith %}
+    {% endif %}
+    </tbody>
   </table>
   {% if can_manage %}
   <template id="item-row-template">

@@ -29,29 +29,31 @@
 <h2>Processors</h2>
 <p>Assign processors per region and processing type.</p>
 <form method="post" action="{{ url_for('settings_mail.save_processors') }}" id="proc-form">
-  <table>
-    <thead>
-      <tr><th>Region</th><th>Type</th><th>Processors</th></tr>
-    </thead>
-    <tbody>
-      {% for code,label in regions %}
-        {% for pt in processing_types %}
-        <tr>
-          <td>{{ label }}</td>
-          <td>{{ pt }}</td>
-          <td>
-            <div class="proc-people" data-key="{{ code }}-{{ pt }}">
-              {% for u in assignments.get((code, pt), []) %}
-              <span class="chip"><input type="hidden" name="{{ code }}-{{ pt }}" value="{{ u.id }}"><span>{{ u.full_name or u.email }}</span><button type="button" class="chip-remove" aria-label="Remove">×</button></span>
-              {% endfor %}
-              <button type="button" class="add-proc-user btn-secondary btn-sm">Add</button>
-            </div>
-          </td>
-        </tr>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr><th scope="col">Region</th><th scope="col">Type</th><th scope="col">Processors</th></tr>
+      </thead>
+      <tbody>
+        {% for code,label in regions %}
+          {% for pt in processing_types %}
+          <tr>
+            <td>{{ label }}</td>
+            <td>{{ pt }}</td>
+            <td>
+              <div class="proc-people" data-key="{{ code }}-{{ pt }}">
+                {% for u in assignments.get((code, pt), []) %}
+                <span class="chip"><input type="hidden" name="{{ code }}-{{ pt }}" value="{{ u.id }}"><span>{{ u.full_name or u.email }}</span><button type="button" class="chip-remove" aria-label="Remove">×</button></span>
+                {% endfor %}
+                <button type="button" class="add-proc-user btn-secondary btn-sm">Add</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
         {% endfor %}
-      {% endfor %}
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
   <button type="submit">Save Processors</button>
 </form>
 <dialog id="user-picker">
