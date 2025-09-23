@@ -3,22 +3,36 @@
 {% block content %}
 <div class="kt-card">
 <h1 class="kt-card-title">Roles Matrix</h1>
-<table class="kt-table">
-  <tr>
-    <th>Function</th>
-    {% for role in matrix['columns'] %}
-    <th>{{ role }}</th>
-    {% endfor %}
-  </tr>
-  {% for row, perms in matrix['rows'].items() %}
-  <tr>
-    <td>{{ row }}</td>
-    {% for role in matrix['columns'] %}
-    <td>{{ perms.get(role, '—') }}</td>
-    {% endfor %}
-  </tr>
-  {% endfor %}
-</table>
+<div class="kt-table-wrapper">
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Function</th>
+        {% for role in matrix['columns'] %}
+        <th scope="col">{{ role }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% if matrix['rows'] %}
+        {% for row, perms in matrix['rows'].items() %}
+        <tr>
+          <td>{{ row }}</td>
+          {% for role in matrix['columns'] %}
+          <td>{{ perms.get(role, '—') }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      {% else %}
+        {% with colspan=matrix['columns']|length + 1 %}
+
+          {% include 'shared/_table_empty.html' %}
+
+        {% endwith %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
 <p><small>Legend: V=view, E=edit, D=delete, A=action.</small></p>
 <p><small><strong>CSA (Client Session Administrator)</strong> is session-scoped: may view assigned sessions and add/remove participants until the session start time. CSA has no prework, materials, certificates, or session-field edit permissions.</small></p>
 <p><small>Matrix version {{ version }}</small></p>

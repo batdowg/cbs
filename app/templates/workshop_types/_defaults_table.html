@@ -1,6 +1,9 @@
 <h2 id="defaults">Default Materials</h2>
 <table class="kt-table" id="defaults-table">
-  <tr><th>Delivery Type</th><th>Region</th><th>Language</th><th>Material Item</th><th>Default Format</th><th>Active</th><th>Actions</th></tr>
+  <thead>
+    <tr><th scope="col">Delivery Type</th><th scope="col">Region</th><th scope="col">Language</th><th scope="col">Material Item</th><th scope="col">Default Format</th><th scope="col">Active</th><th scope="col">Actions</th></tr>
+  </thead>
+  <tbody>
   {% for d in defaults %}
   <tr data-row="{{ d.id }}"{% if loop.last %} data-blank-row="true"{% endif %}>
     <td>
@@ -42,6 +45,7 @@
     <td>{% if not loop.last %}<button type="button" class="btn btn-sm btn-danger delete-default" data-id="{{ d.id }}" data-url="{{ url_for('workshop_types.delete_default_row', default_id=d.id) }}">Delete</button>{% endif %}</td>
   </tr>
   {% endfor %}
+  </tbody>
 </table>
 <template id="default-row-template">
   <tr data-row="__index__" data-blank-row="true">

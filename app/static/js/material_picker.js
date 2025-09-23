@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function checkLastRow() {
-    var blankRow = table.querySelector('tr[data-blank-row="true"]');
+    var blankRow = table.querySelector('tbody tr[data-blank-row="true"]');
     if (!blankRow) return;
     var row = blankRow.dataset.row;
     if (isComplete(row)) {
@@ -94,7 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var temp = document.createElement('tbody');
     temp.innerHTML = html.trim();
     var newRow = temp.firstElementChild;
-    table.appendChild(newRow);
+    var body = table.tBodies[0] || table;
+    body.appendChild(newRow);
     ['delivery_type', 'region_code', 'language', 'default_format'].forEach(function (field) {
       var prev = document.querySelector('[name="defaults[' + copyFrom + '][' + field + ']"]');
       var curr = document.querySelector('[name="defaults[' + rowId + '][' + field + ']"]');
@@ -136,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  table.querySelectorAll('tr[data-row]').forEach(function (tr) {
+  table.querySelectorAll('tbody tr[data-row]').forEach(function (tr) {
     initRow(tr.dataset.row);
   });
 });

@@ -96,36 +96,55 @@
 </div>
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ preview_csrf }}">
-  <table class="kt-table">
-    <tr><th>Language</th><th>A4</th><th>Letter</th><th>Badge</th></tr>
-    {% for code, name in languages %}
-    <tr>
-      <td>{{ name }}</td>
-      {% for size in ['A4','LETTER'] %}
-      <td>
-        <select name="{{ code }}_{{ size }}">
-          <option value=""></option>
-          {% for file in files %}
-            <option value="{{ file }}" {% if mapping.get((code, size)) == file %}selected{% endif %}>{{ file }}</option>
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr>
+          <th scope="col">Language</th>
+          <th scope="col">A4</th>
+          <th scope="col">Letter</th>
+          <th scope="col">Badge</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if languages %}
+          {% for code, name in languages %}
+          <tr>
+            <td>{{ name }}</td>
+            {% for size in ['A4','LETTER'] %}
+            <td>
+              <select name="{{ code }}_{{ size }}">
+                <option value=""></option>
+                {% for file in files %}
+                  <option value="{{ file }}" {% if mapping.get((code, size)) == file %}selected{% endif %}>{{ file }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            {% endfor %}
+            <td>
+              <select name="badge_{{ code }}">
+                <option value="">— None —</option>
+                {% for badge in badges %}
+                  <option value="{{ badge }}" {% if badge_mapping.get(code) == badge %}selected{% endif %}>{{ badge }}</option>
+                {% endfor %}
+              </select>
+              {% set current_badge = badge_mapping.get(code) %}
+              {% if current_badge %}
+                <br><small><a href="/badges/{{ current_badge }}">Current file</a></small>
+              {% endif %}
+            </td>
+          </tr>
           {% endfor %}
-        </select>
-      </td>
-      {% endfor %}
-      <td>
-        <select name="badge_{{ code }}">
-          <option value="">— None —</option>
-          {% for badge in badges %}
-            <option value="{{ badge }}" {% if badge_mapping.get(code) == badge %}selected{% endif %}>{{ badge }}</option>
-          {% endfor %}
-        </select>
-        {% set current_badge = badge_mapping.get(code) %}
-        {% if current_badge %}
-          <br><small><a href="/badges/{{ current_badge }}">Current file</a></small>
+        {% else %}
+          {% with colspan=4 %}
+
+            {% include 'shared/_table_empty.html' %}
+
+          {% endwith %}
         {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+      </tbody>
+    </table>
+  </div>
   <h2>Layout</h2>
   {% for size in ['A4','LETTER'] %}
     {% set size_layout = layout[size] %}

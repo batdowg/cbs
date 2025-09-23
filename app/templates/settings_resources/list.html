@@ -26,28 +26,49 @@
     <a href="{{ url_for('settings_resources.list_resources') }}" class="btn btn-link">Clear</a>
   </div>
 </form>
-<table class="kt-table">
-  <tr>
-    <th>Name</th><th>Type</th><th>Audience</th><th>Language</th><th>Target</th><th>Workshop Types</th><th>Active</th><th>Actions</th>
-  </tr>
-  {% for r in resources %}
-  <tr>
-    <td>{{ r.name }}</td>
-    <td>{{ r.type }}</td>
-    <td>{{ r.audience }}</td>
-    <td>{{ r.language | lang_label }}</td>
-    <td>
-      {% if r.type == 'DOCUMENT' %}
-        {{ r.resource_value }}
+<div class="kt-table-wrapper">
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Type</th>
+        <th scope="col">Audience</th>
+        <th scope="col">Language</th>
+        <th scope="col">Target</th>
+        <th scope="col">Workshop Types</th>
+        <th scope="col">Active</th>
+        <th scope="col" class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if resources %}
+        {% for r in resources %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.type }}</td>
+          <td>{{ r.audience }}</td>
+          <td>{{ r.language | lang_label }}</td>
+          <td>
+            {% if r.type == 'DOCUMENT' %}
+              {{ r.resource_value }}
+            {% else %}
+              <a href="{{ r.resource_value }}" target="_blank">{{ r.resource_value }}</a>
+            {% endif %}
+          </td>
+          <td>{% for wt in r.workshop_types %}{{ wt.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+          <td>{{ 'Yes' if r.active else 'No' }}</td>
+          <td class="col-actions"><a href="{{ url_for('settings_resources.edit_resource', res_id=r.id) }}">Edit</a></td>
+        </tr>
+        {% endfor %}
       {% else %}
-        <a href="{{ r.resource_value }}" target="_blank">{{ r.resource_value }}</a>
+        {% with colspan=8 %}
+
+          {% include 'shared/_table_empty.html' %}
+
+        {% endwith %}
       {% endif %}
-    </td>
-    <td>{% for wt in r.workshop_types %}{{ wt.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
-    <td>{{ 'Yes' if r.active else 'No' }}</td>
-    <td><a href="{{ url_for('settings_resources.edit_resource', res_id=r.id) }}">Edit</a></td>
-  </tr>
-  {% endfor %}
-</table>
+    </tbody>
+  </table>
+</div>
 </div>
 {% endblock %}

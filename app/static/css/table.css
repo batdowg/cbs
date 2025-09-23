@@ -37,6 +37,21 @@
   background: color-mix(in srgb, var(--kt-info) 8%, var(--kt-bg));
 }
 
+.kt-table .table-empty {
+  background: var(--kt-bg);
+}
+
+.kt-table .table-empty__cell {
+  text-align: center;
+  padding: var(--space-4);
+  color: var(--kt-muted);
+  font-weight: 500;
+}
+
+.kt-table .table-empty__text {
+  display: inline-block;
+}
+
 .attendance-table thead th {
   white-space: nowrap;
 }

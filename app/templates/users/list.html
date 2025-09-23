@@ -20,31 +20,43 @@
 
 <form method="post" action="{{ url_for('users.bulk_update') }}">
 <div class="kt-table-wrapper">
-<table class="kt-table">
-  <tr>
-    <th>Email</th>
-    <th>Full Name</th>
-    <th>Region</th>
-    <th>SysAdmin</th>
-    <th>Administrator</th>
-    <th>CRM</th>
-    <th>KT Facilitator</th>
-    <th>Contractor</th>
-    <th>Edit</th>
-  </tr>
-  {% for u in users %}
-  <tr>
-    <td>{{ u.email }}</td>
-    <td>{{ u.full_name }}</td>
-    <td>{{ u.region }}</td>
-    <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
-    <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
-    <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
-    <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>
-    <td><input type="checkbox" name="is_kt_contractor_{{ u.id }}" {% if u.is_kt_contractor %}checked{% endif %}></td>
-    <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
-  </tr>
-  {% endfor %}
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Email</th>
+        <th scope="col">Full Name</th>
+        <th scope="col">Region</th>
+        <th scope="col">SysAdmin</th>
+        <th scope="col">Administrator</th>
+        <th scope="col">CRM</th>
+        <th scope="col">KT Facilitator</th>
+        <th scope="col">Contractor</th>
+        <th scope="col">Edit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if users %}
+        {% for u in users %}
+        <tr>
+          <td>{{ u.email }}</td>
+          <td>{{ u.full_name }}</td>
+          <td>{{ u.region }}</td>
+          <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
+          <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
+          <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
+          <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>
+          <td><input type="checkbox" name="is_kt_contractor_{{ u.id }}" {% if u.is_kt_contractor %}checked{% endif %}></td>
+          <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        {% with colspan=9 %}
+
+          {% include 'shared/_table_empty.html' %}
+
+        {% endwith %}
+      {% endif %}
+    </tbody>
   </table>
 </div>
 <p><button type="submit">Save changes</button></p>

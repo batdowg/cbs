@@ -1,16 +1,28 @@
 <div class="kt-card">
   <h2 class="kt-card-title">My Facilitated Sessions</h2>
-  {% if sessions %}
-  <table class="kt-table">
-    <tr><th>Dates</th><th>Client</th><th>Title</th><th>Action</th></tr>
-    {% for s in sessions %}
-    <tr>
-      <td>{{ s.start_date }}–{{ s.end_date }}</td>
-      <td>{{ s.client.name if s.client else '' }}</td>
-      <td>{{ s.title }}</td>
-      <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
-    </tr>
-    {% endfor %}
-  </table>
-  {% else %}<p>No sessions found.</p>{% endif %}
+  <div class="kt-table-wrapper">
+    <table class="kt-table">
+      <thead>
+        <tr><th scope="col">Dates</th><th scope="col">Client</th><th scope="col">Title</th><th scope="col">Action</th></tr>
+      </thead>
+      <tbody>
+        {% if sessions %}
+          {% for s in sessions %}
+          <tr>
+            <td>{{ s.start_date }}–{{ s.end_date }}</td>
+            <td>{{ s.client.name if s.client else '' }}</td>
+            <td>{{ s.title }}</td>
+            <td><a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">Open</a></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          {% with colspan=4 %}
+
+            {% include 'shared/_table_empty.html' %}
+
+          {% endwith %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>

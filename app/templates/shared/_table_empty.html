@@ -1,0 +1,7 @@
+{% set colspan = colspan if colspan is defined else 1 %}
+{% set message = message if message is defined else 'No data to display' %}
+<tr class="table-empty">
+  <td class="table-empty__cell" colspan="{{ colspan }}">
+    <span class="table-empty__text">{{ message }}</span>
+  </td>
+</tr>

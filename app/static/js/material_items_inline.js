@@ -120,10 +120,11 @@ document.addEventListener('DOMContentLoaded', function(){
     var temp = document.createElement('tbody');
     temp.innerHTML = html.trim();
     var row = temp.firstElementChild;
-    table.appendChild(row);
+    var body = table.tBodies[0] || table;
+    body.appendChild(row);
     initRow(row);
   }
 
-  table.querySelectorAll('tr[data-existing]').forEach(initRow);
+  table.querySelectorAll('tbody tr[data-existing]').forEach(initRow);
   appendBlankRow();
 });

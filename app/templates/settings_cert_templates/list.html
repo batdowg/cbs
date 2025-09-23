@@ -4,17 +4,37 @@
 <div class="kt-card">
 <h1 class="kt-card-title">Certificate Template Series</h1>
 <p><a href="{{ url_for('settings_cert_templates.new_series') }}">New Series</a></p>
-<table class="kt-table">
-  <tr><th>Code</th><th>Name</th><th>Active</th><th></th><th></th></tr>
-  {% for s in series %}
-  <tr>
-    <td>{{ s.code }}</td>
-    <td>{{ s.name }}</td>
-    <td>{{ 'Yes' if s.is_active else 'No' }}</td>
-    <td><a href="{{ url_for('settings_cert_templates.edit_series', series_id=s.id) }}">Edit</a></td>
-    <td><a href="{{ url_for('settings_cert_templates.edit_templates', series_id=s.id) }}">Templates</a></td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="kt-table-wrapper">
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Code</th>
+        <th scope="col">Name</th>
+        <th scope="col">Active</th>
+        <th scope="col">Edit</th>
+        <th scope="col">Templates</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if series %}
+        {% for s in series %}
+        <tr>
+          <td>{{ s.code }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ 'Yes' if s.is_active else 'No' }}</td>
+          <td><a href="{{ url_for('settings_cert_templates.edit_series', series_id=s.id) }}">Edit</a></td>
+          <td><a href="{{ url_for('settings_cert_templates.edit_templates', series_id=s.id) }}">Templates</a></td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        {% with colspan=5 %}
+
+          {% include 'shared/_table_empty.html' %}
+
+        {% endwith %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
 </div>
 {% endblock %}

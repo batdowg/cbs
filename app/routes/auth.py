@@ -291,7 +291,14 @@ def login():
         if is_csa:
             return redirect(url_for("csa.my_sessions"))
         return redirect(url_for("learner.my_workshops"))
-    return render_template("auth/login_unified.html")
+    dev_token = flask_session.pop("dev_reset_token", None)
+    forgot_flag = request.args.get("forgot", "").lower()
+    forgot_open = forgot_flag in {"1", "true", "yes"}
+    return render_template(
+        "auth/login_unified.html",
+        forgot_open=forgot_open,
+        dev_reset_token=dev_token,
+    )
 
 
 @bp.route("/forgot-password", methods=["GET", "POST"], endpoint="forgot_password")
@@ -322,9 +329,13 @@ def forgot_password():
             if not res.get("ok"):
                 flask_session["dev_reset_token"] = token
             flash("If we find an account, we'll email a link.", "info")
-        return redirect(url_for("auth.forgot_password"))
-    token = flask_session.pop("dev_reset_token", None)
-    return render_template("forgot_password.html", token=token)
+        return redirect(url_for("auth.login", forgot=1, email=email_input))
+    forgot_param = request.args.get("forgot") or "1"
+    email_param = request.args.get("email")
+    target_args = {"forgot": forgot_param}
+    if email_param:
+        target_args["email"] = email_param
+    return redirect(url_for("auth.login", **target_args))
 
 
 @bp.route("/reset-password", methods=["GET", "POST"], endpoint="reset_password")

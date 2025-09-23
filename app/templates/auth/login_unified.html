@@ -2,14 +2,107 @@
 {% block title %}Login | KT Workshop Tools{% endblock %}
 {% block extra_head %}
 <style>
-  body { justify-content:center; align-items:center; }
+  body { justify-content:center; align-items:center; background: color-mix(in srgb, var(--kt-info) 4%, var(--kt-bg)); }
   .sidebar { display:none; }
-  .content { flex:none; }
-  .login-card { text-align:center; border:1px solid #ccc; padding:2rem; border-radius:4px; max-width:320px; }
-  .login-card img { max-width:150px; margin-bottom:1rem; }
-  .login-card h1 { font-size:1.5rem; margin:0.5rem 0; }
-  .login-card p { margin:0.5rem 0; }
-  .footnote { font-size:0.9em; color:#555; margin-top:1rem; }
+  .content { flex:none; width:100%; display:flex; justify-content:center; }
+  body.modal-open { overflow:hidden; }
+  .login-card {
+    text-align:center;
+    border: 1px solid var(--kt-border);
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    max-width: 360px;
+    width: min(100%, 360px);
+    background: var(--kt-bg);
+    box-shadow: 0 24px 48px rgba(0, 44, 91, 0.18);
+  }
+  .login-card img { max-width:150px; margin-bottom:var(--space-4); }
+  .login-card h1 { font-size:1.5rem; margin:0.5rem 0 var(--space-3); font-family: 'Raleway', sans-serif; }
+  .login-card form { display:grid; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .login-card form input { width:100%; }
+  .login-card button[type="submit"] { width:100%; }
+  .link-button {
+    background:none;
+    border:none;
+    color: var(--kt-info);
+    text-decoration: underline;
+    cursor:pointer;
+    font: inherit;
+    padding:0;
+    margin-top: var(--space-2);
+  }
+  .link-button:hover,
+  .link-button:focus-visible {
+    color: var(--kt-primary-hover);
+    outline: none;
+  }
+  .footnote { font-size:0.9em; color:var(--kt-muted); margin-top:var(--space-3); }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 44, 91, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    z-index: 1000;
+  }
+  .modal-backdrop.is-open {
+    display: flex;
+  }
+  .modal-content {
+    position: relative;
+    width: min(100%, 420px);
+    background: var(--kt-bg);
+    border-radius: var(--radius-md);
+    box-shadow: 0 18px 36px rgba(0, 44, 91, 0.25);
+    padding: var(--space-5) var(--space-5) var(--space-4);
+    text-align: left;
+  }
+  .modal-close {
+    position:absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    background:none;
+    border:none;
+    color: var(--kt-muted);
+    font-size:1.25rem;
+    cursor:pointer;
+    line-height:1;
+  }
+  .modal-close:hover,
+  .modal-close:focus-visible {
+    color: var(--kt-text);
+    outline: none;
+  }
+  .modal-title {
+    font-family: 'Raleway', sans-serif;
+    font-size: 1.25rem;
+    margin-bottom: var(--space-2);
+  }
+  .modal-subtitle {
+    margin-bottom: var(--space-3);
+    color: var(--kt-muted);
+    font-size: 0.95rem;
+  }
+  .forgot-form {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .forgot-form label {
+    font-weight: 600;
+    display: block;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .dev-token {
+    margin-top: var(--space-3);
+    font-size: 0.9rem;
+    color: var(--kt-muted);
+    word-break: break-all;
+  }
 </style>
 {% endblock %}
 {% block content %}
@@ -17,10 +110,90 @@
   <img src="/logo.png" alt="KT logo">
   <h1>Welcome to KT Workshop Tools</h1>
   <form method="post">
-    <p><input type="email" name="email" placeholder="Email" required></p>
-    <p><input type="password" name="password" placeholder="Password" required></p>
-    <p><button type="submit">Sign in</button></p>
+    <input type="email" name="email" placeholder="Email" required autocomplete="email" value="{{ request.args.get('email', '') }}">
+    <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+    <button type="submit" class="btn btn-primary">Sign in</button>
   </form>
-  <p><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+  <button type="button" class="link-button" data-open-forgot>Forgot password?</button>
+  <p class="footnote">We'll direct you to the right place after sign-in.</p>
 </div>
+<div class="modal-backdrop{% if forgot_open %} is-open{% endif %}" id="forgot-modal" data-open="{{ '1' if forgot_open else '0' }}" role="dialog" aria-modal="true" aria-hidden="{{ 'false' if forgot_open else 'true' }}" aria-labelledby="forgot-password-title">
+  <div class="modal-content">
+    <button type="button" class="modal-close" data-close-forgot aria-label="Close">×</button>
+    <h2 class="modal-title" id="forgot-password-title">Forgot password</h2>
+    <p class="modal-subtitle">Enter your email and we'll send reset instructions.</p>
+    <form method="post" action="{{ url_for('auth.forgot_password') }}" class="forgot-form">
+      <div>
+        <label for="forgot-email">Email</label>
+        <input type="email" id="forgot-email" name="email" required autocomplete="email" value="{{ request.args.get('email', '') }}">
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">Send reset link</button>
+      </div>
+    </form>
+    {% if dev_reset_token %}
+    <p class="dev-token"><strong>Dev only token:</strong> {{ dev_reset_token }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+  {{ super() }}
+  <script>
+  (function(){
+    const modal = document.getElementById('forgot-modal');
+    if(!modal){ return; }
+    const openers = document.querySelectorAll('[data-open-forgot]');
+    const closer = modal.querySelector('[data-close-forgot]');
+    const emailInput = modal.querySelector('#forgot-email');
+    const body = document.body;
+
+    function openModal(){
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      modal.dataset.open = '1';
+      body.classList.add('modal-open');
+      if(emailInput){
+        window.setTimeout(() => emailInput.focus(), 50);
+      }
+    }
+
+    function closeModal(){
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.dataset.open = '0';
+      body.classList.remove('modal-open');
+    }
+
+    openers.forEach(btn => {
+      btn.addEventListener('click', function(event){
+        event.preventDefault();
+        openModal();
+      });
+    });
+
+    if(closer){
+      closer.addEventListener('click', function(event){
+        event.preventDefault();
+        closeModal();
+      });
+    }
+
+    modal.addEventListener('click', function(event){
+      if(event.target === modal){
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(event){
+      if(event.key === 'Escape' && modal.dataset.open === '1'){
+        closeModal();
+      }
+    });
+
+    if(modal.dataset.open === '1'){
+      openModal();
+    }
+  })();
+  </script>
 {% endblock %}

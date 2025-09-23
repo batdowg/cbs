@@ -4,25 +4,46 @@
 <div class="kt-card">
 <h1 class="kt-card-title">{{ label }} Materials</h1>
 <p><a href="{{ url_for('settings_materials.new_option', slug=slug) }}">New option</a></p>
-<table class="kt-table">
-  <tr><th>Title</th><th>Languages</th><th>Formats</th><th class="cell-nowrap">Qty basis</th><th class="cell-nowrap">Status</th><th class="col-actions"></th></tr>
-  {% for opt in options %}
-  <tr>
-    <td><span class="cell-ellipsis" title="{{ opt.title }}">{{ opt.title }}</span></td>
-    {% set language_list = opt.languages | map(attribute='name') | join(', ') %}
-    <td><span class="cell-ellipsis" title="{{ language_list }}">{{ language_list }}</span></td>
-    {% set format_list = opt.formats|join(', ') %}
-    <td><span class="cell-ellipsis" title="{{ format_list }}">{{ format_list }}</span></td>
-    <td class="cell-nowrap">{{ opt.quantity_basis }}</td>
-    <td class="cell-nowrap">{{ 'Active' if opt.is_active else 'Inactive' }}</td>
-    <td class="col-actions">
-      <a class="btn btn-primary btn-sm" href="{{ url_for('settings_materials.edit_option', slug=slug, opt_id=opt.id) }}">Edit</a>
-      <form method="post" action="{{ url_for('settings_materials.toggle_option', slug=slug, opt_id=opt.id) }}" style="display:inline">
-        <button class="btn btn-primary btn-sm" type="submit">{{ 'Deactivate' if opt.is_active else 'Activate' }}</button>
-      </form>
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="kt-table-wrapper">
+  <table class="kt-table">
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Languages</th>
+        <th scope="col">Formats</th>
+        <th scope="col" class="cell-nowrap">Qty basis</th>
+        <th scope="col" class="cell-nowrap">Status</th>
+        <th scope="col" class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if options %}
+        {% for opt in options %}
+        <tr>
+          <td><span class="cell-ellipsis" title="{{ opt.title }}">{{ opt.title }}</span></td>
+          {% set language_list = opt.languages | map(attribute='name') | join(', ') %}
+          <td><span class="cell-ellipsis" title="{{ language_list }}">{{ language_list }}</span></td>
+          {% set format_list = opt.formats|join(', ') %}
+          <td><span class="cell-ellipsis" title="{{ format_list }}">{{ format_list }}</span></td>
+          <td class="cell-nowrap">{{ opt.quantity_basis }}</td>
+          <td class="cell-nowrap">{{ 'Active' if opt.is_active else 'Inactive' }}</td>
+          <td class="col-actions">
+            <a class="btn btn-primary btn-sm" href="{{ url_for('settings_materials.edit_option', slug=slug, opt_id=opt.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('settings_materials.toggle_option', slug=slug, opt_id=opt.id) }}" style="display:inline">
+              <button class="btn btn-primary btn-sm" type="submit">{{ 'Deactivate' if opt.is_active else 'Activate' }}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        {% with colspan=6 %}
+
+          {% include 'shared/_table_empty.html' %}
+
+        {% endwith %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
 </div>
 {% endblock %}

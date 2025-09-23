@@ -16,31 +16,43 @@
 {% if session.no_prework and not any_assignment %}
 <p>Prework disabled for this workshop.</p>
 {% endif %}
-{% if rows %}
-<table class="kt-table">
-<tr><th>Name</th><th>Email</th><th>Status</th><th>Sent</th><th>Completed</th><th>Account Sent</th><th>Export</th><th>Actions</th></tr>
-{% for p, account, assignment in rows %}
-<tr>
-<td>{{ p.full_name }}</td>
-<td>{{ p.email }}</td>
-<td>{% if assignment %}{{ assignment.status }}{% elif session.no_prework %}WAIVED{% else %}PENDING{% endif %}</td>
-<td>{{ assignment.sent_at|fmt_dt if assignment else '' }}</td>
-<td>{{ assignment.completed_at|fmt_dt if assignment else '' }}</td>
-<td>{{ assignment.account_sent_at|fmt_dt if assignment else '' }}</td>
-<td>{% if assignment %}<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download</a>{% endif %}</td>
-<td>
-  {% if assignment and assignment.status != 'WAIVED' and not session.no_prework %}
-  <form method="post" style="display:inline">
-    <input type="hidden" name="action" value="resend">
-    <input type="hidden" name="participant_id" value="{{ p.id }}">
-    <button type="submit">Resend</button>
-  </form>
-  {% endif %}
-</td>
-</tr>
-{% endfor %}
-</table>
-{% endif %}
+<div class="kt-table-wrapper">
+  <table class="kt-table">
+    <thead>
+      <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Status</th><th scope="col">Sent</th><th scope="col">Completed</th><th scope="col">Account Sent</th><th scope="col">Export</th><th scope="col">Actions</th></tr>
+    </thead>
+    <tbody>
+    {% if rows %}
+    {% for p, account, assignment in rows %}
+    <tr>
+      <td>{{ p.full_name }}</td>
+      <td>{{ p.email }}</td>
+      <td>{% if assignment %}{{ assignment.status }}{% elif session.no_prework %}WAIVED{% else %}PENDING{% endif %}</td>
+      <td>{{ assignment.sent_at|fmt_dt if assignment else '' }}</td>
+      <td>{{ assignment.completed_at|fmt_dt if assignment else '' }}</td>
+      <td>{{ assignment.account_sent_at|fmt_dt if assignment else '' }}</td>
+      <td>{% if assignment %}<a href="{{ url_for('learner.prework_download', assignment_id=assignment.id) }}" target="_blank">Download</a>{% endif %}</td>
+      <td>
+        {% if assignment and assignment.status != 'WAIVED' and not session.no_prework %}
+        <form method="post" style="display:inline">
+          <input type="hidden" name="action" value="resend">
+          <input type="hidden" name="participant_id" value="{{ p.id }}">
+          <button type="submit">Resend</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    {% else %}
+      {% with colspan=8 %}
+
+        {% include 'shared/_table_empty.html' %}
+
+      {% endwith %}
+    {% endif %}
+    </tbody>
+  </table>
+</div>
 <form method="post" style="display:inline">
   <input type="hidden" name="action" value="send_all">
   <button type="submit" {% if session.no_prework %}disabled{% endif %}>Send Prework</button>
