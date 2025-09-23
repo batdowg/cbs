@@ -29,6 +29,7 @@ Every functional change must update this file **in the same PR**.
 - Business logic stays server-side; small JS for UI only.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
 - Certificates: `<certs_root>/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (`<certs_root>` = `SITE_ROOT/certificates`, default `/srv/certificates`); `pdf_path` in DB is stored relative to `<certs_root>`.
+- Template Preview is resilient: falls back to a default font or blank background with visible warnings; generation behavior is unchanged.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.
  - “KT Staff” is a **derived condition** (see §1.4), **not** a stored role.
