@@ -2057,8 +2057,11 @@ def session_prework(session_id: int):
             abort(403)
     elif not is_kt_staff(current_user):
         abort(403)
+    session_language = sess.workshop_language or "en"
     template = PreworkTemplate.query.filter_by(
-        workshop_type_id=sess.workshop_type_id, is_active=True
+        workshop_type_id=sess.workshop_type_id,
+        language=session_language,
+        is_active=True,
     ).first()
     participants = (
         db.session.query(Participant, ParticipantAccount)
@@ -2269,7 +2272,9 @@ def session_prework(session_id: int):
         rows=rows,
         template=template,
         any_assignment=any_assignment,
-        prework_summary=get_session_prework_summary(sess.id),
+        prework_summary=get_session_prework_summary(
+            sess.id, session_language=session_language
+        ),
     )
 
 

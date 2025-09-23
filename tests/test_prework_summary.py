@@ -1,5 +1,7 @@
 from datetime import date, time
 
+import pytest
+
 from app.app import create_app, db
 from app.models import (
     User,
@@ -13,6 +15,9 @@ from app.models import (
     PreworkAssignment,
     PreworkAnswer,
 )
+
+
+pytestmark = pytest.mark.smoke
 
 
 def _setup_base_data():
@@ -205,3 +210,124 @@ def test_prework_summary_empty_state():
         staff_resp = client.get(f"/sessions/{session_id}/prework")
         assert staff_resp.status_code == 200
         assert b"No prework submitted yet." in staff_resp.data
+
+
+def test_prework_summary_filters_to_session_language():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        admin = User(email="admin-lang@example.com", is_app_admin=True)
+        facilitator = User(email="fac-lang@example.com", is_kt_delivery=True)
+        wt = WorkshopType(
+            code="PWL", name="Prework Lang", cert_series="fn", supported_languages=["en", "es"]
+        )
+        tpl_en = PreworkTemplate(workshop_type=wt, language="en", info_html="info")
+        tpl_es = PreworkTemplate(workshop_type=wt, language="es", info_html="info")
+        q_en = PreworkQuestion(template=tpl_en, position=1, text="English Q", kind="TEXT")
+        q_es = PreworkQuestion(template=tpl_es, position=1, text="Spanish Q", kind="TEXT")
+        session = Session(
+            title="Idioma",
+            workshop_type=wt,
+            start_date=date.today(),
+            end_date=date.today(),
+            daily_start_time=time(9, 0),
+            daily_end_time=time(17, 0),
+            workshop_language="es",
+        )
+        session.lead_facilitator = facilitator
+        account_es = ParticipantAccount(email="es@example.com", full_name="Español")
+        account_en = ParticipantAccount(email="en@example.com", full_name="English")
+        participant_es = Participant(
+            email="es@example.com", full_name="Español", account=account_es
+        )
+        participant_en = Participant(
+            email="en@example.com", full_name="English", account=account_en
+        )
+        db.session.add_all(
+            [
+                admin,
+                facilitator,
+                wt,
+                tpl_en,
+                tpl_es,
+                q_en,
+                q_es,
+                session,
+                account_es,
+                account_en,
+                participant_es,
+                participant_en,
+            ]
+        )
+        db.session.flush()
+        db.session.add_all(
+            [
+                SessionParticipant(session_id=session.id, participant_id=participant_es.id),
+                SessionParticipant(session_id=session.id, participant_id=participant_en.id),
+            ]
+        )
+        snapshot_es = {
+            "questions": [
+                {"index": 1, "text": "Spanish Q", "required": True, "kind": "TEXT"}
+            ],
+            "resources": [],
+        }
+        snapshot_en = {
+            "questions": [
+                {"index": 1, "text": "English Q", "required": True, "kind": "TEXT"}
+            ],
+            "resources": [],
+        }
+        assignment_es = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account_es.id,
+            template=tpl_es,
+            status="COMPLETED",
+            snapshot_json=snapshot_es,
+        )
+        assignment_en = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account_en.id,
+            template=tpl_en,
+            status="COMPLETED",
+            snapshot_json=snapshot_en,
+        )
+        db.session.add_all([assignment_es, assignment_en])
+        db.session.flush()
+        db.session.add_all(
+            [
+                PreworkAnswer(
+                    assignment_id=assignment_es.id,
+                    question_index=1,
+                    item_index=0,
+                    answer_text="respuesta",
+                ),
+                PreworkAnswer(
+                    assignment_id=assignment_en.id,
+                    question_index=1,
+                    item_index=0,
+                    answer_text="answer",
+                ),
+            ]
+        )
+        db.session.commit()
+        session_id = session.id
+        admin_id = admin.id
+        facilitator_id = facilitator.id
+
+    with app.test_client() as client:
+        with client.session_transaction() as session_store:
+            session_store["user_id"] = facilitator_id
+        workshop_resp = client.get(f"/workshops/{session_id}")
+        assert workshop_resp.status_code == 200
+        html = workshop_resp.data.decode()
+        assert "Spanish Q" in html
+        assert "English Q" not in html
+
+        with client.session_transaction() as session_store:
+            session_store["user_id"] = admin_id
+        staff_resp = client.get(f"/sessions/{session_id}/prework")
+        assert staff_resp.status_code == 200
+        staff_html = staff_resp.data.decode()
+        assert "Spanish Q" in staff_html
+        assert "English Q" not in staff_html

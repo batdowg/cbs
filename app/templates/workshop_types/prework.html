@@ -6,12 +6,26 @@
 {% endblock %}
 {% block content %}
 <h1>Prework for {{ wt.name }}</h1>
+<form method="get" class="language-select">
+  <label for="language">Language</label>
+  <select id="language" name="lang" onchange="this.form.submit()">
+    {% for code, label in language_options %}
+      <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
 <form method="post">
+  <input type="hidden" name="language" value="{{ selected_language }}">
 <label><input type="checkbox" name="is_active" value="1" {% if template and template.is_active %}checked{% endif %}> Active</label><br>
 <label><input type="checkbox" name="require_completion" value="1" {% if template and template.require_completion %}checked{% endif %}> Require completion</label><br>
 <label>Information</label><br>
 <input type="hidden" id="info" name="info" value="{{ template.info_html|e if template else '' }}">
 <trix-editor input="info"></trix-editor><br>
+{% if show_empty_state %}
+<div class="empty-state">
+  <p>No prework for this language yet.</p>
+</div>
+{% endif %}
 <table>
 <tr><th>#</th><th>Question</th><th>Type</th><th>Min</th><th>Max</th></tr>
 {% for i in range(1,11) %}

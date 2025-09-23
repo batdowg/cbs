@@ -10,12 +10,21 @@ class PreworkTemplate(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     workshop_type_id = db.Column(
-        db.Integer, db.ForeignKey("workshop_types.id", ondelete="CASCADE"), unique=True
+        db.Integer, db.ForeignKey("workshop_types.id", ondelete="CASCADE")
     )
+    language = db.Column(db.String(16), nullable=False, default="en")
+    workshop_type = db.relationship("WorkshopType")
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     require_completion = db.Column(db.Boolean, nullable=False, default=True)
     info_html = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+    __table_args__ = (
+        db.UniqueConstraint(
+            "workshop_type_id",
+            "language",
+            name="uq_prework_template_workshop_language",
+        ),
+    )
 
     questions = db.relationship(
         "PreworkQuestion", backref="template", cascade="all, delete-orphan"

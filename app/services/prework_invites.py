@@ -182,8 +182,11 @@ def send_prework_invites(
     if not session.workshop_type_id:
         raise PreworkSendError("No workshop type configured")
 
+    session_language = session.workshop_language or "en"
     template = PreworkTemplate.query.filter_by(
-        workshop_type_id=session.workshop_type_id, is_active=True
+        workshop_type_id=session.workshop_type_id,
+        language=session_language,
+        is_active=True,
     ).first()
     if not template:
         raise PreworkSendError("No active prework template")

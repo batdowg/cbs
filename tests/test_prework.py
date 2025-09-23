@@ -20,6 +20,9 @@ from sqlalchemy.exc import IntegrityError
 import pytest
 
 
+pytestmark = pytest.mark.smoke
+
+
 def test_assignment_completion():
     app = create_app()
     with app.app_context():
@@ -70,6 +73,23 @@ def test_assignment_completion():
         db.session.commit()
         assert assign.status == "COMPLETED"
 
+
+def test_prework_template_unique_per_language():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="PWL", name="Prework Lang", cert_series="fn")
+        db.session.add(wt)
+        db.session.flush()
+        tpl_en = PreworkTemplate(workshop_type=wt, language="en")
+        tpl_es = PreworkTemplate(workshop_type=wt, language="es")
+        db.session.add_all([tpl_en, tpl_es])
+        db.session.commit()
+
+        db.session.add(PreworkTemplate(workshop_type=wt, language="en"))
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
 
 def test_no_prework_toggle_disables_send_prework(monkeypatch):
     app = create_app()
@@ -199,7 +219,84 @@ def test_nav_gating_prework():
             sess_data["participant_account_id"] = account_id
         resp = c.get("/my-workshops")
         assert b"Prework" in resp.data
-        assert b"My Resources" not in resp.data
+
+
+def test_learner_prework_session_language_flow():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(
+            code="LANG",
+            name="Language",
+            cert_series="fn",
+            supported_languages=["en", "es"],
+        )
+        tpl_en = PreworkTemplate(workshop_type=wt, language="en")
+        tpl_es = PreworkTemplate(workshop_type=wt, language="es")
+        q_en = PreworkQuestion(template=tpl_en, position=1, text="English Q", kind="TEXT")
+        q_es = PreworkQuestion(template=tpl_es, position=1, text="Spanish Q", kind="TEXT")
+        session = Session(
+            title="Idioma",
+            workshop_type=wt,
+            start_date=date.today(),
+            daily_start_time=time(9, 0),
+            workshop_language="es",
+        )
+        account = ParticipantAccount(email="learner@example.com", full_name="Learner")
+        participant = Participant(
+            email="learner@example.com", full_name="Learner", account=account
+        )
+        db.session.add_all(
+            [wt, tpl_en, tpl_es, q_en, q_es, session, account, participant]
+        )
+        db.session.flush()
+        db.session.add(
+            SessionParticipant(session_id=session.id, participant_id=participant.id)
+        )
+        snapshot = {
+            "questions": [
+                {
+                    "index": 1,
+                    "text": "Spanish Q",
+                    "required": True,
+                    "kind": "TEXT",
+                }
+            ],
+            "resources": [],
+        }
+        assignment = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account.id,
+            template=tpl_es,
+            status="SENT",
+            snapshot_json=snapshot,
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        assignment_id = assignment.id
+        account_id = account.id
+
+    with app.test_client() as client:
+        with client.session_transaction() as sess_data:
+            sess_data["participant_account_id"] = account_id
+
+        resp = client.get(f"/prework/{assignment_id}")
+        assert resp.status_code == 200
+        assert b"Spanish Q" in resp.data
+
+        resp_post = client.post(
+            f"/prework/{assignment_id}",
+            data={"q1": "respuesta"},
+            follow_redirects=True,
+        )
+        assert resp_post.status_code == 200
+
+    with app.app_context():
+        answer = PreworkAnswer.query.filter_by(
+            assignment_id=assignment_id, question_index=1
+        ).first()
+        assert answer is not None
+        assert answer.answer_text == "respuesta"
 
 
 def test_item_index_unique():

@@ -30,6 +30,7 @@
     /settings/cert-templates/<series_id>/upload-badges – Upload badge WEBPs
   /settings/workshop-types – CRUD workshop types
   /workshop-types/<id>/defaults – legacy; redirects to /workshop-types/<id>/edit#defaults
+  /workshop-types/<id>/prework – Configure prework per language for a workshop type (language selector limited to supported languages)
   /workshop-types/defaults/<id>/delete – delete a Workshop-Type default material row
   /settings/clients      – Clients list
   /settings/clients/<id>/edit
