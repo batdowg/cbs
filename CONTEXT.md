@@ -29,7 +29,7 @@ Every functional change must update this file **in the same PR**.
 - Business logic stays server-side; small JS for UI only.
 - All timestamps stored UTC; display with short timezone labels; **never show seconds**.
 - Certificates: `<certs_root>/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (`<certs_root>` = `SITE_ROOT/certificates`, default `/srv/certificates`); `pdf_path` in DB is stored relative to `<certs_root>`.
-- Certificate templates resolve under `app/assets`, preferring canonical filenames `fncert_template_{paper}_{lang}.pdf` with a legacy fallback `fncert_{paper}_{lang}.pdf`; inputs normalize case (`A4`/`LETTER`, `en`/`pt-br`) and errors list attempted names alongside available PDFs.
+- Certificate templates resolve under `app/assets`. Explicit series mappings from Settings take precedence regardless of filename, falling back to canonical `fncert_template_{paper}_{lang}.pdf` then legacy `fncert_{paper}_{lang}.pdf`. Inputs normalize case (`A4`/`LETTER`, `en`/`pt-br`), errors list attempted names alongside available PDFs, preview and generation share the same resolver, and caches include absolute path + file mtime to avoid stale templates.
 - Template Preview is resilient: falls back to a default font or blank background with visible warnings; generation behavior is unchanged.
 - Emails lowercased-unique per table (see §2). Enforce in DB and app.
 - Emails may exist in both **users** and **participant_accounts**; when both do, the **User** record governs authentication, menus, and profile.

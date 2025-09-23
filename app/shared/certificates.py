@@ -4,7 +4,7 @@ import os
 import re
 from datetime import date, datetime
 from io import BytesIO
-from typing import Iterable, Sequence
+from typing import Iterable, NamedTuple, Sequence
 
 from flask import current_app
 from PyPDF2 import PdfReader, PdfWriter
@@ -161,35 +161,162 @@ def _normalize_language_code(lang_code: str | None) -> str:
     return value
 
 
-def resolve_template_pdf(paper_size: str, lang_code: str) -> tuple[str, str]:
-    """Return the certificate template filename and absolute path.
+class TemplateResolution(NamedTuple):
+    display_name: str
+    path: str
+    source: str
+    paper: str
+    language: str
+    mtime: float
 
-    Preference is given to canonical template filenames. Legacy names are
-    attempted as a fallback for backwards compatibility.
-    """
 
+def _safe_template_path(assets_dir: str, candidate: str | None) -> str | None:
+    raw = (candidate or "").strip()
+    if not raw:
+        return None
+    assets_root = os.path.realpath(assets_dir)
+    if os.path.isabs(raw):
+        resolved = os.path.realpath(raw)
+        if resolved == assets_root or resolved.startswith(f"{assets_root}{os.sep}"):
+            return resolved
+        return None
+    resolved = os.path.realpath(os.path.join(assets_dir, raw))
+    if resolved == assets_root or resolved.startswith(f"{assets_root}{os.sep}"):
+        return resolved
+    return None
+
+
+def _normalized_template_language(value: str | None) -> str:
+    return (value or "").strip().lower().replace("_", "-")
+
+
+def resolve_series_template(
+    series_id: int, paper_size: str, lang_code: str
+) -> TemplateResolution:
     normalized_size = _normalize_paper_size(paper_size)
     normalized_lang = _normalize_language_code(lang_code)
     assets_dir = os.path.join(current_app.root_path, "assets")
-    candidates = [
-        f"fncert_template_{normalized_size}_{normalized_lang}.pdf",
-        f"fncert_{normalized_size}_{normalized_lang}.pdf",
-    ]
-    for candidate in candidates:
-        candidate_path = os.path.join(assets_dir, candidate)
-        if os.path.exists(candidate_path):
-            return candidate, candidate_path
 
-    available = sorted(
-        name
-        for name in os.listdir(assets_dir)
-        if name.lower().endswith(".pdf")
+    templates = (
+        db.session.query(CertificateTemplate)
+        .filter(CertificateTemplate.series_id == series_id)
+        .filter(db.func.lower(CertificateTemplate.size) == normalized_size)
+        .all()
     )
-    attempted = ", ".join(candidates)
-    available_str = ", ".join(available) if available else "<none>"
-    raise FileNotFoundError(
-        f"Certificate template not found for size={normalized_size} "
-        f"language={normalized_lang}; tried {attempted}; available: {available_str}"
+
+    explicit_template: CertificateTemplate | None = None
+    explicit_attempt: str | None = None
+    explicit_display: str | None = None
+
+    base_lang = normalized_lang.split("-")[0]
+    fallback_lang_tokens = {"", "any", "default", "all", "*"}
+
+    ranked_templates: list[tuple[int, CertificateTemplate]] = []
+    for tmpl in templates:
+        tmpl_lang = _normalized_template_language(tmpl.language)
+        if tmpl_lang == normalized_lang:
+            ranked_templates.append((0, tmpl))
+        elif tmpl_lang == base_lang:
+            ranked_templates.append((1, tmpl))
+        elif tmpl_lang in fallback_lang_tokens:
+            ranked_templates.append((2, tmpl))
+
+    if ranked_templates:
+        ranked_templates.sort(key=lambda item: (item[0], item[1].language or ""))
+        explicit_template = ranked_templates[0][1]
+        explicit_display = explicit_template.filename
+        explicit_attempt = _safe_template_path(assets_dir, explicit_template.filename)
+        if explicit_attempt and os.path.isfile(explicit_attempt):
+            mtime = os.path.getmtime(explicit_attempt)
+            resolution = TemplateResolution(
+                display_name=os.path.basename(explicit_display),
+                path=explicit_attempt,
+                source="explicit",
+                paper=normalized_size,
+                language=normalized_lang,
+                mtime=mtime,
+            )
+            _log_template_resolution(resolution)
+            return resolution
+
+    pattern_name = f"fncert_template_{normalized_size}_{normalized_lang}.pdf"
+    pattern_path = _safe_template_path(assets_dir, pattern_name)
+    if pattern_path and os.path.isfile(pattern_path):
+        if explicit_template:
+            current_app.logger.info(
+                "[cert-template] explicit mapping missing; falling back source=pattern"
+            )
+        mtime = os.path.getmtime(pattern_path)
+        resolution = TemplateResolution(
+            display_name=pattern_name,
+            path=pattern_path,
+            source="pattern",
+            paper=normalized_size,
+            language=normalized_lang,
+            mtime=mtime,
+        )
+        _log_template_resolution(resolution)
+        return resolution
+
+    legacy_name = f"fncert_{normalized_size}_{normalized_lang}.pdf"
+    legacy_path = _safe_template_path(assets_dir, legacy_name)
+    if legacy_path and os.path.isfile(legacy_path):
+        if explicit_template:
+            current_app.logger.info(
+                "[cert-template] explicit mapping missing; falling back source=legacy"
+            )
+        mtime = os.path.getmtime(legacy_path)
+        resolution = TemplateResolution(
+            display_name=legacy_name,
+            path=legacy_path,
+            source="legacy",
+            paper=normalized_size,
+            language=normalized_lang,
+            mtime=mtime,
+        )
+        _log_template_resolution(resolution)
+        return resolution
+
+    available = []
+    if os.path.isdir(assets_dir):
+        available = sorted(
+            name
+            for name in os.listdir(assets_dir)
+            if name.lower().startswith("fncert") and name.lower().endswith(".pdf")
+        )[:10]
+    explicit_details: str
+    if explicit_template:
+        if explicit_attempt:
+            explicit_details = explicit_attempt
+        else:
+            explicit_details = f"<invalid:{explicit_template.filename}>"
+    else:
+        explicit_details = "<not configured>"
+    message = (
+        "Certificate template not found for series={series_id} size={size} "
+        "language={lang}; explicit={explicit}; pattern={pattern}; legacy={legacy}; "
+        "available={available}"
+    ).format(
+        series_id=series_id,
+        size=normalized_size,
+        lang=normalized_lang,
+        explicit=explicit_details,
+        pattern=pattern_path or pattern_name,
+        legacy=legacy_path or legacy_name,
+        available=", ".join(available) if available else "<none>",
+    )
+    raise FileNotFoundError(message)
+
+
+def _log_template_resolution(resolution: TemplateResolution) -> None:
+    timestamp = datetime.fromtimestamp(resolution.mtime).strftime("%Y-%m-%d %H:%M")
+    current_app.logger.info(
+        "[cert-template] using path=%s paper=%s lang=%s mtime=%s source=%s",
+        resolution.path,
+        resolution.paper,
+        resolution.language,
+        timestamp,
+        resolution.source,
     )
 
 
@@ -232,10 +359,25 @@ def render_certificate(
 ) -> str:
     assets_dir = os.path.join(current_app.root_path, "assets")
     mapping, effective_size = get_template_mapping(session)
-    if not mapping:
+    series = mapping.series if mapping else None
+    if not series and session.workshop_type and session.workshop_type.cert_series:
+        series = (
+            db.session.query(CertificateTemplateSeries)
+            .filter(
+                db.func.lower(CertificateTemplateSeries.code)
+                == session.workshop_type.cert_series.lower()
+            )
+            .one_or_none()
+        )
+    if not series:
         raise ValueError("Missing certificate template mapping for session")
-    template_file, template_path = resolve_template_pdf(mapping.size, mapping.language)
-    current_app.logger.info("Using certificate template: %s", template_path)
+    language = (
+        session.workshop_language
+        or getattr(mapping, "language", None)
+        or "en"
+    )
+    resolution = resolve_series_template(series.id, effective_size, language)
+    template_path = resolution.path
 
     participant = (
         db.session.query(Participant)
@@ -274,7 +416,7 @@ def render_certificate(
     mm = lambda v: v * 72.0 / 25.4
     center_x = w / 2.0
 
-    series_layout = sanitize_series_layout(mapping.series.layout_config)
+    series_layout = sanitize_series_layout(series.layout_config)
     size_layout = series_layout.get(effective_size, series_layout["A4"])
     allowed_fonts = _language_allowed_fonts(session.workshop_language)
     available_fonts = _available_font_codes()
