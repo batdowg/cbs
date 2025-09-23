@@ -291,10 +291,11 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Participant CSV import on Session Detail uses a single file chooser that auto-submits and preserves the existing success/error flash behavior.
 
 ## 3.2 Prework
-- `prework_templates` (by workshop type; rich text info)
+- `prework_templates` (by workshop type & language; rich text info; unique per `(workshop_type_id, language)`)
 - `prework_questions` (fk template_id, text, kind enum TEXT/LIST, min_items, max_items, index)
 - `prework_assignments` (session × participant; snapshot; due_date; status)
 - `prework_answers` (assignment_id, question snapshot, text, item_index)
+- Prework editor exposes a language selector limited to the workshop type’s supported languages; switching languages loads or creates that language’s template and questions without affecting others.
 - Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces).
 
 ## 3.3 Resources
@@ -363,12 +364,14 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 # 5. Prework
 
-- Configured per **Workshop Type** (rich text + questions).  
+- Configured per **Workshop Type & language** (rich text + questions; editor includes a language selector limited to the type’s supported languages).
 - Session **Send Prework** (staff) provisions participant accounts (see defaults in §2.2) and emails access.
   - Allowed roles: Sys Admin, Admin, CRM, Delivery, Contractor.
 - “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.
+- Learner links, email invites, and assignment snapshots always resolve the prework template by `(session.workshop_type_id, session.workshop_language)`; if that language has no template configured the flows display the empty-state instead of falling back to another language.
 - Participant prework hidden after session starts.
 - Workshop View Participants card shows a Prework column (Submitted with completion date or Not submitted). KT staff and assigned facilitators can send individual prework reminders or bulk-send to all not submitted learners directly from the Workshop View.
+- Prework summaries on Workshop View and the staff Prework tab only render responses for the session language template.
 
 ---
 

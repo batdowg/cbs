@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..app import db
-from ..models import PreworkAssignment, PreworkTemplate
+from ..models import PreworkAssignment, PreworkTemplate, Session
 
 
 def _clean_text(value: str | None) -> str:
@@ -20,7 +20,17 @@ def _clean_text(value: str | None) -> str:
     return " ".join(parts) if parts else normalized.replace("\n", " ")
 
 
-def get_session_prework_summary(session_id: int) -> List[Dict[str, Any]]:
+def get_session_prework_summary(
+    session_id: int, *, session_language: str | None = None
+) -> List[Dict[str, Any]]:
+    target_language = session_language
+    if not target_language:
+        target_language = (
+            db.session.query(Session.workshop_language)
+            .filter(Session.id == session_id)
+            .scalar()
+        ) or "en"
+
     assignments = (
         db.session.query(PreworkAssignment)
         .options(
@@ -35,6 +45,12 @@ def get_session_prework_summary(session_id: int) -> List[Dict[str, Any]]:
     grouped: Dict[str, Dict[str, Any]] = {}
 
     for assignment in assignments:
+        template_language = (
+            assignment.template.language if assignment.template else None
+        )
+        if template_language and template_language != target_language:
+            continue
+
         account = assignment.participant_account
         if not account:
             continue

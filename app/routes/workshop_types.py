@@ -516,10 +516,39 @@ def prework(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    tpl = PreworkTemplate.query.filter_by(workshop_type_id=wt.id).first()
+    seen_codes: set[str] = set()
+    supported_languages: list[str] = []
+    for lang in wt.supported_languages or []:
+        code = None
+        if isinstance(lang, str):
+            code = NAME_TO_CODE.get(lang) or lang_key(lang)
+        else:
+            code = lang_key(lang)
+        if not code or code in seen_codes:
+            continue
+        seen_codes.add(code)
+        supported_languages.append(code)
+    if not supported_languages:
+        supported_languages = ["en"]
+
     if request.method == "POST":
-        if not tpl:
-            tpl = PreworkTemplate(workshop_type_id=wt.id)
+        selected_language = request.form.get("language") or supported_languages[0]
+    else:
+        selected_language = request.args.get("lang") or supported_languages[0]
+
+    if selected_language not in supported_languages:
+        selected_language = supported_languages[0]
+
+    tpl = PreworkTemplate.query.filter_by(
+        workshop_type_id=wt.id, language=selected_language
+    ).first()
+    if not tpl:
+        tpl = PreworkTemplate(
+            workshop_type_id=wt.id, language=selected_language
+        )
+    if request.method == "POST":
+        if not tpl.id:
+            db.session.add(tpl)
         tpl.is_active = bool(request.form.get("is_active"))
         tpl.require_completion = bool(request.form.get("require_completion"))
         tpl.info_html = sanitize_html(request.form.get("info") or "")
@@ -564,9 +593,13 @@ def prework(type_id: int, current_user):
         db.session.add(tpl)
         db.session.commit()
         flash("Prework template saved", "success")
-        return redirect(url_for("workshop_types.prework", type_id=wt.id))
+        return redirect(
+            url_for(
+                "workshop_types.prework", type_id=wt.id, lang=selected_language
+            )
+        )
     questions = []
-    if tpl:
+    if tpl and tpl.id:
         for q in sorted(tpl.questions, key=lambda q: q.position):
             questions.append(
                 {
@@ -580,5 +613,10 @@ def prework(type_id: int, current_user):
         "workshop_types/prework.html",
         wt=wt,
         template=tpl,
+        selected_language=selected_language,
+        language_options=[
+            (code, code_to_label(code)) for code in supported_languages
+        ],
         questions=questions,
+        show_empty_state=not questions,
     )

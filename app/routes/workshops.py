@@ -163,7 +163,9 @@ def workshop_view(session_id: int, current_user):
         badge_filename=badge_filename,
         import_errors=import_errors,
         facilitator_resources=facilitator_resources,
-        prework_summary=get_session_prework_summary(session.id),
+        prework_summary=get_session_prework_summary(
+            session.id, session_language=session.workshop_language
+        ),
         can_send_prework=can_send_prework,
         current_user=current_user,
         attendance_days=attendance_days,
