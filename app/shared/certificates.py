@@ -35,6 +35,7 @@ from ..shared.languages import LANG_CODE_NAMES
 from .storage import ensure_dir, write_atomic
 
 
+_VALID_PAPER_SIZES = {"a4", "letter"}
 LETTER_NAME_INSET_MM = 25
 DEFAULT_BOTTOM_MARGIN_MM = 20
 DETAILS_FONT_SIZE_PT = 12
@@ -146,6 +147,52 @@ def slug_certificate_name(name: str) -> str:
     return slug or "name"
 
 
+def _normalize_paper_size(paper_size: str | None) -> str:
+    value = (paper_size or "").strip().lower()
+    if value not in _VALID_PAPER_SIZES:
+        raise ValueError(f"Unsupported paper size: {paper_size!r}")
+    return value
+
+
+def _normalize_language_code(lang_code: str | None) -> str:
+    value = (lang_code or "").strip().lower().replace("_", "-")
+    if not (2 <= len(value) <= 5) or not re.fullmatch(r"[a-z\-]+", value):
+        raise ValueError(f"Unsupported language code: {lang_code!r}")
+    return value
+
+
+def resolve_template_pdf(paper_size: str, lang_code: str) -> tuple[str, str]:
+    """Return the certificate template filename and absolute path.
+
+    Preference is given to canonical template filenames. Legacy names are
+    attempted as a fallback for backwards compatibility.
+    """
+
+    normalized_size = _normalize_paper_size(paper_size)
+    normalized_lang = _normalize_language_code(lang_code)
+    assets_dir = os.path.join(current_app.root_path, "assets")
+    candidates = [
+        f"fncert_template_{normalized_size}_{normalized_lang}.pdf",
+        f"fncert_{normalized_size}_{normalized_lang}.pdf",
+    ]
+    for candidate in candidates:
+        candidate_path = os.path.join(assets_dir, candidate)
+        if os.path.exists(candidate_path):
+            return candidate, candidate_path
+
+    available = sorted(
+        name
+        for name in os.listdir(assets_dir)
+        if name.lower().endswith(".pdf")
+    )
+    attempted = ", ".join(candidates)
+    available_str = ", ".join(available) if available else "<none>"
+    raise FileNotFoundError(
+        f"Certificate template not found for size={normalized_size} "
+        f"language={normalized_lang}; tried {attempted}; available: {available_str}"
+    )
+
+
 def get_template_mapping(session: Session) -> tuple[CertificateTemplate | None, str]:
     region_val = (session.region or "").strip().lower()
     na_regions = {
@@ -187,15 +234,7 @@ def render_certificate(
     mapping, effective_size = get_template_mapping(session)
     if not mapping:
         raise ValueError("Missing certificate template mapping for session")
-    template_file = mapping.filename
-    template_path = os.path.join(assets_dir, template_file)
-    if not os.path.exists(template_path):
-        available = sorted(
-            f for f in os.listdir(assets_dir) if f.startswith("fncert_")
-        )
-        raise FileNotFoundError(
-            f"{template_file} not found; available: {', '.join(available)}"
-        )
+    template_file, template_path = resolve_template_pdf(mapping.size, mapping.language)
     current_app.logger.info("Using certificate template: %s", template_path)
 
     participant = (
