@@ -147,6 +147,7 @@ def workshop_view(session_id: int, current_user):
     import_errors = None
     attendance_days: list[int] = []
     attendance_map: dict[int, dict[int, bool]] = {}
+    require_full_attendance = False
     if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
@@ -184,6 +185,15 @@ def workshop_view(session_id: int, current_user):
             for entry in participants:
                 participant_id = entry["participant"].id
                 entry["attendance"] = attendance_map.get(participant_id, {})
+            require_full_attendance = True
+        required_days = set(attendance_days)
+        for entry in participants:
+            attendance = entry.get("attendance", {}) if require_full_attendance else {}
+            entry["has_full_attendance"] = (
+                all(attendance.get(day) for day in required_days)
+                if require_full_attendance
+                else True
+            )
         import_errors = flask_session.pop("import_errors", None)
         mapping, _ = get_template_mapping(session)
         if mapping:
@@ -218,6 +228,7 @@ def workshop_view(session_id: int, current_user):
         ),
         can_send_prework=can_send_prework,
         show_disable_prework=show_disable_prework,
+        require_full_attendance=require_full_attendance,
         current_user=current_user,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,

@@ -16,6 +16,7 @@ from app.models import (
     Certificate,
     CertificateTemplateSeries,
     CertificateTemplate,
+    User,
 )
 from app.shared.certificates import render_for_session
 
@@ -70,3 +71,65 @@ def test_certificate_uses_workshop_type_name(app):
         render_for_session(sess.id)
         cert = db.session.query(Certificate).one()
         assert cert.workshop_name == wt.name
+
+
+def test_workshop_type_active_checkbox_persists(app):
+    with app.app_context():
+        series = CertificateTemplateSeries(code="FORM", name="Form Series")
+        admin = User(email="admin@example.com", is_admin=True)
+        wt = WorkshopType(code="FORMWT", name="Form WT", cert_series="FORM", active=True)
+        db.session.add_all([series, admin, wt])
+        db.session.commit()
+        wt_id = wt.id
+        admin_id = admin.id
+
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = admin_id
+        sess["_csrf_token"] = "tok1"
+
+    resp = client.post(
+        f"/workshop-types/{wt_id}/edit",
+        data={
+            "csrf_token": "tok1",
+            "name": "Form WT",
+            "description": "",
+            "cert_series": "FORM",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        wt = db.session.get(WorkshopType, wt_id)
+        assert wt is not None
+        assert wt.active is False
+
+    resp = client.get("/workshop-types/")
+    assert resp.status_code == 200
+    assert "<td>Inactive</td>" in resp.data.decode()
+
+    with client.session_transaction() as sess:
+        sess["_csrf_token"] = "tok2"
+
+    resp = client.post(
+        f"/workshop-types/{wt_id}/edit",
+        data={
+            "csrf_token": "tok2",
+            "name": "Form WT",
+            "description": "",
+            "cert_series": "FORM",
+            "active": "1",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    with app.app_context():
+        wt = db.session.get(WorkshopType, wt_id)
+        assert wt is not None
+        assert wt.active is True
+
+    resp = client.get("/workshop-types/")
+    assert resp.status_code == 200
+    page = resp.data.decode()
+    assert "<td>Active</td>" in page
+    assert "<td>Inactive</td>" not in page
