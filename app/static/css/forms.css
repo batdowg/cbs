@@ -88,6 +88,7 @@ input[type="datetime-local"] {
   max-width: 140px;
   padding-right: 7px;
   padding-left: var(--field-date-left, 2px);
+  vertical-align: middle;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
