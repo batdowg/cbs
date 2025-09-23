@@ -507,7 +507,7 @@ def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str
     if "facilitators" in selected:
         facilitators = _format_facilitators(session)
         if facilitators:
-            lines.append(f"{DETAIL_LABELS['facilitators']}: {facilitators}")
+            lines.append(f"{DETAIL_LABELS['facilitator(s)']}: {facilitators}")
     if "location_title" in selected:
         location = _format_location(session)
         if location:
