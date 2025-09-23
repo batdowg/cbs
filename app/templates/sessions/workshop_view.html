@@ -123,7 +123,7 @@
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Email</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
             {% if attendance_days %}
-            <th scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
+            <th style="text-align: center;" scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
             {% endif %}
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Prework</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Completion Date</th>
