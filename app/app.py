@@ -16,6 +16,7 @@ from flask import (
     send_from_directory,
     abort,
 )
+from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_, text, func
 
@@ -49,6 +50,7 @@ from .shared.nav import build_menu
 from .shared.storage_resources import resource_fs_dir, resource_fs_path, resources_root
 from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor
 from .shared.languages import code_to_label
+from .shared.html import sanitize_prework_html
 
 
 def create_app():
@@ -59,6 +61,9 @@ def create_app():
     app.jinja_env.filters["fmt_time"] = fmt_time
     app.jinja_env.filters["fmt_time_range_with_tz"] = fmt_time_range_with_tz
     app.jinja_env.filters["lang_label"] = code_to_label
+    app.jinja_env.filters["prework_rich_text"] = (
+        lambda raw: Markup(sanitize_prework_html(raw))
+    )
 
     def generate_csrf_token():
         token = session.get("_csrf_token")

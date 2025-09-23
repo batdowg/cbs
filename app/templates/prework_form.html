@@ -9,7 +9,7 @@
 <form method="post">
 {% for q in questions %}
 <div class="question">
-<label>{{ q.text|safe }}</label><br>
+<div class="question-text rich-text" id="question-{{ q.index }}">{{ q.text | prework_rich_text }}</div>
 {% if q.kind == 'LIST' %}
 {% set items = answers.get(q.index, {}) %}
 {% set sorted_items = items|dictsort %}

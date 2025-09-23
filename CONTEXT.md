@@ -288,7 +288,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 ## 3.1 Catalog & Sessions
  - `workshop_types` (name, **code**, **simulation_based** bool, **supported_languages** list, **cert_series** code referencing an active certificate series)
  - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
-- `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **no_material_order**, optional **csa_participant_account_id**)
+- `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **prework_disabled** (boolean), **prework_disable_mode** (`notify`/`silent`), **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
 - `session_participants` (m:n participant_accounts↔sessions + per-person status)
 
@@ -367,7 +367,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 4.3 Delivery (facilitator)
 - **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Delivery (KT Facilitator) and Contractor accounts always open `/workshops/<session_id>` for sessions where they are lead or co-facilitators, even when they also hold Admin/CRM roles. Other staff retain the `/sessions/<id>` detail link.
-- **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view, collapsed by default, and showing the standard empty-state copy when none match. A Prework summary card groups responses by question using ';' separators and shows sanitized rich text prompts. Materials-only sessions render an empty state message instead of workshop details.
+
+  - **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view (expanded by default) and showing the standard empty-state copy when none match. A Prework summary card groups responses by question using ';' separators. Materials-only sessions render an empty state message instead of workshop details.
+    - Delivered button blocks sessions with zero participants unless `session.prework_disable_mode == "silent"` (red “No prework & don’t send accounts” action).
+
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.
@@ -379,12 +382,13 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Configured per **Workshop Type & language** (rich text + questions; editor includes a language selector limited to the type’s supported languages).
 - Session **Send Prework** (staff) provisions participant accounts (see defaults in §2.2) and emails access.
   - Allowed roles: Sys Admin, Admin, CRM, Delivery, Contractor.
-- “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.
+- Workshop View toolbar includes **No prework – Create accounts** (disables assignments, provisions ParticipantAccounts/Users for all current participants, and emails the standard account invite; sets `session.prework_disabled=True`, `session.prework_disable_mode="notify"`) and **No prework & don’t send accounts** (same provisioning without email, sets `prework_disable_mode="silent"`, and is the only path that permits Delivered with zero participants). Both states hide row/bulk prework send actions and replace the column with a “None for workshop” label.
 - Learner links, email invites, and assignment snapshots always resolve the prework template by `(session.workshop_type_id, session.workshop_language)`; if that language has no template configured the flows display the empty-state instead of falling back to another language.
 - Participant prework hidden after session starts.
 - Workshop View Participants card now surfaces invite status (“Not sent” or “Sent <date> (x times)” using `prework_invites` history, falling back to assignment sent timestamps for legacy data). KT staff and assigned facilitators can still trigger row-level **Send prework** or the bulk **Send prework to all not sent** action; learners/CSA never see invite state or actions. Successful sends update the status cells immediately via JSON responses so the card reflects the latest invite count without reloading.
 - After a successful send (row-level or bulk), the session’s **Workshop info sent** flag flips to **Yes** and records the first-send timestamp.
 - Prework summaries on Workshop View and the staff Prework tab only render responses for the session language template.
+- Learner prework forms render question text as sanitized rich text (allowed tags: `<p>`, `<br>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, `<a href>` with forced `target="_blank" rel="noopener"`). Inline scripts/styles are stripped on render.
 
 ---
 
@@ -395,6 +399,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Staff see the “My Resources” navigation link only if they're assigned to at least one session; they may still visit `/my-resources` directly without participant records, and the page returns HTTP 200 with an empty state when no resources apply.
 - Resources include an optional rich-text **Description** stored as sanitized HTML and entered in Settings via a Trix editor; on **My Resources** the resource title toggles a collapsible panel whose expanded state shows the link/file tile followed by the sanitized description.
 - Facilitator Workshop View uses the same tile styling, auto-expanding each item, and restricts visibility to facilitator/Both audiences for the session language; the learner view remains unchanged visually.
+- “Open resource” buttons use KT primary styling on both Workshop View and My Resources; Settings → Resources constrains the “Target” column with ellipsis + tooltip to prevent layout blowouts.
 - Workshop types are de-duplicated by ID in application code to avoid SQL `DISTINCT` on JSON columns such as `supported_languages`.
 - `/my-resources` gracefully renders an empty state when no resources are available (never 500s).
 

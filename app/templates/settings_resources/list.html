@@ -48,12 +48,14 @@
           <td>{{ r.type }}</td>
           <td>{{ r.audience }}</td>
           <td>{{ r.language | lang_label }}</td>
-          <td>
+          <td class="resource-target">
+            <span class="resource-target__value" title="{{ r.resource_value }}">
             {% if r.type == 'DOCUMENT' %}
               {{ r.resource_value }}
             {% else %}
-              <a href="{{ r.resource_value }}" target="_blank">{{ r.resource_value }}</a>
+              <a href="{{ r.resource_value }}" target="_blank" rel="noopener">{{ r.resource_value }}</a>
             {% endif %}
+            </span>
           </td>
           <td>{% for wt in r.workshop_types %}{{ wt.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
           <td>{{ 'Yes' if r.active else 'No' }}</td>
