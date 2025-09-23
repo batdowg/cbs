@@ -85,8 +85,8 @@ input[type="time"] {
 input[type="date"],
 input[type="datetime-local"] {
   width: 14ch;
-  max-width: 160px;
-  padding-right: 8px;
+  max-width: 140px;
+  padding-right: 4px;
   padding-left: var(--field-date-left, 2px);
 }
 
