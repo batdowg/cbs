@@ -1,6 +1,6 @@
 """
-Revision ID: 0072_user_profile_contact_fields
-Revises: 0071_prework_invites
+Revision ID: 0073_user_profile_contact_fields
+Revises: 0072_prework_disable_fields
 Create Date: 2025-10-01 00:00:00.000000
 """
 
@@ -9,8 +9,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "0072_user_profile_contact_fields"
-down_revision = "0071_prework_invites"
+revision = "0073_user_profile_contact_fields"
+down_revision = "0072_prework_disable_fields"
 branch_labels = None
 depends_on = None
 
