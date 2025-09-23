@@ -15,7 +15,7 @@ from app.models import (
     User,
     WorkshopType,
 )
-from app.shared.certificates import render_certificate
+from app.shared.certificates import render_certificate, resolve_template_pdf
 
 
 @pytest.fixture
@@ -28,6 +28,37 @@ def app():
         db.create_all()
         yield app
         db.session.remove()
+
+
+def test_resolve_template_pdf_prefers_canonical(app):
+    with app.app_context():
+        filename, path = resolve_template_pdf("A4", "EN")
+        assert filename == "fncert_template_a4_en.pdf"
+        assert path.endswith(filename)
+        assert os.path.isfile(path)
+
+
+def test_resolve_template_pdf_falls_back_to_legacy(app):
+    with app.app_context():
+        fallback_name = "fncert_letter_zz.pdf"
+        fallback_path = os.path.join(app.root_path, "assets", fallback_name)
+        with open(fallback_path, "wb") as handle:
+            handle.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj<<>>endobj\nstartxref\n0\n%%EOF")
+        try:
+            filename, path = resolve_template_pdf("LETTER", "zz")
+            assert filename == fallback_name
+            assert path == fallback_path
+        finally:
+            os.remove(fallback_path)
+
+
+def test_resolve_template_pdf_missing_raises_with_attempts(app):
+    with app.app_context():
+        with pytest.raises(FileNotFoundError) as exc:
+            resolve_template_pdf("A4", "zz")
+        message = str(exc.value)
+        assert "fncert_template_a4_zz.pdf" in message
+        assert "fncert_a4_zz.pdf" in message
 
 
 def _setup_cert(app):

@@ -27,6 +27,7 @@ from ..shared.certificates import (
     _available_font_codes,
     _language_allowed_fonts,
     _resolve_font,
+    resolve_template_pdf,
 )
 from ..shared.certificates_layout import (
     PAGE_HEIGHT_MM,
@@ -328,18 +329,16 @@ def generate_preview(
     if not matching_template:
         raise ValueError("No template PDF configured for the selected language and size.")
 
-    template_path = os.path.join(current_app.root_path, "assets", matching_template.filename)
-    if not os.path.exists(template_path):
-        raise FileNotFoundError(
-            f"Template file {matching_template.filename} is missing from assets/"
-        )
+    template_filename, template_path = resolve_template_pdf(
+        matching_template.size, matching_template.language
+    )
     template_mtime = os.path.getmtime(template_path)
 
     base_cache_key = _build_cache_key(
         series_id=series.id,
         language=language,
         size=size,
-        template_filename=matching_template.filename,
+        template_filename=template_filename,
         template_mtime=template_mtime,
         layout=layout,
     )
