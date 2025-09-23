@@ -55,6 +55,7 @@ Every functional change must update this file **in the same PR**.
 - Formatting: Black-compatible; imports grouped as stdlib, third-party, local with blank lines between groups.
 - Templates render language names via `lang_label`; codes are never shown directly.
 - Workshop Types expose an `active` boolean (checkbox in forms); the legacy free-text `status` field is deprecated and ignored by new code.
+- Smoke suite is limited to eight tests covering auth/roles, dashboards segregation, materials lifecycle, delivered/finalize guardrails, prework invites & disable modes, attendance certificate gating, resources visibility, and profile contact persistence.
 
 ## 0.5 Test Strategy
 - **Buckets**:
