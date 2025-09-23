@@ -34,8 +34,8 @@ def upgrade():
             UPDATE workshop_types
             SET active = CASE
                 WHEN status IS NULL THEN TRUE
-                WHEN lower(btrim(status)) = 'active' THEN TRUE
-                WHEN lower(btrim(status)) = 'inactive' THEN FALSE
+                WHEN LOWER(TRIM(status)) = 'active' THEN TRUE
+                WHEN LOWER(TRIM(status)) = 'inactive' THEN FALSE
                 ELSE TRUE
             END
             """
