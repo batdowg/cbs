@@ -293,9 +293,9 @@ def prework_form(assignment_id: int):
                 continue
             values = request.form.getlist(f"answers[{q_index}][]")
             if not values:
-                fallback = request.form.get(f"q{q_index}")
-                if fallback is not None:
-                    values = [fallback]
+                legacy_value = request.form.get(f"q{q_index}")
+                if legacy_value:
+                    values = [legacy_value]
             cleaned = [value.strip() for value in values if value and value.strip()]
             existing_answers = sorted(
                 (

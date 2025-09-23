@@ -20,6 +20,7 @@ from ..models import (
     Language,
     Participant,
     ParticipantAccount,
+    ParticipantAttendance,
     Session,
     SessionParticipant,
 )
@@ -320,6 +321,33 @@ def _log_template_resolution(resolution: TemplateResolution) -> None:
     )
 
 
+class CertificateAttendanceError(RuntimeError):
+    """Raised when certificate generation is blocked by attendance rules."""
+
+
+def _participant_has_full_attendance(session: Session, participant_id: int) -> bool:
+    days = session.number_of_class_days or 0
+    if session.materials_only or days <= 0:
+        return True
+    required_days = set(range(1, days + 1))
+    attendance_rows = (
+        db.session.query(
+            ParticipantAttendance.day_index, ParticipantAttendance.attended
+        )
+        .filter(
+            ParticipantAttendance.session_id == session.id,
+            ParticipantAttendance.participant_id == participant_id,
+        )
+        .all()
+    )
+    if not attendance_rows:
+        return False
+    attended_days = {
+        day_index for day_index, attended in attendance_rows if bool(attended)
+    }
+    return required_days.issubset(attended_days)
+
+
 def get_template_mapping(session: Session) -> tuple[CertificateTemplate | None, str]:
     region_val = (session.region or "").strip().lower()
     na_regions = {
@@ -396,6 +424,15 @@ def render_certificate(
     )
     if not link:
         raise ValueError("participant not in session")
+    if not _participant_has_full_attendance(session, participant.id):
+        current_app.logger.info(
+            "[cert-gate] blocked generation: participant_id=%s session_id=%s reason=not_full_attendance",
+            participant.id,
+            session.id,
+        )
+        raise CertificateAttendanceError(
+            "Full attendance required to generate certificate."
+        )
     completion = link.completion_date or session.end_date
     if not completion:
         raise ValueError("missing completion date")
@@ -566,10 +603,12 @@ def render_certificate(
     return rel_path
 
 
-def render_for_session(session_id: int, emails: Iterable[str] | None = None):
+def render_for_session(
+    session_id: int, emails: Iterable[str] | None = None
+) -> tuple[int, int, list[str]]:
     session = db.session.get(Session, session_id)
     if not session or getattr(session, "cancelled", False):
-        return 0, []
+        return 0, 0, []
     q = (
         db.session.query(SessionParticipant)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -579,6 +618,7 @@ def render_for_session(session_id: int, emails: Iterable[str] | None = None):
         emails = [e.lower() for e in emails]
         q = q.filter(db.func.lower(Participant.email).in_(emails))
     count = 0
+    skipped = 0
     paths: list[str] = []
     for link in q.all():
         participant = db.session.get(Participant, link.participant_id)
@@ -588,11 +628,14 @@ def render_for_session(session_id: int, emails: Iterable[str] | None = None):
             rel_path = render_certificate(session, participant.account)
             count += 1
             paths.append(rel_path)
+        except CertificateAttendanceError:
+            skipped += 1
+            continue
         except Exception:
             current_app.logger.exception(
                 "[CERT-FAIL] email=%s session=%s", participant.email, session.id
             )
-    return count, paths
+    return count, skipped, paths
 
 
 def remove_session_certificates(session_id: int, end_date: date) -> int:

@@ -50,6 +50,7 @@ from ..shared.time import now_utc, fmt_time, fmt_dt
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload, selectinload
 from ..shared.certificates import (
+    CertificateAttendanceError,
     render_certificate,
     render_for_session,
     remove_session_certificates,
@@ -1479,6 +1480,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
     material_only = is_material_only_session(sess)
+    require_full_attendance = False
     if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
@@ -1512,6 +1514,15 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
             for entry in participants:
                 participant_id = entry["participant"].id
                 entry["attendance"] = attendance_map.get(participant_id, {})
+            require_full_attendance = True
+        required_days = set(attendance_days)
+        for entry in participants:
+            attendance = entry.get("attendance", {}) if require_full_attendance else {}
+            entry["has_full_attendance"] = (
+                all(attendance.get(day) for day in required_days)
+                if require_full_attendance
+                else True
+            )
         import_errors = flask_session.pop("import_errors", None)
         if csa_account:
             can_manage = csa_can_manage_participants(csa_account, sess)
@@ -1541,6 +1552,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         can_manage_attendance=can_manage_attendance,
         can_edit_session=_user_can_edit_session(current_user),
         material_only_session=material_only,
+        require_full_attendance=require_full_attendance,
     )
 
 
@@ -2186,7 +2198,10 @@ def generate_single(session_id: int, participant_id: int, current_user):
     if action == "generate":
         participant = db.session.get(Participant, participant_id)
         if participant and participant.account:
-            render_certificate(sess, participant.account)
+            try:
+                render_certificate(sess, participant.account)
+            except CertificateAttendanceError as exc:
+                return jsonify({"error": str(exc)}), 400
             flash("Certificate generated", "success")
         else:
             flash("No participant account", "error")
@@ -2204,8 +2219,15 @@ def generate_bulk(session_id: int, current_user):
     if not sess.delivered or sess.cancelled:
         flash("Delivered required before generating certificates", "error")
         return _redirect_after_participant_action(session_id)
-    count, _ = render_for_session(session_id)
-    flash(f"Generated {count} certificates", "success")
+    count, skipped, _ = render_for_session(session_id)
+    if skipped:
+        category = "success" if count else "warning"
+        flash(
+            f"Generated {count}, skipped {skipped} not Full attendance",
+            category,
+        )
+    else:
+        flash(f"Generated {count} certificates", "success")
     return _redirect_after_participant_action(session_id)
 
 

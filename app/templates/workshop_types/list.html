@@ -22,7 +22,7 @@
         <tr>
           <td>{{ wt.code }}</td>
           <td>{{ wt.name }}</td>
-          <td>{{ wt.status }}</td>
+          <td>{{ 'Active' if wt.active else 'Inactive' }}</td>
           <td>{% if wt.supported_languages %}{{ wt.supported_languages | map('lang_label') | join(', ') }}{% else %}—{% endif %}</td>
           <td>{{ wt.cert_series }}</td>
           <td>{{ wt.description }}</td>

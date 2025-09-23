@@ -237,10 +237,11 @@ def create_type(current_user):
         flash("Invalid certificate series", "error")
         return redirect(url_for("workshop_types.new_type"))
     langs = request.form.getlist("supported_languages")
+    active_raw = request.form.get("active")
     wt = WorkshopType(
         code=code,
         name=name,
-        status=request.form.get("status") or "active",
+        active=True if active_raw is None else bool(active_raw),
         description=request.form.get("description") or None,
         simulation_based=bool(request.form.get("simulation_based")),
         supported_languages=langs or ["en"],
@@ -392,7 +393,8 @@ def update_type(type_id: int, current_user):
     if request.form.get("csrf_token") != flask_session.get("_csrf_token"):
         abort(400)
     wt.name = request.form.get("name") or wt.name
-    wt.status = request.form.get("status") or wt.status
+    active_raw = request.form.get("active")
+    wt.active = True if active_raw is None else bool(active_raw)
     wt.description = request.form.get("description") or None
     wt.simulation_based = bool(request.form.get("simulation_based"))
     langs = request.form.getlist("supported_languages")
