@@ -3,35 +3,83 @@
 {% block content %}
 <h1>My Profile</h1>
 {% if is_staff and has_participant %}
-<p>A learner profile also exists for this email.
-  <form method="post" style="display:inline">
+<p class="inline-gap-sm">A learner profile also exists for this email.
+  <form method="post">
     <input type="hidden" name="form" value="sync">
-    <button type="submit">Sync names</button>
+    <button type="submit" class="btn btn-secondary btn-sm">Sync names</button>
   </form>
 </p>
 {% endif %}
-<form method="post">
-  <input type="hidden" name="form" value="profile">
-  <div><label>Email <input type="text" value="{{ email }}" readonly></label></div>
-  <div><label>Full name <input type="text" name="full_name" value="{{ full_name }}" maxlength="200" autocomplete="off"></label></div>
-  {% if is_staff %}
-  <div><label>Title <input type="text" name="title" value="{{ title }}" maxlength="255" autocomplete="off"></label></div>
-  {% endif %}
-  <div><label>Certificate Name <input type="text" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off"></label></div>
-  <div><label>Language
-    <select name="preferred_language">
-      {% for code,label in language_options %}
-      <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </label></div>
-  <button type="submit">Save</button>
-</form>
-<h2 id="password">Change Password</h2>
-<form method="post">
-  <input type="hidden" name="form" value="password">
-  <div><label>New password <input type="password" name="password" autocomplete="new-password"></label></div>
-  <div><label>Confirm <input type="password" name="password_confirm" autocomplete="new-password"></label></div>
-  <button type="submit">Change Password</button>
-</form>
+<section class="kt-card">
+  <h2 class="kt-card-title">Profile details</h2>
+  <form method="post" class="form-align">
+    <input type="hidden" name="form" value="profile">
+    <div class="form-align__row">
+      <label class="form-align__label" for="profile-email">Email</label>
+      <div class="form-align__control">
+        <input type="email" id="profile-email" value="{{ email }}" readonly>
+      </div>
+    </div>
+    <div class="form-align__row">
+      <label class="form-align__label" for="profile-name">Full name</label>
+      <div class="form-align__control">
+        <input type="text" id="profile-name" name="full_name" value="{{ full_name }}" maxlength="200" autocomplete="off">
+      </div>
+    </div>
+    {% if is_staff %}
+    <div class="form-align__row">
+      <label class="form-align__label" for="profile-title">Title</label>
+      <div class="form-align__control">
+        <input type="text" id="profile-title" name="title" value="{{ title }}" maxlength="255" autocomplete="off">
+      </div>
+    </div>
+    {% endif %}
+    <div class="form-align__row">
+      <label class="form-align__label" for="certificate-name">Certificate name</label>
+      <div class="form-align__control">
+        <input type="text" id="certificate-name" name="certificate_name" value="{{ certificate_name }}" maxlength="200" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-align__row">
+      <label class="form-align__label" for="preferred-language">Language</label>
+      <div class="form-align__control">
+        <select name="preferred_language" id="preferred-language">
+          {% for code,label in language_options %}
+          <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-align__row">
+      <span class="form-align__label"></span>
+      <div class="form-align__control">
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </form>
+</section>
+<section class="kt-card" id="password">
+  <h2 class="kt-card-title">Change password</h2>
+  <form method="post" class="form-align">
+    <input type="hidden" name="form" value="password">
+    <div class="form-align__row">
+      <label class="form-align__label" for="new-password">New password</label>
+      <div class="form-align__control">
+        <input type="password" id="new-password" name="password" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-align__row">
+      <label class="form-align__label" for="confirm-password">Confirm</label>
+      <div class="form-align__control">
+        <input type="password" id="confirm-password" name="password_confirm" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-align__row">
+      <span class="form-align__label"></span>
+      <div class="form-align__control">
+        <button type="submit" class="btn btn-primary">Change Password</button>
+      </div>
+    </div>
+  </form>
+</section>
 {% endblock %}

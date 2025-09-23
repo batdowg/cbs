@@ -101,3 +101,39 @@ def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPrew
         )
     return results
 
+
+def summarize_prework_status(
+    status: ParticipantPreworkStatus | None,
+) -> dict[str, object]:
+    """Return display metadata for a participant's prework status."""
+
+    from .time import fmt_dt
+
+    is_waived = bool(status and status.status == "WAIVED")
+    last_sent: datetime | None = None
+    sent_at: datetime | None = None
+    invite_count = 0
+    if status:
+        last_sent = status.last_invite_sent_at or status.sent_at
+        sent_at = status.sent_at
+        invite_count = status.invite_count
+    total_sends = invite_count if invite_count else (1 if last_sent else 0)
+    if is_waived:
+        label = "Not sent (waived)"
+    elif last_sent:
+        label = f"Sent {fmt_dt(last_sent.date())}"
+        if total_sends > 1:
+            label += f" ({total_sends} times)"
+    else:
+        label = "Not sent"
+    return {
+        "label": label,
+        "is_waived": is_waived,
+        "status": status.status if status else None,
+        "invite_count": invite_count,
+        "total_sends": total_sends,
+        "last_sent": last_sent,
+        "sent_at": sent_at,
+        "completed_at": status.completed_at if status else None,
+    }
+

@@ -20,6 +20,14 @@
   gap: var(--space-6);
 }
 
+.inline-gap-sm > * + * {
+  margin-left: var(--space-2);
+}
+
+.inline-gap-sm form {
+  display: inline;
+}
+
 .lifecycle-status {
   font-weight: 600;
 }

@@ -75,72 +75,72 @@
             {% set next_dir = 'desc' if is_sorted and dir == 'asc' else 'asc' %}
             <a href="?sort={{ field }}&dir={{ next_dir }}{{ base }}">{{ label }}</a>
           {%- endmacro %}
-          <th scope="col" data-column-key="order_id" data-column-label="ID" data-column-required="true">{{ sort_link('ID','order_id') }}</th>
-          <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">{{ sort_link('Title','title') }}</th>
-          <th scope="col" data-column-key="status" data-column-label="Status">{{ sort_link('Status','status') }}</th>
-          <th scope="col" data-column-key="start_date" data-column-label="Workshop start date">{{ sort_link('Workshop start date','start_date') }}</th>
-          <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
-          <th scope="col" data-column-key="order_type" data-column-label="Order type">{{ sort_link('Order type','order_type') }}</th>
-          <th scope="col" data-column-key="workshop_code" data-column-label="Workshop">{{ sort_link('Workshop','workshop_code') }}</th>
-          <th scope="col" data-column-key="processed_digital" data-column-label="Processed — Digital" data-column-default-hidden="true">{{ sort_link('Processed — Digital','processed_digital') }}</th>
-          <th scope="col" data-column-key="processed_physical" data-column-label="Processed — Physical" data-column-default-hidden="true">{{ sort_link('Processed — Physical','processed_physical') }}</th>
-          <th scope="col" data-column-key="arrival_date" data-column-label="Latest arrival">{{ sort_link('Latest arrival','arrival_date') }}</th>
-          <th scope="col" data-column-key="bulk_receiver" data-column-label="Bulk Receiver" data-column-default-hidden="true">{{ sort_link('Bulk Receiver','bulk_receiver') }}</th>
-          <th scope="col" data-column-key="outline" data-column-label="Outline" data-column-default-hidden="true">{{ sort_link('Outline','outline') }}</th>
-          <th scope="col" data-column-key="teams" data-column-label="Credits/Teams" data-column-default-hidden="true">{{ sort_link('Credits/Teams','teams') }}</th>
-          <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
-          <th scope="col" data-column-key="learners" data-column-label="Learner list" data-column-default-hidden="true">Learner list</th>
-          <th scope="col" data-column-key="region" data-column-label="Region" data-column-default-hidden="true">{{ sort_link('Region','region') }}</th>
-          <th scope="col" data-column-key="shipping_title" data-column-label="Shipping location title" data-column-default-hidden="true">{{ sort_link('Shipping location title','shipping_title') }}</th>
-          <th scope="col" data-column-key="workshop_status" data-column-label="Workshop status">{{ sort_link('Workshop status','workshop_status') }}</th>
+          <th scope="col" data-column-key="order_id" data-column-label="ID" data-column-required="true" data-column-min-width="56" style="--column-min-width:56px;">{{ sort_link('ID','order_id') }}</th>
+          <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true" data-column-min-width="180" style="--column-min-width:180px;">{{ sort_link('Title','title') }}</th>
+          <th scope="col" data-column-key="status" data-column-label="Status" data-column-min-width="120" style="--column-min-width:120px;">{{ sort_link('Status','status') }}</th>
+          <th scope="col" data-column-key="start_date" data-column-label="Workshop start date" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Workshop start date','start_date') }}</th>
+          <th scope="col" data-column-key="client" data-column-label="Client" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Client','client') }}</th>
+          <th scope="col" data-column-key="order_type" data-column-label="Order type" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Order type','order_type') }}</th>
+          <th scope="col" data-column-key="workshop_code" data-column-label="Workshop" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Workshop','workshop_code') }}</th>
+          <th scope="col" data-column-key="processed_digital" data-column-label="Processed — Digital" data-column-default-hidden="true" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Processed — Digital','processed_digital') }}</th>
+          <th scope="col" data-column-key="processed_physical" data-column-label="Processed — Physical" data-column-default-hidden="true" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Processed — Physical','processed_physical') }}</th>
+          <th scope="col" data-column-key="arrival_date" data-column-label="Latest arrival" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Latest arrival','arrival_date') }}</th>
+          <th scope="col" data-column-key="bulk_receiver" data-column-label="Bulk Receiver" data-column-default-hidden="true" data-column-min-width="170" style="--column-min-width:170px;">{{ sort_link('Bulk Receiver','bulk_receiver') }}</th>
+          <th scope="col" data-column-key="outline" data-column-label="Outline" data-column-default-hidden="true" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Outline','outline') }}</th>
+          <th scope="col" data-column-key="teams" data-column-label="Credits/Teams" data-column-default-hidden="true" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Credits/Teams','teams') }}</th>
+          <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true" data-column-min-width="170" style="--column-min-width:170px;">Facilitator(s)</th>
+          <th scope="col" data-column-key="learners" data-column-label="Learner list" data-column-default-hidden="true" data-column-min-width="200" style="--column-min-width:200px;">Learner list</th>
+          <th scope="col" data-column-key="region" data-column-label="Region" data-column-default-hidden="true" data-column-min-width="110" style="--column-min-width:110px;">{{ sort_link('Region','region') }}</th>
+          <th scope="col" data-column-key="shipping_title" data-column-label="Shipping location title" data-column-default-hidden="true" data-column-min-width="200" style="--column-min-width:200px;">{{ sort_link('Shipping location title','shipping_title') }}</th>
+          <th scope="col" data-column-key="workshop_status" data-column-label="Workshop status" data-column-min-width="150" style="--column-min-width:150px;">{{ sort_link('Workshop status','workshop_status') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for row in rows %}
         <tr>
-          <td data-column-key="order_id">{{ row.order_id }}</td>
-          <td data-column-key="title">
+          <td data-column-key="order_id" data-column-min-width="56" style="--column-min-width:56px;">{{ row.order_id }}</td>
+          <td data-column-key="title" data-column-min-width="180" style="--column-min-width:180px;">
             <span class="cell-wrap" title="{{ row.title }}">
               <a href="{{ url_for('materials.materials_view', session_id=row.session_id)}}">{{ row.title }}</a>
             </span>
           </td>
-          <td data-column-key="status">
+          <td data-column-key="status" data-column-min-width="120" style="--column-min-width:120px;">
             {% if row.status %}
               <span class="pill pill--{{ row.status|lower|replace(' ', '') }}">{{ row.status }}</span>
             {% else %}—{% endif %}
           </td>
-          <td data-column-key="start_date">{{ row.start_date|default('', true) }}</td>
-          <td data-column-key="client">
+          <td data-column-key="start_date" data-column-min-width="150" style="--column-min-width:150px;">{{ row.start_date|default('', true) }}</td>
+          <td data-column-key="client" data-column-min-width="150" style="--column-min-width:150px;">
             {% if row.client %}<span class="cell-wrap" title="{{ row.client }}">{{ row.client }}</span>{% endif %}
           </td>
-          <td data-column-key="order_type">{{ row.order_type }}</td>
-          <td data-column-key="workshop_code">
+          <td data-column-key="order_type" data-column-min-width="150" style="--column-min-width:150px;">{{ row.order_type }}</td>
+          <td data-column-key="workshop_code" data-column-min-width="140" style="--column-min-width:140px;">
             {% if row.workshop_code %}
               <span class="cell-wrap" title="{{ row.workshop_name }}">{{ row.workshop_code }}</span>
             {% endif %}
           </td>
-          <td data-column-key="processed_digital">{{ row.processed_digital_display }}</td>
-          <td data-column-key="processed_physical">{{ row.processed_physical_display }}</td>
-          <td data-column-key="arrival_date">{{ row.arrival_date|default('', true) }}</td>
-          <td data-column-key="bulk_receiver">
+          <td data-column-key="processed_digital" data-column-min-width="150" style="--column-min-width:150px;">{{ row.processed_digital_display }}</td>
+          <td data-column-key="processed_physical" data-column-min-width="150" style="--column-min-width:150px;">{{ row.processed_physical_display }}</td>
+          <td data-column-key="arrival_date" data-column-min-width="150" style="--column-min-width:150px;">{{ row.arrival_date|default('', true) }}</td>
+          <td data-column-key="bulk_receiver" data-column-min-width="170" style="--column-min-width:170px;">
             {% if row.bulk_receiver %}
               <span class="cell-wrap" title="{{ row.bulk_receiver }}">{{ row.bulk_receiver }}</span>
             {% endif %}
           </td>
-          <td data-column-key="outline">{{ row.outline }}</td>
-          <td data-column-key="teams">
+          <td data-column-key="outline" data-column-min-width="140" style="--column-min-width:140px;">{{ row.outline }}</td>
+          <td data-column-key="teams" data-column-min-width="140" style="--column-min-width:140px;">
             {% if row.has_outline and row.credits is not none %}
               {{ row.credits }} / {{ row.teams }}
             {% else %}
-            
+
             {% endif %}
           </td>
-          <td data-column-key="facilitators">
+          <td data-column-key="facilitators" data-column-min-width="170" style="--column-min-width:170px;">
             {% if row.facilitators %}
               <span class="cell-wrap" title="{{ row.facilitators|join(', ') }}">{{ row.facilitators|join(', ') }}</span>
             {% endif %}
           </td>
-          <td data-column-key="learners">
+          <td data-column-key="learners" data-column-min-width="200" style="--column-min-width:200px;">
             {% if row.learners %}
               {% set visible = row.learners[:3] %}
               {% set extra = row.learners|length - visible|length %}
@@ -149,13 +149,13 @@
               </span>
             {% endif %}
           </td>
-          <td data-column-key="region">{{ row.region }}</td>
-          <td data-column-key="shipping_title">
+          <td data-column-key="region" data-column-min-width="110" style="--column-min-width:110px;">{{ row.region }}</td>
+          <td data-column-key="shipping_title" data-column-min-width="200" style="--column-min-width:200px;">
             {% if row.shipping_title %}
               <span class="cell-wrap" title="{{ row.shipping_title }}">{{ row.shipping_title }}</span>
             {% endif %}
           </td>
-          <td data-column-key="workshop_status">
+          <td data-column-key="workshop_status" data-column-min-width="150" style="--column-min-width:150px;">
             {% if row.workshop_status %}
               <span class="pill pill--{{ row.workshop_status|lower|replace(' ', '') }}">{{ row.workshop_status }}</span>
             {% endif %}

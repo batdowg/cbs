@@ -54,14 +54,14 @@
           <td>{% if loc.is_virtual %}{{ loc.platform or 'Virtual' }}{% endif %}</td>
           <td>{{ loc.address_line1|default('', true) }} {{ loc.city|default('', true) }} {{ loc.country|default('', true) }}</td>
           <td>{{ 'Yes' if loc.is_active else 'No' }}</td>
-          <td class="col-actions">
+          <td class="col-actions inline-gap-sm">
             <a href="{{ url_for('clients.edit_client', client_id=client.id, section='workshop', loc_id=loc.id, next=next_url) }}">Edit</a>
             {% if can_toggle %}
-            <form method="post" style="display:inline">
+            <form method="post">
               <input type="hidden" name="form" value="workshop_deactivate">
               <input type="hidden" name="loc_id" value="{{ loc.id }}">
               {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-              <button type="submit">Deactivate</button>
+              <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
             </form>
             {% endif %}
           </td>
@@ -120,14 +120,14 @@
           <td>{{ loc.contact_email|default('', true) }} {{ loc.contact_phone|default('', true) }}</td>
           <td>{{ loc.address_line1|default('', true) }} {{ loc.city|default('', true) }} {{ loc.country|default('', true) }}</td>
           <td>{{ 'Yes' if loc.is_active else 'No' }}</td>
-          <td class="col-actions">
+          <td class="col-actions inline-gap-sm">
             <a href="{{ url_for('clients.edit_client', client_id=client.id, section='shipping', loc_id=loc.id, next=next_url) }}">Edit</a>
             {% if can_toggle %}
-            <form method="post" style="display:inline">
+            <form method="post">
               <input type="hidden" name="form" value="shipping_deactivate">
               <input type="hidden" name="loc_id" value="{{ loc.id }}">
               {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-              <button type="submit">Deactivate</button>
+              <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
             </form>
             {% endif %}
           </td>

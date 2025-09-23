@@ -26,7 +26,10 @@ from ..models import (
 )
 from ..shared.acl import is_delivery, is_contractor, is_kt_staff
 from ..shared.prework_summary import get_session_prework_summary
-from ..shared.prework_status import get_participant_prework_status
+from ..shared.prework_status import (
+    get_participant_prework_status,
+    summarize_prework_status,
+)
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
 
@@ -115,15 +118,18 @@ def workshop_view(session_id: int, current_user):
             .all()
         )
         statuses = get_participant_prework_status(session.id)
-        participants = [
-            {
-                "participant": participant,
-                "link": link,
-                "pdf_path": pdf_path,
-                "prework_status": statuses.get(participant.id),
-            }
-            for link, participant, pdf_path in rows
-        ]
+        participants = []
+        for link, participant, pdf_path in rows:
+            status = statuses.get(participant.id)
+            participants.append(
+                {
+                    "participant": participant,
+                    "link": link,
+                    "pdf_path": pdf_path,
+                    "prework_status": status,
+                    "prework_summary": summarize_prework_status(status),
+                }
+            )
         attendance_days = list(
             range(1, (session.number_of_class_days or 0) + 1)
         )

@@ -22,9 +22,9 @@
           <td>{{ c.status }}</td>
           <td>{{ c.data_region }}</td>
           <td>{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}</td>
-          <td class="col-actions">
-            <form action="{{ url_for('clients.delete_client', client_id=c.id) }}" method="post" style="display:inline">
-              <button type="submit" class="btn btn-danger">Delete</button>
+          <td class="col-actions inline-gap-sm">
+            <form action="{{ url_for('clients.delete_client', client_id=c.id) }}" method="post">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
           </td>
         </tr>

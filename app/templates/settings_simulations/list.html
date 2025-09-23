@@ -23,8 +23,10 @@
           <td>{{ sim.skill }}</td>
           <td>{{ sim.level }}</td>
           <td>{{ sim.descriptor }}</td>
-          <td class="col-actions"><a href="{{ url_for('settings_simulations.edit_simulation', sim_id=sim.id) }}">Edit</a>
-            <form action="{{ url_for('settings_simulations.delete_simulation', sim_id=sim.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete?');"><button type="submit">Delete</button></form>
+          <td class="col-actions inline-gap-sm"><a href="{{ url_for('settings_simulations.edit_simulation', sim_id=sim.id) }}">Edit</a>
+            <form action="{{ url_for('settings_simulations.delete_simulation', sim_id=sim.id) }}" method="post" onsubmit="return confirm('Delete?');">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
           </td>
         </tr>
         {% endfor %}
