@@ -8,6 +8,7 @@
 {% set delivery_label = session.delivery_type or '—' %}
 {% set status_label = session.computed_status %}
 {% set workshop_heading = session.id ~ ' ' ~ session.title ~ ': ' ~ workshop_code ~ ' (' ~ delivery_label ~ ') - ' ~ status_label %}
+{% set import_input_id = 'participant-import-' ~ session.id %}
 <h1>{{ workshop_heading }}</h1>
 <p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
@@ -120,8 +121,11 @@
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ participants_return }}">
-    <input type="file" name="file" accept=".csv" required onchange="if (this.form) { if (this.form.requestSubmit) { this.form.requestSubmit(); } else { this.form.submit(); } }">
-    <p><a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a></p>
+    <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
+    <div class="inline-gap-sm">
+      <label for="{{ import_input_id }}" class="btn">Import CSV</label>
+      <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+    </div>
   </form>
   {% if import_errors %}
   <div>
@@ -187,11 +191,14 @@
     <input type="text" name="title" placeholder="Title">
     <button type="submit">Add Participant</button>
   </form>
-  <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
-    <input type="hidden" name="next" value="{{ participants_return }}">
-    <input type="file" name="file" accept=".csv" required onchange="if (this.form) { if (this.form.requestSubmit) { this.form.requestSubmit(); } else { this.form.submit(); } }">
-    <p><a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a></p>
-  </form>
+    <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="next" value="{{ participants_return }}">
+      <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
+      <div class="inline-gap-sm">
+        <label for="{{ import_input_id }}" class="btn">Import CSV</label>
+        <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+      </div>
+    </form>
   {% if import_errors %}
   <div>
     <p>Skipped lines:</p>
