@@ -154,10 +154,14 @@ def test_prework_summary_shared_between_views():
         assert workshop_resp.status_code == 200
         workshop_html = workshop_resp.data.decode()
         assert "Prework summary" in workshop_html
-        assert "<h3 class=\"kt-card-title\">Question A</h3>" in workshop_html
+        assert (
+            "<div class=\"kt-card-title rich-text\">Question A</div>" in workshop_html
+        )
         assert "<li><strong>Jane Doe</strong>; Yes; needs laptop</li>" in workshop_html
         assert "<li><strong>John Smith</strong>; No</li>" in workshop_html
-        assert "<h3 class=\"kt-card-title\">Question B</h3>" in workshop_html
+        assert (
+            "<div class=\"kt-card-title rich-text\">Question B</div>" in workshop_html
+        )
         assert "<li><strong>Jane Doe</strong>; 3 years; hardware</li>" in workshop_html
 
         with client.session_transaction() as session_store:
@@ -166,10 +170,10 @@ def test_prework_summary_shared_between_views():
         assert staff_resp.status_code == 200
         staff_html = staff_resp.data.decode()
         for snippet in [
-            "<h3 class=\"kt-card-title\">Question A</h3>",
+            "<div class=\"kt-card-title rich-text\">Question A</div>",
             "<li><strong>Jane Doe</strong>; Yes; needs laptop</li>",
             "<li><strong>John Smith</strong>; No</li>",
-            "<h3 class=\"kt-card-title\">Question B</h3>",
+            "<div class=\"kt-card-title rich-text\">Question B</div>",
             "<li><strong>Jane Doe</strong>; 3 years; hardware</li>",
         ]:
             assert snippet in staff_html
@@ -331,3 +335,72 @@ def test_prework_summary_filters_to_session_language():
         staff_html = staff_resp.data.decode()
         assert "Spanish Q" in staff_html
         assert "English Q" not in staff_html
+
+
+def test_workshop_view_renders_sanitized_summary_html():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        facilitator = User(email="format@example.com", is_kt_delivery=True)
+        wt = WorkshopType(code="FMT", name="Format", cert_series="fn")
+        template = PreworkTemplate(workshop_type=wt, info_html="info")
+        question = PreworkQuestion(
+            template=template,
+            position=1,
+            text="<p><strong>Overview</strong></p>",
+            kind="TEXT",
+        )
+        session = Session(title="Format", workshop_type=wt)
+        session.lead_facilitator = facilitator
+        account = ParticipantAccount(email="learner@example.com", full_name="Learner")
+        db.session.add_all([facilitator, wt, template, question, session, account])
+        db.session.flush()
+        snapshot = {
+            "questions": [
+                {
+                    "index": 1,
+                    "text": (
+                        "<p><strong>Overview</strong></p><ul><li>Step one</li></ul>"
+                        "<script>alert(1)</script><a href=\"https://example.com\""
+                        " target=\"_blank\" rel=\"noopener\">Link</a>"
+                    ),
+                    "required": True,
+                    "kind": "TEXT",
+                }
+            ],
+            "resources": [],
+        }
+        assignment = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account.id,
+            template=template,
+            status="COMPLETED",
+            snapshot_json=snapshot,
+        )
+        db.session.add(assignment)
+        db.session.flush()
+        db.session.add(
+            PreworkAnswer(
+                assignment_id=assignment.id,
+                question_index=1,
+                item_index=0,
+                answer_text="Ready",
+            )
+        )
+        db.session.commit()
+        session_id = session.id
+        facilitator_id = facilitator.id
+
+    with app.test_client() as client:
+        with client.session_transaction() as session_store:
+            session_store["user_id"] = facilitator_id
+        resp = client.get(f"/workshops/{session_id}")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert "<strong>Overview</strong>" in html
+        assert "<ul><li>Step one</li></ul>" in html
+        assert (
+            '<a href="https://example.com" target="_blank" rel="noopener">Link</a>'
+            in html
+        )
+        assert "<script>" not in html

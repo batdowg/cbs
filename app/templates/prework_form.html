@@ -11,13 +11,17 @@
 <div class="question">
 <label>{{ q.text|safe }}</label><br>
 {% if q.kind == 'LIST' %}
-<div class="list-question" data-q-index="{{ q.index }}" data-max="{{ q.max_items or 10 }}" data-next-index="{{ (answers.get(q.index, {})|length) }}">
+{% set items = answers.get(q.index, {}) %}
+{% set sorted_items = items|dictsort %}
+{% if not sorted_items %}
+  {% set sorted_items = [(0, '')] %}
+{% endif %}
+{% set next_index = sorted_items[-1][0] + 1 %}
+<div class="list-question" data-q-index="{{ q.index }}" data-max="{{ q.max_items or 10 }}" data-next-index="{{ next_index }}">
   <div class="list-items">
-    {% set items = answers.get(q.index, {}) %}
-    {% if not items %}{% set items = {0: ''} %}{% endif %}
-    {% for item_index, text in items.items()|sort %}
+    {% for item_index, text in sorted_items %}
     <div class="item">
-      <textarea data-item-index="{{ item_index }}" rows="3" cols="60">{{ text }}</textarea>
+      <textarea name="answers[{{ q.index }}][]" data-item-index="{{ item_index }}" rows="3" cols="60">{{ text }}</textarea>
       <button type="button" class="remove-item">Remove</button>
     </div>
     {% endfor %}
@@ -25,7 +29,7 @@
   <button type="button" class="add-item">Add another</button>
 </div>
 {% else %}
-<textarea name="q{{ q.index }}" rows="3" cols="60">{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</textarea>
+<textarea name="answers[{{ q.index }}][]" rows="3" cols="60">{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</textarea>
 {% endif %}
 </div>
 {% endfor %}
@@ -38,8 +42,14 @@
 const assignmentId = {{ assignment.id }};
 document.querySelectorAll('.list-question').forEach(function(q){
   const max = parseInt(q.dataset.max);
-  let next = parseInt(q.dataset.nextIndex || '0');
-  q.querySelectorAll('textarea').forEach(bind);
+  let next = parseInt(q.dataset.nextIndex || '0', 10);
+  q.querySelectorAll('textarea').forEach(function(ta){
+    const idx = parseInt(ta.dataset.itemIndex || '0', 10);
+    if (!Number.isNaN(idx) && idx >= next) {
+      next = idx + 1;
+    }
+    bind(ta);
+  });
   function bind(ta){
     ta.addEventListener('blur', function(){
       const item = ta.dataset.itemIndex;
@@ -58,11 +68,20 @@ document.querySelectorAll('.list-question').forEach(function(q){
     if (count >= max) return;
     const div = document.createElement('div');
     div.className='item';
-    div.innerHTML = `<textarea data-item-index="${next}" rows="3" cols="60"></textarea> <button type="button" class="remove-item">Remove</button>`;
+    const ta = document.createElement('textarea');
+    ta.setAttribute('name', `answers[${q.dataset.qIndex}][]`);
+    ta.setAttribute('rows', '3');
+    ta.setAttribute('cols', '60');
+    ta.dataset.itemIndex = String(next);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'remove-item';
+    remove.textContent = 'Remove';
+    div.appendChild(ta);
+    div.appendChild(remove);
     q.querySelector('.list-items').appendChild(div);
-    const ta = div.querySelector('textarea');
     bind(ta);
-    div.querySelector('.remove-item').addEventListener('click', function(){
+    remove.addEventListener('click', function(){
       fetch(`/prework/${assignmentId}/autosave`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question_index: q.dataset.qIndex, item_index: ta.dataset.itemIndex, text: ''})}).then(()=>{div.remove();});
     });
     next += 1;

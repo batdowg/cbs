@@ -21,7 +21,7 @@ ALLOWED_TAGS = [
     "blockquote",
 ]
 
-ALLOWED_ATTRS = {"a": ["href", "rel"]}
+ALLOWED_ATTRS = {"a": ["href", "rel", "target"]}
 
 
 def sanitize_html(raw: str) -> str:

@@ -4,10 +4,12 @@ from collections import defaultdict
 from math import inf
 from typing import Any, Dict, List
 
+from markupsafe import Markup
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..app import db
 from ..models import PreworkAssignment, PreworkTemplate, Session
+from ..shared.html import sanitize_html
 
 
 def _clean_text(value: str | None) -> str:
@@ -18,6 +20,12 @@ def _clean_text(value: str | None) -> str:
         return normalized
     parts = [part.strip() for part in normalized.split("\n") if part.strip()]
     return " ".join(parts) if parts else normalized.replace("\n", " ")
+
+
+def _sanitize_question_text(value: str | None) -> str:
+    if not value:
+        return ""
+    return sanitize_html(value).strip()
 
 
 def get_session_prework_summary(
@@ -67,7 +75,7 @@ def get_session_prework_summary(
             idx = question.get("index")
             if idx is None:
                 continue
-            text = _clean_text(question.get("text"))
+            text = _sanitize_question_text(question.get("text"))
             index_to_text[idx] = text
             index_to_order[idx] = order
 
@@ -79,7 +87,7 @@ def get_session_prework_summary(
             if not index_to_text:
                 for order, question in enumerate(template_questions):
                     idx = order + 1
-                    index_to_text[idx] = _clean_text(question.text)
+                    index_to_text[idx] = _sanitize_question_text(question.text)
                     index_to_order.setdefault(idx, order)
 
         answers_by_question: Dict[int, list[tuple[int, str]]] = defaultdict(list)
@@ -104,7 +112,9 @@ def get_session_prework_summary(
             if not question_text and template_questions and 0 <= question_index - 1 < len(
                 template_questions
             ):
-                question_text = _clean_text(template_questions[question_index - 1].text)
+                question_text = _sanitize_question_text(
+                    template_questions[question_index - 1].text
+                )
             if not question_text:
                 question_text = f"Question {question_index}"
 
@@ -133,7 +143,9 @@ def get_session_prework_summary(
         if not responses:
             continue
         responses.sort(key=lambda r: (r.get("name") or "").lower())
-        ordered_results.append({"question": question_text, "responses": responses})
+        ordered_results.append(
+            {"question": Markup(question_text), "responses": responses}
+        )
 
     return ordered_results
 

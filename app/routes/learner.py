@@ -188,26 +188,35 @@ def prework_form(assignment_id: int):
         answers.setdefault(ans.question_index, {})[ans.item_index] = ans.answer_text
     if request.method == "POST":
         for q in questions:
-            if q.get("kind") == "LIST":
+            q_index = q.get("index")
+            if q_index is None:
                 continue
-            key = f"q{q['index']}"
-            text = (request.form.get(key) or "").strip()
-            existing = PreworkAnswer.query.filter_by(
-                assignment_id=assignment.id,
-                question_index=q["index"],
-                item_index=0,
-            ).first()
-            if existing:
-                existing.answer_text = text
-            elif text:
-                db.session.add(
-                    PreworkAnswer(
-                        assignment_id=assignment.id,
-                        question_index=q["index"],
-                        item_index=0,
-                        answer_text=text,
+            values = request.form.getlist(f"answers[{q_index}][]")
+            cleaned = [value.strip() for value in values if value and value.strip()]
+            existing_answers = sorted(
+                (
+                    ans
+                    for ans in assignment.answers
+                    if ans.question_index == q_index
+                ),
+                key=lambda ans: ans.item_index or 0,
+            )
+            for item_idx, text in enumerate(cleaned):
+                if item_idx < len(existing_answers):
+                    ans = existing_answers[item_idx]
+                    ans.item_index = item_idx
+                    ans.answer_text = text
+                else:
+                    db.session.add(
+                        PreworkAnswer(
+                            assignment_id=assignment.id,
+                            question_index=q_index,
+                            item_index=item_idx,
+                            answer_text=text,
+                        )
                     )
-                )
+            for leftover in existing_answers[len(cleaned) :]:
+                db.session.delete(leftover)
         db.session.commit()
         db.session.refresh(assignment)
         assignment.update_completion()
