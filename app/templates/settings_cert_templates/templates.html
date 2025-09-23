@@ -1,7 +1,89 @@
 {% extends 'base.html' %}
 {% block title %}Template Mapping{% endblock %}
+{% block extra_head %}
+<style>
+  .preview-panel {
+    border: 1px solid var(--kt-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    background: var(--kt-bg);
+    margin-bottom: var(--space-3);
+    transition: opacity 0.2s ease;
+  }
+  .preview-panel[data-disabled="1"] {
+    opacity: 0.6;
+  }
+  .preview-panel.is-loading {
+    opacity: 0.7;
+  }
+  .preview-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .preview-controls label {
+    font-weight: 600;
+  }
+  .preview-controls select {
+    min-width: 140px;
+  }
+  .preview-title {
+    font-weight: 600;
+  }
+  .preview-zoom {
+    display: inline-flex;
+    gap: var(--space-1);
+    margin-left: auto;
+  }
+  .preview-zoom .btn {
+    padding: 4px 10px;
+  }
+  .preview-zoom .is-active {
+    background: var(--kt-info);
+    color: #fff;
+  }
+  .preview-image-wrapper {
+    margin-top: var(--space-3);
+    border: 1px dashed var(--kt-border);
+    background: #f8f9fb;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: var(--space-3);
+  }
+  .preview-panel[data-zoom="actual"] .preview-image-wrapper {
+    overflow: auto;
+  }
+  .preview-panel[data-zoom="fit"] img[data-preview-image] {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+  .preview-panel[data-zoom="actual"] img[data-preview-image] {
+    width: auto;
+    max-width: none;
+  }
+  .preview-placeholder {
+    color: var(--kt-muted);
+    text-align: center;
+  }
+  .preview-messages {
+    margin-top: var(--space-2);
+    color: var(--kt-muted);
+    font-size: 0.95rem;
+  }
+  .preview-messages--error {
+    color: var(--kt-accent-red);
+  }
+</style>
+{% endblock %}
 {% block content %}
+{% set preview_csrf = csrf_token() %}
 <h1>Template Mapping for {{ series.name }} ({{ series.code }})</h1>
+<div id="template-preview-config" data-preview-url="{{ url_for('settings_cert_templates.preview_series', series_id=series.id) }}" data-preview-token="{{ preview_csrf }}"></div>
 <div style="margin-bottom: 1em;">
   <form method="post" action="{{ url_for('settings_cert_templates.upload_pdfs', series_id=series.id) }}" enctype="multipart/form-data" style="display:inline;">
     <input type="file" id="pdf_files" name="files" accept=".pdf" multiple style="display:none" onchange="this.form.submit()">
@@ -13,6 +95,7 @@
   </form>
 </div>
 <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ preview_csrf }}">
   <table class="kt-table">
     <tr><th>Language</th><th>A4</th><th>Letter</th><th>Badge</th></tr>
     {% for code, name in languages %}
@@ -49,6 +132,31 @@
     {% set details = size_layout['details'] %}
     <fieldset style="margin-bottom:1.5em;">
       <legend>{{ size }} layout</legend>
+      <div class="preview-panel" data-preview-panel data-size="{{ size }}" data-zoom="fit"{% if not preview_languages[size] %} data-disabled="1"{% endif %}>
+        <div class="preview-controls">
+          <span class="preview-title">{{ size }} Preview</span>
+          {% if preview_languages[size] %}
+            <label for="preview-language-{{ size }}">Language</label>
+            <select id="preview-language-{{ size }}" data-preview-language>
+              {% for code, label in preview_languages[size] %}
+                <option value="{{ code }}" {% if code == default_preview_language[size] %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-secondary btn-sm" data-preview-action data-preview-size="{{ size }}">Generate Preview</button>
+            <div class="preview-zoom" role="group" aria-label="Zoom controls">
+              <button type="button" class="btn btn-secondary btn-sm is-active" data-preview-zoom="fit">Fit</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-preview-zoom="actual">100%</button>
+            </div>
+          {% else %}
+            <p class="form-help">Add a {{ size }} template above to enable previews.</p>
+          {% endif %}
+        </div>
+        <div class="preview-messages" data-preview-messages></div>
+        <div class="preview-image-wrapper" data-preview-wrapper>
+          <div class="preview-placeholder" data-preview-placeholder>No preview generated yet.</div>
+          <img data-preview-image alt="{{ size }} certificate preview" hidden>
+        </div>
+      </div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
         {% for key, label in {'name':'Learner name','workshop':'Workshop name','date':'Completion date'}.items() %}
           <div>
@@ -111,4 +219,169 @@
   {% endfor %}
   <p><button type="submit">Save</button></p>
 </form>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const configEl = document.getElementById('template-preview-config');
+  if (!configEl) {
+    return;
+  }
+  const previewUrl = configEl.dataset.previewUrl;
+  const csrfToken = configEl.dataset.previewToken;
+  if (!previewUrl || !csrfToken) {
+    return;
+  }
+
+  document.querySelectorAll('[data-preview-panel]').forEach(function (panel) {
+    const size = panel.dataset.size;
+    if (!size) {
+      return;
+    }
+    panel.dataset.zoom = panel.dataset.zoom || 'fit';
+    const zoomButtons = panel.querySelectorAll('[data-preview-zoom]');
+    zoomButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const mode = btn.dataset.previewZoom;
+        if (!mode) {
+          return;
+        }
+        panel.dataset.zoom = mode;
+        zoomButtons.forEach(function (other) {
+          other.classList.toggle('is-active', other === btn);
+        });
+      });
+    });
+
+    const button = panel.querySelector('[data-preview-action]');
+    if (button) {
+      const originalText = button.textContent;
+      button.addEventListener('click', function () {
+        runPreview(panel, size, button, originalText);
+      });
+    }
+  });
+
+  function runPreview(panel, size, button, originalText) {
+    const langSelect = panel.querySelector('[data-preview-language]');
+    const messagesEl = panel.querySelector('[data-preview-messages]');
+    const imageEl = panel.querySelector('[data-preview-image]');
+    const placeholder = panel.querySelector('[data-preview-placeholder]');
+    if (!langSelect) {
+      return;
+    }
+    const language = langSelect.value;
+    if (!language) {
+      if (messagesEl) {
+        messagesEl.textContent = 'Select a language to preview.';
+        messagesEl.classList.add('preview-messages--error');
+      }
+      return;
+    }
+    if (messagesEl) {
+      messagesEl.textContent = '';
+      messagesEl.classList.remove('preview-messages--error');
+      messagesEl.innerHTML = '';
+    }
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Generating...';
+    }
+    panel.classList.add('is-loading');
+    if (placeholder) {
+      placeholder.textContent = 'Generating preview…';
+    }
+    if (imageEl) {
+      imageEl.hidden = true;
+    }
+
+    const layout = collectLayout(size);
+    fetch(previewUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        csrf_token: csrfToken,
+        paper_size: size,
+        language: language,
+        layout: layout
+      })
+    })
+      .then(function (resp) {
+        return resp.json().then(function (data) {
+          if (!resp.ok) {
+            const err = new Error(data && data.error ? data.error : 'Failed to generate preview.');
+            throw err;
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        if (imageEl && data.image) {
+          imageEl.src = data.image;
+          imageEl.hidden = false;
+          if (placeholder) {
+            placeholder.textContent = '';
+          }
+        }
+        if (messagesEl) {
+          messagesEl.classList.remove('preview-messages--error');
+          messagesEl.textContent = '';
+          messagesEl.innerHTML = '';
+          if (Array.isArray(data.warnings) && data.warnings.length) {
+            data.warnings.forEach(function (msg) {
+              const div = document.createElement('div');
+              div.textContent = msg;
+              messagesEl.appendChild(div);
+            });
+          }
+        }
+      })
+      .catch(function (err) {
+        if (messagesEl) {
+          messagesEl.textContent = err && err.message ? err.message : 'Failed to generate preview.';
+          messagesEl.classList.add('preview-messages--error');
+        }
+        if (placeholder) {
+          placeholder.textContent = 'Preview unavailable.';
+        }
+      })
+      .finally(function () {
+        panel.classList.remove('is-loading');
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      });
+  }
+
+  function collectLayout(size) {
+    const normalized = String(size || '').toUpperCase();
+    const layout = {};
+    ['name', 'workshop', 'date'].forEach(function (key) {
+      const fontInput = document.getElementById(`layout-${normalized}-${key}-font`);
+      const yInput = document.getElementById(`layout-${normalized}-${key}-y`);
+      layout[key] = {
+        font: fontInput ? fontInput.value : null,
+        y_mm: yInput ? yInput.value : null
+      };
+    });
+    const detailsEnabled = document.querySelector(`[name="layout_${normalized}_details_enabled"]`);
+    const sideSelect = document.getElementById(`layout-${normalized}-details-side`);
+    const sizeInput = document.getElementById(`layout-${normalized}-details-size-percent`);
+    const variablesSelect = document.getElementById(`layout-${normalized}-details-variables`);
+    const variables = variablesSelect ? Array.from(variablesSelect.selectedOptions).map(function (opt) {
+      return opt.value;
+    }) : [];
+    layout.details = {
+      enabled: detailsEnabled ? detailsEnabled.checked : false,
+      side: sideSelect ? sideSelect.value : 'LEFT',
+      size_percent: sizeInput ? sizeInput.value : null,
+      variables: variables
+    };
+    return layout;
+  }
+});
+</script>
 {% endblock %}
