@@ -11,15 +11,17 @@ Every functional change must update this file **in the same PR**.
 - **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; `/certificates/*` and `/badges/*` are served via `handle` from `/srv` while Flask serves `/static/*`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
+- **Certificate templates**: host `./data/cert-assets` is bind-mounted to `/app/app/assets`; seed it from `app/assets/` on first deploy and keep it backed up for persistence.
 - **Health**: `GET /healthz` must respond `OK`
 - **Language seeding**: optional `SEED_LANGUAGES=1` at boot inserts the default language set when the table is empty. Idempotent and safe — if languages exist it logs `Languages already present — skipping.`; on insert it logs `Seeded N languages.`; errors log `Language seed failed: <err>`.
 
 ## 0.2 Deploy & Migrations (no local aliases)
-- **Deploy on VPS** (`~/cbs`):  
-  1) `git pull origin main`  
-  2) `docker compose up -d --build`  
-  3) `docker compose ps`  
-  4) `docker logs cbs-app-1 --tail 80`
+- **Deploy on VPS** (`~/cbs`):
+  1) `git pull origin main`
+  2) Ensure `data/cert-assets/` exists and mirrors any new templates (e.g. `cp -a app/assets/. data/cert-assets/` when seeding a fresh host).
+  3) `docker compose up -d --build`
+  4) `docker compose ps`
+  5) `docker logs cbs-app-1 --tail 80`
 - **DB** (inside app container):  
   - Create: `python manage.py db migrate -m "message"`  
   - Apply: `python manage.py db upgrade`
