@@ -93,6 +93,7 @@ input[type="datetime-local"] {
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   margin: 0;
+  margin-right: -0.125rem;
   padding: 0.125rem;
   transform: translateX(0.25rem);
 }
