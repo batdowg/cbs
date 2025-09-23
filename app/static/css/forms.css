@@ -100,7 +100,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 input[type="date"]::-webkit-datetime-edit,
 input[type="datetime-local"]::-webkit-datetime-edit {
-  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-date-left, 2px);
+  padding: var(--field-py, 8px) 0.25rem var(--field-py, 8px) var(--field-date-left, 4px);
 }
 
 .kt-date--wide[type="date"],
