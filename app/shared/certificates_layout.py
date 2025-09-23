@@ -32,16 +32,16 @@ DEFAULT_LANGUAGE_FONT_CODES: list[str] = [
 SAFE_FALLBACK_FONT = "Helvetica"
 
 DETAIL_VARIABLES: list[str] = [
-    "contact_hours",
     "facilitators",
-    "dates",
     "location_title",
+    "dates",
     "class_days",
+    "contact_hours",
 ]
 
 DETAIL_LABELS: dict[str, str] = {
     "contact_hours": "Contact hours",
-    "facilitators": "Facilitators",
+    "facilitators": "Facilitator(s)",
     "dates": "Dates",
     "location_title": "Location",
     "class_days": "Class days",
