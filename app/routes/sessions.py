@@ -2210,7 +2210,10 @@ def session_prework(session_id: int):
             pid = int(request.form.get("participant_id"))
             try:
                 result = send_prework_invites(
-                    sess, [pid], allow_completed_resend=True
+                    sess,
+                    [pid],
+                    allow_completed_resend=True,
+                    sender_id=current_user.id,
                 )
             except PreworkSendError as exc:
                 flash(str(exc), "error")
@@ -2225,7 +2228,7 @@ def session_prework(session_id: int):
 
         if action == "send_all":
             try:
-                result = send_prework_invites(sess)
+                result = send_prework_invites(sess, sender_id=current_user.id)
             except PreworkSendError as exc:
                 flash(str(exc), "error")
                 return _redirect_after_action()
@@ -2317,7 +2320,9 @@ def send_prework(session_id: int, current_user):
         wants_json = True
 
     try:
-        result = send_prework_invites(sess, participant_ids)
+        result = send_prework_invites(
+            sess, participant_ids, sender_id=current_user.id
+        )
     except PreworkSendError as exc:
         if wants_json:
             return {"error": str(exc)}, 400

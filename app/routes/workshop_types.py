@@ -48,6 +48,24 @@ def lang_key(lang) -> str:
     ).lower()
 
 
+def _supported_language_codes(wt: WorkshopType) -> list[str]:
+    seen_codes: set[str] = set()
+    supported: list[str] = []
+    for lang in wt.supported_languages or []:
+        code = None
+        if isinstance(lang, str):
+            code = NAME_TO_CODE.get(lang) or lang_key(lang)
+        else:
+            code = lang_key(lang)
+        if not code or code in seen_codes:
+            continue
+        seen_codes.add(code)
+        supported.append(code)
+    if not supported:
+        supported = ["en"]
+    return supported
+
+
 def query_material_options(
     delivery_type: str, lang_name: str, include_bulk: bool = False
 ):
@@ -516,20 +534,19 @@ def prework(type_id: int, current_user):
     wt = db.session.get(WorkshopType, type_id)
     if not wt:
         abort(404)
-    seen_codes: set[str] = set()
-    supported_languages: list[str] = []
-    for lang in wt.supported_languages or []:
-        code = None
-        if isinstance(lang, str):
-            code = NAME_TO_CODE.get(lang) or lang_key(lang)
-        else:
-            code = lang_key(lang)
-        if not code or code in seen_codes:
-            continue
-        seen_codes.add(code)
-        supported_languages.append(code)
-    if not supported_languages:
-        supported_languages = ["en"]
+    supported_languages = _supported_language_codes(wt)
+
+    copy_sources = [
+        {
+            "id": other.id,
+            "name": other.name,
+            "languages": [
+                {"code": code, "label": code_to_label(code)}
+                for code in _supported_language_codes(other)
+            ],
+        }
+        for other in WorkshopType.query.order_by(WorkshopType.name).all()
+    ]
 
     if request.method == "POST":
         selected_language = request.form.get("language") or supported_languages[0]
@@ -546,6 +563,76 @@ def prework(type_id: int, current_user):
         tpl = PreworkTemplate(
             workshop_type_id=wt.id, language=selected_language
         )
+
+    action = request.form.get("action") if request.method == "POST" else None
+
+    if request.method == "POST" and action == "copy":
+        try:
+            source_type_id = int(request.form.get("source_type_id") or 0)
+        except (TypeError, ValueError):
+            source_type_id = 0
+        source_language = request.form.get("source_language") or ""
+        source_type = db.session.get(WorkshopType, source_type_id)
+        if not source_type:
+            flash("Select a workshop type to copy from", "error")
+            return redirect(
+                url_for(
+                    "workshop_types.prework",
+                    type_id=wt.id,
+                    lang=selected_language,
+                )
+            )
+        available_languages = _supported_language_codes(source_type)
+        if source_language not in available_languages:
+            flash("Language not available for selected workshop", "error")
+            return redirect(
+                url_for(
+                    "workshop_types.prework",
+                    type_id=wt.id,
+                    lang=selected_language,
+                )
+            )
+        source_template = PreworkTemplate.query.filter_by(
+            workshop_type_id=source_type.id, language=source_language
+        ).first()
+        if not source_template:
+            flash("Selected workshop has no prework for that language", "error")
+            return redirect(
+                url_for(
+                    "workshop_types.prework",
+                    type_id=wt.id,
+                    lang=selected_language,
+                )
+            )
+        if not tpl.id:
+            db.session.add(tpl)
+            db.session.flush()
+        PreworkQuestion.query.filter_by(template_id=tpl.id).delete()
+        tpl.info_html = source_template.info_html
+        for idx, source_q in enumerate(
+            sorted(source_template.questions, key=lambda q: q.position), start=1
+        ):
+            db.session.add(
+                PreworkQuestion(
+                    template=tpl,
+                    position=idx,
+                    text=source_q.text,
+                    required=source_q.required,
+                    kind=source_q.kind,
+                    min_items=source_q.min_items,
+                    max_items=source_q.max_items,
+                )
+            )
+        db.session.add(tpl)
+        db.session.commit()
+        flash(
+            f"Copied questions from {source_type.name} ({code_to_label(source_language)})",
+            "success",
+        )
+        return redirect(
+            url_for("workshop_types.prework", type_id=wt.id, lang=selected_language)
+        )
+
     if request.method == "POST":
         if not tpl.id:
             db.session.add(tpl)
@@ -619,4 +706,6 @@ def prework(type_id: int, current_user):
         ],
         questions=questions,
         show_empty_state=not questions,
+        copy_sources=copy_sources,
+        has_questions=bool(questions),
     )

@@ -4,8 +4,6 @@ import smtplib
 import sys
 from email.message import EmailMessage
 
-from .models import Settings
-
 logger = logging.getLogger("cbs.mailer")
 if not logger.handlers:
     handler = logging.StreamHandler(sys.stdout)
@@ -14,6 +12,8 @@ logger.setLevel(logging.INFO)
 
 
 def send(to_addr: str, subject: str, body: str, html: str | None = None):
+    from .models import Settings  # local import to avoid circular import at module load
+
     settings = Settings.get()
     host = (settings.smtp_host if settings and settings.smtp_host else os.getenv("SMTP_HOST"))
     port = (settings.smtp_port if settings and settings.smtp_port else os.getenv("SMTP_PORT"))

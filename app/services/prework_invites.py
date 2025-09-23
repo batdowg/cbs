@@ -11,7 +11,16 @@ from sqlalchemy.orm import joinedload
 
 from .. import emailer
 from ..app import db
-from ..models import Participant, ParticipantAccount, PreworkAssignment, PreworkEmailLog, PreworkTemplate, Session, SessionParticipant
+from ..models import (
+    Participant,
+    ParticipantAccount,
+    PreworkAssignment,
+    PreworkEmailLog,
+    PreworkInvite,
+    PreworkTemplate,
+    Session,
+    SessionParticipant,
+)
 from ..shared.accounts import ensure_participant_account
 from ..shared.constants import MAGIC_LINK_TTL_DAYS
 from ..shared.prework_status import ParticipantPreworkStatus, get_participant_prework_status
@@ -173,6 +182,7 @@ def send_prework_invites(
     participant_ids: Sequence[int] | None = None,
     *,
     allow_completed_resend: bool = False,
+    sender_id: int | None = None,
 ) -> PreworkSendResult:
     """Send prework invites to session participants."""
 
@@ -235,6 +245,14 @@ def send_prework_invites(
 
         if _send_prework_email(session, assignment, account, temp_password):
             sent_count += 1
+            db.session.add(
+                PreworkInvite(
+                    session_id=session.id,
+                    participant_id=participant.id,
+                    sender_id=sender_id,
+                    sent_at=assignment.sent_at or now_utc(),
+                )
+            )
         else:
             failure_count += 1
 

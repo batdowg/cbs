@@ -4,10 +4,17 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict
 
+from sqlalchemy import func
 from sqlalchemy.orm import Query
 
 from ..app import db
-from ..models import Participant, ParticipantAccount, PreworkAssignment, SessionParticipant
+from ..models import (
+    Participant,
+    ParticipantAccount,
+    PreworkAssignment,
+    PreworkInvite,
+    SessionParticipant,
+)
 
 
 @dataclass
@@ -19,6 +26,8 @@ class ParticipantPreworkStatus:
     assignment_id: int | None
     status: str | None
     sent_at: datetime | None
+    invite_count: int
+    last_invite_sent_at: datetime | None
     completed_at: datetime | None
 
     @property
@@ -29,6 +38,17 @@ class ParticipantPreworkStatus:
 def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPreworkStatus]:
     """Return a mapping of participant id → prework status for the session."""
 
+    invite_subquery = (
+        db.session.query(
+            PreworkInvite.participant_id.label("participant_id"),
+            func.count(PreworkInvite.id).label("invite_count"),
+            func.max(PreworkInvite.sent_at).label("last_invite_sent_at"),
+        )
+        .filter(PreworkInvite.session_id == session_id)
+        .group_by(PreworkInvite.participant_id)
+        .subquery()
+    )
+
     query: Query = (
         db.session.query(
             SessionParticipant.participant_id,
@@ -36,6 +56,8 @@ def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPrew
             PreworkAssignment.id,
             PreworkAssignment.status,
             PreworkAssignment.sent_at,
+            invite_subquery.c.invite_count,
+            invite_subquery.c.last_invite_sent_at,
             PreworkAssignment.completed_at,
         )
         .join(Participant, SessionParticipant.participant_id == Participant.id)
@@ -48,6 +70,11 @@ def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPrew
             (PreworkAssignment.session_id == session_id)
             & (PreworkAssignment.participant_account_id == ParticipantAccount.id),
         )
+        .outerjoin(
+            invite_subquery,
+            invite_subquery.c.participant_id
+            == SessionParticipant.participant_id,
+        )
         .filter(SessionParticipant.session_id == session_id)
     )
 
@@ -58,6 +85,8 @@ def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPrew
         assignment_id,
         status,
         sent_at,
+        invite_count,
+        last_invite_sent_at,
         completed_at,
     ) in query.all():
         results[participant_id] = ParticipantPreworkStatus(
@@ -66,6 +95,8 @@ def get_participant_prework_status(session_id: int) -> Dict[int, ParticipantPrew
             assignment_id=assignment_id,
             status=status,
             sent_at=sent_at,
+            invite_count=int(invite_count or 0),
+            last_invite_sent_at=last_invite_sent_at,
             completed_at=completed_at,
         )
     return results

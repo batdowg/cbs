@@ -295,7 +295,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `prework_questions` (fk template_id, text, kind enum TEXT/LIST, min_items, max_items, index)
 - `prework_assignments` (session × participant; snapshot; due_date; status)
 - `prework_answers` (assignment_id, question snapshot, text, item_index)
+- `prework_invites` (session_id, participant_id, sender_id, sent_at; records every invite attempt for invite status tracking)
 - Prework editor exposes a language selector limited to the workshop type’s supported languages; switching languages loads or creates that language’s template and questions without affecting others.
+- A **Copy from workshop** control lets staff pick a source workshop type and language, copying that template’s questions (and info text) into the current language after confirming replacements when questions already exist.
 - Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces).
 
 ## 3.3 Resources
@@ -370,7 +372,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.
 - Learner links, email invites, and assignment snapshots always resolve the prework template by `(session.workshop_type_id, session.workshop_language)`; if that language has no template configured the flows display the empty-state instead of falling back to another language.
 - Participant prework hidden after session starts.
-- Workshop View Participants card shows a Prework column (Submitted with completion date or Not submitted). KT staff and assigned facilitators can send individual prework reminders or bulk-send to all not submitted learners directly from the Workshop View.
+- Workshop View Participants card now surfaces invite status (“Not sent” or “Sent <date> (x times)” using `prework_invites` history, falling back to assignment sent timestamps for legacy data). KT staff and assigned facilitators can still trigger row-level **Send prework** or the bulk **Send prework to all not sent** action; learners/CSA never see invite state or actions.
 - Prework summaries on Workshop View and the staff Prework tab only render responses for the session language template.
 
 ---

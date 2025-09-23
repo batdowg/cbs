@@ -167,23 +167,27 @@
             <td>
               {% set status = row.prework_status %}
               {% set is_waived = status and status.status == 'WAIVED' %}
-              {% if status and status.is_submitted %}
-                Submitted{% if status.completed_at %} ({{ status.completed_at.date() | fmt_dt }}){% endif %}
+              {% set invite_count = status.invite_count if status else 0 %}
+              {% set last_sent = status.last_invite_sent_at if status else None %}
+              {% if not last_sent and status and status.sent_at %}
+                {% set last_sent = status.sent_at %}
+              {% endif %}
+              {% set total_sends = invite_count if invite_count else (1 if last_sent else 0) %}
+              {% if is_waived %}
+                Not sent (waived)
+              {% elif last_sent %}
+                Sent {{ last_sent.date() | fmt_dt }}{% if total_sends > 1 %} ({{ total_sends }} times){% endif %}
               {% else %}
-            {% if is_waived %}
-              Not submitted (waived)
-            {% else %}
-              Not submitted
-            {% endif %}
-            {% if can_send_prework and not is_waived %}
-            <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="display:inline-block;margin-left:var(--space-2);">
-              <input type="hidden" name="next" value="{{ workshop_return }}">
-              <input type="hidden" name="participant_ids[]" value="{{ row.participant.id }}">
-              <button type="submit" class="btn btn-secondary btn-sm">Send prework</button>
-            </form>
-            {% endif %}
-          {% endif %}
-        </td>
+                Not sent
+              {% endif %}
+              {% if can_send_prework and not is_waived %}
+              <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="display:inline-block;margin-left:var(--space-2);">
+                <input type="hidden" name="next" value="{{ workshop_return }}">
+                <input type="hidden" name="participant_ids[]" value="{{ row.participant.id }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Send prework</button>
+              </form>
+              {% endif %}
+            </td>
             <td>
               <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
                 <input type="hidden" name="next" value="{{ workshop_return }}">
