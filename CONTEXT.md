@@ -40,7 +40,8 @@ Every functional change must update this file **in the same PR**.
  - “KT Staff” is a **derived condition** (see §1.4), **not** a stored role.
 - Experimental features must register in `shared.flags` and be disabled by default.
 - `/forgot-password` redirects to `/login?forgot=1` (optionally `&email=`) to surface the forgot-password modal on the unified login page.
-- The login page centers flash messages above the auth card; modal spacing matches auth inputs (email field full-width) for visual alignment.
+- The login page uses the auth-only layout: flashes render centered above the auth card, auto-fade after ~3 seconds with no manual close, and modal spacing matches auth inputs (email field full-width) for visual alignment.
+- The login page's “Forgot password?” link keeps KT primary coloring, adds underline + focus-outline feedback on hover/focus, and maintains AA contrast (visited state included) without shifting layout.
 
 ## 0.4 App Conventions & PR Hygiene
 - Keep migrations idempotent and reversible; guard enum/DDL changes carefully.

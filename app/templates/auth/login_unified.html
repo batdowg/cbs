@@ -1,52 +1,87 @@
-{% extends "base.html" %}
+{% extends "auth/base.html" %}
 {% block title %}Login | KT Workshop Tools{% endblock %}
 {% block extra_head %}
 <style>
-  body { justify-content:center; align-items:center; background: color-mix(in srgb, var(--kt-info) 4%, var(--kt-bg)); }
-  .sidebar { display:none; }
-  .content { flex:none; width:100%; display:flex; justify-content:center; }
-  body.modal-open { overflow:hidden; }
+  body.modal-open {
+    overflow: hidden;
+  }
+
   .login-card {
-    text-align:center;
+    text-align: center;
     border: 1px solid var(--kt-border);
     padding: var(--space-5);
     border-radius: var(--radius-lg);
+    width: 100%;
     max-width: 360px;
-    width: min(100%, 360px);
+    margin: 0 auto;
     background: var(--kt-bg);
     box-shadow: 0 24px 48px rgba(0, 44, 91, 0.18);
   }
-  .login-card img { max-width:150px; margin-bottom:var(--space-4); }
-  .login-card h1 { font-size:1.5rem; margin:0.5rem 0 var(--space-3); font-family: 'Raleway', sans-serif; }
-  .login-card form { display:grid; gap: var(--space-2); margin-bottom: var(--space-2); }
-  .login-card form input { width:100%; }
-  .login-card button[type="submit"] { width:100%; }
-  .link-button {
-    background:none;
-    border:none;
-    color: var(--kt-info);
-    text-decoration: underline;
-    cursor:pointer;
-    font: inherit;
-    padding:0;
-    margin-top: var(--space-2);
-  }
-  .link-button:hover,
-  .link-button:focus-visible {
-    color: var(--kt-primary-hover);
-    outline: none;
-  }
-  .footnote { font-size:0.9em; color:var(--kt-muted); margin-top:var(--space-3); }
-  .content .flashes {
-    display:flex;
-    justify-content:center;
-    margin-bottom: var(--space-3);
+
+  .login-card img {
+    max-width: 150px;
+    margin-bottom: var(--space-4);
   }
 
-  .content .flashes .flash {
-    max-width: 360px;
-    width: min(100%, 360px);
+  .login-card h1 {
+    font-size: 1.5rem;
+    margin: 0.5rem 0 var(--space-3);
+    font-family: 'Raleway', sans-serif;
   }
+
+  .login-card form {
+    display: grid;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .login-card form input {
+    width: 100%;
+  }
+
+  .login-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .auth-forgot-link {
+    display: inline-block;
+    margin-top: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    color: var(--kt-primary);
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: color 160ms ease;
+  }
+
+  .auth-forgot-link:hover,
+  .auth-forgot-link:active {
+    color: var(--kt-primary-hover);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .auth-forgot-link:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: 2px;
+    color: var(--kt-primary-hover);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 3px;
+  }
+
+  .auth-forgot-link:visited {
+    color: var(--kt-primary);
+  }
+
+  .footnote {
+    font-size: 0.9em;
+    color: var(--kt-muted);
+    margin-top: var(--space-3);
+  }
+
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -57,9 +92,11 @@
     padding: var(--space-4);
     z-index: 1000;
   }
+
   .modal-backdrop.is-open {
     display: flex;
   }
+
   .modal-content {
     position: relative;
     width: min(100%, 420px);
@@ -69,48 +106,57 @@
     padding: var(--space-4) var(--space-4) var(--space-3);
     text-align: left;
   }
+
   .modal-close {
-    position:absolute;
+    position: absolute;
     top: var(--space-2);
     right: var(--space-2);
-    background:none;
-    border:none;
+    background: none;
+    border: none;
     color: var(--kt-muted);
-    font-size:1.25rem;
-    cursor:pointer;
-    line-height:1;
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
   }
+
   .modal-close:hover,
   .modal-close:focus-visible {
     color: var(--kt-text);
     outline: none;
   }
+
   .modal-title {
     font-family: 'Raleway', sans-serif;
     font-size: 1.25rem;
     margin-bottom: var(--space-2);
   }
+
   .modal-subtitle {
     margin-bottom: var(--space-2);
     color: var(--kt-muted);
     font-size: 0.95rem;
   }
+
   .forgot-form {
     display: grid;
     gap: var(--space-2);
   }
+
   .forgot-form label {
     font-weight: 600;
     display: block;
   }
+
   .forgot-form input {
     width: 100%;
   }
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;
     margin-top: var(--space-2);
   }
+
   .dev-token {
     margin-top: var(--space-3);
     font-size: 0.9rem;
@@ -119,7 +165,7 @@
   }
 </style>
 {% endblock %}
-{% block content %}
+{% block auth_content %}
 <div class="login-card">
   <img src="/logo.png" alt="KT logo">
   <h1>Welcome to KT Workshop Tools</h1>
@@ -128,7 +174,7 @@
     <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
     <button type="submit" class="btn btn-primary">Sign in</button>
   </form>
-  <button type="button" class="link-button" data-open-forgot>Forgot password?</button>
+  <a href="{{ url_for('auth.forgot_password') }}" class="auth-forgot-link" data-open-forgot>Forgot password?</a>
   <p class="footnote">We'll direct you to the right place after sign-in.</p>
 </div>
 <div class="modal-backdrop{% if forgot_open %} is-open{% endif %}" id="forgot-modal" data-open="{{ '1' if forgot_open else '0' }}" role="dialog" aria-modal="true" aria-hidden="{{ 'false' if forgot_open else 'true' }}" aria-labelledby="forgot-password-title">
@@ -179,8 +225,8 @@
       body.classList.remove('modal-open');
     }
 
-    openers.forEach(btn => {
-      btn.addEventListener('click', function(event){
+    openers.forEach(trigger => {
+      trigger.addEventListener('click', function(event){
         event.preventDefault();
         openModal();
       });
