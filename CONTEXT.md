@@ -22,9 +22,11 @@ Every functional change must update this file **in the same PR**.
   3) `docker compose up -d --build`
   4) `docker compose ps`
   5) `docker logs cbs-app-1 --tail 80`
-- **DB** (inside app container):  
-  - Create: `python manage.py db migrate -m "message"`  
+- **DB** (inside app container):
+  - Create: `python manage.py db migrate -m "message"`
   - Apply: `python manage.py db upgrade`
+
+- 2025-09-29: Fixed Alembic metadata header for migration `0071_prework_invites` so it imports cleanly.
 
 ## 0.3 Coding Rules
 - Do **not** include local PowerShell aliases in docs or code.
