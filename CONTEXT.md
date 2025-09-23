@@ -27,6 +27,7 @@ Every functional change must update this file **in the same PR**.
   - Apply: `python manage.py db upgrade`
 
 - 2025-09-29: Fixed Alembic metadata header for migration `0071_prework_invites` so it imports cleanly.
+- 2025-09-23: Added shim migration `0072_prework_disable_fields` to chain `9e9d34b28f26` to the renumbered `0073_user_profile_contact_fields` migration.
 
 ## 0.3 Coding Rules
 - Do **not** include local PowerShell aliases in docs or code.
