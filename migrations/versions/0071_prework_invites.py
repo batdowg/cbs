@@ -1,6 +1,4 @@
-"""create prework invites table
-
-"""create prework invites table
+"""prework_invites table
 
 Revision ID: 0071_prework_invites
 Revises: 0070_prework_template_language
