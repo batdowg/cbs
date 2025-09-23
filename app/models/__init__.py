@@ -171,6 +171,9 @@ class WorkshopType(db.Model):
     code = db.Column(db.String(16), nullable=False)
     name = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(16), default="active")
+    active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.text("true")
+    )
     description = db.Column(db.Text)
     simulation_based = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")

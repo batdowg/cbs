@@ -10,12 +10,18 @@ from app.models import (
     CertificateTemplateSeries,
     Participant,
     ParticipantAccount,
+    ParticipantAttendance,
     Session,
     SessionParticipant,
     User,
     WorkshopType,
 )
-from app.shared.certificates import render_certificate, resolve_series_template
+from app.shared.certificates import (
+    CertificateAttendanceError,
+    render_certificate,
+    render_for_session,
+    resolve_series_template,
+)
 
 
 @pytest.fixture
@@ -137,7 +143,12 @@ def _setup_cert(app):
             name="Foo",
             cert_series="SER",
         )
-        sess = Session(title="S1", workshop_type=wt, start_date=date(2024, 1, 1))
+        sess = Session(
+            title="S1",
+            workshop_type=wt,
+            start_date=date(2024, 1, 1),
+            number_of_class_days=1,
+        )
         acct = ParticipantAccount(email="p@example.com", full_name="P")
         part = Participant(email="p@example.com", full_name="P", account=acct)
         admin = User(email="a@example.com", is_admin=True)
@@ -147,12 +158,72 @@ def _setup_cert(app):
             session_id=sess.id, participant_id=part.id, completion_date=date(2024, 1, 2)
         )
         db.session.add(link)
+        db.session.flush()
+        attendance = ParticipantAttendance(
+            session_id=sess.id,
+            participant_id=part.id,
+            day_index=1,
+            attended=True,
+        )
+        db.session.add(attendance)
         db.session.commit()
         render_certificate(sess, acct)
         cert = Certificate.query.filter_by(
             session_id=sess.id, participant_id=part.id
         ).one()
         return sess, part, acct, cert, admin.id
+
+
+def _build_session(
+    app,
+    *,
+    mark_full_attendance: bool,
+    code_suffix: str,
+) -> tuple[int, int, int, int]:
+    with app.app_context():
+        series_code = f"SER{code_suffix}"
+        series = CertificateTemplateSeries(code=series_code, name=f"Series {code_suffix}")
+        tmpl = CertificateTemplate(
+            series=series,
+            language="en",
+            size="A4",
+            filename="fncert_template_a4_en.pdf",
+        )
+        wt = WorkshopType(code=f"WT{code_suffix}", name="Foo", cert_series=series_code)
+        sess = Session(
+            title="S",
+            workshop_type=wt,
+            start_date=date(2024, 2, 1),
+            end_date=date(2024, 2, 2),
+            number_of_class_days=1,
+            delivered=True,
+        )
+        acct = ParticipantAccount(email=f"{code_suffix.lower()}@example.com", full_name=f"P{code_suffix}")
+        part = Participant(
+            email=f"{code_suffix.lower()}@example.com",
+            full_name=f"P{code_suffix}",
+            account=acct,
+        )
+        admin = User(email=f"admin{code_suffix}@example.com", is_admin=True)
+        db.session.add_all([series, tmpl, wt, sess, acct, part, admin])
+        db.session.flush()
+        link = SessionParticipant(
+            session_id=sess.id,
+            participant_id=part.id,
+            completion_date=date(2024, 2, 2),
+        )
+        db.session.add(link)
+        if mark_full_attendance:
+            db.session.add(
+                ParticipantAttendance(
+                    session_id=sess.id,
+                    participant_id=part.id,
+                    day_index=1,
+                    attended=True,
+                )
+            )
+        db.session.commit()
+        return sess.id, part.id, acct.id, admin.id
 
 
 def test_generation_stores_session_path(app):
@@ -215,3 +286,60 @@ def test_certificate_link_hidden_when_missing(app):
     resp = client.get(f"/sessions/{sess.id}")
     html = resp.data.decode()
     assert 'href="/certificates/' not in html
+
+
+def test_render_certificate_requires_full_attendance(app):
+    session_id, participant_id, account_id, _ = _build_session(
+        app, mark_full_attendance=False, code_suffix="X"
+    )
+    with app.app_context():
+        sess = db.session.get(Session, session_id)
+        account = db.session.get(ParticipantAccount, account_id)
+        with pytest.raises(CertificateAttendanceError):
+            render_certificate(sess, account)
+        cert = Certificate.query.filter_by(
+            session_id=session_id, participant_id=participant_id
+        ).first()
+        assert cert is None
+        cert_dir = os.path.join(
+            "/srv/certificates",
+            str((sess.start_date or date.today()).year),
+            str(sess.id),
+        )
+        assert not os.path.exists(cert_dir)
+
+
+def test_generate_single_blocks_without_full_attendance(app):
+    session_id, participant_id, account_id, admin_id = _build_session(
+        app, mark_full_attendance=False, code_suffix="Y"
+    )
+    client = app.test_client()
+    with client.session_transaction() as s:
+        s["user_id"] = admin_id
+    resp = client.post(
+        f"/sessions/{session_id}/participants/{participant_id}/generate",
+        data={"action": "generate"},
+    )
+    assert resp.status_code == 400
+    assert resp.is_json
+    assert resp.get_json()["error"] == "Full attendance required to generate certificate."
+    with app.app_context():
+        cert = Certificate.query.filter_by(
+            session_id=session_id, participant_id=participant_id
+        ).first()
+        assert cert is None
+
+
+def test_render_for_session_skips_non_full_attendance(app):
+    session_id, participant_id, account_id, _ = _build_session(
+        app, mark_full_attendance=False, code_suffix="Z"
+    )
+    with app.app_context():
+        count, skipped, paths = render_for_session(session_id)
+        assert count == 0
+        assert skipped == 1
+        assert paths == []
+        cert = Certificate.query.filter_by(
+            session_id=session_id, participant_id=participant_id
+        ).first()
+        assert cert is None

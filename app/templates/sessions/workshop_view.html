@@ -212,7 +212,12 @@
                 <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
                 <button type="submit" class="btn btn-secondary" name="action" value="save">Save</button>
                 {% if session.delivered %}
-                <button type="submit" class="btn btn-secondary" name="action" value="generate">Generate</button>
+                {% set has_full_attendance = row.has_full_attendance if row.has_full_attendance is defined else True %}
+                <button type="submit"
+                        class="btn btn-secondary"
+                        name="action"
+                        value="generate"
+                        {% if not has_full_attendance %}disabled title="Enable by marking Full attendance"{% endif %}>Generate</button>
                 {% endif %}
               </form>
             </td>
