@@ -14,7 +14,7 @@
 
 .kt-table th,
 .kt-table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-2);
   border: 1px solid var(--kt-border);
   text-align: left;
 }
