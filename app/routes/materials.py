@@ -35,6 +35,7 @@ from ..shared.sessions_lifecycle import (
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
 CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
+MATERIALS_OUTSTANDING_MESSAGE = "There are still material order items outstanding"
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -500,6 +501,12 @@ def materials_view(
                 db.session.add(item)
                 items_changed = True
 
+            current_items = MaterialOrderItem.query.filter_by(
+                session_id=sess.id
+            ).all()
+            has_items = bool(current_items)
+            all_processed = has_items and all(i.processed for i in current_items)
+
             if not finalize and shipment.status != "Finalized":
                 if (header_changed or items_changed) and (
                     not shipment.status
@@ -507,25 +514,30 @@ def materials_view(
                 ):
                     shipment.status = "In progress"
                 db.session.flush()
-                current_items = MaterialOrderItem.query.filter_by(
-                    session_id=sess.id
-                ).all()
-                has_items = bool(current_items)
-                all_processed = has_items and all(i.processed for i in current_items)
                 if all_processed and shipment.status != "Finalized":
                     if shipment.status != "Processed":
                         shipment.status = "Processed"
                 elif not all_processed and shipment.status == "Processed":
                     shipment.status = "In progress"
-
-            if finalize:
+                flash("Saved", "info")
+            else:
+                if not all_processed:
+                    enforce_material_only_rules(sess)
+                    db.session.commit()
+                    flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
+                    return redirect(url_for("materials.materials_view", session_id=session_id))
                 shipment.status = "Finalized"
+                now = datetime.utcnow()
+                if not sess.materials_ordered:
+                    sess.materials_ordered = True
+                    if not sess.materials_ordered_at:
+                        sess.materials_ordered_at = now
                 sess.ready_for_delivery = True
+                if not sess.ready_at:
+                    sess.ready_at = now
                 if is_client_run_bulk_order(shipment.order_type):
                     sess.status = "Closed"
                 flash("Materials order finalized", "success")
-            else:
-                flash("Saved", "info")
 
             enforce_material_only_rules(sess)
             db.session.commit()

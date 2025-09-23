@@ -252,6 +252,10 @@ def test_send_prework_endpoint_filters_by_participant(app_context, monkeypatch):
     assert invites[0].participant_id == pending_participant.id
     assert invites[0].sender_id == facilitator.id
     assert invites[0].sent_at is not None
+    with app.app_context():
+        session_obj = Session.query.get(sess.id)
+        assert session_obj.info_sent is True
+        assert session_obj.info_sent_at is not None
 
 
 def test_send_prework_uses_session_language(app_context, monkeypatch):
@@ -325,9 +329,24 @@ def test_send_prework_uses_session_language(app_context, monkeypatch):
         assert assignment.template.language == "es"
         snapshot_questions = assignment.snapshot_json.get("questions") or []
         assert snapshot_questions and snapshot_questions[0]["text"] == "Spanish prompt"
-        invites = PreworkInvite.query.filter_by(session_id=sess_id).all()
-        assert len(invites) == 1
-        assert invites[0].sender_id == facilitator_id
+    invites = PreworkInvite.query.filter_by(session_id=sess_id).all()
+    assert len(invites) == 1
+    assert invites[0].sender_id == facilitator_id
+    session_obj = Session.query.get(sess_id)
+    assert session_obj.info_sent is True
+    assert session_obj.info_sent_at is not None
+
+
+def test_workshop_view_shows_delivered_button(app_context):
+    app = app_context
+    sess, facilitator, *_rest = _seed_session(with_completion=False)
+    client = app.test_client()
+    with client.session_transaction() as sess_data:
+        sess_data["user_id"] = facilitator.id
+    resp = client.get(f"/workshops/{sess.id}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert '<button type="submit" class="btn btn-success">Delivered</button>' in html
 
 
 def test_send_prework_blocks_unauthorized(app_context):

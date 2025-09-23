@@ -262,6 +262,11 @@ def send_prework_invites(
         else:
             failure_count += 1
 
+    if sent_count > 0 and not session.info_sent:
+        session.info_sent = True
+        if not session.info_sent_at:
+            session.info_sent_at = now_utc()
+
     db.session.commit()
     updated_statuses = get_participant_prework_status(session.id)
     return PreworkSendResult(
