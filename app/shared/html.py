@@ -26,7 +26,7 @@ ALLOWED_TAGS = [
     "blockquote",
 ]
 
-ALLOWED_ATTRS = {"a": ["href", "rel"]}
+ALLOWED_ATTRS = {"a": ["href", "rel", "target"]}
 
 PREWORK_ALLOWED_TAGS = ["p", "br", "strong", "em", "ul", "ol", "li", "a"]
 PREWORK_ALLOWED_ATTRS = {"a": ["href"]}

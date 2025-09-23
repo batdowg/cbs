@@ -306,7 +306,8 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `prework_invites` (session_id, participant_id, sender_id, sent_at; records every invite attempt for invite status tracking)
 - Prework editor exposes a language selector limited to the workshop type’s supported languages; switching languages loads or creates that language’s template and questions without affecting others.
 - A **Copy from workshop** control lets staff pick a source workshop type and language, copying that template’s questions (and info text) into the current language after confirming replacements when questions already exist.
-- Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces).
+- Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces). Question prompts render sanitized rich text (allowing `<p>`, `<br>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, and `<a href target="_blank" rel="noopener">`) so formatting is preserved without exposing unsafe markup.
+- Learner submissions keep every entered response (including the first item in list questions) in order; whitespace-only rows are dropped during save.
 
 ## 3.3 Resources
 - `resources` (name, type enum LINK/DOCUMENT/APP, value/url/path, `description_html`, `language` code, `audience` enum Participant/Facilitator/Both, active)
@@ -366,8 +367,10 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 4.3 Delivery (facilitator)
 - **My Sessions**: sessions where user is a facilitator; delivery data visible (address, timezone, notes). Delivery (KT Facilitator) and Contractor accounts always open `/workshops/<session_id>` for sessions where they are lead or co-facilitators, even when they also hold Admin/CRM roles. Other staff retain the `/sessions/<id>` detail link.
+
   - **Workshop View** (`/workshops/<session_id>`): runner-focused layout with the heading `"<id> <title>: <workshop_code> (<delivery_type>) - <status>"`, a slimmed overview card (location moved left; type/delivery/status removed), and a Participants card above Resources. Facilitators manage participants inline (add, edit, remove, completion date, CSV import) with certificate links mirroring staff detail. The Resources card lists active resources assigned to the session's workshop type where `audience ∈ {Facilitator, Both}` and `resource.language == session.workshop_language`, using the same tile layout as the learner view (expanded by default) and showing the standard empty-state copy when none match. A Prework summary card groups responses by question using ';' separators. Materials-only sessions render an empty state message instead of workshop details.
     - Delivered button blocks sessions with zero participants unless `session.prework_disable_mode == "silent"` (red “No prework & don’t send accounts” action).
+
 
 ## 4.4 CRM
 - Full session lifecycle. Defaults on **My Sessions** to owner/CRM scope.

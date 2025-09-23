@@ -426,6 +426,82 @@ def test_list_question_autosave_and_completion():
         assert assign.status == "COMPLETED"
 
 
+def test_prework_form_saves_all_list_entries():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="FORM", name="Form Save", cert_series="fn")
+        db.session.add(wt)
+        db.session.flush()
+        template = PreworkTemplate(workshop_type_id=wt.id, info_html="info")
+        db.session.add(template)
+        db.session.flush()
+        db.session.add(
+            PreworkQuestion(
+                template_id=template.id,
+                position=1,
+                text="<p>List prompt</p>",
+                kind="LIST",
+                min_items=1,
+                max_items=5,
+            )
+        )
+        session = Session(title="Save", workshop_type_id=wt.id)
+        account = ParticipantAccount(email="save@example.com", full_name="Saver")
+        db.session.add_all([session, account])
+        db.session.flush()
+        snapshot = {
+            "questions": [
+                {
+                    "index": 1,
+                    "text": "<p>List prompt</p>",
+                    "required": True,
+                    "kind": "LIST",
+                    "min_items": 1,
+                    "max_items": 5,
+                }
+            ],
+            "resources": [],
+        }
+        assignment = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account.id,
+            template_id=template.id,
+            status="SENT",
+            snapshot_json=snapshot,
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        assign_id = assignment.id
+        account_id = account.id
+    with app.test_client() as client:
+        with client.session_transaction() as session_data:
+            session_data["participant_account_id"] = account_id
+        resp = client.post(
+            f"/prework/{assign_id}",
+            data={
+                "answers[1][]": [
+                    " First response ",
+                    "Second response",
+                    "Third response",
+                ]
+            },
+        )
+        assert resp.status_code == 302
+    with app.app_context():
+        answers = (
+            PreworkAnswer.query.filter_by(assignment_id=assign_id)
+            .order_by(PreworkAnswer.item_index)
+            .all()
+        )
+        assert [a.answer_text for a in answers] == [
+            "First response",
+            "Second response",
+            "Third response",
+        ]
+        assert [a.item_index for a in answers] == [0, 1, 2]
+
+
 def test_prework_download_route():
     app = create_app()
     with app.app_context():

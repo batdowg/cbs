@@ -265,7 +265,7 @@
         {% set ext = filename.rsplit('.', 1)[-1]|lower if '.' in filename else '' %}
         {% set is_image = ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'] %}
         {% set is_pdf = ext == 'pdf' %}
-        <details class="resource-item" open>
+        <details class="resource-item">
           <summary class="resource-summary">{{ r.name }}</summary>
           <div class="resource-panel">
             <div class="resource-tile">
