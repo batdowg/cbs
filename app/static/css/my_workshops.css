@@ -1,0 +1,122 @@
+.workshop-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.workshop-card {
+  padding: 0;
+}
+
+.workshop-card__header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+  color: var(--kt-text);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.workshop-card__header:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.workshop-card[data-expanded="true"] .workshop-card__header {
+  background: rgba(0, 87, 183, 0.08);
+}
+
+.workshop-card__title {
+  font-weight: 600;
+}
+
+.workshop-card__chevron {
+  transition: transform 0.2s ease;
+}
+
+.workshop-card[data-expanded="true"] .workshop-card__chevron {
+  transform: rotate(90deg);
+}
+
+.workshop-card__body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--kt-border);
+}
+
+.workshop-card__row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding-top: var(--space-2);
+}
+
+.workshop-card__row:first-child {
+  padding-top: 0;
+}
+
+.workshop-card__label {
+  width: 140px;
+  font-weight: 600;
+  color: var(--kt-muted);
+}
+
+.workshop-card__value {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.workshop-card__facilitator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.workshop-card__facilitator img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--kt-border);
+}
+
+.workshop-card__facilitator-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workshop-card__facilitator-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--kt-muted);
+  font-size: 0.9rem;
+}
+
+.workshop-card__time {
+  color: var(--kt-muted);
+}
+
+.empty-muted {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--kt-muted);
+}
+
+@media (max-width: 640px) {
+  .workshop-card__row {
+    flex-direction: column;
+  }
+
+  .workshop-card__label {
+    width: auto;
+  }
+}

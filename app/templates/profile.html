@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}My Profile{% endblock %}
+{% block extra_head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
 {% block content %}
 <h1>My Profile</h1>
 {% if is_staff and has_participant %}
@@ -12,12 +16,28 @@
 {% endif %}
 <section class="kt-card">
   <h2 class="kt-card-title">Profile details</h2>
-  <form method="post" class="form-align">
+  <form method="post" class="form-align" enctype="multipart/form-data">
     <input type="hidden" name="form" value="profile">
     <div class="form-align__row">
       <label class="form-align__label" for="profile-email">Email</label>
       <div class="form-align__control">
         <input type="email" id="profile-email" value="{{ email }}" readonly>
+      </div>
+    </div>
+    <div class="form-align__row">
+      <span class="form-align__label">Profile photo</span>
+      <div class="form-align__control">
+        <div class="profile-photo-field">
+          {% set preview_src = profile_image_url or url_for('static', filename='img/avatar_silhouette.png') %}
+          <img src="{{ preview_src }}" alt="Profile photo preview" id="profile-image-preview" data-default="{{ url_for('static', filename='img/avatar_silhouette.png') }}" data-current="{{ profile_image_url or '' }}">
+          <div class="profile-photo-field__actions">
+            <input type="file" id="profile-image" name="profile_image" accept=".png,.jpg,.jpeg">
+            <p class="profile-photo-hint">PNG or JPG up to 2&nbsp;MB.</p>
+            {% if profile_image_url %}
+            <label class="profile-photo-remove"><input type="checkbox" name="remove_photo" value="1" id="remove-photo"> Remove photo</label>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
     <div class="form-align__row">
@@ -48,6 +68,24 @@
           <option value="{{ code }}" {% if preferred_language==code %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
+      </div>
+    </div>
+    <div class="form-align__row">
+      <label class="form-align__label" for="profile-phone">Phone</label>
+      <div class="form-align__control">
+        <input type="text" id="profile-phone" name="phone" value="{{ phone }}" maxlength="50" autocomplete="tel">
+        <p class="form-align__help">Include country code if it helps others reach you.</p>
+      </div>
+    </div>
+    <div class="form-align__row">
+      <span class="form-align__label">Location</span>
+      <div class="form-align__control">
+        <div class="profile-location">
+          <input type="text" name="city" id="profile-city" value="{{ city }}" maxlength="120" placeholder="City" autocomplete="address-level2">
+          <input type="text" name="state" id="profile-state" value="{{ state }}" maxlength="120" placeholder="State / Region" autocomplete="address-level1">
+          <input type="text" name="country" id="profile-country" value="{{ country }}" maxlength="120" placeholder="Country" autocomplete="country-name">
+        </div>
+        <p class="form-align__help">Add your city and either a state or a country.</p>
       </div>
     </div>
     <div class="form-align__row">
@@ -82,4 +120,54 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+(function() {
+  const fileInput = document.getElementById('profile-image');
+  const preview = document.getElementById('profile-image-preview');
+  if (!fileInput || !preview) {
+    return;
+  }
+  const remove = document.getElementById('remove-photo');
+  const defaultSrc = preview.dataset.default;
+  const currentSrc = preview.dataset.current || '';
+
+  function setPreview(src) {
+    if (src) {
+      preview.src = src;
+    } else {
+      preview.src = currentSrc || defaultSrc;
+    }
+  }
+
+  fileInput.addEventListener('change', function() {
+    const file = this.files && this.files[0];
+    if (!file) {
+      setPreview(currentSrc);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      preview.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+    if (remove) {
+      remove.checked = false;
+    }
+  });
+
+  if (remove) {
+    remove.addEventListener('change', function() {
+      if (this.checked) {
+        preview.src = defaultSrc;
+      } else {
+        setPreview(currentSrc);
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

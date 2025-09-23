@@ -12,3 +12,4 @@ PyPDF2==3.0.1
 reportlab==4.0.4
 pytest==8.4.1
 bleach==6.1.0
+Pillow>=10.0.0
