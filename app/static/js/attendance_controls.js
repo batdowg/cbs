@@ -107,6 +107,8 @@
     const newState = checkbox.checked;
     const previousState = !newState;
     checkbox.disabled = true;
+    const suppressSuccessNotice = container.dataset.hideSuccessNotice === 'true';
+
     sendJson(toggleUrl, {
       participant_id: participantId,
       day_index: dayIndex,
@@ -115,7 +117,9 @@
       .then(function (data) {
         checkbox.checked = Boolean(data.attended);
         checkbox.dataset.lastValue = checkbox.checked ? 'true' : 'false';
-        showNotice(container, 'Saved');
+        if (!suppressSuccessNotice) {
+          showNotice(container, 'Saved');
+        }
       })
       .catch(function (error) {
         checkbox.checked = previousState;
