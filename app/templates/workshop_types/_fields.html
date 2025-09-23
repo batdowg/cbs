@@ -21,3 +21,6 @@
   </select>
 </label></div>
 <div><label>Description<br><textarea name="description">{{ wt.description if wt else '' }}</textarea></label></div>
+{% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+<h2><a href="{{ url_for('workshop_types.prework', type_id=wt.id) }}">Prework</a></h2>
+{% endif %}
