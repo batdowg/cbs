@@ -34,6 +34,11 @@ class User(db.Model):
     preferred_view = db.Column(
         db.String(20), nullable=True, default="ADMIN", server_default="ADMIN"
     )
+    phone = db.Column(db.String(50))
+    city = db.Column(db.String(120))
+    state = db.Column(db.String(120))
+    country = db.Column(db.String(120))
+    profile_image_path = db.Column(db.String(255))
     __table_args__ = (
         db.Index("ix_users_email_lower", db.func.lower(email), unique=True),
     )
@@ -72,6 +77,11 @@ class ParticipantAccount(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    phone = db.Column(db.String(50))
+    city = db.Column(db.String(120))
+    state = db.Column(db.String(120))
+    country = db.Column(db.String(120))
+    profile_image_path = db.Column(db.String(255))
     __table_args__ = (
         db.Index(
             "ix_participant_accounts_email_lower",

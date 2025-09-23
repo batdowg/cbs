@@ -19,7 +19,8 @@
 /sessions/<id>/attendance/mark_all_attended – POST: bulk mark all participants/days attended (staff or assigned facilitator)
 /my-sessions             – Facilitators/CRM/CSA: sessions relevant to them (Delivery/Contractor click-through opens Workshop view; CRM-only scoped to client CRM owner)
 /my-certificates         – Learner portal: download own PDFs
-/profile                 – Learner profile (full name, certificate name)
+/my-workshops            – Learner portal: accordion cards with prework link/status, facilitator contacts, location, schedule
+/profile                 – Learner/staff profile (name, certificate name, phone/location, profile photo upload)
 /my-resources            – Learner portal: grouped resources by Workshop Type (Participant/Both resources matching session languages)
 
 # Settings (Admin/SysAdmin)

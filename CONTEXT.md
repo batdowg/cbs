@@ -270,12 +270,12 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Unique: `lower(email)`
 - Roles: booleans/role map (Sys Admin, Admin, CRM, Delivery, Contractor).
 - Auth: standard password hash.
-- Profile: full_name, **title**, preferred_language, region
+- Profile: full_name, **title**, preferred_language, region, optional `phone`, optional location fields (`city`, `state`, `country`), and `profile_image_path` (relative path under `/uploads/profile_pics/<user_id>/<filename>`).
 
 ## 2.2 Participant Accounts (learners & CSAs)
-- Table: `participant_accounts`  
-- Unique: `lower(email)`  
-- Profile: full_name, certificate_name, preferred_language, is_active, last_login
+- Table: `participant_accounts`
+- Unique: `lower(email)`
+- Profile: full_name, certificate_name, preferred_language, is_active, last_login, optional `phone` and location fields mirroring the `users` table, plus `profile_image_path` (relative under `/uploads/profile_pics/participant-<id>/<filename>`).
 - **Defaults**:  
   - Participant/Learner temp password: **`KTRocks!`**  
   - **CSA** temp password: **`KTRocks!CSA`**
@@ -414,10 +414,21 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - **New Session inline adds**: Add Client, Location, and Shipping within dialogs on the form. These dialogs mirror the full-page create forms (same fields and validation), show field-level errors inline, and saving selects the new item while preserving all other inputs.
 - **Past-start acknowledgment**: triggers immediately when the **Start Date** field value is changed to a past date. Saving does not prompt unless the submitted value is past and unacknowledged. Changing the Start Date clears prior acknowledgment.
 - **Times**: display `HH:MM` only + short timezone.
-- **Profile**: staff `/profile` shows **Certificate Name**; saving sets the participant `certificate_name` for the same email (creating the participant if missing). Learners edit `ParticipantAccount.full_name` and `certificate_name`.
+- **Profile**: staff `/profile` shows **Certificate Name**; saving sets the participant `certificate_name` for the same email (creating the participant if missing). Learners edit `ParticipantAccount.full_name` and `certificate_name`. Both staff and learners can update phone, city, state, and country; when any location detail is provided, City is required and at least one of State/Country must also be present. Phone accepts digits plus `+`, spaces, parentheses, and hyphen. Profile photo uploads accept PNG/JPG ≤2&nbsp;MB and store under `/srv/uploads/profile_pics/<owner>/`. Removing a photo clears the database field and deletes the stored image.
 - **Staff-as-Participant**: adding a participant with a staff email is allowed; if a matching `participant_account` is missing, create it seeded with `User.full_name`, `User.title` (if any), and `certificate_name = User.full_name`. Existing accounts are reused.
 - **/profile**: staff edit `User.full_name`, `User.title`, and Certificate Name; learners edit `ParticipantAccount.full_name` and `certificate_name`. Optional sync button copies staff full_name to participant.
 - **Session language**: single `workshop_language` field; selected before Workshop Type. Type options filter to those whose `supported_languages` include it. Changing the language clears incompatible types, and saving with a mismatch errors.
+
+## User Profile — contact info
+- The profile form exposes phone, city, state, and country to all authenticated users. Location is optional, but when any field is supplied the city must be filled and at least one of state or country must also be present. Phone input accepts digits plus `+`, spaces, parentheses, and hyphen.
+- Profile photos accept PNG/JPG up to 2&nbsp;MB. Files are stored under `/srv/uploads/profile_pics/<owner>/` where `<owner>` is either the numeric user ID or `participant-<id>` for learner accounts; only the relative path (e.g. `/uploads/profile_pics/42/avatar.png`) is persisted.
+- Invalid uploads (wrong extension, oversize, or not an image) flash an error without altering stored data. Removing a photo clears the database column and deletes the stored file. Templates fall back to `/static/img/avatar_silhouette.png` whenever `profile_image_path` is empty or missing on disk.
+- Stored photos are served through `/uploads/profile_pics/<owner>/<filename>` with path traversal guards so tests and development environments work without Caddy.
+
+## Participant → My Workshops — card layout
+- The learner dashboard replaces the table with a vertical accordion of `.kt-card` elements. Each header renders `"<Workshop Type name> – <Start date (d Mon YYYY)> – <language label>"` and is a full-width `<button>` with `aria-expanded` and focus styles. Cards start collapsed; clicking or pressing Space/Enter toggles the associated region (`role="region"`) via accessible JavaScript that also updates `data-expanded` for styling.
+- Card body rows display, in order: (1) Prework — links to `Complete prework` when the session has an active assignment (`status != 'WAIVED'`) and `prework_disabled` is false; otherwise shows `No prework`. (2) Facilitators — lists the lead facilitator plus any co-facilitators flagged `is_kt_delivery`/`is_kt_contractor`, each on a single line with a 32px rounded avatar, name, `mailto:` link, and optional phone. Missing photos use the silhouette fallback. When no facilitators qualify, the row shows a muted placeholder. (3) Location — `session.location` when populated, otherwise the workshop location label/city/country, or `Location TBD` if nothing is set. (4) Schedule — renders the date range and the daily start/end time with timezone using `fmt_time_range_with_tz`.
+- Only participants assigned to the session (by email) reach these cards; no facilitator data is exposed elsewhere. Layout uses responsive flex so labels stack above values on small screens while preserving WCAG-AA contrast.
 - **Region default**: `/sessions/new` preselects the current user's Region when available; users may change it before saving.
 - **Sessions & Settings**: all language pickers and labels show human names; templates use global `lang_label` helper to render codes; database stores codes; deactivated languages are not selectable; sort by configured order.
 - Materials order view shows **Workshop Type** and **Delivery Type** above Order Type.
