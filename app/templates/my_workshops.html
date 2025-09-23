@@ -1,37 +1,118 @@
 {% extends 'base.html' %}
 {% block title %}My Workshops{% endblock %}
+{% block extra_head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/my_workshops.css') }}">
+{% endblock %}
 {% block content %}
 <h1>My Workshops</h1>
-<div class="kt-table-wrapper">
-  <table class="kt-table">
-    <thead>
-      <tr><th scope="col">Dates</th><th scope="col">Client</th><th scope="col">Title</th><th scope="col">Action</th></tr>
-    </thead>
-    <tbody>
-      {% if sessions %}
-        {% for s in sessions %}
-        <tr>
-          <td>{{ s.start_date }} - {{ s.end_date }}</td>
-          <td>{{ s.client.name if s.client else '' }}</td>
-          <td>{{ s.title }}</td>
-          <td>
-            {% set assignment = assignments.get(s.id) if assignments else None %}
-            {% if assignment and assignment.status != 'WAIVED' %}
-              <a href="{{ url_for('learner.prework_form', assignment_id=assignment.id) }}">Prework</a>
-            {% else %}
-              <span class="muted">No prework</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      {% else %}
-        {% with colspan=4 %}
-
-          {% include 'shared/_table_empty.html' %}
-
-        {% endwith %}
-      {% endif %}
-    </tbody>
-  </table>
+{% if cards %}
+<div class="workshop-accordion" id="workshop-accordion">
+  {% for card in cards %}
+  {% set panel_id = 'workshop-panel-' ~ card.session_id %}
+  {% set header_id = 'workshop-header-' ~ card.session_id %}
+  <article class="kt-card workshop-card" data-expanded="false">
+    <button class="workshop-card__header" type="button" aria-expanded="false" aria-controls="{{ panel_id }}" id="{{ header_id }}">
+      <span class="workshop-card__title">{{ card.header }}</span>
+      <span class="workshop-card__chevron" aria-hidden="true">▸</span>
+    </button>
+    <div class="workshop-card__body" id="{{ panel_id }}" role="region" aria-labelledby="{{ header_id }}" hidden>
+      <div class="workshop-card__row">
+        <span class="workshop-card__label">Prework</span>
+        <div class="workshop-card__value">
+          {% if card.prework_url %}
+          <a href="{{ card.prework_url }}">Complete prework</a>
+          {% else %}
+          <span class="muted">No prework</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="workshop-card__row">
+        <span class="workshop-card__label">Facilitator{% if card.facilitators|length != 1 %}s{% endif %}</span>
+        <div class="workshop-card__value">
+          {% if card.facilitators %}
+            {% for fac in card.facilitators %}
+            <div class="workshop-card__facilitator">
+              {% set avatar = fac.photo or url_for('static', filename=fallback_avatar) %}
+              <img src="{{ avatar }}" alt="" aria-hidden="true">
+              <div class="workshop-card__facilitator-details">
+                <span class="workshop-card__facilitator-name">{{ fac.name }}</span>
+                <span class="workshop-card__facilitator-contact">
+                  <a href="mailto:{{ fac.email }}">{{ fac.email }}</a>
+                  {% if fac.phone %}<span aria-hidden="true">•</span> <span class="workshop-card__facilitator-phone">{{ fac.phone }}</span>{% endif %}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <span class="muted">Facilitators will be assigned soon.</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="workshop-card__row">
+        <span class="workshop-card__label">Location</span>
+        <div class="workshop-card__value">{{ card.location }}</div>
+      </div>
+      <div class="workshop-card__row">
+        <span class="workshop-card__label">Schedule</span>
+        <div class="workshop-card__value">
+          <span>{{ card.date_range }}</span>
+          {% if card.time_range %}<span class="workshop-card__time">{{ card.time_range }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
 </div>
+{% else %}
+<div class="kt-card">
+  <p class="empty-muted">No workshops to display.</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{{ super() }}
+<script>
+(function() {
+  const accordion = document.getElementById('workshop-accordion');
+  if (!accordion) {
+    return;
+  }
+
+  function toggleCard(button) {
+    const card = button.closest('.workshop-card');
+    if (!card) {
+      return;
+    }
+    const expanded = button.getAttribute('aria-expanded') === 'true';
+    const nextState = !expanded;
+    const body = card.querySelector('.workshop-card__body');
+    button.setAttribute('aria-expanded', nextState ? 'true' : 'false');
+    card.dataset.expanded = nextState ? 'true' : 'false';
+    if (body) {
+      body.hidden = !nextState;
+    }
+  }
+
+  accordion.addEventListener('click', function(evt) {
+    const button = evt.target.closest('.workshop-card__header');
+    if (!button) {
+      return;
+    }
+    evt.preventDefault();
+    toggleCard(button);
+  });
+
+  accordion.addEventListener('keydown', function(evt) {
+    const button = evt.target.closest('.workshop-card__header');
+    if (!button) {
+      return;
+    }
+    if (evt.key === ' ' || evt.key === 'Spacebar' || evt.key === 'Enter') {
+      evt.preventDefault();
+      toggleCard(button);
+    }
+  });
+})();
+</script>
 {% endblock %}

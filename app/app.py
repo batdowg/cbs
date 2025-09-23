@@ -135,6 +135,20 @@ def create_app():
 
         return send_from_directory(directory, relative_name, conditional=True)
 
+    @app.get("/uploads/profile_pics/<path:filename>")
+    def profile_photo(filename: str):
+        base_dir = os.path.join(site_root, "uploads", "profile_pics")
+        safe_part = (filename or "").strip("/\\")
+        if not safe_part:
+            abort(404)
+        candidate = os.path.abspath(os.path.join(base_dir, safe_part))
+        if not candidate.startswith(os.path.abspath(base_dir) + os.sep) and candidate != os.path.abspath(base_dir):
+            abort(404)
+        if not os.path.isfile(candidate):
+            abort(404)
+        relative = os.path.relpath(candidate, base_dir)
+        return send_from_directory(base_dir, relative, conditional=True)
+
     @app.context_processor
     def inject_user():
         user = None
