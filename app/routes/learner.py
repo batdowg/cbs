@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from functools import wraps
 
+from functools import wraps
+import re
+
 from flask import (
     Blueprint,
     abort,
@@ -32,8 +35,15 @@ from ..models import (
     PreworkAnswer,
 )
 from ..models import Resource, resource_workshop_types
-from ..shared.languages import get_language_options
+from ..shared.languages import get_language_options, code_to_label
 from ..shared.certificates import get_template_mapping
+from ..shared.profile_images import (
+    delete_profile_image,
+    ProfileImageError,
+    resolve_profile_image,
+    save_profile_image,
+)
+from ..shared.time import fmt_time_range_with_tz
 
 import time
 
@@ -78,6 +88,13 @@ def my_workshops():
 
     sessions = (
         db.session.query(Session)
+        .options(
+            joinedload(Session.workshop_type),
+            joinedload(Session.client),
+            joinedload(Session.facilitators),
+            joinedload(Session.lead_facilitator),
+            joinedload(Session.workshop_location),
+        )
         .join(SessionParticipant, SessionParticipant.session_id == Session.id)
         .join(Participant, SessionParticipant.participant_id == Participant.id)
         .filter(func.lower(Participant.email) == email)
@@ -92,8 +109,91 @@ def my_workshops():
                 participant_account_id=account_id
             ).all()
         }
+    cards: list[dict] = []
+    for sess in sessions:
+        workshop_name = (
+            sess.workshop_type.name if sess.workshop_type else (sess.title or "Workshop")
+        )
+        language_label = code_to_label(sess.workshop_language or "")
+        start_label = (
+            sess.start_date.strftime("%-d %b %Y")
+            if getattr(sess, "start_date", None)
+            else "Date TBD"
+        )
+        end_label = (
+            sess.end_date.strftime("%-d %b %Y")
+            if getattr(sess, "end_date", None)
+            else None
+        )
+        if end_label and sess.end_date == sess.start_date:
+            end_label = None
+        date_range = start_label if not end_label else f"{start_label} – {end_label}"
+
+        location_text = (sess.location or "").strip()
+        if not location_text and sess.workshop_location:
+            pieces = [sess.workshop_location.label]
+            city_bits = [sess.workshop_location.city, sess.workshop_location.country]
+            city_bits = [p for p in city_bits if p]
+            extra = ", ".join(city_bits)
+            if extra:
+                pieces.append(extra)
+            location_text = " – ".join([p for p in pieces if p])
+        if not location_text:
+            location_text = "Location TBD"
+
+        assignment = assignments.get(sess.id) if assignments else None
+        has_prework = (
+            not sess.prework_disabled
+            and assignment
+            and assignment.status != "WAIVED"
+        )
+        prework_url = (
+            url_for("learner.prework_form", assignment_id=assignment.id)
+            if has_prework
+            else None
+        )
+
+        facilitators: list[dict] = []
+        seen: set[int] = set()
+        candidates = []
+        if sess.lead_facilitator:
+            candidates.append(sess.lead_facilitator)
+        candidates.extend(sess.facilitators or [])
+        for fac in candidates:
+            if not fac or fac.id in seen:
+                continue
+            if not (fac.is_kt_delivery or fac.is_kt_contractor):
+                continue
+            seen.add(fac.id)
+            facilitators.append(
+                {
+                    "id": fac.id,
+                    "name": fac.full_name or fac.email,
+                    "email": fac.email,
+                    "phone": (fac.phone or "").strip(),
+                    "photo": resolve_profile_image(fac.profile_image_path),
+                }
+            )
+
+        cards.append(
+            {
+                "session_id": sess.id,
+                "header": f"{workshop_name} – {start_label} – {language_label}",
+                "prework_url": prework_url,
+                "location": location_text,
+                "date_range": date_range,
+                "time_range": fmt_time_range_with_tz(
+                    sess.daily_start_time, sess.daily_end_time, sess.timezone
+                )
+                or "",
+                "facilitators": facilitators,
+            }
+        )
+
     return render_template(
-        "my_workshops.html", sessions=sessions, assignments=assignments
+        "my_workshops.html",
+        cards=cards,
+        fallback_avatar="img/avatar_silhouette.png",
     )
 
 
@@ -378,21 +478,84 @@ def profile():
         full_name = (request.form.get("full_name") or "").strip()[:200]
         pref_lang = (request.form.get("preferred_language") or "en")[:10]
         cert_name = (request.form.get("certificate_name") or "").strip()[:200]
+        phone = (request.form.get("phone") or "").strip()[:50]
+        city = (request.form.get("city") or "").strip()[:120]
+        state = (request.form.get("state") or "").strip()[:120]
+        country = (request.form.get("country") or "").strip()[:120]
+        remove_photo = request.form.get("remove_photo") == "1"
+        photo_file = request.files.get("profile_image")
+
+        errors: list[str] = []
+        if phone and not re.fullmatch(r"[0-9+()\-\s]+", phone):
+            errors.append(
+                "Phone number may include digits, spaces, parentheses, plus or hyphen."
+            )
+        if any([city, state, country]):
+            if not city:
+                errors.append("City is required when providing a location.")
+            if not state and not country:
+                errors.append("Add a state or country for your location.")
+
+        owner_key: str | None = None
+        existing_photo = None
+        if user_id and user:
+            owner_key = str(user.id)
+            existing_photo = user.profile_image_path
+        elif account:
+            owner_key = f"participant-{account.id}"
+            existing_photo = account.profile_image_path
+
+        new_photo_path: str | None = None
+        if photo_file and photo_file.filename:
+            if not owner_key:
+                errors.append("Unable to save profile photo right now.")
+            else:
+                try:
+                    result = save_profile_image(
+                        photo_file, owner_key, previous_path=existing_photo
+                    )
+                    new_photo_path = result.relative_path
+                    remove_photo = False
+                except ProfileImageError as exc:
+                    errors.append(str(exc))
+
+        if errors:
+            for message in errors:
+                flash(message, "error")
+            return redirect(url_for("learner.profile"))
+
         if user_id:
             user.full_name = full_name
             user.title = (request.form.get("title") or "").strip()[:255]
             user.preferred_language = pref_lang
+            user.phone = phone or None
+            user.city = city or None
+            user.state = state or None
+            user.country = country or None
+            if new_photo_path:
+                user.profile_image_path = new_photo_path
             cert_value = cert_name or full_name
             if account:
                 account.certificate_name = cert_value
                 account.preferred_language = pref_lang
+                account.phone = phone or None
+                account.city = city or None
+                account.state = state or None
+                account.country = country or None
+                if new_photo_path:
+                    account.profile_image_path = new_photo_path
             else:
                 account = ParticipantAccount(
                     email=email,
                     full_name=full_name,
-                    certificate_name=cert_value,
+                    certificate_name=cert_name or full_name,
                     preferred_language=pref_lang,
                     is_active=True,
+                    phone=phone or None,
+                    city=city or None,
+                    state=state or None,
+                    country=country or None,
+                    profile_image_path=new_photo_path,
                 )
                 db.session.add(account)
         else:
@@ -400,6 +563,23 @@ def profile():
                 account.full_name = full_name
                 account.certificate_name = cert_name or full_name
                 account.preferred_language = pref_lang
+                account.phone = phone or None
+                account.city = city or None
+                account.state = state or None
+                account.country = country or None
+                if new_photo_path:
+                    account.profile_image_path = new_photo_path
+
+        if remove_photo:
+            to_clear = None
+            if user_id and user:
+                to_clear = user.profile_image_path
+                user.profile_image_path = None
+            if account:
+                to_clear = to_clear or account.profile_image_path
+                account.profile_image_path = None
+            if to_clear:
+                delete_profile_image(to_clear)
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("learner.profile"))
@@ -425,6 +605,21 @@ def profile():
         is_staff=bool(user_id),
         has_participant=bool(account),
         language_options=get_language_options(),
+        phone=(
+            (user.phone if user_id else account.phone)
+            if (user or account)
+            else ""
+        )
+        or "",
+        city=((user.city if user_id else account.city) if (user or account) else "") or "",
+        state=((user.state if user_id else account.state) if (user or account) else "")
+        or "",
+        country=((user.country if user_id else account.country) if (user or account) else "")
+        or "",
+        profile_image_url=resolve_profile_image(
+            (user.profile_image_path if user_id and user else None)
+            or (account.profile_image_path if account else None)
+        ),
     )
 
 

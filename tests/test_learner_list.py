@@ -13,6 +13,8 @@ from app.models import (
     Participant,
     SessionParticipant,
     PreworkAssignment,
+    User,
+    SessionFacilitator,
 )
 
 
@@ -27,7 +29,7 @@ def app():
         db.session.remove()
 
 
-def _setup(app):
+def _setup(app, *, prework_disabled: bool = False):
     with app.app_context():
         wt = WorkshopType(code="WT", name="WT", cert_series="fn")
         db.session.add(wt)
@@ -38,16 +40,27 @@ def _setup(app):
         db.session.add(PreworkQuestion(template_id=tpl.id, position=1, text="Q1", kind="TEXT"))
         acct = ParticipantAccount(email="csa@example.com", full_name="CSA", is_active=True)
         part = Participant(email="csa@example.com", full_name="CSA", account=acct)
+        facilitator = User(
+            email="fac@example.com",
+            full_name="Facilitator One",
+            is_kt_delivery=True,
+            phone="+1 555 0100",
+        )
         sess = Session(
             title="S",
             workshop_type=wt,
-            start_date=date.today(),
-            end_date=date.today(),
+            start_date=date(2024, 1, 5),
+            end_date=date(2024, 1, 7),
             daily_start_time=time(9, 0),
+            daily_end_time=time(17, 0),
             timezone="UTC",
+            location="Austin, TX",
+            prework_disabled=prework_disabled,
         )
-        db.session.add_all([acct, part, sess])
+        db.session.add_all([acct, part, sess, facilitator])
         db.session.flush()
+        sess.lead_facilitator_id = facilitator.id
+        db.session.add(SessionFacilitator(session_id=sess.id, user_id=facilitator.id))
         db.session.add(SessionParticipant(session_id=sess.id, participant_id=part.id))
         assign = PreworkAssignment(
             session_id=sess.id,
@@ -56,9 +69,16 @@ def _setup(app):
             status="SENT",
             snapshot_json={"questions": [], "resources": []},
         )
-        db.session.add(assign)
+        other_acct = ParticipantAccount(email="other@example.com", full_name="Other", is_active=True)
+        db.session.add_all([assign, other_acct])
         db.session.commit()
-        return acct.id, assign.id
+        return {
+            "account_id": acct.id,
+            "assignment_id": assign.id,
+            "session_id": sess.id,
+            "facilitator_email": facilitator.email,
+            "other_account_id": other_acct.id,
+        }
 
 
 def _login(client, account_id):
@@ -66,11 +86,31 @@ def _login(client, account_id):
         sess["participant_account_id"] = account_id
 
 
-def test_my_workshops_prework_action(app):
-    account_id, assign_id = _setup(app)
+def test_my_workshops_card_shows_details(app):
+    data = _setup(app)
     client = app.test_client()
-    _login(client, account_id)
+    _login(client, data["account_id"])
     resp = client.get("/my-workshops")
-    assert f"/prework/{assign_id}".encode() in resp.data
-    resp2 = client.get(f"/prework/{assign_id}")
-    assert resp2.status_code == 200
+    assert f"/prework/{data['assignment_id']}".encode() in resp.data
+    assert b"Complete prework" in resp.data
+    assert b"Facilitator One" in resp.data
+    assert data["facilitator_email"].encode() in resp.data
+    assert b"Austin" in resp.data
+    assert b"5 Jan 2024" in resp.data
+    assert b"09:00" in resp.data
+
+
+def test_my_workshops_no_prework_when_disabled(app):
+    data = _setup(app, prework_disabled=True)
+    client = app.test_client()
+    _login(client, data["account_id"])
+    resp = client.get("/my-workshops")
+    assert b"No prework" in resp.data
+
+
+def test_facilitator_info_hidden_from_unassigned(app):
+    data = _setup(app)
+    client = app.test_client()
+    _login(client, data["other_account_id"])
+    resp = client.get("/my-workshops")
+    assert data["facilitator_email"].encode() not in resp.data
