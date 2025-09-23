@@ -299,10 +299,11 @@
   </div>
   {% if session.delivered %}
   <form action="{{ url_for('sessions.generate_bulk', session_id=session.id) }}" method="post">
+      <div class="card-actions" style="margin-bottom: var(--space-3);">
     <button type="submit">Generate Certificates</button>
   </form>
   {% if can_edit_session %}
-    <div class="card-actions" style="margin-bottom: var(--space-3);">
+
       <a class="btn btn-secondary" href="{{ url_for('sessions.export_certificates_zip', session_id=session.id) }}">Export all certificates (zip)</a>
     </div>
   {% endif %}
