@@ -509,8 +509,11 @@ def render_certificate(
             line_spacing = DETAILS_LINE_SPACING_PT * scale
             c.setFont(detail_font, detail_font_size)
             c.setFillGray(0.3)
+            total_lines = len(detail_lines)
             for index, line in enumerate(detail_lines):
-                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + index * line_spacing
+                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + (
+                    total_lines - index - 1
+                ) * line_spacing
                 if details_cfg.get("side", "LEFT") == "RIGHT":
                     c.drawRightString(w - margin_x, y_pos, line)
                 else:

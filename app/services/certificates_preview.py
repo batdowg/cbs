@@ -434,8 +434,11 @@ def generate_preview(
             )
             margin_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM)
             line_spacing_px = DETAILS_LINE_SPACING_PT * scale_factor * _PREVIEW_SCALE
+            total_lines = len(detail_lines)
             for index, line in enumerate(detail_lines):
-                baseline_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM) + index * DETAILS_LINE_SPACING_PT * scale_factor
+                baseline_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM) + (
+                    total_lines - index - 1
+                ) * DETAILS_LINE_SPACING_PT * scale_factor
                 baseline_px = (page_height - baseline_pt) * _PREVIEW_SCALE
                 bbox = detail_font.getbbox(line)
                 if details_cfg.get("side", "LEFT") == "RIGHT":
