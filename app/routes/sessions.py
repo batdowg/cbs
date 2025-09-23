@@ -39,6 +39,7 @@ from ..models import (
     WorkshopType,
     AuditLog,
     SessionShipping,
+    MaterialOrderItem,
     ClientWorkshopLocation,
     SimulationOutline,
     PreworkTemplate,
@@ -79,6 +80,15 @@ from ..shared.sessions_lifecycle import (
     is_material_only,
     is_material_only_session,
 )
+
+MATERIALS_OUTSTANDING_MESSAGE = "There are still material order items outstanding"
+
+
+def _material_order_status(session_id: int) -> tuple[bool, bool]:
+    items = MaterialOrderItem.query.filter_by(session_id=session_id).all()
+    if not items:
+        return False, True
+    return True, all(item.processed for item in items)
 from ..shared.prework_summary import get_session_prework_summary
 from ..shared.prework_status import (
     ParticipantPreworkStatus,
@@ -778,11 +788,15 @@ def new_session(current_user):
             delivered = True
             ready_for_delivery = True
         if delivered:
-            materials_ordered = True
             info_sent = True
         if ready_for_delivery and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
             ready_for_delivery = False
+        if ready_for_delivery:
+            materials_ordered = True
+        if delivered:
+            materials_ordered = True
+            info_sent = True
         if delivered:
             if not ready_for_delivery:
                 flash("Delivered requires 'Ready for delivery' first.", "error")
@@ -1195,11 +1209,15 @@ def edit_session(session_id: int, current_user):
             delivered = True
             new_ready = True
         if delivered:
-            materials_ordered = True
             info_sent = True
         if new_ready and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
             new_ready = False
+        if new_ready:
+            materials_ordered = True
+        if delivered:
+            materials_ordered = True
+            info_sent = True
         if delivered:
             if not new_ready:
                 flash("Delivered requires 'Ready for delivery' first.", "error")
@@ -1210,6 +1228,63 @@ def edit_session(session_id: int, current_user):
         if finalized and not delivered:
             flash("Finalized requires Delivered first.", "error")
             finalized = False
+        has_order = False
+        all_processed = True
+        if materials_ordered and not old_materials:
+            has_order, all_processed = _material_order_status(sess.id)
+            if has_order and not all_processed:
+                flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
+                return (
+                    render_template(
+                        "sessions/form.html",
+                        session=sess,
+                        workshop_types=workshop_types,
+                        facilitators=facilitators,
+                        clients=clients,
+                        workshop_languages=get_language_options(),
+                        include_all_facilitators=include_all,
+                        participants_count=participants_count,
+                        today=date.today(),
+                        timezones=TIMEZONES,
+                        workshop_locations=workshop_locations,
+                        title_override=title_arg,
+                        past_warning=False,
+                        daily_start_time_str=daily_start_str,
+                        daily_end_time_str=daily_end_str,
+                        simulation_outlines=simulation_outlines,
+                        workshop_type=sess.workshop_type,
+                        form=request.form,
+                    ),
+                    400,
+                )
+        if new_ready and not old_ready:
+            if not has_order:
+                has_order, all_processed = _material_order_status(sess.id)
+            if has_order and not all_processed and not is_material_only_session(sess):
+                flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
+                return (
+                    render_template(
+                        "sessions/form.html",
+                        session=sess,
+                        workshop_types=workshop_types,
+                        facilitators=facilitators,
+                        clients=clients,
+                        workshop_languages=get_language_options(),
+                        include_all_facilitators=include_all,
+                        participants_count=participants_count,
+                        today=date.today(),
+                        timezones=TIMEZONES,
+                        workshop_locations=workshop_locations,
+                        title_override=title_arg,
+                        past_warning=False,
+                        daily_start_time_str=daily_start_str,
+                        daily_end_time_str=daily_end_str,
+                        simulation_outlines=simulation_outlines,
+                        workshop_type=sess.workshop_type,
+                        form=request.form,
+                    ),
+                    400,
+                )
         sess.materials_ordered = materials_ordered
         sess.ready_for_delivery = new_ready or delivered
         sess.info_sent = info_sent
@@ -1469,21 +1544,123 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     )
 
 
+@bp.post("/<int:session_id>/mark-ready")
+@staff_required
+def mark_ready(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+
+    redirect_target = (
+        request.form.get("next")
+        or request.args.get("next")
+        or url_for("sessions.session_detail", session_id=session_id)
+    )
+
+    if sess.cancelled:
+        flash("Cancelled sessions cannot be marked ready.", "error")
+        return redirect(redirect_target)
+
+    if sess.ready_for_delivery:
+        flash("Session already marked ready for delivery.", "info")
+        return redirect(redirect_target)
+
+    participants_count = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=session_id)
+        .count()
+    )
+    if participants_count == 0:
+        flash("Add participants before marking Ready for delivery.", "error")
+        return redirect(redirect_target)
+
+    has_order, all_processed = _material_order_status(session_id)
+    if has_order and not all_processed and not is_material_only_session(sess):
+        flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
+        return redirect(redirect_target)
+
+    now = datetime.utcnow()
+    old_materials = bool(sess.materials_ordered)
+    old_ready = bool(sess.ready_for_delivery)
+
+    if not sess.materials_ordered:
+        sess.materials_ordered = True
+        if not sess.materials_ordered_at:
+            sess.materials_ordered_at = now
+
+    if not sess.ready_for_delivery:
+        sess.ready_for_delivery = True
+        if not sess.ready_at:
+            sess.ready_at = now
+
+    enforce_material_only_rules(sess)
+
+    flag_changes: list[tuple[str, bool, bool]] = []
+    if not old_materials and sess.materials_ordered:
+        flag_changes.append(("materials_ordered", old_materials, True))
+    if not old_ready and sess.ready_for_delivery:
+        flag_changes.append(("ready_for_delivery", old_ready, True))
+
+    for flag, previous, new_value in flag_changes:
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                session_id=session_id,
+                action="lifecycle_flip",
+                details=f"{flag}:{previous}->{new_value}",
+            )
+        )
+
+    db.session.commit()
+
+    if not old_ready:
+        summary = provision_participant_accounts_for_session(sess.id)
+        total = summary["created"] + summary["reactivated"] + summary["already_active"]
+        if total:
+            flash(
+                "Provisioned {total} (created {created}, reactivated {reactivated}; skipped staff {skipped_staff}; already active {already_active}).".format(
+                    total=total, **summary
+                ),
+                "success",
+            )
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    session_id=session_id,
+                    action="provision",
+                    details=
+                    "created={created} skipped={skipped_staff} reactivated={reactivated} already_active={already_active}".format(
+                        **summary
+                    ),
+                )
+            )
+            db.session.commit()
+
+    flash("Session marked ready for delivery", "success")
+    return redirect(redirect_target)
+
+
 @bp.post("/<int:session_id>/mark-delivered")
 @staff_required
 def mark_delivered(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+
+    redirect_target = (
+        request.form.get("next")
+        or request.args.get("next")
+        or url_for("sessions.session_detail", session_id=session_id)
+    )
     if is_material_only_session(sess):
         flash("Delivered not available for material-only sessions.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return redirect(redirect_target)
     if sess.cancelled:
         flash("Cancelled sessions cannot be marked delivered.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return redirect(redirect_target)
     if sess.delivered:
         flash("Session already marked delivered.", "info")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return redirect(redirect_target)
 
     now = datetime.utcnow()
     flag_changes: list[tuple[str, bool, bool]] = []
@@ -1515,7 +1692,7 @@ def mark_delivered(session_id: int, current_user):
 
     db.session.commit()
     flash("Session marked delivered", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return redirect(redirect_target)
 
 
 @bp.post("/<int:session_id>/assign-csa")
@@ -1602,13 +1779,40 @@ def finalize_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    redirect_target = (
+        request.form.get("next")
+        or request.args.get("next")
+        or url_for("sessions.session_detail", session_id=session_id)
+    )
     if not sess.delivered:
         flash("Finalized requires Delivered first.", "error")
-        return redirect(url_for("sessions.session_detail", session_id=session_id))
+        return redirect(redirect_target)
+
+    has_order, all_processed = _material_order_status(session_id)
+    if has_order and not all_processed and not is_material_only_session(sess):
+        flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
+        return redirect(redirect_target)
+
+    now = datetime.utcnow()
+    material_flag_changed = False
+    if not sess.materials_ordered:
+        sess.materials_ordered = True
+        if not sess.materials_ordered_at:
+            sess.materials_ordered_at = now
+        material_flag_changed = True
     if not sess.finalized:
         sess.finalized = True
         if not sess.finalized_at:
-            sess.finalized_at = datetime.utcnow()
+            sess.finalized_at = now
+        if material_flag_changed:
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    session_id=session_id,
+                    action="lifecycle_flip",
+                    details="materials_ordered:False->True",
+                )
+            )
         db.session.add(
             AuditLog(
                 user_id=current_user.id,
@@ -1621,7 +1825,7 @@ def finalize_session(session_id: int, current_user):
         db.session.commit()
         render_for_session(session_id)
     flash("Session finalized", "success")
-    return redirect(url_for("sessions.session_detail", session_id=session_id))
+    return redirect(redirect_target)
 
 
 @bp.post("/<int:session_id>/delete")

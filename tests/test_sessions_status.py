@@ -1,4 +1,5 @@
 import os
+import os
 import sys
 import pytest
 from datetime import date, timedelta
@@ -46,3 +47,40 @@ def test_sessions_index_uses_computed_status(app):
     login(client, admin_id)
     resp = client.get("/sessions")
     assert b"Delivered" in resp.data
+
+
+def test_session_detail_finalize_button_visibility(app):
+    with app.app_context():
+        admin = User(email="admin2@example.com", is_app_admin=True, is_admin=True)
+        admin.set_password("secret")
+        wt = WorkshopType(code="VIS", name="Visibility", cert_series="fn")
+        sess = Session(
+            title="Visibility Test",
+            workshop_type=wt,
+            start_date=date.today(),
+            end_date=date.today(),
+            workshop_language="en",
+            delivery_type="In person",
+        )
+        db.session.add_all([admin, wt, sess])
+        db.session.commit()
+        admin_id = admin.id
+        session_id = sess.id
+
+    client_tc = app.test_client()
+    login(client_tc, admin_id)
+
+    resp = client_tc.get(f"/sessions/{session_id}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Finalize session" not in html
+
+    resp = client_tc.post(
+        f"/sessions/{session_id}/mark-delivered", follow_redirects=False
+    )
+    assert resp.status_code == 302
+
+    resp = client_tc.get(f"/sessions/{session_id}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Finalize session" in html

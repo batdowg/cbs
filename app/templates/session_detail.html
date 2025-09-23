@@ -4,72 +4,84 @@
 {% block content %}
 {% set highlight_lifecycle_fields = (not session.delivered) and (not session.finalized) %}
 {% set highlight_delivered = session.delivered and not session.finalized %}
-<h1>{{ session.title }}</h1>
+{% set workshop_code = session.workshop_type.code if session.workshop_type else '—' %}
+{% set delivery_label = session.delivery_type or '—' %}
+{% set status_label = session.computed_status %}
+{% set workshop_heading = session.id ~ ' ' ~ session.title ~ ': ' ~ workshop_code ~ ' (' ~ delivery_label ~ ') - ' ~ status_label %}
+<h1>{{ workshop_heading }}</h1>
 <p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
-<div class="session-status-actions" style="margin: var(--space-2) 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);">
-  <span><strong>Status:</strong> {{ session.computed_status }}</span>
-  {% if can_edit_session and not material_only_session and not session.delivered and not session.cancelled %}
-  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Are you sure? This can’t be undone');">
-    <button type="submit" class="btn btn-success">Delivered</button>
-  </form>
-  {% endif %}
-</div>
 {% set facs = [] %}
 {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
 {% if session.facilitators %}
-{% for fac in session.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
+  {% for fac in session.facilitators %}{% if fac not in facs %}{% set _ = facs.append(fac) %}{% endif %}{% endfor %}
 {% endif %}
-{% if csa_view %}
-<div>
-  Client:         {% if session.client %}{{ session.client.name }}{% endif %};   CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  {% if facs %}
-  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br><br>
+{% if current_user and can_edit_session and not session.cancelled %}
+<div class="inline-gap-sm" style="margin: var(--space-2) 0; display:flex; flex-wrap:wrap; gap:var(--space-2);">
+  {% if not material_only_session and not session.ready_for_delivery %}
+  <form action="{{ url_for('sessions.mark_ready', session_id=session.id) }}" method="post" style="display:inline">
+    <button type="submit" class="btn btn-secondary">Ready for delivery</button>
+  </form>
   {% endif %}
-  {% if session.workshop_type %}Workshop Type:  {{ session.workshop_type.code }} - {{ session.workshop_type.name }}<br>{% endif %}
-  Simulation:     {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br>
-  Workshop language: {{ session.workshop_language | lang_label }}<br>
-  Delivery Type: {{ session.delivery_type }}<br>
-  Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
-  Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
-  Notes:  {{ session.notes or session.description or '' }}<br>
-  Status: {{ session.computed_status }}<br>
-  Materials ordered : {{ lifecycle.yes_no(session.materials_ordered, highlight_lifecycle_fields)|safe }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
-  Ready for delivery: {{ lifecycle.yes_no(session.ready_for_delivery, highlight_lifecycle_fields)|safe }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
-  Workshop info sent: {{ lifecycle.yes_no(session.info_sent, highlight_lifecycle_fields)|safe }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
-  Delivered         : {{ lifecycle.delivered(session.delivered, highlight_delivered, session.finalized)|safe }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
-</div>
-{% else %}
-<div>
-  Client:        {% if session.client %}{{ session.client.name }}{% endif %}  -  CRM: {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}<br>
-  {% if facs %}
-  Facilitator(s): {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}<br><br>
+  {% if not material_only_session and not session.delivered %}
+  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Are you sure? This can’t be undone.');">
+    <button type="submit" class="btn btn-success">Delivered</button>
+  </form>
   {% endif %}
-  {% if session.workshop_type %}Workshop Type: {{ session.workshop_type.code }}: {{ session.workshop_type.name }}<br>{% endif %}
-  Simulation:    {{ session.simulation_outline.label if session.simulation_outline else '—' }}<br>
-  Dates:         {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}<br><br>
-  Delivery Type: {{ session.delivery_type }}<br>
-  Workshop Location: {% if session.workshop_location %}{% if session.workshop_location.is_virtual %}{{ session.workshop_location.label }}{% else %}{{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}{% endif %}{% endif %}<br>
-  Shipping Location: {{ session.shipping_location.display_name() if session.shipping_location else '' }}<br>
-  Notes:  {{ session.notes or session.description or '' }}<br><br>
-  Status: {{ session.computed_status }}<br>
-  Materials ordered:  {{ lifecycle.yes_no(session.materials_ordered, highlight_lifecycle_fields)|safe }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}<br>
-  Ready for delivery: {{ lifecycle.yes_no(session.ready_for_delivery, highlight_lifecycle_fields)|safe }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}<br>
-  Workshop info sent: {{ lifecycle.yes_no(session.info_sent, highlight_lifecycle_fields)|safe }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}<br>
-  Delivered:          {{ lifecycle.delivered(session.delivered, highlight_delivered, session.finalized)|safe }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}<br>
-  Finalized:          {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}
+  {% if session.delivered and not session.finalized %}
+  <form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');">
+    <button type="submit" class="btn btn-primary">Finalize session</button>
+  </form>
+  {% endif %}
 </div>
 {% endif %}
+<section class="kt-card">
+  <h2 class="kt-card-title">Workshop overview</h2>
+  <div class="grid grid-2 gap-md">
+    <div class="grid gap-sm">
+      <div><strong>Client:</strong> {% if session.client %}{{ session.client.name }}{% else %}—{% endif %}</div>
+      <div><strong>CRM:</strong> {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% else %}—{% endif %}</div>
+      <div>
+        <strong>Facilitator(s):</strong>
+        {% if facs %}
+          {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div>
+        <strong>Workshop Location:</strong>
+        {% if session.workshop_location %}
+          {% if session.workshop_location.is_virtual %}
+            {{ session.workshop_location.label }}
+          {% else %}
+            {{ session.workshop_location.address_line1 }}{% if session.workshop_location.address_line2 %}, {{ session.workshop_location.address_line2 }}{% endif %}, {{ session.workshop_location.city }} {{ session.workshop_location.state }} {{ session.workshop_location.postal_code }}, {{ session.workshop_location.country }}
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div><strong>Simulation:</strong> {{ session.simulation_outline.label if session.simulation_outline else '—' }}</div>
+      <div><strong>Dates:</strong> {{ session.start_date }} to {{ session.end_date }}; {{ session.daily_start_time|fmt_time_range_with_tz(session.daily_end_time, session.timezone) }}</div>
+      <div><strong>Workshop language:</strong> {{ session.workshop_language | lang_label }}</div>
+    </div>
+    <div class="grid gap-sm">
+      <div><strong>Shipping Location:</strong> {{ session.shipping_location.display_name() if session.shipping_location else '—' }}</div>
+      <div><strong>Notes:</strong> {{ session.notes or session.description or '—' }}</div>
+      <div><strong>Materials ordered:</strong> {{ lifecycle.yes_no(session.materials_ordered, highlight_lifecycle_fields)|safe }}{% if session.materials_ordered_at %} ({{ session.materials_ordered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Ready for delivery:</strong> {{ lifecycle.yes_no(session.ready_for_delivery, highlight_lifecycle_fields)|safe }}{% if session.ready_at %} ({{ session.ready_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Workshop info sent:</strong> {{ lifecycle.yes_no(session.info_sent, highlight_lifecycle_fields)|safe }}{% if session.info_sent_at %} ({{ session.info_sent_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Delivered:</strong> {{ lifecycle.delivered(session.delivered, highlight_delivered, session.finalized)|safe }}{% if session.delivered_at %} ({{ session.delivered_at|fmt_dt }}){% endif %}</div>
+      <div><strong>Finalized:</strong> {{ 'Yes' if session.finalized else 'No' }}{% if session.finalized_at %} ({{ session.finalized_at|fmt_dt }}){% endif %}</div>
+    </div>
+  </div>
+</section>
 {% if current_user %}
 <p><a href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Edit</a>
 {% if not session.cancelled %}
 <form action="{{ url_for('sessions.cancel_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Cancel session?');"><button type="submit">Cancel session</button></form>
 {% elif current_user.is_admin or current_user.is_app_admin %}
 <form action="{{ url_for('sessions.delete_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete session?');"><button type="submit">Delete session</button></form>
-{% endif %}
-{% if session.delivered and not session.finalized and not session.cancelled %}
-<form action="{{ url_for('sessions.finalize_session', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Finalize session?');"><button type="submit">Finalize session</button></form>
 {% endif %}
 </p>
 <nav class="kt-tabs">

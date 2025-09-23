@@ -11,6 +11,14 @@
 <h1>{{ workshop_heading }}</h1>
 <p><a href="{{ url_for('my_sessions.list_my_sessions') }}">Back to My Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
+{% if not session.materials_only and not session.delivered and not session.cancelled %}
+<div class="inline-gap-sm" style="margin: var(--space-2) 0;">
+  <form action="{{ url_for('sessions.mark_delivered', session_id=session.id) }}" method="post" style="display:inline" onsubmit="return confirm('Are you sure? This can’t be undone.');">
+    <input type="hidden" name="next" value="{{ url_for('workshops.workshop_view', session_id=session.id) }}">
+    <button type="submit" class="btn btn-success">Delivered</button>
+  </form>
+</div>
+{% endif %}
 {% set facs = [] %}
 {% if session.lead_facilitator %}{% set _ = facs.append(session.lead_facilitator) %}{% endif %}
 {% if session.facilitators %}

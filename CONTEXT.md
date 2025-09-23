@@ -382,6 +382,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Learner links, email invites, and assignment snapshots always resolve the prework template by `(session.workshop_type_id, session.workshop_language)`; if that language has no template configured the flows display the empty-state instead of falling back to another language.
 - Participant prework hidden after session starts.
 - Workshop View Participants card now surfaces invite status (“Not sent” or “Sent <date> (x times)” using `prework_invites` history, falling back to assignment sent timestamps for legacy data). KT staff and assigned facilitators can still trigger row-level **Send prework** or the bulk **Send prework to all not sent** action; learners/CSA never see invite state or actions. Successful sends update the status cells immediately via JSON responses so the card reflects the latest invite count without reloading.
+- After a successful send (row-level or bulk), the session’s **Workshop info sent** flag flips to **Yes** and records the first-send timestamp.
 - Prework summaries on Workshop View and the staff Prework tab only render responses for the session language template.
 
 ---
@@ -419,7 +420,12 @@ Two separate tables by design; emails unique per table. If both tables hold the 
  - Default Materials rows use a dropdown Materials selector; selecting a Material Item limits the row's Language and Default Format lists to that item's allowed values. The selector has no "Show all" toggle. Quantity basis comes from Materials Settings and is not editable on Workshop Types.
 - **Materials-only orders** share the session form. `/sessions/new` shows an **Order Information** section (Title, Client with CRM, Region, Language) with a **No workshop, material order only** button that creates a hidden session (`materials_only = true`, `delivery_type = "Material only"`) and redirects to that session's Materials Order page. Certificates and badges are unaffected and remain gated.
 - **Material only invariant**: when `delivery_type = "Material only"`, setting **Ready for delivery** or **Finalized** forces `status = "Closed"`, and `delivered` remains `False`. Workshop view (`/workshops/<id>`) redirects to the staff session detail. The **Delivered** action is hidden for material-only sessions.
-- Staff **Delivered** action displays “Are you sure? This can’t be undone” and, on confirm, marks both **Ready for delivery** and **Delivered** in a single step.
+- Staff session detail header now mirrors the Workshop View overview (two-column layout with the same title format, client/location block, notes, and status chips) and they share a single lifecycle toolbar:
+  - **Delivered** keeps the “Are you sure? This can’t be undone.” confirm and honors any `next` redirect, flipping the delivered flag and backfilling `ready_for_delivery`/timestamps when needed.
+  - A standalone **Ready for delivery** button marks the session ready and stamps `materials_ordered`/`materials_ordered_at` when they were unset. When the session has a materials order and isn’t material-only, the action requires every Material Order item to be processed (`Materials ordered` must already read **Yes**) or it blocks with “There are still material order items outstanding”.
+  - Toggling **Materials ordered = Yes** from Session Detail runs the same validation: unprocessed Material Order items block the save with the outstanding-items message; successful flips record the timestamp.
+  - **Finalize** remains hidden until **Delivered = Yes** and still enforces the Delivered prerequisite at submit time, including the outstanding-items guard before stamping `materials_ordered`.
+- Workshop View exposes the same Delivered button for non–material-only sessions with the shared confirmation copy and redirect handling.
 - Clicking **No workshop, material order only** removes `required` constraints from later form fields so only Order Information entries are enforced before submission.
 - When `materials_only = true`, training-session features (participants, prework, certificates) are hidden/denied.
  - Default Materials-only **Order Type** = “Client-run Bulk order”.
@@ -435,7 +441,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - Newly created shipments default to **New**.
   - Saving changes to header, shipping, or material items moves the status to **In progress** when the prior value was **New** or **Processed**; **Finalized** orders stay untouched by auto-updates.
   - After item updates, if every material row is marked processed the status advances to **Processed**. Unmarking any processed row while the order is **Processed** reverts to **In progress**. **Finalized** never auto-downgrades.
-  - The **Ready for Delivery/Finalized** action saves the form, sets status to **Finalized**, flips the session's `ready_for_delivery` flag on, and closes the session (`status = "Closed"`) when the order type is **Client-run Bulk order**.
+  - The **Ready for Delivery/Finalized** action saves the form, validates that every Material Order item is processed, and blocks with “There are still material order items outstanding” when any remain. On success it sets status to **Finalized**, flips the session's `materials_ordered`/`ready_for_delivery` flags (stamping timestamps as needed), and closes the session (`status = "Closed"`) when the order type is **Client-run Bulk order**.
   - Materials status changes do not alter certificate or badge generation flows.
 - Session Materials page uses inline-editable Material Items with per-row Language and Format selects and quantity, saved with a single action; Order date derives from creation time and is read-only; Status is read-only and shown in the title; Courier, Tracking, and Ship date fields render below the items table.
 - Material Item rows restrict Language and Format choices to those supported by the selected Material Item. Format defaults from Workshop Type → Default Materials when available.
