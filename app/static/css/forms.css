@@ -73,7 +73,7 @@ select[multiple],
   height: auto;
   min-height: 200px;
   overflow-y: auto;
-  padding: 8px 12px;
+  padding: 6px 8px;
   line-height: 1.3;
   border-radius: var(--radius-md, 12px);
 }
