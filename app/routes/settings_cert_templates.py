@@ -6,9 +6,11 @@ from flask import (
     Blueprint,
     abort,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
+    session,
     url_for,
     current_app,
 )
@@ -29,6 +31,10 @@ from ..shared.certificates_layout import (
     get_default_size_layout,
     get_font_options,
     sanitize_series_layout,
+)
+from ..services.certificates_preview import (
+    generate_preview,
+    sanitize_layout_for_preview,
 )
 
 bp = Blueprint(
@@ -125,6 +131,19 @@ def edit_templates(series_id: int, current_user):
         ]
     )
     layout = sanitize_series_layout(series.layout_config)
+    language_lookup = {code: name for code, name in languages}
+    preview_languages = {"A4": [], "LETTER": []}
+    for size in ["A4", "LETTER"]:
+        for code, _ in languages:
+            if mapping.get((code, size)):
+                preview_languages[size].append((code, language_lookup.get(code, code)))
+    default_preview_language: dict[str, str | None] = {}
+    for size in ["A4", "LETTER"]:
+        codes = preview_languages[size]
+        preferred = next((code for code, _ in codes if code == "en"), None)
+        if not preferred and codes:
+            preferred = codes[0][0]
+        default_preview_language[size] = preferred
     return render_template(
         "settings_cert_templates/templates.html",
         series=series,
@@ -139,6 +158,58 @@ def edit_templates(series_id: int, current_user):
         detail_sides=DETAIL_SIDES,
         detail_size_min=DETAIL_SIZE_MIN_PERCENT,
         detail_size_max=DETAIL_SIZE_MAX_PERCENT,
+        preview_languages=preview_languages,
+        default_preview_language=default_preview_language,
+    )
+
+
+@bp.post("/<int:series_id>/preview")
+@manage_users_required
+def preview_series(series_id: int, current_user):
+    series = db.session.get(CertificateTemplateSeries, series_id)
+    if not series:
+        abort(404)
+    try:
+        payload = request.get_json(force=True) or {}
+    except Exception:
+        return jsonify({"error": "Invalid request payload."}), 400
+    token = payload.get("csrf_token")
+    if not token or token != session.get("_csrf_token"):
+        return jsonify({"error": "Invalid CSRF token."}), 400
+    size = str(payload.get("paper_size", "")).upper()
+    if size not in {"A4", "LETTER"}:
+        return jsonify({"error": "Invalid paper size."}), 400
+    language = str(payload.get("language") or "")
+    configured_languages = {
+        tmpl.language
+        for tmpl in series.templates
+        if tmpl.size == size
+    }
+    if language not in configured_languages:
+        return jsonify({"error": "Language is not configured for this paper size."}), 400
+    override_layout = payload.get("layout") if isinstance(payload, dict) else None
+    sanitized_layout = sanitize_layout_for_preview(
+        series,
+        size=size,
+        override=override_layout if isinstance(override_layout, dict) else None,
+    )
+    try:
+        preview = generate_preview(
+            series,
+            language=language,
+            size=size,
+            layout=sanitized_layout,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception:
+        current_app.logger.exception("Certificate preview failed")
+        return jsonify({"error": "Failed to generate preview."}), 500
+    return jsonify(
+        {
+            "image": f"data:image/png;base64,{preview.image_base64}",
+            "warnings": preview.warnings,
+        }
     )
 
 

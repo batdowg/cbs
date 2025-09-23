@@ -459,6 +459,7 @@ def _resolve_font(
     session: Session,
     size: str,
     line: str,
+    warnings: list[str] | None = None,
 ) -> str:
     sanitized_allowed = [f for f in allowed_fonts if f in available_fonts]
     if preferred in sanitized_allowed:
@@ -477,6 +478,7 @@ def _resolve_font(
         candidate = fallback_candidates[0]
         if not reason:
             reason = "no allowed fonts"
+    context_reason = reason or "fallback"
     current_app.logger.warning(
         "[CERT-FONT] session=%s lang=%s size=%s line=%s %s→%s (%s)",
         session.id,
@@ -485,8 +487,15 @@ def _resolve_font(
         line,
         preferred or "<default>",
         candidate,
-        reason or "fallback",
+        context_reason,
     )
+    if warnings is not None:
+        warnings.append(
+            (
+                f"{line.title()} font {preferred or '<default>'} replaced with {candidate}"
+                f" ({context_reason})."
+            )
+        )
     return candidate
 
 
