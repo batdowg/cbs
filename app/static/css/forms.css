@@ -59,6 +59,22 @@ select,
   margin-bottom: 8px;   /* modest vertical rhythm */
 }
 
+.kt-table input[type="text"],
+.kt-table input[type="email"],
+.kt-table input[type="url"],
+.kt-table input[type="tel"],
+.kt-table input[type="search"],
+.kt-table input[type="password"],
+.kt-table input[type="number"],
+.kt-table input[type="date"],
+.kt-table input[type="time"],
+.kt-table input[type="datetime-local"],
+.kt-table select,
+.kt-table .form-control,
+.kt-table button {
+  margin-bottom: 0;
+}
+
 select {
   padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
   background-position: right var(--field-px, 12px) center;
