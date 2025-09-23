@@ -1662,6 +1662,18 @@ def mark_delivered(session_id: int, current_user):
         flash("Session already marked delivered.", "info")
         return redirect(redirect_target)
 
+    participants_count = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=session_id)
+        .count()
+    )
+    if participants_count == 0 and not (
+        getattr(sess, "prework_disabled", False)
+        and getattr(sess, "prework_disable_mode", None) == "silent"
+    ):
+        flash("Add participants before marking Delivered.", "error")
+        return redirect(redirect_target)
+
     now = datetime.utcnow()
     flag_changes: list[tuple[str, bool, bool]] = []
 
@@ -2331,6 +2343,12 @@ def session_prework(session_id: int):
 
         if action == "toggle_no_prework":
             sess.no_prework = _cb(request.form.get("no_prework"))
+            sess.prework_disabled = bool(sess.no_prework)
+            if sess.no_prework:
+                if sess.prework_disable_mode not in {"notify", "silent"}:
+                    sess.prework_disable_mode = None
+            else:
+                sess.prework_disable_mode = None
             assignments = PreworkAssignment.query.filter_by(session_id=sess.id).all()
             for a in assignments:
                 if sess.no_prework:

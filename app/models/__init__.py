@@ -365,6 +365,12 @@ class Session(db.Model):
     no_prework = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    prework_disabled = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    prework_disable_mode = db.Column(
+        db.Enum("notify", "silent", name="prework_disable_mode"), nullable=True
+    )
     cancelled = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )

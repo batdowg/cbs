@@ -100,7 +100,7 @@ class PreworkAssignment(db.Model):
     due_at = db.Column(db.DateTime(timezone=True))
     sent_at = db.Column(db.DateTime(timezone=True))
     completed_at = db.Column(db.DateTime(timezone=True))
-    snapshot_json = db.Column(db.JSON, nullable=False)
+    snapshot_json = db.Column(db.JSON, nullable=False, default=dict)
     magic_token_hash = db.Column(db.String(128))
     magic_token_expires = db.Column(db.DateTime(timezone=True))
     account_sent_at = db.Column(db.DateTime(timezone=True))

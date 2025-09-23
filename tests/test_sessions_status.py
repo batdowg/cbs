@@ -9,7 +9,7 @@ pytestmark = pytest.mark.smoke
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.app import create_app, db
-from app.models import User, Session, WorkshopType
+from app.models import User, Session, WorkshopType, Participant, SessionParticipant
 
 
 @pytest.fixture
@@ -54,6 +54,7 @@ def test_session_detail_finalize_button_visibility(app):
         admin = User(email="admin2@example.com", is_app_admin=True, is_admin=True)
         admin.set_password("secret")
         wt = WorkshopType(code="VIS", name="Visibility", cert_series="fn")
+        participant = Participant(email="participant@example.com")
         sess = Session(
             title="Visibility Test",
             workshop_type=wt,
@@ -62,7 +63,11 @@ def test_session_detail_finalize_button_visibility(app):
             workshop_language="en",
             delivery_type="In person",
         )
-        db.session.add_all([admin, wt, sess])
+        db.session.add_all([admin, wt, participant, sess])
+        db.session.flush()
+        db.session.add(
+            SessionParticipant(session_id=sess.id, participant_id=participant.id)
+        )
         db.session.commit()
         admin_id = admin.id
         session_id = sess.id

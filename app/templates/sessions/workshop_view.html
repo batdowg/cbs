@@ -79,7 +79,22 @@
 <section class="kt-card" data-prework-container>
   <h2 class="kt-card-title">Participants</h2>
   <div class="prework-feedback" data-prework-feedback aria-live="polite"></div>
-  {% if can_send_prework %}
+  {% if show_disable_prework %}
+  <div class="prework-toolbar" style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-3);">
+    <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" data-prework-send>
+      <input type="hidden" name="next" value="{{ workshop_return }}">
+      <button type="submit" class="btn btn-secondary">Send prework to all not submitted</button>
+    </form>
+    <form action="{{ url_for('workshops.disable_prework', session_id=session.id) }}" method="post" onsubmit="return confirm('Disable prework for this workshop and create accounts for all participants? We\'ll notify them by email.');">
+      <input type="hidden" name="mode" value="notify">
+      <button type="submit" class="btn btn-accent-orange">No prework – Create accounts</button>
+    </form>
+    <form action="{{ url_for('workshops.disable_prework', session_id=session.id) }}" method="post" onsubmit="return confirm('Disable prework for this workshop and create accounts for all participants without sending emails? This also allows delivering a session with zero participants.');">
+      <input type="hidden" name="mode" value="silent">
+      <button type="submit" class="btn btn-danger">No prework &amp; don&rsquo;t send accounts</button>
+    </form>
+  </div>
+  {% elif can_send_prework %}
   <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="margin-bottom: var(--space-3);" data-prework-send>
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <button type="submit" class="btn btn-secondary">Send prework to all not submitted</button>
@@ -177,6 +192,9 @@
               {% endfor %}
             {% endif %}
             <td class="inline-gap-sm" data-prework-status-cell data-participant-id="{{ row.participant.id }}">
+              {% if session.prework_disabled %}
+              <span class="prework-disabled-label">None for workshop</span>
+              {% else %}
               {% set summary = row.prework_summary %}
               <span data-prework-status-label>{{ summary.label }}</span>
               {% if can_send_prework and not summary.is_waived %}
@@ -185,6 +203,7 @@
                 <input type="hidden" name="participant_ids[]" value="{{ row.participant.id }}">
                 <button type="submit" class="btn btn-secondary btn-sm">Send prework</button>
               </form>
+              {% endif %}
               {% endif %}
             </td>
             <td>
