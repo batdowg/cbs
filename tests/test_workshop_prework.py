@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, datetime, time
 
 import pytest
 
@@ -9,6 +9,7 @@ from app.models import (
     ParticipantAccount,
     PreworkAssignment,
     PreworkQuestion,
+    PreworkInvite,
     PreworkTemplate,
     Session,
     SessionParticipant,
@@ -133,16 +134,92 @@ def test_prework_editor_language_switching(app_context):
     assert "Spanish question" in html_es
     assert "English question" not in html_es
 
+
+def test_prework_copy_from_other_workshop(app_context):
+    app = app_context
+    with app.app_context():
+        admin = User(email="admin2@example.com", is_app_admin=True)
+        admin.set_password("pw")
+        source_type = WorkshopType(
+            code="SRC", name="Source", cert_series="fn", supported_languages=["en", "es"]
+        )
+        dest_type = WorkshopType(
+            code="DST", name="Destination", cert_series="fn", supported_languages=["en"]
+        )
+        source_tpl = PreworkTemplate(
+            workshop_type=source_type, language="en", info_html="source info"
+        )
+        PreworkQuestion(
+            template=source_tpl,
+            position=1,
+            text="Source question",
+            kind="LIST",
+            min_items=2,
+            max_items=4,
+        )
+        dest_tpl = PreworkTemplate(
+            workshop_type=dest_type, language="en", info_html="old info"
+        )
+        PreworkQuestion(
+            template=dest_tpl,
+            position=1,
+            text="Old question",
+            kind="TEXT",
+        )
+        db.session.add_all([admin, source_type, dest_type, source_tpl, dest_tpl])
+        db.session.commit()
+        dest_id = dest_type.id
+        source_id = source_type.id
+        admin_id = admin.id
+
+    client = app.test_client()
+    with client.session_transaction() as sess_data:
+        sess_data["user_id"] = admin_id
+
+    resp = client.post(
+        f"/workshop-types/{dest_id}/prework",
+        data={
+            "language": "en",
+            "action": "copy",
+            "source_type_id": str(source_id),
+            "source_language": "en",
+        },
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        tpl = PreworkTemplate.query.filter_by(
+            workshop_type_id=dest_id, language="en"
+        ).first()
+        assert tpl is not None
+        assert tpl.info_html == "source info"
+        questions = sorted(tpl.questions, key=lambda q: q.position)
+        assert len(questions) == 1
+        assert questions[0].text == "Source question"
+        assert questions[0].kind == "LIST"
+        assert questions[0].min_items == 2
+        assert questions[0].max_items == 4
+
 def test_workshop_view_shows_prework_status(app_context):
     app = app_context
-    sess, facilitator, _, pending_participant = _seed_session()
+    sess, facilitator, submitted_participant, pending_participant = _seed_session()
+    with app.app_context():
+        db.session.add(
+            PreworkInvite(
+                session_id=sess.id,
+                participant_id=submitted_participant.id,
+                sender_id=facilitator.id,
+                sent_at=datetime.utcnow(),
+            )
+        )
+        db.session.commit()
     client = app.test_client()
     with client.session_transaction() as sess_data:
         sess_data["user_id"] = facilitator.id
     resp = client.get(f"/workshops/{sess.id}")
     html = resp.get_data(as_text=True)
-    assert "Submitted" in html
-    assert "Not submitted" in html
+    assert "Sent " in html
+    assert "Not sent" in html
     assert "Send prework" in html
     assert pending_participant.full_name in html
 
@@ -170,6 +247,11 @@ def test_send_prework_endpoint_filters_by_participant(app_context, monkeypatch):
     assignment = PreworkAssignment.query.filter_by(session_id=sess.id).first()
     assert assignment is not None
     assert assignment.sent_at is not None
+    invites = PreworkInvite.query.filter_by(session_id=sess.id).all()
+    assert len(invites) == 1
+    assert invites[0].participant_id == pending_participant.id
+    assert invites[0].sender_id == facilitator.id
+    assert invites[0].sent_at is not None
 
 
 def test_send_prework_uses_session_language(app_context, monkeypatch):
@@ -243,6 +325,9 @@ def test_send_prework_uses_session_language(app_context, monkeypatch):
         assert assignment.template.language == "es"
         snapshot_questions = assignment.snapshot_json.get("questions") or []
         assert snapshot_questions and snapshot_questions[0]["text"] == "Spanish prompt"
+        invites = PreworkInvite.query.filter_by(session_id=sess_id).all()
+        assert len(invites) == 1
+        assert invites[0].sender_id == facilitator_id
 
 
 def test_send_prework_blocks_unauthorized(app_context):

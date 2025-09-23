@@ -6,17 +6,36 @@
 {% endblock %}
 {% block content %}
 <h1>Prework for {{ wt.name }}</h1>
-<form method="get" class="language-select">
-  <label for="language">Language</label>
-  <select id="language" name="lang" onchange="this.form.submit()">
-    {% for code, label in language_options %}
-      <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-  </select>
-</form>
+<div class="prework-toolbar" style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:flex-end;">
+  <form method="get" class="language-select" style="display:flex;flex-direction:column;gap:var(--space-1);">
+    <label for="language">Language</label>
+    <select id="language" name="lang" onchange="this.form.submit()">
+      {% for code, label in language_options %}
+        <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <form method="post" data-copy-form data-has-questions="{{ 'true' if has_questions else 'false' }}" style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:flex-end;">
+    <input type="hidden" name="language" value="{{ selected_language }}">
+    <input type="hidden" name="action" value="copy">
+    <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+      <label for="copy-source-type">Copy from workshop</label>
+      <select id="copy-source-type" name="source_type_id">
+        {% for option in copy_sources %}
+          <option value="{{ option.id }}" {% if option.id == wt.id %}selected{% endif %}>{{ option.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+      <label for="copy-source-language">Language</label>
+      <select id="copy-source-language" name="source_language"></select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Copy</button>
+  </form>
+</div>
 <form method="post">
   <input type="hidden" name="language" value="{{ selected_language }}">
-<label><input type="checkbox" name="is_active" value="1" {% if template and template.is_active %}checked{% endif %}> Active</label><br>
+  <label><input type="checkbox" name="is_active" value="1" {% if template and template.is_active %}checked{% endif %}> Active</label><br>
 <label><input type="checkbox" name="require_completion" value="1" {% if template and template.require_completion %}checked{% endif %}> Require completion</label><br>
 <label>Information</label><br>
 <input type="hidden" id="info" name="info" value="{{ template.info_html|e if template else '' }}">
@@ -50,6 +69,54 @@
 <button type="submit">Save</button>
 </form>
 <script>
+const copySources = {{ copy_sources|tojson }};
+const copyForm = document.querySelector('[data-copy-form]');
+const copyTypeSelect = document.getElementById('copy-source-type');
+const copyLanguageSelect = document.getElementById('copy-source-language');
+
+function updateCopyLanguageOptions() {
+  if (!copyTypeSelect || !copyLanguageSelect) return;
+  const selectedId = copyTypeSelect.value;
+  const entry = copySources.find((item) => String(item.id) === String(selectedId));
+  const previous = copyLanguageSelect.value;
+  copyLanguageSelect.innerHTML = '';
+  if (!entry) {
+    return;
+  }
+  let hasSelection = false;
+  entry.languages.forEach((lang, index) => {
+    const option = document.createElement('option');
+    option.value = lang.code;
+    option.textContent = lang.label;
+    copyLanguageSelect.appendChild(option);
+    if (!hasSelection && lang.code === previous) {
+      copyLanguageSelect.value = lang.code;
+      hasSelection = true;
+    }
+    if (!hasSelection && index === 0) {
+      copyLanguageSelect.value = lang.code;
+    }
+  });
+}
+
+if (copyTypeSelect && copyLanguageSelect) {
+  copyTypeSelect.addEventListener('change', () => {
+    updateCopyLanguageOptions();
+  });
+  updateCopyLanguageOptions();
+}
+
+if (copyForm) {
+  copyForm.addEventListener('submit', (event) => {
+    if (copyForm.dataset.hasQuestions === 'true') {
+      const confirmed = window.confirm('Replace existing questions?');
+      if (!confirmed) {
+        event.preventDefault();
+      }
+    }
+  });
+}
+
 for (const row of document.querySelectorAll('table tr')) {
   const kindSel = row.querySelector('.kind-select');
   if (!kindSel) continue;

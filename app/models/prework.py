@@ -5,6 +5,24 @@ from datetime import datetime
 from ..app import db
 
 
+class PreworkInvite(db.Model):
+    __tablename__ = "prework_invites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False
+    )
+    participant_id = db.Column(
+        db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE"), nullable=False
+    )
+    sender_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL")
+    )
+    sent_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, server_default=db.func.now()
+    )
+
+
 class PreworkTemplate(db.Model):
     __tablename__ = "prework_templates"
 

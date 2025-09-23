@@ -917,6 +917,7 @@ def seed_virtual_workshop_locations() -> None:
 
 from .resource import Resource, resource_workshop_types  # noqa: E402,F401
 from .prework import (
+    PreworkInvite,
     PreworkTemplate,
     PreworkQuestion,
     PreworkTemplateResource,
@@ -953,6 +954,7 @@ __all__ = [
     "UserAuditLog",
     "Resource",
     "resource_workshop_types",
+    "PreworkInvite",
     "PreworkTemplate",
     "PreworkQuestion",
     "PreworkTemplateResource",
