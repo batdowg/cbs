@@ -42,11 +42,12 @@ DETAILS_FONT_SIZE_PT = 12
 DETAILS_LINE_SPACING_PT = 14
 
 DETAIL_RENDER_SEQUENCE: tuple[str, ...] = (
-    "facilitators",
+
     "location_title",
     "dates",
     "class_days",
     "contact_hours",
+    "facilitators",
 )
 
 US_COUNTRY_CODES = {
