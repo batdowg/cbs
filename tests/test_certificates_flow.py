@@ -15,7 +15,7 @@ from app.models import (
     User,
     WorkshopType,
 )
-from app.shared.certificates import render_certificate, resolve_template_pdf
+from app.shared.certificates import render_certificate, resolve_series_template
 
 
 @pytest.fixture
@@ -30,33 +30,94 @@ def app():
         db.session.remove()
 
 
-def test_resolve_template_pdf_prefers_canonical(app):
+def test_resolve_series_template_uses_explicit_mapping(app, caplog):
     with app.app_context():
-        filename, path = resolve_template_pdf("A4", "EN")
-        assert filename == "fncert_template_a4_en.pdf"
-        assert path.endswith(filename)
-        assert os.path.isfile(path)
-
-
-def test_resolve_template_pdf_falls_back_to_legacy(app):
-    with app.app_context():
-        fallback_name = "fncert_letter_zz.pdf"
-        fallback_path = os.path.join(app.root_path, "assets", fallback_name)
-        with open(fallback_path, "wb") as handle:
+        caplog.set_level("INFO")
+        series = CertificateTemplateSeries(code="SER1", name="Series 1")
+        mapping = CertificateTemplate(
+            series=series,
+            language="en",
+            size="LETTER",
+            filename="custom_letter.pdf",
+        )
+        db.session.add_all([series, mapping])
+        db.session.commit()
+        assets_dir = os.path.join(app.root_path, "assets")
+        os.makedirs(assets_dir, exist_ok=True)
+        custom_path = os.path.join(assets_dir, "custom_letter.pdf")
+        with open(custom_path, "wb") as handle:
             handle.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj<<>>endobj\nstartxref\n0\n%%EOF")
         try:
-            filename, path = resolve_template_pdf("LETTER", "zz")
-            assert filename == fallback_name
-            assert path == fallback_path
+            resolution = resolve_series_template(series.id, "LETTER", "en")
+            assert resolution.path == custom_path
+            assert resolution.source == "explicit"
+            assert "source=explicit" in caplog.text
         finally:
-            os.remove(fallback_path)
+            os.remove(custom_path)
 
 
-def test_resolve_template_pdf_missing_raises_with_attempts(app):
+def test_resolve_series_template_falls_back_to_pattern(app, caplog):
     with app.app_context():
+        caplog.set_level("INFO")
+        series = CertificateTemplateSeries(code="SER2", name="Series 2")
+        mapping = CertificateTemplate(
+            series=series,
+            language="zz",
+            size="LETTER",
+            filename="missing_letter.pdf",
+        )
+        db.session.add_all([series, mapping])
+        db.session.commit()
+        assets_dir = os.path.join(app.root_path, "assets")
+        os.makedirs(assets_dir, exist_ok=True)
+        pattern_name = "fncert_template_letter_zz.pdf"
+        pattern_path = os.path.join(assets_dir, pattern_name)
+        with open(pattern_path, "wb") as handle:
+            handle.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj<<>>endobj\nstartxref\n0\n%%EOF")
+        try:
+            resolution = resolve_series_template(series.id, "LETTER", "zz")
+            assert resolution.path == pattern_path
+            assert resolution.source == "pattern"
+            assert "explicit mapping missing; falling back source=pattern" in caplog.text
+        finally:
+            os.remove(pattern_path)
+
+
+def test_resolve_series_template_falls_back_to_legacy(app, caplog):
+    with app.app_context():
+        caplog.set_level("INFO")
+        series = CertificateTemplateSeries(code="SER3", name="Series 3")
+        db.session.add(series)
+        db.session.commit()
+        assets_dir = os.path.join(app.root_path, "assets")
+        os.makedirs(assets_dir, exist_ok=True)
+        legacy_name = "fncert_letter_pt.pdf"
+        legacy_path = os.path.join(assets_dir, legacy_name)
+        with open(legacy_path, "wb") as handle:
+            handle.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj<<>>endobj\nstartxref\n0\n%%EOF")
+        try:
+            resolution = resolve_series_template(series.id, "LETTER", "pt")
+            assert resolution.path == legacy_path
+            assert resolution.source == "legacy"
+        finally:
+            os.remove(legacy_path)
+
+
+def test_resolve_series_template_missing_includes_attempts(app):
+    with app.app_context():
+        series = CertificateTemplateSeries(code="SER4", name="Series 4")
+        mapping = CertificateTemplate(
+            series=series,
+            language="zz",
+            size="A4",
+            filename="missing_explicit.pdf",
+        )
+        db.session.add_all([series, mapping])
+        db.session.commit()
         with pytest.raises(FileNotFoundError) as exc:
-            resolve_template_pdf("A4", "zz")
+            resolve_series_template(series.id, "A4", "zz")
         message = str(exc.value)
+        assert "missing_explicit.pdf" in message
         assert "fncert_template_a4_zz.pdf" in message
         assert "fncert_a4_zz.pdf" in message
 

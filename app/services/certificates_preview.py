@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from flask import current_app
 from PyPDF2 import PdfReader
 
-from ..models import CertificateTemplate, CertificateTemplateSeries
+from ..models import CertificateTemplateSeries
 from ..shared.certificates import (
     DEFAULT_BOTTOM_MARGIN_MM,
     DETAIL_LABELS,
@@ -27,7 +27,7 @@ from ..shared.certificates import (
     _available_font_codes,
     _language_allowed_fonts,
     _resolve_font,
-    resolve_template_pdf,
+    resolve_series_template,
 )
 from ..shared.certificates_layout import (
     PAGE_HEIGHT_MM,
@@ -82,7 +82,7 @@ def _build_cache_key(
     series_id: int,
     language: str,
     size: str,
-    template_filename: str,
+    template_path: str,
     template_mtime: float,
     layout: dict,
 ) -> str:
@@ -92,7 +92,7 @@ def _build_cache_key(
             str(series_id),
             language,
             size,
-            template_filename,
+            template_path,
             f"{template_mtime:.6f}",
             layout_fingerprint,
         ]
@@ -318,27 +318,15 @@ def generate_preview(
     size: str,
     layout: dict,
 ) -> PreviewResult:
-    matching_template = next(
-        (
-            tmpl
-            for tmpl in series.templates
-            if tmpl.language == language and tmpl.size == size
-        ),
-        None,
-    )
-    if not matching_template:
-        raise ValueError("No template PDF configured for the selected language and size.")
-
-    template_filename, template_path = resolve_template_pdf(
-        matching_template.size, matching_template.language
-    )
-    template_mtime = os.path.getmtime(template_path)
+    resolution = resolve_series_template(series.id, size, language)
+    template_path = resolution.path
+    template_mtime = resolution.mtime
 
     base_cache_key = _build_cache_key(
         series_id=series.id,
         language=language,
         size=size,
-        template_filename=template_filename,
+        template_path=template_path,
         template_mtime=template_mtime,
         layout=layout,
     )
