@@ -509,8 +509,11 @@ def render_certificate(
             line_spacing = DETAILS_LINE_SPACING_PT * scale
             c.setFont(detail_font, detail_font_size)
             c.setFillGray(0.3)
+            total_lines = len(detail_lines)
             for index, line in enumerate(detail_lines):
-                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + index * line_spacing
+                y_pos = mm(DEFAULT_BOTTOM_MARGIN_MM) + (
+                    total_lines - index - 1
+                ) * line_spacing
                 if details_cfg.get("side", "LEFT") == "RIGHT":
                     c.drawRightString(w - margin_x, y_pos, line)
                 else:
@@ -680,37 +683,59 @@ def _resolve_font(
     return candidate
 
 
-def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str]:
-    selected = {var for var in variables if var in DETAIL_RENDER_SEQUENCE}
-    if not selected:
+def compose_detail_panel_lines(
+    variables: Sequence[str],
+    *,
+    facilitators: str | None,
+    location: str | None,
+    dates: str | None,
+    class_days: str | None,
+    contact_hours: str | None,
+) -> list[str]:
+    ordered = [var for var in DETAIL_RENDER_SEQUENCE if var in variables]
+    if not ordered:
         return []
+    selected = set(ordered)
     lines: list[str] = []
-    if "facilitators" in selected:
-        facilitators = _format_facilitators(session)
-        if facilitators:
-            lines.append(f"{DETAIL_LABELS['facilitators']}: {facilitators}")
-    if "location_title" in selected:
-        location = _format_location(session)
-        if location:
-            lines.append(location)
-    if "dates" in selected:
-        dates = _format_session_dates(session)
-        if dates:
-            lines.append(dates)
-    class_days = _format_class_days(session) if "class_days" in selected else None
-    contact_hours = (
-        _format_contact_hours(session) if "contact_hours" in selected else None
-    )
-    if class_days and contact_hours:
+    if "facilitators" in selected and facilitators:
+        lines.append(f"{DETAIL_LABELS['facilitators']}: {facilitators}")
+    if "location_title" in selected and location:
+        lines.append(location)
+    if "dates" in selected and dates:
+        lines.append(dates)
+    class_value = class_days if "class_days" in selected else None
+    contact_value = contact_hours if "contact_hours" in selected else None
+    if class_value and contact_value:
         lines.append(
-            f"{DETAIL_LABELS['class_days']}: {class_days} • {DETAIL_LABELS['contact_hours']}: {contact_hours}"
+            f"{DETAIL_LABELS['class_days']}: {class_value} • {DETAIL_LABELS['contact_hours']}: {contact_value}"
         )
     else:
-        if class_days:
-            lines.append(f"{DETAIL_LABELS['class_days']}: {class_days}")
-        if contact_hours:
-            lines.append(f"{DETAIL_LABELS['contact_hours']}: {contact_hours}")
+        if class_value:
+            lines.append(f"{DETAIL_LABELS['class_days']}: {class_value}")
+        if contact_value:
+            lines.append(f"{DETAIL_LABELS['contact_hours']}: {contact_value}")
     return lines
+
+
+def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str]:
+    ordered = [var for var in DETAIL_RENDER_SEQUENCE if var in variables]
+    if not ordered:
+        return []
+    facilitators = _format_facilitators(session) if "facilitators" in ordered else None
+    location = _format_location(session) if "location_title" in ordered else None
+    dates = _format_session_dates(session) if "dates" in ordered else None
+    class_days = _format_class_days(session) if "class_days" in ordered else None
+    contact_hours = (
+        _format_contact_hours(session) if "contact_hours" in ordered else None
+    )
+    return compose_detail_panel_lines(
+        ordered,
+        facilitators=facilitators,
+        location=location,
+        dates=dates,
+        class_days=class_days,
+        contact_hours=contact_hours,
+    )
 
 
 def _format_contact_hours(session: Session) -> str | None:

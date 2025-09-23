@@ -17,13 +17,12 @@ from PyPDF2 import PdfReader
 from ..models import CertificateTemplateSeries
 from ..shared.certificates import (
     DEFAULT_BOTTOM_MARGIN_MM,
-    DETAIL_LABELS,
-    DETAIL_RENDER_SEQUENCE,
     DETAIL_SIZE_MAX_PERCENT,
     DETAIL_SIZE_MIN_PERCENT,
     DETAILS_FONT_SIZE_PT,
     DETAILS_LINE_SPACING_PT,
     LETTER_NAME_INSET_MM,
+    compose_detail_panel_lines,
     _available_font_codes,
     _language_allowed_fonts,
     _resolve_font,
@@ -101,35 +100,18 @@ def _build_cache_key(
 
 
 def _sample_details_lines(size: str, variables: Iterable[str]) -> list[str]:
-    selected = [var for var in DETAIL_RENDER_SEQUENCE if var in variables]
-    if not selected:
-        return []
-    facilitators_value = "Alex Smith; Jamie Doe"
-    is_letter = size.upper() == "LETTER"
-    location_value = "Sample City, NY" if is_letter else "Sample City, Canada"
-    dates_value = "1–2 March 2026"
-    class_days_value = "2"
-    contact_hours_value = "14"
-
-    lines: list[str] = []
-    if "facilitators" in selected:
-        lines.append(f"{DETAIL_LABELS['facilitators']}: {facilitators_value}")
-    if "location_title" in selected:
-        lines.append(location_value)
-    if "dates" in selected:
-        lines.append(dates_value)
-    class_days = class_days_value if "class_days" in selected else None
-    contact_hours = contact_hours_value if "contact_hours" in selected else None
-    if class_days and contact_hours:
-        lines.append(
-            f"{DETAIL_LABELS['class_days']}: {class_days} • {DETAIL_LABELS['contact_hours']}: {contact_hours}"
-        )
-    else:
-        if class_days:
-            lines.append(f"{DETAIL_LABELS['class_days']}: {class_days}")
-        if contact_hours:
-            lines.append(f"{DETAIL_LABELS['contact_hours']}: {contact_hours}")
-    return lines
+    return compose_detail_panel_lines(
+        variables,
+        facilitators="Alex Smith; Jamie Doe",
+        location=(
+            "Sample City, NY"
+            if size.upper() == "LETTER"
+            else "Sample City, Canada"
+        ),
+        dates="1–2 March 2026",
+        class_days="2",
+        contact_hours="14",
+    )
 
 
 def _page_dimensions_from_size(size: str) -> tuple[float, float]:
@@ -452,8 +434,11 @@ def generate_preview(
             )
             margin_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM)
             line_spacing_px = DETAILS_LINE_SPACING_PT * scale_factor * _PREVIEW_SCALE
+            total_lines = len(detail_lines)
             for index, line in enumerate(detail_lines):
-                baseline_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM) + index * DETAILS_LINE_SPACING_PT * scale_factor
+                baseline_pt = mm_to_pt(DEFAULT_BOTTOM_MARGIN_MM) + (
+                    total_lines - index - 1
+                ) * DETAILS_LINE_SPACING_PT * scale_factor
                 baseline_px = (page_height - baseline_pt) * _PREVIEW_SCALE
                 bbox = detail_font.getbbox(line)
                 if details_cfg.get("side", "LEFT") == "RIGHT":
