@@ -80,7 +80,11 @@ from ..shared.sessions_lifecycle import (
     is_material_only_session,
 )
 from ..shared.prework_summary import get_session_prework_summary
-from ..shared.prework_status import get_participant_prework_status
+from ..shared.prework_status import (
+    ParticipantPreworkStatus,
+    get_participant_prework_status,
+    summarize_prework_status,
+)
 from ..services.prework_invites import (
     PreworkSendError,
     send_prework_invites,
@@ -2281,6 +2285,31 @@ def session_prework(session_id: int):
     )
 
 
+def _serialize_prework_statuses(
+    statuses: dict[int, ParticipantPreworkStatus],
+) -> dict[str, dict[str, object]]:
+    payload: dict[str, dict[str, object]] = {}
+    for participant_id, status in statuses.items():
+        summary = summarize_prework_status(status)
+        payload[str(participant_id)] = {
+            "label": summary["label"],
+            "is_waived": summary["is_waived"],
+            "status": summary["status"],
+            "invite_count": summary["invite_count"],
+            "total_sends": summary["total_sends"],
+            "last_sent": summary["last_sent"].isoformat()
+            if summary["last_sent"]
+            else None,
+            "sent_at": summary["sent_at"].isoformat()
+            if summary["sent_at"]
+            else None,
+            "completed_at": summary["completed_at"].isoformat()
+            if summary["completed_at"]
+            else None,
+        }
+    return payload
+
+
 @bp.post("/<int:session_id>/prework/send")
 @staff_required
 def send_prework(session_id: int, current_user):
@@ -2334,23 +2363,32 @@ def send_prework(session_id: int, current_user):
             or url_for("sessions.session_prework", session_id=session_id)
         )
 
+    statuses_payload = _serialize_prework_statuses(result.statuses)
+    if result.any_failure:
+        message = "Some emails failed; check logs"
+        category = "error"
+    elif result.sent_count:
+        message = f"Sent prework to {result.sent_count} participant(s)"
+        category = "success"
+    else:
+        message = "No participants eligible for prework"
+        category = "info"
+
     if wants_json:
         status_code = 200 if not result.any_failure else 207
-        return {
-            "sent_count": result.sent_count,
-            "skipped_count": result.skipped_count,
-            "failure_count": result.failure_count,
-        }, status_code
-
-    if result.any_failure:
-        flash("Some emails failed; check logs", "error")
-    elif result.sent_count:
-        flash(
-            f"Sent prework to {result.sent_count} participant(s)",
-            "success",
+        return (
+            {
+                "sent_count": result.sent_count,
+                "skipped_count": result.skipped_count,
+                "failure_count": result.failure_count,
+                "statuses": statuses_payload,
+                "message": message,
+                "message_category": category,
+            },
+            status_code,
         )
-    else:
-        flash("No participants eligible for prework", "info")
+
+    flash(message, category)
 
     return redirect(
         request.form.get("next")

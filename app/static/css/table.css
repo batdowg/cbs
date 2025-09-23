@@ -67,6 +67,11 @@
 }
 
 /* Narrow, right-aligned actions column */
+
+.kt-table [data-column-min-width] {
+  min-width: var(--column-min-width, 80px);
+}
+
 .kt-table .col-actions {
   width: 1%;
   white-space: nowrap;

@@ -13,6 +13,7 @@ from flask import (
 from urllib.parse import urlparse
 
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
 
 from ..app import db, User
 from ..models import (
@@ -242,12 +243,29 @@ def delete_client(client_id, current_user):
     client = db.session.get(Client, client_id)
     if not client:
         abort(404)
-    if db.session.query(Session).filter_by(client_id=client_id).first():
+    redirect_url = url_for("clients.list_clients")
+    has_sessions = (
+        db.session.query(Session.id)
+        .filter(Session.client_id == client_id)
+        .limit(1)
+        .first()
+    )
+    if has_sessions:
         flash("Cannot delete client with sessions", "error")
-        return redirect(url_for("clients.list_clients"))
-    db.session.delete(client)
-    db.session.commit()
-    return redirect(url_for("clients.list_clients"))
+        response = redirect(redirect_url)
+        response.status_code = 400
+        return response
+    try:
+        db.session.delete(client)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash("Unable to delete client. Remove related records and try again.", "error")
+        response = redirect(redirect_url)
+        response.status_code = 409
+        return response
+    flash("Client deleted", "success")
+    return redirect(redirect_url)
 
 
 @bp.post("/inline-new")

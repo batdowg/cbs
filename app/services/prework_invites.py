@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Iterable, Sequence
 
@@ -36,6 +36,7 @@ class PreworkSendResult:
     sent_count: int
     skipped_count: int
     failure_count: int
+    statuses: dict[int, ParticipantPreworkStatus] = field(default_factory=dict)
 
     @property
     def any_failure(self) -> bool:
@@ -207,7 +208,12 @@ def send_prework_invites(
     )
 
     if not eligible_ids:
-        return PreworkSendResult(sent_count=0, skipped_count=skipped_count, failure_count=0)
+        return PreworkSendResult(
+            sent_count=0,
+            skipped_count=skipped_count,
+            failure_count=0,
+            statuses=statuses,
+        )
 
     participants_query = (
         db.session.query(Participant)
@@ -257,7 +263,11 @@ def send_prework_invites(
             failure_count += 1
 
     db.session.commit()
+    updated_statuses = get_participant_prework_status(session.id)
     return PreworkSendResult(
-        sent_count=sent_count, skipped_count=skipped_count, failure_count=failure_count
+        sent_count=sent_count,
+        skipped_count=skipped_count,
+        failure_count=failure_count,
+        statuses=updated_statuses,
     )
 

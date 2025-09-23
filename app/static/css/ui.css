@@ -120,6 +120,14 @@ a:focus-visible {
   margin-bottom: var(--space-3);
 }
 
+.prework-feedback {
+  margin-bottom: var(--space-3);
+}
+
+.prework-feedback:empty {
+  margin-bottom: 0;
+}
+
 .rich-text ul,
 .rich-text ol {
   padding-left: calc(var(--space-4) * 1.5);

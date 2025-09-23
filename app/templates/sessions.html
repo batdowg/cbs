@@ -74,69 +74,69 @@
             {% set dir = 'desc' if sort==field and direction=='asc' else 'asc' %}
             <a href="{{ url_for('sessions.list_sessions', sort=field, dir=dir, **base_params) }}">{{ label }}</a>
           {%- endmacro %}
-          <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true">{{ sort_link('ID','id') }}</th>
-          <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true">
+          <th scope="col" data-column-key="id" data-column-label="ID" data-column-required="true" data-column-min-width="56" style="--column-min-width:56px;">{{ sort_link('ID','id') }}</th>
+          <th scope="col" data-column-key="title" data-column-label="Title" data-column-required="true" data-column-min-width="160" style="--column-min-width:160px;">
             {{ sort_link('Title','title') }}
           </th>
-          <th scope="col" data-column-key="client" data-column-label="Client">{{ sort_link('Client','client') }}</th>
-          <th scope="col" data-column-key="location" data-column-label="Location">{{ sort_link('Location','location') }}</th>
-          <th scope="col" data-column-key="workshop_type" data-column-label="Workshop">{{ sort_link('Workshop','workshop_type') }}</th>
-          <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true">Facilitator(s)</th>
-          <th scope="col" data-column-key="start_date" data-column-label="Start Date">{{ sort_link('Start Date','start_date') }}</th>
-          <th scope="col" data-column-key="status" data-column-label="Status">{{ sort_link('Status','status') }}</th>
-          <th scope="col" data-column-key="material_order_status" data-column-label="Material order status" data-column-default-hidden="true">{{ sort_link('Material order status','material_order_status') }}</th>
-          <th scope="col" data-column-key="csa_name" data-column-label="CSA Name" data-column-default-hidden="true">{{ sort_link('CSA Name','csa_name') }}</th>
-          <th scope="col" data-column-key="region" data-column-label="Region">{{ sort_link('Region','region') }}</th>
-          <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions">Actions</th>
+          <th scope="col" data-column-key="client" data-column-label="Client" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Client','client') }}</th>
+          <th scope="col" data-column-key="location" data-column-label="Location" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Location','location') }}</th>
+          <th scope="col" data-column-key="workshop_type" data-column-label="Workshop" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Workshop','workshop_type') }}</th>
+          <th scope="col" data-column-key="facilitators" data-column-label="Facilitator(s)" data-column-default-hidden="true" data-column-min-width="160" style="--column-min-width:160px;">Facilitator(s)</th>
+          <th scope="col" data-column-key="start_date" data-column-label="Start Date" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('Start Date','start_date') }}</th>
+          <th scope="col" data-column-key="status" data-column-label="Status" data-column-min-width="120" style="--column-min-width:120px;">{{ sort_link('Status','status') }}</th>
+          <th scope="col" data-column-key="material_order_status" data-column-label="Material order status" data-column-default-hidden="true" data-column-min-width="160" style="--column-min-width:160px;">{{ sort_link('Material order status','material_order_status') }}</th>
+          <th scope="col" data-column-key="csa_name" data-column-label="CSA Name" data-column-default-hidden="true" data-column-min-width="140" style="--column-min-width:140px;">{{ sort_link('CSA Name','csa_name') }}</th>
+          <th scope="col" data-column-key="region" data-column-label="Region" data-column-min-width="100" style="--column-min-width:100px;">{{ sort_link('Region','region') }}</th>
+          <th scope="col" data-column-key="actions" data-column-label="Actions" class="col-actions" data-column-min-width="140" style="--column-min-width:140px;">Actions</th>
         </tr>
       </thead>
         <tbody>
           {% for s in sessions %}
           <tr>
-            <td data-column-key="id">{{ s.id }}</td>
-            <td data-column-key="title">
+            <td data-column-key="id" data-column-min-width="56" style="--column-min-width:56px;">{{ s.id }}</td>
+            <td data-column-key="title" data-column-min-width="160" style="--column-min-width:160px;">
               <span class="cell-wrap" title="{{ s.title }}">
                 <a href="{{ url_for('sessions.session_detail', session_id=s.id) }}">{{ s.title }}</a>
               </span>
             </td>
-            <td data-column-key="client">
+            <td data-column-key="client" data-column-min-width="140" style="--column-min-width:140px;">
               {% if s.client %}
                 <span class="cell-wrap" title="{{ s.client.name }}">{{ s.client.name }}</span>
               {% endif %}
             </td>
-            <td data-column-key="location">
+            <td data-column-key="location" data-column-min-width="140" style="--column-min-width:140px;">
               {% if s.location %}
                 <span class="cell-wrap" title="{{ s.location }}">{{ s.location }}</span>
               {% endif %}
             </td>
-            <td data-column-key="workshop_type">
+            <td data-column-key="workshop_type" data-column-min-width="140" style="--column-min-width:140px;">
               {% if s.workshop_type %}
                 {% set workshop_label = s.workshop_type.code %}
                 <span class="cell-wrap" title="{{ workshop_label }}">{{ workshop_label }}</span>
               {% endif %}
             </td>
-            <td data-column-key="facilitators">
+            <td data-column-key="facilitators" data-column-min-width="160" style="--column-min-width:160px;">
               {% set facs = facilitator_map.get(s.id, []) %}
               {% if facs %}
                 <span class="cell-wrap" title="{{ facs|join(', ') }}">{{ facs|join(', ') }}</span>
               {% endif %}
             </td>
-            <td data-column-key="start_date">{{ s.start_date }}</td>
-            <td data-column-key="status">{{ s.computed_status }}</td>
-            <td data-column-key="material_order_status">
+            <td data-column-key="start_date" data-column-min-width="140" style="--column-min-width:140px;">{{ s.start_date }}</td>
+            <td data-column-key="status" data-column-min-width="120" style="--column-min-width:120px;">{{ s.computed_status }}</td>
+            <td data-column-key="material_order_status" data-column-min-width="160" style="--column-min-width:160px;">
               {% set mo_status = material_status_map.get(s.id) %}
               {% if mo_status %}
                 <span class="pill pill--{{ mo_status|lower|replace(' ', '') }}">{{ mo_status }}</span>
               {% else %}—{% endif %}
             </td>
-            <td data-column-key="csa_name">
+            <td data-column-key="csa_name" data-column-min-width="140" style="--column-min-width:140px;">
               {% set csa_name = csa_display_map.get(s.id) %}
               {% if csa_name %}
                 <span class="cell-wrap" title="{{ csa_name }}">{{ csa_name }}</span>
               {% endif %}
             </td>
-            <td data-column-key="region">{{ s.region }}</td>
-            <td data-column-key="actions" class="col-actions">
+            <td data-column-key="region" data-column-min-width="100" style="--column-min-width:100px;">{{ s.region }}</td>
+            <td data-column-key="actions" class="col-actions" data-column-min-width="140" style="--column-min-width:140px;">
               {% if current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
                 <a class="btn btn-primary btn-sm" href="{{ url_for('sessions.session_prework', session_id=s.id) }}">Prework</a>
               {% endif %}

@@ -68,10 +68,11 @@
   </div>
 </section>
 
-<section class="kt-card">
+<section class="kt-card" data-prework-container>
   <h2 class="kt-card-title">Participants</h2>
+  <div class="prework-feedback" data-prework-feedback aria-live="polite"></div>
   {% if can_send_prework %}
-  <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="margin-bottom: var(--space-3);">
+  <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="margin-bottom: var(--space-3);" data-prework-send>
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <button type="submit" class="btn btn-secondary">Send prework to all not submitted</button>
   </form>
@@ -87,8 +88,10 @@
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <input type="file" id="{{ import_input_id }}" name="file" accept=".csv" required style="display:none" onchange="this.form.submit()">
-    <label for="{{ import_input_id }}" class="btn">Import CSV</label> &ensp;
-    <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+    <div class="inline-gap-sm">
+      <label for="{{ import_input_id }}" class="btn">Import CSV</label>
+      <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+    </div>
   </form>
   {% if import_errors %}
   <div>
@@ -104,6 +107,7 @@
   {% set attendance_toggle_url = url_for('sessions.toggle_attendance', session_id=session.id) %}
   {% set attendance_mark_all_url = url_for('sessions.mark_all_attendance', session_id=session.id) %}
   <div class="attendance-manager"
+       data-prework-table
        {% if can_manage_attendance %}
        data-attendance-table
        data-toggle-url="{{ attendance_toggle_url }}"
@@ -164,24 +168,11 @@
               </td>
               {% endfor %}
             {% endif %}
-            <td>
-              {% set status = row.prework_status %}
-              {% set is_waived = status and status.status == 'WAIVED' %}
-              {% set invite_count = status.invite_count if status else 0 %}
-              {% set last_sent = status.last_invite_sent_at if status else None %}
-              {% if not last_sent and status and status.sent_at %}
-                {% set last_sent = status.sent_at %}
-              {% endif %}
-              {% set total_sends = invite_count if invite_count else (1 if last_sent else 0) %}
-              {% if is_waived %}
-                Not sent (waived)
-              {% elif last_sent %}
-                Sent {{ last_sent.date() | fmt_dt }}{% if total_sends > 1 %} ({{ total_sends }} times){% endif %}
-              {% else %}
-                Not sent
-              {% endif %}
-              {% if can_send_prework and not is_waived %}
-              <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="display:inline-block;margin-left:var(--space-2);">
+            <td class="inline-gap-sm" data-prework-status-cell data-participant-id="{{ row.participant.id }}">
+              {% set summary = row.prework_summary %}
+              <span data-prework-status-label>{{ summary.label }}</span>
+              {% if can_send_prework and not summary.is_waived %}
+              <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" data-prework-send>
                 <input type="hidden" name="next" value="{{ workshop_return }}">
                 <input type="hidden" name="participant_ids[]" value="{{ row.participant.id }}">
                 <button type="submit" class="btn btn-secondary btn-sm">Send prework</button>
@@ -308,5 +299,6 @@
 
 {% block extra_js %}
   {{ super() }}
+  <script src="{{ url_for('static', filename='js/prework_actions.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
 {% endblock %}

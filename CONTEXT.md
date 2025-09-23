@@ -40,6 +40,7 @@ Every functional change must update this file **in the same PR**.
  - “KT Staff” is a **derived condition** (see §1.4), **not** a stored role.
 - Experimental features must register in `shared.flags` and be disabled by default.
 - `/forgot-password` redirects to `/login?forgot=1` (optionally `&email=`) to surface the forgot-password modal on the unified login page.
+- The login page centers flash messages above the auth card; modal spacing matches auth inputs (email field full-width) for visual alignment.
 
 ## 0.4 App Conventions & PR Hygiene
 - Keep migrations idempotent and reversible; guard enum/DDL changes carefully.
@@ -331,6 +332,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 
 ## 3.6 Clients (if present)
 - `clients`, `client_locations` and linkage tables as per migrations.
+- Admins may delete clients only when no sessions reference them. Successful deletes flash confirmation; attempts with related records respond with a 4xx and surface the existing “Cannot delete client with sessions” or integrity error message.
 
 ## 3.7 Attendance storage & endpoints
 - Table: `participant_attendance` (`session_id`, `participant_id`, `day_index`, `attended` boolean default `false`, timestamps). Unique per `(session_id, participant_id, day_index)` with cascade deletes tied to sessions/participants.
@@ -378,7 +380,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - “No prework for this workshop” disables assignment; **Send Accounts (no prework)** sends credentials only.
 - Learner links, email invites, and assignment snapshots always resolve the prework template by `(session.workshop_type_id, session.workshop_language)`; if that language has no template configured the flows display the empty-state instead of falling back to another language.
 - Participant prework hidden after session starts.
-- Workshop View Participants card now surfaces invite status (“Not sent” or “Sent <date> (x times)” using `prework_invites` history, falling back to assignment sent timestamps for legacy data). KT staff and assigned facilitators can still trigger row-level **Send prework** or the bulk **Send prework to all not sent** action; learners/CSA never see invite state or actions.
+- Workshop View Participants card now surfaces invite status (“Not sent” or “Sent <date> (x times)” using `prework_invites` history, falling back to assignment sent timestamps for legacy data). KT staff and assigned facilitators can still trigger row-level **Send prework** or the bulk **Send prework to all not sent** action; learners/CSA never see invite state or actions. Successful sends update the status cells immediately via JSON responses so the card reflects the latest invite count without reloading.
 - Prework summaries on Workshop View and the staff Prework tab only render responses for the session language template.
 
 ---
