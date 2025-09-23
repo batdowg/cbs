@@ -1,6 +1,10 @@
 <section class="kt-card">
   <h2 class="kt-card-title">Prework summary</h2>
-  {% if prework_summary %}
+  {% if session.prework_disabled %}
+    <div class="empty-state">
+      <p>Prework disabled for this workshop.</p>
+    </div>
+  {% elif prework_summary %}
     {% for group in prework_summary %}
       {% if group.responses %}
         <h3 class="kt-card-title">{{ group.question }}</h3>

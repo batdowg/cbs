@@ -2,26 +2,34 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import wraps
+import hashlib
+import secrets
+from datetime import timedelta
 
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
+    request,
     session as flask_session,
     url_for,
 )
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..app import db, User
 from ..models import (
     Client,
     Participant,
+    ParticipantAccount,
     Session,
     SessionParticipant,
     Certificate,
     Resource,
+    PreworkAssignment,
     resource_workshop_types,
 )
 from ..shared.acl import is_delivery, is_contractor, is_kt_staff
@@ -32,6 +40,10 @@ from ..shared.prework_status import (
 )
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
+from ..shared.accounts import ensure_participant_account
+from ..shared.constants import MAGIC_LINK_TTL_DAYS, DEFAULT_PARTICIPANT_PASSWORD
+from ..shared.time import now_utc
+from .. import emailer
 
 bp = Blueprint("workshops", __name__, url_prefix="/workshops")
 
@@ -43,12 +55,41 @@ def facilitator_required(fn):
         if not user_id:
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
-        if not user or not (is_delivery(user) or is_contractor(user)):
+        if not user or not (
+            is_kt_staff(user) or is_delivery(user) or is_contractor(user)
+        ):
             flash("Workshop view is available to assigned facilitators only.", "error")
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
     return wrapper
+
+
+def _ensure_user_for_participant(participant: Participant) -> tuple[User | None, bool]:
+    email = (participant.email or "").strip().lower()
+    if not email:
+        return None, False
+    existing = User.query.filter(func.lower(User.email) == email).first()
+    if existing:
+        updated = False
+        if participant.full_name and not existing.full_name:
+            existing.full_name = participant.full_name
+            updated = True
+        if participant.title and not existing.title:
+            existing.title = participant.title
+            updated = True
+        if updated:
+            db.session.add(existing)
+        return existing, False
+    user = User(
+        email=email,
+        full_name=participant.full_name or email,
+        title=participant.title,
+        preferred_view="LEARNER",
+    )
+    user.set_password(DEFAULT_PARTICIPANT_PASSWORD)
+    db.session.add(user)
+    return user, True
 
 
 @bp.get("/<int:session_id>")
@@ -79,8 +120,9 @@ def workshop_view(session_id: int, current_user):
         is_assigned = True
     elif session.facilitators:
         is_assigned = any(f.id == current_user.id for f in session.facilitators)
+    is_staff_viewer = is_kt_staff(current_user)
 
-    if not is_assigned:
+    if not is_assigned and not is_staff_viewer:
         flash("Workshop view is available to assigned facilitators only.", "error")
         abort(403)
 
@@ -147,11 +189,13 @@ def workshop_view(session_id: int, current_user):
         if mapping:
             badge_filename = mapping.badge_filename
 
-    can_send_prework = bool(
+    can_manage_prework = bool(
         is_kt_staff(current_user)
         or is_delivery(current_user)
         or is_contractor(current_user)
     )
+    can_send_prework = bool(can_manage_prework and not session.prework_disabled)
+    show_disable_prework = bool(can_manage_prework and not session.prework_disabled)
 
     can_manage_attendance = bool(
         attendance_days
@@ -173,7 +217,142 @@ def workshop_view(session_id: int, current_user):
             session.id, session_language=session.workshop_language
         ),
         can_send_prework=can_send_prework,
+        show_disable_prework=show_disable_prework,
         current_user=current_user,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
     )
+
+
+@bp.post("/<int:session_id>/prework/disable")
+@facilitator_required
+def disable_prework(session_id: int, current_user):
+    mode = (request.form.get("mode") or "").strip().lower()
+    if mode not in {"notify", "silent"}:
+        abort(400)
+
+    session = db.session.get(Session, session_id)
+    if not session:
+        abort(404)
+
+    is_assigned = False
+    if session.lead_facilitator_id and session.lead_facilitator_id == current_user.id:
+        is_assigned = True
+    elif session.facilitators:
+        is_assigned = any(f.id == current_user.id for f in session.facilitators)
+
+    if not is_assigned and not is_kt_staff(current_user):
+        flash("Workshop view is available to assigned facilitators only.", "error")
+        abort(403)
+
+    session.prework_disabled = True
+    session.prework_disable_mode = mode
+    session.no_prework = True
+
+    assignments = PreworkAssignment.query.filter_by(session_id=session.id).all()
+    for assignment in assignments:
+        assignment.status = "WAIVED"
+        assignment.sent_at = None
+        assignment.magic_token_hash = None
+        assignment.magic_token_expires = None
+
+    participants = (
+        db.session.query(Participant)
+        .join(SessionParticipant, SessionParticipant.participant_id == Participant.id)
+        .filter(SessionParticipant.session_id == session.id)
+        .order_by(Participant.full_name)
+        .all()
+    )
+
+    account_cache: dict[str, ParticipantAccount] = {}
+    sent_count = 0
+    created_users = 0
+    any_fail = False
+
+    for participant in participants:
+        email = (participant.email or "").strip().lower()
+        if not email:
+            continue
+        try:
+            account, temp_password = ensure_participant_account(
+                participant, account_cache
+            )
+        except ValueError:
+            continue
+        _, created = _ensure_user_for_participant(participant)
+        if created:
+            created_users += 1
+        if mode == "notify":
+            token = secrets.token_urlsafe(16)
+            account.login_magic_hash = hashlib.sha256(
+                (token + current_app.secret_key).encode()
+            ).hexdigest()
+            account.login_magic_expires = now_utc() + timedelta(
+                days=MAGIC_LINK_TTL_DAYS
+            )
+            db.session.flush()
+            link = url_for(
+                "auth.account_magic",
+                account_id=account.id,
+                token=token,
+                _external=True,
+                _scheme="https",
+            )
+            subject = f"Workshop Portal Access: {session.title}"
+            body = render_template(
+                "email/account_invite.txt",
+                session=session,
+                link=link,
+                account=account,
+                temp_password=temp_password,
+            )
+            html_body = render_template(
+                "email/account_invite.html",
+                session=session,
+                link=link,
+                account=account,
+                temp_password=temp_password,
+            )
+            try:
+                res = emailer.send(account.email, subject, body, html=html_body)
+            except Exception as exc:  # pragma: no cover - defensive
+                res = {"ok": False, "detail": str(exc)}
+            if res.get("ok"):
+                sent_count += 1
+                current_app.logger.info(
+                    f"[MAIL-OUT] account-invite session={session.id} pa={account.id} to={account.email}"
+                )
+            else:
+                any_fail = True
+                current_app.logger.info(
+                    f"[MAIL-FAIL] account-invite session={session.id} pa={account.id} to={account.email} error=\"{res.get('detail')}\""
+                )
+
+    db.session.commit()
+
+    base_note = ""
+    if created_users:
+        base_note = f" Created {created_users} new user account(s)."
+
+    if mode == "notify":
+        if any_fail:
+            flash(
+                "Prework disabled, but some account emails failed. Check logs." + base_note,
+                "error",
+            )
+        else:
+            flash(
+                f"Prework disabled. Sent {sent_count} account email(s)." + base_note,
+                "success",
+            )
+    else:
+        flash(
+            "Prework disabled without sending account emails." + base_note,
+            "success",
+        )
+
+    current_app.logger.info(
+        f"[WORKSHOP] prework_disabled mode={mode} session={session.id} participants={len(participants)} created_users={created_users}"
+    )
+
+    return redirect(url_for("workshops.workshop_view", session_id=session.id))

@@ -101,6 +101,23 @@ input[type="reset"]:disabled,
   border-color: #a52820;
 }
 
+.btn-accent-orange {
+  background-color: var(--kt-accent-orange);
+  border-color: var(--kt-accent-orange);
+  color: var(--kt-text);
+  font-weight: 600;
+}
+
+.btn-accent-orange:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--kt-accent-orange) 85%, black);
+  border-color: color-mix(in srgb, var(--kt-accent-orange) 85%, black);
+}
+
+.btn-accent-orange:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--kt-accent-orange) 70%, black);
+  border-color: color-mix(in srgb, var(--kt-accent-orange) 70%, black);
+}
+
 .btn-success {
   background-color: var(--kt-accent-green);
   border-color: var(--kt-accent-green);

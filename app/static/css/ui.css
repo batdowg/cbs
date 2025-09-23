@@ -128,6 +128,11 @@ a:focus-visible {
   margin-bottom: 0;
 }
 
+.prework-disabled-label {
+  color: var(--kt-muted);
+  font-weight: 600;
+}
+
 .rich-text ul,
 .rich-text ol {
   padding-left: calc(var(--space-4) * 1.5);

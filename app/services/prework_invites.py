@@ -187,7 +187,7 @@ def send_prework_invites(
 ) -> PreworkSendResult:
     """Send prework invites to session participants."""
 
-    if session.no_prework:
+    if session.no_prework or getattr(session, "prework_disabled", False):
         raise PreworkSendError("Prework disabled for this workshop")
 
     if not session.workshop_type_id:

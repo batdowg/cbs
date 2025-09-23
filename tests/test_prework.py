@@ -122,7 +122,10 @@ def test_no_prework_toggle_disables_send_prework(monkeypatch):
         c.post(f"/sessions/{sess_id}/prework", data={"action": "toggle_no_prework", "no_prework": "1"})
         c.post(f"/sessions/{sess_id}/prework", data={"action": "send_all"})
         with app.app_context():
-            assert Session.query.get(sess_id).no_prework is True
+            sess = Session.query.get(sess_id)
+            assert sess.no_prework is True
+            assert sess.prework_disabled is True
+            assert sess.prework_disable_mode is None
             assert PreworkAssignment.query.count() == 0
 
 
@@ -602,3 +605,274 @@ def test_admin_access_with_participant_account():
             s["participant_account_id"] = csa_id
         resp = c.get(f"/sessions/{sess_id}/prework")
         assert resp.status_code == 200
+
+
+def test_session_prework_defaults():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        sess = Session(title="Defaults")
+        db.session.add(sess)
+        db.session.commit()
+        assert sess.prework_disabled is False
+        assert sess.prework_disable_mode is None
+
+
+def test_disable_prework_notify_creates_accounts(monkeypatch):
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="NPW", name="NoPrework", cert_series="fn")
+        trainer = User(email="trainer@example.com", is_kt_delivery=True)
+        session = Session(
+            title="No Prework",
+            workshop_type=wt,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            lead_facilitator=trainer,
+        )
+        participant_with_account = Participant(
+            email="hasacct@example.com", full_name="Has Account"
+        )
+        account = ParticipantAccount(
+            email="hasacct@example.com", full_name="Has Account"
+        )
+        participant_with_account.account = account
+        participant_without_account = Participant(
+            email="newacct@example.com", full_name="New Account"
+        )
+        db.session.add_all(
+            [
+                wt,
+                trainer,
+                session,
+                participant_with_account,
+                participant_without_account,
+            ]
+        )
+        db.session.flush()
+        db.session.add(
+            SessionParticipant(
+                session_id=session.id, participant_id=participant_with_account.id
+            )
+        )
+        db.session.add(
+            SessionParticipant(
+                session_id=session.id,
+                participant_id=participant_without_account.id,
+            )
+        )
+        db.session.add(
+            PreworkAssignment(
+                session_id=session.id,
+                participant_account_id=account.id,
+                status="PENDING",
+            )
+        )
+        db.session.commit()
+        sess_id = session.id
+        trainer_id = trainer.id
+
+    sent: list[tuple[str, str]] = []
+
+    def fake_send(to, subject, body, html):
+        sent.append((to, subject))
+        return {"ok": True}
+
+    monkeypatch.setattr(emailer, "send", fake_send)
+    monkeypatch.setattr(secrets, "token_urlsafe", lambda _: "tok")
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = trainer_id
+        resp = c.post(
+            f"/workshops/{sess_id}/prework/disable",
+            data={"mode": "notify"},
+        )
+        assert resp.status_code == 302
+
+    with app.app_context():
+        session = Session.query.get(sess_id)
+        assert session.prework_disabled is True
+        assert session.prework_disable_mode == "notify"
+        assert session.no_prework is True
+        assignment = PreworkAssignment.query.filter_by(session_id=sess_id).one()
+        assert assignment.status == "WAIVED"
+        account = ParticipantAccount.query.filter_by(
+            email="hasacct@example.com"
+        ).one()
+        assert account.login_magic_hash is not None
+        new_account = ParticipantAccount.query.filter_by(
+            email="newacct@example.com"
+        ).one()
+        assert new_account.password_hash is not None
+        user_one = User.query.filter_by(email="hasacct@example.com").one()
+        assert user_one.check_password(DEFAULT_PARTICIPANT_PASSWORD)
+        user_two = User.query.filter_by(email="newacct@example.com").one()
+        assert user_two.check_password(DEFAULT_PARTICIPANT_PASSWORD)
+        assert len(sent) == 2
+
+
+def test_disable_prework_silent_allows_delivered():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="NPDS", name="NoPreworkDeliver", cert_series="fn")
+        admin = User(email="admin@example.com", is_admin=True)
+        session = Session(
+            title="Deliver",
+            workshop_type=wt,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            lead_facilitator=admin,
+        )
+        db.session.add_all([wt, admin, session])
+        db.session.commit()
+        sess_id = session.id
+        admin_id = admin.id
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = admin_id
+        resp = c.post(f"/sessions/{sess_id}/mark-delivered")
+        assert resp.status_code == 302
+
+    with app.app_context():
+        assert Session.query.get(sess_id).delivered is False
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = admin_id
+        resp = c.post(
+            f"/workshops/{sess_id}/prework/disable",
+            data={"mode": "silent"},
+        )
+        assert resp.status_code == 302
+
+    with app.app_context():
+        session = Session.query.get(sess_id)
+        assert session.prework_disabled is True
+        assert session.prework_disable_mode == "silent"
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = admin_id
+        resp = c.post(f"/sessions/{sess_id}/mark-delivered")
+        assert resp.status_code == 302
+
+    with app.app_context():
+        session = Session.query.get(sess_id)
+        assert session.delivered is True
+        assert session.ready_for_delivery is True
+
+
+def test_workshop_view_shows_none_for_workshop():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="NPWV", name="NoPreworkView", cert_series="fn")
+        trainer = User(email="view@example.com", is_kt_delivery=True)
+        session = Session(
+            title="View",
+            workshop_type=wt,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+            lead_facilitator=trainer,
+        )
+        participant = Participant(email="viewp@example.com", full_name="View P")
+        db.session.add_all([wt, trainer, session, participant])
+        db.session.flush()
+        db.session.add(
+            SessionParticipant(session_id=session.id, participant_id=participant.id)
+        )
+        db.session.commit()
+        sess_id = session.id
+        trainer_id = trainer.id
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["user_id"] = trainer_id
+        c.post(f"/workshops/{sess_id}/prework/disable", data={"mode": "silent"})
+        resp = c.get(f"/workshops/{sess_id}")
+        html = resp.get_data(as_text=True)
+    assert "None for workshop" in html
+    assert "Send prework to all not submitted" not in html
+    assert "No prework – Create accounts" not in html
+
+
+def test_prework_question_rich_text_rendering():
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        wt = WorkshopType(code="PWR", name="Prework Rich", cert_series="fn")
+        tpl = PreworkTemplate(workshop_type=wt, info_html="info")
+        raw_text = (
+            "<p><strong>Bold</strong> <script>alert(1)</script>"
+            "<a href='https://example.com' target='_self' style='color:red'>Link</a></p>"
+        )
+        db.session.add(
+            PreworkQuestion(
+                template=tpl,
+                position=1,
+                text=raw_text,
+                kind="TEXT",
+            )
+        )
+        session = Session(
+            title="Rich",
+            workshop_type=wt,
+            start_date=date.today(),
+            daily_start_time=time(8, 0),
+        )
+        account = ParticipantAccount(email="rich@example.com", full_name="Rich")
+        participant = Participant(email="rich@example.com", full_name="Rich", account=account)
+        db.session.add_all([wt, tpl, session, account, participant])
+        db.session.flush()
+        db.session.add(
+            SessionParticipant(session_id=session.id, participant_id=participant.id)
+        )
+        assignment = PreworkAssignment(
+            session_id=session.id,
+            participant_account_id=account.id,
+            template_id=tpl.id,
+            status="SENT",
+            snapshot_json={
+                "questions": [
+                    {
+                        "index": 1,
+                        "text": raw_text,
+                        "required": True,
+                        "kind": "TEXT",
+                        "min_items": None,
+                        "max_items": None,
+                    }
+                ],
+                "resources": [],
+            },
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        assignment_id = assignment.id
+        account_id = account.id
+
+    with app.test_client() as c:
+        with c.session_transaction() as s:
+            s["participant_account_id"] = account_id
+        resp = c.get(f"/prework/{assignment_id}")
+        html = resp.get_data(as_text=True)
+
+    assert "<script>alert" not in html
+    assert 'target="_blank" rel="noopener" href="https://example.com"' in html
+    assert "<strong>Bold</strong>" in html
+    assert "target='_self'" not in html
+
+    import re
+
+    match = re.search(
+        r'<div class="question-text rich-text"[^>]*>(.*?)</div>',
+        html,
+        re.DOTALL,
+    )
+    assert match is not None
+    sanitized = match.group(1)
+    assert "style=" not in sanitized

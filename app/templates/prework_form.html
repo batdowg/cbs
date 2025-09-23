@@ -9,7 +9,7 @@
 <form method="post">
 {% for q in questions %}
 <div class="question">
-<label>{{ q.text|safe }}</label><br>
+<div class="question-text rich-text" id="question-{{ q.index }}">{{ q.text | prework_rich_text }}</div>
 {% if q.kind == 'LIST' %}
 <div class="list-question" data-q-index="{{ q.index }}" data-max="{{ q.max_items or 10 }}" data-next-index="{{ (answers.get(q.index, {})|length) }}">
   <div class="list-items">
@@ -17,7 +17,7 @@
     {% if not items %}{% set items = {0: ''} %}{% endif %}
     {% for item_index, text in items.items()|sort %}
     <div class="item">
-      <textarea data-item-index="{{ item_index }}" rows="3" cols="60">{{ text }}</textarea>
+      <textarea data-item-index="{{ item_index }}" rows="3" cols="60" aria-labelledby="question-{{ q.index }}">{{ text }}</textarea>
       <button type="button" class="remove-item">Remove</button>
     </div>
     {% endfor %}
@@ -25,7 +25,7 @@
   <button type="button" class="add-item">Add another</button>
 </div>
 {% else %}
-<textarea name="q{{ q.index }}" rows="3" cols="60">{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</textarea>
+<textarea name="q{{ q.index }}" rows="3" cols="60" aria-labelledby="question-{{ q.index }}">{{ (answers.get(q.index, {}) or {0:''}).get(0) }}</textarea>
 {% endif %}
 </div>
 {% endfor %}

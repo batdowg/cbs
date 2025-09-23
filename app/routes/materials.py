@@ -414,6 +414,7 @@ def materials_view(
                 lang = data.get("language") or sess.workshop_language
                 fmt_val = data.get("format") or (shipment.materials_format or "Digital")
                 processed_flag = data.get("processed") == "1"
+                processed_set = ("processed" in data) if finalize else True
                 if fmt_val not in ROW_FORMAT_CHOICES:
                     fmt_val = ROW_FORMAT_CHOICES[0]
                 if item_id and item_id in existing:
@@ -431,18 +432,19 @@ def materials_view(
                         if item.format != fmt_val:
                             item.format = fmt_val
                             items_changed = True
-                        if processed_flag and not item.processed:
-                            item.processed = True
-                            item.processed_at = datetime.now(timezone.utc)
-                            item.processed_by_id = (
-                                current_user.id if current_user else None
-                            )
-                            items_changed = True
-                        elif not processed_flag and item.processed:
-                            item.processed = False
-                            item.processed_at = None
-                            item.processed_by_id = None
-                            items_changed = True
+                        if processed_set:
+                            if processed_flag and not item.processed:
+                                item.processed = True
+                                item.processed_at = datetime.now(timezone.utc)
+                                item.processed_by_id = (
+                                    current_user.id if current_user else None
+                                )
+                                items_changed = True
+                            elif not processed_flag and item.processed:
+                                item.processed = False
+                                item.processed_at = None
+                                item.processed_by_id = None
+                                items_changed = True
                     continue
                 if delete_flag or not option_id:
                     continue
@@ -471,18 +473,19 @@ def materials_view(
                     if dup.format != fmt_val:
                         dup.format = fmt_val
                         items_changed = True
-                    if processed_flag and not dup.processed:
-                        dup.processed = True
-                        dup.processed_at = datetime.now(timezone.utc)
-                        dup.processed_by_id = (
-                            current_user.id if current_user else None
-                        )
-                        items_changed = True
-                    elif not processed_flag and dup.processed:
-                        dup.processed = False
-                        dup.processed_at = None
-                        dup.processed_by_id = None
-                        items_changed = True
+                    if processed_set:
+                        if processed_flag and not dup.processed:
+                            dup.processed = True
+                            dup.processed_at = datetime.now(timezone.utc)
+                            dup.processed_by_id = (
+                                current_user.id if current_user else None
+                            )
+                            items_changed = True
+                        elif not processed_flag and dup.processed:
+                            dup.processed = False
+                            dup.processed_at = None
+                            dup.processed_by_id = None
+                            items_changed = True
                     continue
                 item = MaterialOrderItem(
                     session_id=sess.id,
@@ -493,9 +496,9 @@ def materials_view(
                     language=lang,
                     format=fmt_val,
                     quantity=qty,
-                    processed=processed_flag,
+                    processed=processed_flag if processed_set else False,
                 )
-                if processed_flag:
+                if processed_set and processed_flag:
                     item.processed_at = datetime.now(timezone.utc)
                     item.processed_by_id = current_user.id if current_user else None
                 db.session.add(item)
@@ -504,8 +507,12 @@ def materials_view(
             current_items = MaterialOrderItem.query.filter_by(
                 session_id=sess.id
             ).all()
+            all_processed = (
+                all(i.processed for i in current_items)
+                if current_items
+                else True
+            )
             has_items = bool(current_items)
-            all_processed = has_items and all(i.processed for i in current_items)
 
             if not finalize and shipment.status != "Finalized":
                 if (header_changed or items_changed) and (
