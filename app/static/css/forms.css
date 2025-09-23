@@ -79,7 +79,7 @@ select[multiple],
 }
 
 input[type="time"] {
-  padding-right: calc(var(--field-px, 12px) * 2 + 1.5em);
+  padding-right: calc(var(--field-px, 6px) * 2 + 1.5em);
 }
 
 input[type="date"],
