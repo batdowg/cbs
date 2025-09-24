@@ -336,6 +336,11 @@
 {% if can_manage %}
 <form id="defaults-form" method="post" action="{{ url_for('materials.apply_defaults', session_id=sess.id) }}">
   <input type="hidden" name="materials_format" id="defaults-format">
+  <input type="hidden" name="shipping_location_id" id="defaults-shipping-location">
+  <input type="hidden" name="arrival_date" id="defaults-arrival-date">
+  <input type="hidden" name="ship_date" id="defaults-ship-date">
+  <input type="hidden" name="courier" id="defaults-courier">
+  <input type="hidden" name="tracking" id="defaults-tracking">
 </form>
 {% endif %}
 <dialog id="shipping-dialog">
@@ -365,6 +370,7 @@
     const setsInput = document.querySelector('input[name="material_sets"]');
     const applyBtn = document.getElementById('apply-defaults-btn');
     const hiddenFmt = document.getElementById('defaults-format');
+    const defaultsForm = document.getElementById('defaults-form');
     const outlineSelect = document.getElementById('simulation-outline-id');
     const outlineHasError = outlineSelect?.dataset.error === '1';
     const creditsField = document.getElementById('credits-field');
@@ -375,6 +381,16 @@
     const finalizeBtn = document.querySelector('button[name="action"][value="finalize"]');
     const saveInitialDisabled = !!(saveBtn && saveBtn.disabled);
     const finalizeInitialDisabled = !!(finalizeBtn && finalizeBtn.disabled);
+    const shipSelect = document.getElementById('shipping-location-select');
+    const shipHidden = document.getElementById('defaults-shipping-location');
+    const arrivalInput = document.getElementById('arrival-date');
+    const arrivalHidden = document.getElementById('defaults-arrival-date');
+    const shipDateInput = document.querySelector('input[name="ship_date"]');
+    const shipDateHidden = document.getElementById('defaults-ship-date');
+    const courierInput = document.querySelector('input[name="courier"]');
+    const courierHidden = document.getElementById('defaults-courier');
+    const trackingInput = document.querySelector('input[name="tracking"]');
+    const trackingHidden = document.getElementById('defaults-tracking');
     function syncFmt(){ if(hiddenFmt && fmtSel) hiddenFmt.value = fmtSel.value; }
     function applyAutoFormat(){
       if(!fmtSel) return;
@@ -426,6 +442,14 @@
     orderSel && orderSel.addEventListener('change', () => {applyAutoFormat(); refreshActions();});
     setsInput && setsInput.addEventListener('input', refreshActions);
     outlineSelect && outlineSelect.addEventListener('change', refreshActions);
+    defaultsForm && defaultsForm.addEventListener('submit', () => {
+      syncFmt();
+      if(shipHidden){ shipHidden.value = shipSelect?.value || ''; }
+      if(arrivalHidden){ arrivalHidden.value = arrivalInput?.value || ''; }
+      if(shipDateHidden){ shipDateHidden.value = shipDateInput?.value || ''; }
+      if(courierHidden){ courierHidden.value = courierInput?.value || ''; }
+      if(trackingHidden){ trackingHidden.value = trackingInput?.value || ''; }
+    });
     applyAutoFormat();
     refreshActions();
     if(outlineHasError && outlineSelect){
