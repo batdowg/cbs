@@ -9,7 +9,7 @@
   {% set badge_text = 'NEW' if reason == 'created' else 'UPDATED' %}
   <div style="max-width:640px;margin:0 auto;background-color:#ffffff;border:1px solid #D1D3D4;border-radius:12px;padding:24px;">
     <div style="text-transform:uppercase;font-size:12px;letter-spacing:0.08em;color:#0057B7;font-family:'Raleway','Helvetica',Arial,sans-serif;">{{ badge_text }} materials order</div>
-    <h1 style="margin:8px 0 16px 0;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:22px;color:#0057B7;">Session #{{ session.id }} – {{ session.title or 'Untitled session' }}</h1>
+    <h1 style="margin:8px 0 16px 0;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:22px;color:#0057B7;">Session #{{ session.id }}: {{ session.title or 'Untitled session' }} - {{ session.computed_status}}</h1>
     <p style="margin:0 0 20px 0;font-size:14px;color:#6D6E71;">The materials order was {{ reason_label }} and is ready for processing.</p>
     {% macro field_row(label, value, allow_html=False) -%}
     {% set display_value = value %}
@@ -76,10 +76,8 @@
       {{ field_row('Client', client_name ~ ((' - ' ~ region_label) if region_label else '')) }}
       {{ field_row('Processing type', processing_bucket) }}
       {{ field_row('Workshop type', workshop_code ~ (': ' ~ (session.delivery_type or '—')) if workshop_code else (session.delivery_type or '—')) }}
-      {{ field_row('Session status', session.computed_status) }}
-      {{ field_row('Delivery type', session.delivery_type or '—') }}
-      {{ field_row('CSA', csa_display) }}
       {{ field_row('Workshop language', workshop_language) }}
+      {{ field_row('CSA', csa_display) }}
       {{ field_row('Workshop dates', schedule) }}
       {{ field_row('Daily time', time_range) }}
       {{ field_row('Workshop location', workshop_text|replace('\n', '<br>'), allow_html=True) }}
