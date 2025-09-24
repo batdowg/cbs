@@ -217,7 +217,7 @@ Delivery (KT Facilitator) and Contractor accounts open the workshop runner view 
 - **My Sessions**: Admin, CRM, and Delivery roles see an **Edit** action per row; Contractors, CSA, and Learner accounts do not.
 
 ## 1.3 View Selector
-Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not.
+Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not. For KT Staff, a muted "Switch views here." hint appears directly beneath the selector inside the left navigation; there is no banner elsewhere.
 
 ## 1.4 “KT Staff” definition (derived, not stored)
 - KT Staff = any **User** account that is **not** Contractor and **not** a participant/CSA.  

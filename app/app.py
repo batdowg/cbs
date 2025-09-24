@@ -48,7 +48,7 @@ from .shared.views import (
 )
 from .shared.nav import build_menu
 from .shared.storage_resources import resource_fs_dir, resource_fs_path, resources_root
-from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor
+from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor, is_kt_staff
 from .shared.languages import code_to_label
 from .shared.html import sanitize_prework_html
 
@@ -235,6 +235,7 @@ def create_app():
             "active_view": active_view,
             "nav_menu": nav_menu,
             "view_options": view_opts,
+            "is_staff_user": is_kt_staff(user),
         }
 
     @app.get("/health")
