@@ -114,6 +114,7 @@ class Settings(db.Model):
     smtp_pass_enc = db.Column(db.Text)
     use_tls = db.Column(db.Boolean, default=True)
     use_ssl = db.Column(db.Boolean, default=False)
+    mail_notifications = db.Column(db.JSON, nullable=False, default=dict)
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
@@ -394,6 +395,8 @@ class Session(db.Model):
     finalized_at = db.Column(db.DateTime)
     cancelled_at = db.Column(db.DateTime)
     on_hold_at = db.Column(db.DateTime)
+    materials_notified_at = db.Column(db.DateTime)
+    materials_order_fingerprint = db.Column(db.Text)
     sponsor = db.Column(db.String(255))
     notes = db.Column(db.Text)
     simulation_outline_text = db.Column("simulation_outline", db.Text)

@@ -1,0 +1,103 @@
+{% set reason_label = 'created' if reason == 'created' else 'updated' %}
+{% set badge_text = 'NEW' if reason == 'created' else 'UPDATED' %}
+{% set client_name = session.client.name if session.client else '—' %}
+{% set workshop_code = session.workshop_type.code if session.workshop_type and session.workshop_type.code else (session.code or '—') %}
+{% set workshop_language = session.workshop_language|lang_label if session.workshop_language else '—' %}
+{% set start_label = session.start_date|fmt_dt %}
+{% set end_label = session.end_date|fmt_dt %}
+{% if start_label and end_label %}
+{% set schedule = start_label ~ ' → ' ~ end_label %}
+{% elif start_label %}
+{% set schedule = start_label %}
+{% elif end_label %}
+{% set schedule = end_label %}
+{% else %}
+{% set schedule = '—' %}
+{% endif %}
+{% set start_time = session.daily_start_time|fmt_time %}
+{% set end_time = session.daily_end_time|fmt_time %}
+{% set tz_label = session.timezone or '' %}
+{% set time_range = '' %}
+{% if start_time and end_time %}
+{% set time_range = start_time ~ '–' ~ end_time %}
+{% if tz_label %}{% set time_range = time_range ~ ' (' ~ tz_label ~ ')' %}{% endif %}
+{% endif %}
+{% set csa_display = '—' %}
+{% if session.csa_account %}
+  {% set csa_name = session.csa_account.full_name or '' %}
+  {% set csa_email = session.csa_account.email or '' %}
+  {% if csa_name and csa_email %}
+    {% set csa_display = csa_name ~ ' (' ~ csa_email ~ ')' %}
+  {% elif csa_email %}
+    {% set csa_display = csa_email %}
+  {% else %}
+    {% set csa_display = csa_name %}
+  {% endif %}
+{% endif %}
+{% set workshop_lines = [] %}
+{% if session.workshop_location %}
+  {% set workshop_lines = workshop_lines + [session.workshop_location.label] if session.workshop_location.label else workshop_lines %}
+  {% if session.workshop_location.address_line1 %}{% set workshop_lines = workshop_lines + [session.workshop_location.address_line1] %}{% endif %}
+  {% if session.workshop_location.address_line2 %}{% set workshop_lines = workshop_lines + [session.workshop_location.address_line2] %}{% endif %}
+  {% set city_parts = [] %}
+  {% if session.workshop_location.city %}{% set city_parts = city_parts + [session.workshop_location.city] %}{% endif %}
+  {% if session.workshop_location.state %}{% set city_parts = city_parts + [session.workshop_location.state] %}{% endif %}
+  {% if session.workshop_location.postal_code %}{% set city_parts = city_parts + [session.workshop_location.postal_code] %}{% endif %}
+  {% if city_parts %}{% set workshop_lines = workshop_lines + [' '.join(city_parts)] %}{% endif %}
+  {% if session.workshop_location.country %}{% set workshop_lines = workshop_lines + [session.workshop_location.country] %}{% endif %}
+{% elif session.location %}
+  {% set workshop_lines = [session.location] %}
+{% endif %}
+{% set shipping_lines = [] %}
+{% if shipment.contact_name %}{% set shipping_lines = shipping_lines + [shipment.contact_name] %}{% endif %}
+{% if shipment.contact_phone %}{% set shipping_lines = shipping_lines + [shipment.contact_phone] %}{% endif %}
+{% if shipment.contact_email %}{% set shipping_lines = shipping_lines + [shipment.contact_email] %}{% endif %}
+{% if shipment.address_line1 %}{% set shipping_lines = shipping_lines + [shipment.address_line1] %}{% endif %}
+{% if shipment.address_line2 %}{% set shipping_lines = shipping_lines + [shipment.address_line2] %}{% endif %}
+{% set ship_city_parts = [] %}
+{% if shipment.city %}{% set ship_city_parts = ship_city_parts + [shipment.city] %}{% endif %}
+{% if shipment.state %}{% set ship_city_parts = ship_city_parts + [shipment.state] %}{% endif %}
+{% if shipment.postal_code %}{% set ship_city_parts = ship_city_parts + [shipment.postal_code] %}{% endif %}
+{% if ship_city_parts %}{% set shipping_lines = shipping_lines + [' '.join(ship_city_parts)] %}{% endif %}
+{% if shipment.country %}{% set shipping_lines = shipping_lines + [shipment.country] %}{% endif %}
+
+{{ badge_text }} Materials Order – Session #{{ session.id }}
+
+Session
+=======
+Title: {{ session.title or 'Untitled session' }}
+Client: {{ client_name }}
+Workshop type: {{ workshop_code }}
+Status: {{ session.computed_status }}
+Delivery type: {{ session.delivery_type or '—' }}
+CSA: {{ csa_display }}
+Workshop language: {{ workshop_language }}
+Workshop dates: {{ schedule }}
+Daily time: {{ time_range or '—' }}
+Workshop location:
+{% if workshop_lines %}{% for line in workshop_lines %}  - {{ line }}
+{% endfor %}{% else %}  - —
+{% endif %}
+
+Order
+=====
+Shipping location:
+{% if shipping_lines %}{% for line in shipping_lines %}  - {{ line }}
+{% endfor %}{% else %}  - —
+{% endif %}
+Order type: {{ shipment.order_type or '—' }}
+Material format: {{ shipment.materials_format or '—' }}
+Material sets: {{ snapshot.order_header.material_sets }}
+Special instructions:
+{% if snapshot.order_header.special_instructions %}{{ snapshot.order_header.special_instructions }}
+{% else %}—
+{% endif %}
+
+Items
+=====
+{% if items %}{% for item in items %}
+- {{ item.title_snapshot or item.catalog_ref }} ({{ item.language|lang_label if item.language else '—' }} / {{ item.format or '—' }}) × {{ item.quantity }}
+{% endfor %}{% else %}- No materials items configured.
+{% endif %}
+
+View order: {{ view_url }}

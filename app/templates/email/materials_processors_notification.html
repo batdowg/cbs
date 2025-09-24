@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Materials order notification</title>
+</head>
+<body style="margin:0;background-color:#f4f6fb;padding:24px;font-family:'Roboto',Arial,sans-serif;color:#111111;">
+  {% set reason_label = 'created' if reason == 'created' else 'updated' %}
+  {% set badge_text = 'NEW' if reason == 'created' else 'UPDATED' %}
+  <div style="max-width:640px;margin:0 auto;background-color:#ffffff;border:1px solid #D1D3D4;border-radius:12px;padding:24px;">
+    <div style="text-transform:uppercase;font-size:12px;letter-spacing:0.08em;color:#0057B7;font-family:'Raleway','Helvetica',Arial,sans-serif;">{{ badge_text }} materials order</div>
+    <h1 style="margin:8px 0 16px 0;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:22px;color:#0057B7;">Session #{{ session.id }} – {{ session.title or 'Untitled session' }}</h1>
+    <p style="margin:0 0 20px 0;font-size:14px;color:#6D6E71;">The materials order was {{ reason_label }} and is ready for processing.</p>
+    {% macro field_row(label, value, allow_html=False) -%}
+    {% set display_value = value %}
+    {% if display_value is none %}
+      {% set display_value = '—' %}
+    {% elif display_value == '' %}
+      {% set display_value = '—' %}
+    {% endif %}
+    <tr>
+      <th style="text-align:left;padding:6px 8px;color:#002C5B;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:13px;width:180px;vertical-align:top;background-color:#f4f6fb;border:1px solid #D1D3D4;">{{ label }}</th>
+      <td style="padding:6px 8px;border:1px solid #D1D3D4;font-size:13px;">{% if allow_html %}{{ display_value|safe }}{% else %}{{ display_value }}{% endif %}</td>
+    </tr>
+    {%- endmacro %}
+    {% set client_name = session.client.name if session.client else '—' %}
+    {% set workshop_code = session.workshop_type.code if session.workshop_type and session.workshop_type.code else (session.code or '—') %}
+    {% set workshop_language = session.workshop_language|lang_label if session.workshop_language else '—' %}
+    {% set start_label = session.start_date|fmt_dt %}
+    {% set end_label = session.end_date|fmt_dt %}
+    {% set start_time = session.daily_start_time|fmt_time %}
+    {% set end_time = session.daily_end_time|fmt_time %}
+    {% set tz_label = session.timezone or '' %}
+    {% if start_label and end_label %}
+      {% set schedule = start_label ~ ' → ' ~ end_label %}
+    {% elif start_label %}
+      {% set schedule = start_label %}
+    {% elif end_label %}
+      {% set schedule = end_label %}
+    {% else %}
+      {% set schedule = '—' %}
+    {% endif %}
+    {% set time_range = '' %}
+    {% if start_time and end_time %}
+      {% set time_range = start_time ~ '–' ~ end_time %}
+      {% if tz_label %}{% set time_range = time_range ~ ' (' ~ tz_label ~ ')' %}{% endif %}
+    {% endif %}
+    {% set csa_display = '—' %}
+    {% if session.csa_account %}
+      {% set csa_name = session.csa_account.full_name or '' %}
+      {% set csa_email = session.csa_account.email or '' %}
+      {% if csa_name and csa_email %}
+        {% set csa_display = csa_name ~ ' (' ~ csa_email ~ ')' %}
+      {% elif csa_email %}
+        {% set csa_display = csa_email %}
+      {% else %}
+        {% set csa_display = csa_name %}
+      {% endif %}
+    {% endif %}
+    {% set workshop_ns = namespace(lines=[]) %}
+    {% if session.workshop_location %}
+      {% set _ = workshop_ns.lines.append(session.workshop_location.label) %}
+      {% if session.workshop_location.address_line1 %}{% set _ = workshop_ns.lines.append(session.workshop_location.address_line1) %}{% endif %}
+      {% if session.workshop_location.address_line2 %}{% set _ = workshop_ns.lines.append(session.workshop_location.address_line2) %}{% endif %}
+      {% set city_parts = [] %}
+      {% if session.workshop_location.city %}{% set city_parts = city_parts + [session.workshop_location.city] %}{% endif %}
+      {% if session.workshop_location.state %}{% set city_parts = city_parts + [session.workshop_location.state] %}{% endif %}
+      {% if session.workshop_location.postal_code %}{% set city_parts = city_parts + [session.workshop_location.postal_code] %}{% endif %}
+      {% if city_parts %}{% set _ = workshop_ns.lines.append(' '.join(city_parts)) %}{% endif %}
+      {% if session.workshop_location.country %}{% set _ = workshop_ns.lines.append(session.workshop_location.country) %}{% endif %}
+    {% elif session.location %}
+      {% set _ = workshop_ns.lines.append(session.location) %}
+    {% endif %}
+    {% set workshop_text = '\n'.join(workshop_ns.lines) %}
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      {{ field_row('Client', client_name) }}
+      {{ field_row('Workshop type', workshop_code) }}
+      {{ field_row('Session status', session.computed_status) }}
+      {{ field_row('Delivery type', session.delivery_type or '—') }}
+      {{ field_row('CSA', csa_display) }}
+      {{ field_row('Workshop language', workshop_language) }}
+      {{ field_row('Workshop dates', schedule) }}
+      {{ field_row('Daily time', time_range) }}
+      {{ field_row('Workshop location', workshop_text|replace('\n', '<br>'), allow_html=True) }}
+    </table>
+    {% set shipping_ns = namespace(lines=[]) %}
+    {% if shipment.contact_name %}{% set _ = shipping_ns.lines.append(shipment.contact_name) %}{% endif %}
+    {% if shipment.contact_phone %}{% set _ = shipping_ns.lines.append(shipment.contact_phone) %}{% endif %}
+    {% if shipment.contact_email %}{% set _ = shipping_ns.lines.append(shipment.contact_email) %}{% endif %}
+    {% if shipment.address_line1 %}{% set _ = shipping_ns.lines.append(shipment.address_line1) %}{% endif %}
+    {% if shipment.address_line2 %}{% set _ = shipping_ns.lines.append(shipment.address_line2) %}{% endif %}
+    {% set ship_city_parts = [] %}
+    {% if shipment.city %}{% set ship_city_parts = ship_city_parts + [shipment.city] %}{% endif %}
+    {% if shipment.state %}{% set ship_city_parts = ship_city_parts + [shipment.state] %}{% endif %}
+    {% if shipment.postal_code %}{% set ship_city_parts = ship_city_parts + [shipment.postal_code] %}{% endif %}
+    {% if ship_city_parts %}{% set _ = shipping_ns.lines.append(' '.join(ship_city_parts)) %}{% endif %}
+    {% if shipment.country %}{% set _ = shipping_ns.lines.append(shipment.country) %}{% endif %}
+    {% set shipping_text = '\n'.join(shipping_ns.lines) %}
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      {{ field_row('Shipping location', shipping_text|replace('\n', '<br>'), allow_html=True) }}
+      {{ field_row('Shipping type', shipment.order_type or '—') }}
+      {{ field_row('Material format', shipment.materials_format or '—') }}
+      {{ field_row('Material sets', snapshot.order_header.material_sets) }}
+      {{ field_row('Special instructions', (snapshot.order_header.special_instructions or '—')|replace('\n', '<br>'), allow_html=True) }}
+    </table>
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:8px;background-color:#0057B7;color:#ffffff;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:13px;border:1px solid #0057B7;">Material</th>
+          <th style="text-align:left;padding:8px;background-color:#0057B7;color:#ffffff;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:13px;border:1px solid #0057B7;">Language</th>
+          <th style="text-align:left;padding:8px;background-color:#0057B7;color:#ffffff;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:13px;border:1px solid #0057B7;">Format</th>
+          <th style="text-align:right;padding:8px;background-color:#0057B7;color:#ffffff;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:13px;border:1px solid #0057B7;">Quantity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        {% set material_label = item.title_snapshot or item.catalog_ref %}
+        {% set lang_display = item.language|lang_label if item.language else '—' %}
+        {% set format_display = item.format or '—' %}
+        <tr>
+          <td style="padding:8px;border:1px solid #D1D3D4;font-size:13px;">
+            {{ material_label }}
+            {% if item.catalog_ref and item.catalog_ref != material_label %}
+            <div style="font-size:12px;color:#6D6E71;">{{ item.catalog_ref }}</div>
+            {% endif %}
+          </td>
+          <td style="padding:8px;border:1px solid #D1D3D4;font-size:13px;">{{ lang_display }}</td>
+          <td style="padding:8px;border:1px solid #D1D3D4;font-size:13px;">{{ format_display }}</td>
+          <td style="padding:8px;border:1px solid #D1D3D4;font-size:13px;text-align:right;">{{ item.quantity }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="padding:12px;border:1px solid #D1D3D4;font-size:13px;color:#6D6E71;text-align:center;">No materials items configured.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:12px;">
+      <a href="{{ view_url }}" style="display:inline-block;padding:12px 20px;background-color:#0057B7;color:#ffffff;text-decoration:none;border-radius:999px;font-family:'Raleway','Helvetica',Arial,sans-serif;font-size:14px;">View order</a>
+    </div>
+    <p style="margin:16px 0 0 0;font-size:13px;color:#6D6E71;">If the button does not work, copy and paste this link into your browser:<br><span style="word-break:break-all;color:#0057B7;">{{ view_url }}</span></p>
+  </div>
+</body>
+</html>

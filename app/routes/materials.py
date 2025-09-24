@@ -32,6 +32,7 @@ from ..shared.sessions_lifecycle import (
     enforce_material_only_rules,
     is_material_only_session,
 )
+from ..services.materials_notifications import notify_materials_processors
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
 CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
@@ -241,6 +242,7 @@ def materials_view(
         action = request.form.get("action")
         if not can_manage:
             abort(403)
+        prior_notified = bool(sess.materials_notified_at)
         if action in {"update_header", "finalize"}:
             finalize = action == "finalize"
             ship_id = request.form.get("shipping_location_id")
@@ -547,7 +549,13 @@ def materials_view(
                 flash("Materials order finalized", "success")
 
             enforce_material_only_rules(sess)
+            should_notify = header_changed or items_changed or finalize
             db.session.commit()
+            if should_notify:
+                notify_materials_processors(
+                    sess.id,
+                    reason="updated" if prior_notified else "created",
+                )
             return redirect(url_for("materials.materials_view", session_id=session_id))
         if action == "mark_shipped":
             if not shipment.ship_date:
@@ -607,6 +615,7 @@ def apply_defaults(
 ):
     if not can_manage_shipment(current_user) or view_only:
         abort(403)
+    prior_notified = bool(sess.materials_notified_at)
     shipment = SessionShipping.query.filter_by(session_id=sess.id).first()
     if not shipment or shipment.material_sets <= 0:
         flash("Select # of Material sets first.", "error")
@@ -696,6 +705,10 @@ def apply_defaults(
         db.session.add(item)
         created += 1
     db.session.commit()
+    if created:
+        notify_materials_processors(
+            sess.id, reason="updated" if prior_notified else "created"
+        )
     flash(f"Applied defaults: {created} added.", "success")
     return redirect(
         url_for("materials.materials_view", session_id=session_id) + "#material-items"

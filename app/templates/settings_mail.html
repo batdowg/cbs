@@ -20,6 +20,10 @@
   <input type="password" name="smtp_pass" autocomplete="new-password"></label>
   <label><input type="checkbox" name="use_tls" {% if settings.use_tls %}checked{% endif %}> Use TLS</label>
   <label><input type="checkbox" name="use_ssl" {% if settings.use_ssl %}checked{% endif %}> Use SSL</label>
+  <label>Materials processors emails
+    <textarea name="materials_processors" rows="2" placeholder="email1@example.com; email2@example.com">{{ materials_processor_value }}</textarea>
+    <small>Comma or semicolon separated addresses. Leave blank to disable notifications.</small>
+  </label>
   <button type="submit">Save</button>
 </form>
 <form method="post" action="{{ url_for('settings_mail.test_send') }}">
