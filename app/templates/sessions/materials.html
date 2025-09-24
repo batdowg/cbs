@@ -204,9 +204,9 @@
     </div>
     <div class="form-align__row">
       <label class="form-align__label" for="title">Special instructions:</label>
-      <div class="form-align__control">
         {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}      
-          <textarea name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
+          <div class="form-align__control">
+            <textarea name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
         {% else %}{{ shipment.special_instructions|default('', true) }}{% endif %}
       </div>
     </div>
