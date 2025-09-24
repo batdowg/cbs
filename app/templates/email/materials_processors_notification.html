@@ -100,7 +100,7 @@
     {% set shipping_text = '\n'.join(shipping_ns.lines) %}
     <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       {{ field_row('Shipping location', shipping_text|replace('\n', '<br>'), allow_html=True) }}
-      {{ field_row('Shipping type', shipment.order_type or '—') }}
+      {{ field_row('Order type', shipment.order_type or '—') }}
       {{ field_row('Material format', shipment.materials_format or '—') }}
       {{ field_row('Material sets', snapshot.order_header.material_sets) }}
       {{ field_row('Special instructions', (snapshot.order_header.special_instructions or '—')|replace('\n', '<br>'), allow_html=True) }}
