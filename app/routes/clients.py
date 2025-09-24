@@ -322,7 +322,7 @@ def inline_workshop_location(client_id, current_user, csa_account):
     loc.is_active = request.form.get("is_active") in {"1", "on", "true"}
     db.session.add(loc)
     db.session.commit()
-    return {"id": loc.id, "label": loc.label}
+    return {"id": loc.id, "label": loc.label, "is_virtual": loc.is_virtual}
 
 
 @bp.get("/<int:client_id>/inline-workshop-locations")
@@ -333,7 +333,11 @@ def list_inline_workshop_locations(client_id, current_user, csa_account):
         .order_by(ClientWorkshopLocation.label)
         .all()
     )
-    return {"locations": [{"id": l.id, "label": l.label} for l in locs]}
+    return {
+        "locations": [
+            {"id": l.id, "label": l.label, "is_virtual": l.is_virtual} for l in locs
+        ]
+    }
 
 
 @bp.post("/<int:client_id>/inline-shipping-location")

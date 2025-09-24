@@ -605,3 +605,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Workshop Type default-material rows drop the "Remove" checkbox in favor of a
   per-row delete action (`POST /workshop-types/defaults/<id>/delete`).
 - PO Number field removed from materials orders and underlying storage.
+- Session create/edit forms filter workshop locations based on delivery type: Onsite shows onsite-only, Virtual shows virtual-only, incompatible selections are cleared, and an inline notice surfaces when no locations match.

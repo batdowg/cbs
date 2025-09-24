@@ -97,9 +97,10 @@
           <select name="workshop_location_id" id="workshop-location-select">
             <option value=""></option>
             {% for loc in workshop_locations %}
-            <option value="{{ loc.id }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
+            <option value="{{ loc.id }}" data-virtual="{{ 'true' if loc.is_virtual else 'false' }}" {% if session.workshop_location_id==loc.id %}selected{% endif %}>{{ loc.label }}</option>
             {% endfor %}
           </select>
+          <div id="location-filter-note" class="form-align__note" style="display:none;">No locations match the selected mode</div>
           <a href="#" id="add-workshop-location">Add</a>
         </div>
       </div>
@@ -288,12 +289,65 @@
   var typeSelect = document.querySelector('select[name="workshop_type_id"]');
   var simDiv = document.getElementById('sim-outline');
   var materialsBtn = document.getElementById('materials-only-btn');
+  var deliveryTypeField = document.getElementById('delivery-type');
+  var locationSelect = document.getElementById('workshop-location-select');
+  var locationNote = document.getElementById('location-filter-note');
   if(materialsBtn){
     materialsBtn.addEventListener('click', function(){
       document.querySelectorAll('.session-form__section:not(:first-of-type) [required]').forEach(function(el){
         el.removeAttribute('required');
       });
     });
+  }
+  function applyLocationFilter(){
+    if(!locationSelect){ return; }
+    var mode = deliveryTypeField ? deliveryTypeField.value : '';
+    var showVirtual = mode === 'Virtual';
+    var restrict = mode === 'Virtual' || mode === 'Onsite';
+    var totalOptions = 0;
+    var visibleOptions = 0;
+    var selectionCleared = false;
+    Array.from(locationSelect.options).forEach(function(opt){
+      if(!opt.value){
+        opt.hidden = false;
+        opt.disabled = false;
+        return;
+      }
+      var isVirtual = opt.dataset.virtual === 'true';
+      var shouldHide = false;
+      if(restrict){
+        shouldHide = showVirtual ? !isVirtual : isVirtual;
+      }
+      opt.hidden = shouldHide;
+      opt.disabled = shouldHide;
+      if(shouldHide && opt.selected){
+        opt.selected = false;
+        selectionCleared = true;
+      }
+      totalOptions += 1;
+      if(!shouldHide){
+        visibleOptions += 1;
+      }
+    });
+    var currentOption = locationSelect.options[locationSelect.selectedIndex];
+    if(selectionCleared || (currentOption && (currentOption.disabled || currentOption.hidden))){
+      locationSelect.value = '';
+      locationSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if(!currentOption && locationSelect.value){
+      locationSelect.value = '';
+      locationSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if(locationNote){
+      if(restrict && totalOptions > 0 && visibleOptions === 0){
+        locationNote.style.display = 'block';
+      }else{
+        locationNote.style.display = 'none';
+      }
+    }
+  }
+  applyLocationFilter();
+  if(deliveryTypeField){
+    deliveryTypeField.addEventListener('change', applyLocationFilter);
   }
   function filterTypes(){
     if(!langSelect || !typeSelect){ return; }
@@ -454,10 +508,12 @@
         .then(data=>{
           data.locations.forEach(function(loc){
             var o=document.createElement('option');
-            o.value=loc.id; o.textContent=loc.label; locSel.appendChild(o);
+            o.value=loc.id; o.textContent=loc.label; o.dataset.virtual = loc.is_virtual ? 'true' : 'false'; locSel.appendChild(o);
           });
+          applyLocationFilter();
         });
     }
+    applyLocationFilter();
   });
   document.getElementById('include-all-fac').addEventListener('change', function(){
     var url = new URL(window.location.href);
@@ -536,7 +592,8 @@
         if(status==200 && data.id){
           var sel=document.getElementById('workshop-location-select');
           var o=document.createElement('option');
-          o.value=data.id; o.textContent=data.label; sel.appendChild(o); sel.value=data.id;
+          o.value=data.id; o.textContent=data.label; o.dataset.virtual = data.is_virtual ? 'true' : 'false'; sel.appendChild(o); sel.value=data.id;
+          applyLocationFilter();
           locDialog.close();
         }else if(data.errors){
           showErrors(locForm, data.errors);
