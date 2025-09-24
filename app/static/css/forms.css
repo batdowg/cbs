@@ -133,6 +133,19 @@ textarea {
   border-radius: var(--radius-md, 12px);
 }
 
+.form-align__control--wide > textarea,
+.form-align__control--wide > .form-align__static {
+  width: 640px;
+  max-width: 100%;
+}
+
+@media (max-width: 576px) {
+  .form-align__control--wide > textarea,
+  .form-align__control--wide > .form-align__static {
+    width: 100%;
+  }
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--kt-muted);

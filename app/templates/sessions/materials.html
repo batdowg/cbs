@@ -17,18 +17,6 @@
 </script>{% endblock %}
 {% block extra_head %}
   {{ super() }}
-  <style>
-    .materials-special-instructions textarea {
-      width: 640px;
-      max-width: 100%;
-    }
-
-    @media (max-width: 576px) {
-      .materials-special-instructions textarea {
-        width: 100%;
-      }
-    }
-  </style>
 {% endblock %}
 {% block content %}
 {% set facs = [] %}
@@ -208,9 +196,9 @@
         </div>
       </div>
     </div>
-    <div class="form-align__row form-align__row--top materials-special-instructions">
+    <div class="form-align__row form-align__row--top">
       <label class="form-align__label" for="special-instructions">Special instructions</label>
-      <div class="form-align__control">
+      <div class="form-align__control form-align__control--wide">
         {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
           <textarea id="special-instructions" name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
         {% else %}
