@@ -1,8 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'New Session' if not session or not session.id else 'Edit Session' }}{% endblock %}
+{% block extra_head %}
+  {{ super() }}
+  <style>
+    #session-form .session-form__notes-row textarea {
+      width: 640px;
+      max-width: 100%;
+    }
+
+    @media (max-width: 576px) {
+      #session-form .session-form__notes-row textarea {
+        width: 100%;
+      }
+    }
+  </style>
+{% endblock %}
 {% block content %}
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
-<form method="post" data-dirty-guard="true">
+<form id="session-form" method="post" data-dirty-guard="true">
   <div class="kt-card form-align session-form__section">
     <h2 class="kt-card-title">Order information</h2>
     {% set _title = title_override if title_override is not none else session.title %}
@@ -205,13 +220,13 @@
           <button type="button" id="add-fac">Add another facilitator</button>
         </div>
       </div>
-    </div>
-   <div class="form-align__row">
+      <div class="form-align__row session-form__notes-row">
         <label class="form-align__label" for="title">Notes & Special instructions</label>
         <div class="form-align__control">
           <textarea name="notes">{{ session.notes or '' }}</textarea>
         </div>
-  </div>
+      </div>
+    </div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
   <div class="kt-card session-form__section">
@@ -368,7 +383,7 @@
     if(!typeSelect || !simDiv){ return; }
     var opt = typeSelect.options[typeSelect.selectedIndex];
     var isSim = opt && opt.dataset.sim === '1';
-    simDiv.style.display = isSim ? 'block' : 'none';
+    simDiv.style.display = isSim ? 'flex' : 'none';
     if(isSim){
       var lbl = simDiv.querySelector('label');
       if(lbl && !lbl.textContent.trim()){ lbl.insertAdjacentText('afterbegin','Simulation' + ' outline'); }
