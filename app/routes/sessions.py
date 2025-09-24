@@ -495,7 +495,11 @@ def list_sessions(current_user):
 def new_session(current_user):
     if is_contractor(current_user):
         abort(403)
-    workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
+    workshop_types = (
+        WorkshopType.query.filter(WorkshopType.active == True)
+        .order_by(WorkshopType.code)
+        .all()
+    )
     include_all = request.args.get("include_all_facilitators") == "1"
     fac_query = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)
@@ -967,7 +971,16 @@ def edit_session(session_id: int, current_user):
         abort(404)
     if is_contractor(current_user):
         abort(403)
-    workshop_types = WorkshopType.query.order_by(WorkshopType.code).all()
+    workshop_types = (
+        WorkshopType.query.filter(
+            or_(
+                WorkshopType.active == True,
+                WorkshopType.id == sess.workshop_type_id,
+            )
+        )
+        .order_by(WorkshopType.code)
+        .all()
+    )
     include_all = request.args.get("include_all_facilitators") == "1"
     fac_query = User.query.filter(
         or_(User.is_kt_delivery == True, User.is_kt_contractor == True)

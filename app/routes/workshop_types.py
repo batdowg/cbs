@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -241,7 +242,7 @@ def create_type(current_user):
     wt = WorkshopType(
         code=code,
         name=name,
-        active=True if active_raw is None else bool(active_raw),
+        active=bool(active_raw),
         description=request.form.get("description") or None,
         simulation_based=bool(request.form.get("simulation_based")),
         supported_languages=langs or ["en"],
@@ -305,6 +306,9 @@ def create_type(current_user):
             action="workshop_type_create",
             details=f"id={wt.id} code={wt.code}",
         )
+    )
+    current_app.logger.info(
+        "[workshop-type] set active=%s id=%s", str(bool(wt.active)).lower(), wt.id
     )
     db.session.commit()
     flash("Workshop Type created", "success")
@@ -394,7 +398,7 @@ def update_type(type_id: int, current_user):
         abort(400)
     wt.name = request.form.get("name") or wt.name
     active_raw = request.form.get("active")
-    wt.active = True if active_raw is None else bool(active_raw)
+    wt.active = bool(active_raw)
     wt.description = request.form.get("description") or None
     wt.simulation_based = bool(request.form.get("simulation_based"))
     langs = request.form.getlist("supported_languages")
@@ -515,6 +519,9 @@ def update_type(type_id: int, current_user):
             action="workshop_type_update",
             details=f"id={wt.id}",
         )
+    )
+    current_app.logger.info(
+        "[workshop-type] set active=%s id=%s", str(bool(wt.active)).lower(), wt.id
     )
     db.session.commit()
     flash("Workshop Type updated", "success")
