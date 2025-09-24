@@ -52,6 +52,25 @@
           </select>
         </div>
       </div>
+      {% set ns = namespace(sfc_value='') %}
+      {% if form %}
+        {% set ns.sfc_value = form.get('sfc_link') %}
+      {% elif session and session.id and session.client %}
+        {% set ns.sfc_value = session.client.sfc_link or '' %}
+      {% elif session and session.client_id %}
+        {% for c in clients %}
+          {% if c.id == session.client_id %}
+            {% set ns.sfc_value = c.sfc_link or '' %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      <div class="form-align__row">
+        <label class="form-align__label" for="sfc-link">SFC Project link (optional)</label>
+        <div class="form-align__control">
+          <input type="url" id="sfc-link" name="sfc_link" value="{{ ns.sfc_value or '' }}">
+          <p class="form-align__help">Paste the Salesforce Cloud (SFC) project URL if available.</p>
+        </div>
+      </div>
       <div class="form-align__row">
         <label class="form-align__label" for="workshop-language">Workshop language*</label>
         <div class="form-align__control">
