@@ -38,8 +38,35 @@ def is_contractor(user: Any) -> bool:
 
 
 def is_kt_staff(user: Any) -> bool:
-    """Return True for any User account that is not a Contractor."""
-    return bool(isinstance(user, User) and not is_contractor(user))
+    """Return True when the account should be treated as KT Staff."""
+
+    if not user:
+        return False
+
+    if isinstance(user, ParticipantAccount):
+        return False
+
+    if not isinstance(user, User):
+        return False
+
+    positive_flags = (
+        "is_app_admin",
+        "is_admin",
+        "is_kt_admin",
+        "is_kcrm",
+        "is_kt_delivery",
+        "is_kt_staff",
+    )
+    if any(getattr(user, flag, False) for flag in positive_flags):
+        return True
+
+    if getattr(user, "is_kt_contractor", False):
+        return False
+
+    if hasattr(user, "has_role") and user.has_role(CONTRACTOR):
+        return False
+
+    return True
 
 
 def can_demote_to_contractor(actor: User, target: User) -> bool:

@@ -6,8 +6,7 @@
   .flash,
   .flashes,
   .btn,
-  .pagination,
-  .view-banner {
+  .pagination {
     display: none !important;
   }
 

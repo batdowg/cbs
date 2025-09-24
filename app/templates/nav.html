@@ -17,7 +17,7 @@
   {% for item in nav_menu %}
     {{ render_item(item) }}
   {% endfor %}
-  {% if view_options|length > 1 %}
+  {% if is_staff_user and view_options|length > 1 %}
   <form method="post" action="{{ url_for('settings_view') }}" class="kt-sidebar-footer">
     <label>View:</label>
     <select name="view" onchange="this.form.submit()">
@@ -26,6 +26,7 @@
       <option value="{{ opt }}" {% if opt == active_view %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
+    <div class="text-muted small mt-1">Switch views here.</div>
   </form>
   {% endif %}
 </nav>

@@ -74,6 +74,10 @@ def test_auth_roles_home_selection(app, client):
     # Admin stays on staff home and can switch to materials dashboard
     resp = _login(client, "admin@example.com", "pw")
     assert resp.request.path == "/home"
+    admin_html = resp.get_data(as_text=True)
+    assert "Switch views here." in admin_html
+    assert "<label>View:</label>" in admin_html
+    assert "Switch to Admin" not in admin_html
     response = client.get(
         "/settings/view", query_string={"view": "MATERIAL_MANAGER"}, follow_redirects=False
     )
@@ -86,23 +90,43 @@ def test_auth_roles_home_selection(app, client):
     # CRM lands on My Sessions
     resp = _login(client, "crm@example.com", "pw")
     assert resp.request.path == "/my-sessions"
+    crm_html = resp.get_data(as_text=True)
+    assert "Switch views here." in crm_html
+    assert "<label>View:</label>" in crm_html
+    assert "Switch to Admin" not in crm_html
     client.get("/logout")
 
     # Facilitator lands on My Sessions
     resp = _login(client, "facilitator@example.com", "pw")
     assert resp.request.path == "/my-sessions"
+    facilitator_html = resp.get_data(as_text=True)
+    assert "Switch views here." in facilitator_html
+    assert "<label>View:</label>" in facilitator_html
+    assert "Switch to Admin" not in facilitator_html
     client.get("/logout")
 
     # Contractor is routed to My Sessions
     resp = _login(client, "contractor@example.com", "pw")
     assert resp.request.path == "/my-sessions"
+    contractor_html = resp.get_data(as_text=True)
+    assert "Switch views here." not in contractor_html
+    assert "<label>View:</label>" not in contractor_html
+    assert "Switch to Admin" not in contractor_html
     client.get("/logout")
 
     # Learner account goes to participant workshops
     resp = _login(client, "learner@example.com", "pw")
     assert resp.request.path == "/my-workshops"
+    learner_html = resp.get_data(as_text=True)
+    assert "Switch views here." not in learner_html
+    assert "<label>View:</label>" not in learner_html
+    assert "Switch to Admin" not in learner_html
     client.get("/logout")
 
     # CSA account is routed to CSA dashboard
     resp = _login(client, "csa@example.com", "pw")
     assert resp.request.path == "/csa/my-sessions"
+    csa_html = resp.get_data(as_text=True)
+    assert "Switch views here." not in csa_html
+    assert "<label>View:</label>" not in csa_html
+    assert "Switch to Admin" not in csa_html
