@@ -1,0 +1,18 @@
+{% set raw_name = '' %}
+{% if current_user %}
+  {% set raw_name = (current_user.first_name or current_user.full_name or current_user.name or current_user.email or '')|trim %}
+{% endif %}
+{% if not raw_name and current_account %}
+  {% set raw_name = (current_account.certificate_name or current_account.full_name or current_account.email or '')|trim %}
+{% endif %}
+{% if not raw_name %}
+  {% set raw_name = '' %}
+{% endif %}
+{% set parts = raw_name|split %}
+{% set first_token = parts[0] if parts and parts[0] %}
+{% if not first_token %}
+  {% set email_parts = raw_name|split('@') %}
+  {% set first_token = email_parts[0] if email_parts and email_parts[0] %}
+{% endif %}
+{% set welcome_name = first_token or raw_name %}
+<h2>Welcome to KT Workshops, {{ welcome_name }}!</h2>

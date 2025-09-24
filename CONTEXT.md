@@ -164,6 +164,7 @@ Roles control permissions; Views control menu visibility.
 - Users with **CRM** but no Delivery/Contractor land on `/my-sessions` with default view **Session Manager** and selector options Session Manager, Material Manager, Learner. Their My Sessions table is scoped to sessions whose client CRM matches the user.
 - Staff who have Delivery plus other roles still land on `/my-sessions` and retain the full selector; facilitator-linked sessions continue opening `/workshops/<id>`.
 - Admin-only staff (no CRM/Delivery) keep the existing `/home` landing and selector behavior.
+- Learner-facing landings (Home for the Learner view, `/my-workshops`, and `/csa/my-sessions`) open with a single shared heading: `Welcome to KT Workshops, <First name>!`. The heading lives in `shared/_welcome.html`, uses the standard section-title scale, and derives the name from the first token of the user's full name (falling back to certificate name/email). No other greeting banners render for Learner/CSA contexts.
 
 - **Admin**
   - Home
