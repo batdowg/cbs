@@ -459,7 +459,6 @@ def test_notify_skips_for_workshop_only(monkeypatch, app):
     assert sent_messages == []
     assert session.materials_notified_at is None
 
-
 @pytest.mark.no_smoke
 def test_notify_uses_envelope_list_for_multiple_recipients(monkeypatch, app):
     from app import emailer
@@ -511,4 +510,5 @@ def test_notify_uses_envelope_list_for_multiple_recipients(monkeypatch, app):
     assert from_addr == "noreply@example.com"
     assert to_addrs == ["proc1@example.com", "proc2@example.com"]
     assert "To: proc1@example.com, proc2@example.com" in message
+
 
