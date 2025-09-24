@@ -536,6 +536,10 @@ def new_session(current_user):
     ).all()
     if request.method == "POST":
         action = request.form.get("action")
+        raw_sfc_link = request.form.get("sfc_link")
+        sfc_link_value = (
+            raw_sfc_link if raw_sfc_link and raw_sfc_link.strip() else None
+        )
         if action == "materials_only":
             missing = []
             title = request.form.get("title")
@@ -564,6 +568,7 @@ def new_session(current_user):
                 abort(400)
             if client_record.status != "active":
                 return "Client is inactive.", 400
+            client_record.sfc_link = sfc_link_value
             sess = Session(
                 title=title,
                 client_id=client_record.id,
@@ -659,6 +664,7 @@ def new_session(current_user):
                 abort(400)
             if client_record.status != "active":
                 return "Client is inactive.", 400
+            client_record.sfc_link = sfc_link_value
         sess = Session(
             title=title,
             start_date=start_date_val,
@@ -1046,6 +1052,10 @@ def edit_session(session_id: int, current_user):
         new_ready = _cb(request.form.get("ready_for_delivery"))
         if not ready_present:
             new_ready = old_ready
+        raw_sfc_link = request.form.get("sfc_link")
+        sfc_link_value = (
+            raw_sfc_link if raw_sfc_link and raw_sfc_link.strip() else None
+        )
         wt_id = request.form.get("workshop_type_id")
         if wt_id:
             sess.workshop_type = db.session.get(WorkshopType, int(wt_id))
@@ -1349,6 +1359,7 @@ def edit_session(session_id: int, current_user):
             sess.simulation_outline_id = int(so_id) if so_id else None
         else:
             sess.simulation_outline_id = None
+        target_client = None
         cid = request.form.get("client_id")
         if cid:
             try:
@@ -1361,8 +1372,13 @@ def edit_session(session_id: int, current_user):
             if client_record.status != "active" and client_record.id != original_client_id:
                 return "Client is inactive.", 400
             sess.client_id = client_record.id
+            target_client = client_record
         else:
             sess.client_id = None
+        if target_client is None and sess.client_id:
+            target_client = db.session.get(Client, sess.client_id)
+        if target_client:
+            target_client.sfc_link = sfc_link_value
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:

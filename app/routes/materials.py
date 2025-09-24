@@ -553,11 +553,6 @@ def materials_view(
                     status_code=400,
                     shared_context=context,
                 )
-            if sess.client and not sess.client.sfc_link:
-                sfc_link = request.form.get("sfc_link")
-                if sfc_link:
-                    sess.client.sfc_link = sfc_link
-
             # process item rows
             from collections import defaultdict
 
@@ -774,6 +769,21 @@ def apply_defaults(
             url_for("materials.materials_view", session_id=session_id)
             + "#material-items"
         )
+    preserved_shipping = {
+        "client_shipping_location_id": shipment.client_shipping_location_id,
+        "contact_name": shipment.contact_name,
+        "contact_email": shipment.contact_email,
+        "contact_phone": shipment.contact_phone,
+        "address_line1": shipment.address_line1,
+        "address_line2": shipment.address_line2,
+        "city": shipment.city,
+        "state": shipment.state,
+        "postal_code": shipment.postal_code,
+        "country": shipment.country,
+        "courier": shipment.courier,
+        "tracking": shipment.tracking,
+        "ship_date": shipment.ship_date,
+    }
     context = _materials_shared_context(
         sess, shipment, current_user, csa_view, view_only
     )
@@ -867,6 +877,8 @@ def apply_defaults(
     new_credit_rows, credit_changed = _sync_sim_credits(sess, shipment)
     created += new_credit_rows
     notify_needed = created > 0 or credit_changed
+    for field, value in preserved_shipping.items():
+        _set_if_changed(shipment, field, value)
     db.session.commit()
     if notify_needed:
         notify_materials_processors(

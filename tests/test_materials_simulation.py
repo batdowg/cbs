@@ -5,6 +5,7 @@ from datetime import date
 from app.app import db
 from app.models import (
     Client,
+    ClientShippingLocation,
     Language,
     MaterialOrderItem,
     MaterialsOption,
@@ -268,3 +269,65 @@ def test_apply_defaults_skips_sim_credits_for_non_simulation(app, client):
             ).count()
             == 0
         )
+
+
+def test_apply_defaults_preserves_shipping_fields(app, client):
+    with app.app_context():
+        data = _create_materials_session(simulation_based=False, include_outline=False)
+        session_id = data["session_id"]
+        admin_id = data["admin_id"]
+        shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        sess = db.session.get(Session, session_id)
+        location = ClientShippingLocation(
+            client_id=sess.client_id,
+            title="HQ",
+            contact_name="Ship Contact",
+            contact_email="ship@example.com",
+            contact_phone="555-0100",
+            address_line1="123 Ship St",
+            city="Ship City",
+            state="ST",
+            postal_code="12345",
+            country="USA",
+        )
+        db.session.add(location)
+        db.session.flush()
+        shipment.client_shipping_location_id = location.id
+        shipment.contact_name = "Ship Name"
+        shipment.contact_email = "ship@example.com"
+        shipment.contact_phone = "555-0100"
+        shipment.address_line1 = "123 Ship St"
+        shipment.address_line2 = "Suite 5"
+        shipment.city = "Ship City"
+        shipment.state = "ST"
+        shipment.postal_code = "12345"
+        shipment.country = "USA"
+        shipment.courier = "CourierX"
+        shipment.tracking = "TRACK123"
+        shipment.ship_date = date(2024, 1, 2)
+        expected = {
+            "client_shipping_location_id": location.id,
+            "contact_name": shipment.contact_name,
+            "contact_email": shipment.contact_email,
+            "contact_phone": shipment.contact_phone,
+            "address_line1": shipment.address_line1,
+            "address_line2": shipment.address_line2,
+            "city": shipment.city,
+            "state": shipment.state,
+            "postal_code": shipment.postal_code,
+            "country": shipment.country,
+            "courier": shipment.courier,
+            "tracking": shipment.tracking,
+            "ship_date": shipment.ship_date,
+        }
+        db.session.commit()
+    _login(client, admin_id)
+    response = client.post(
+        f"/sessions/{session_id}/materials/apply-defaults",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        for field, value in expected.items():
+            assert getattr(shipment, field) == value
