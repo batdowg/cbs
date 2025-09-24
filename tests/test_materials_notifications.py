@@ -1,5 +1,8 @@
-import pytest
+from __future__ import annotations
+
 from datetime import date, time
+
+import pytest
 
 from app.app import db
 from app.models import (
@@ -8,43 +11,68 @@ from app.models import (
     ClientWorkshopLocation,
     MaterialOrderItem,
     ParticipantAccount,
+    ProcessorAssignment,
     Session,
     SessionShipping,
-    Settings,
+    User,
     WorkshopType,
 )
 from app.services.materials_notifications import (
-    get_materials_processor_recipients,
+    materials_bucket_for,
     notify_materials_processors,
+    resolve_processor_emails,
 )
 
 
-def _ensure_settings(recipients: str | None = None) -> Settings:
-    settings = Settings.get()
-    if not settings:
-        settings = Settings(id=1)
-    notifications: dict[str, str] = {}
-    if recipients is not None:
-        notifications["materials_processors"] = recipients
-    settings.mail_notifications = notifications
-    db.session.merge(settings)
+def _create_admin(email: str, name: str | None = None) -> User:
+    user = User(
+        email=email,
+        full_name=name,
+        is_admin=True,
+    )
+    db.session.add(user)
+    db.session.flush()
+    return user
+
+
+def _assign_processor(region: str, processing_type: str, user: User) -> None:
+    db.session.add(
+        ProcessorAssignment(
+            region=region,
+            processing_type=processing_type,
+            user_id=user.id,
+        )
+    )
+
+
+def _reset_processors() -> None:
+    ProcessorAssignment.query.delete()
+    User.query.delete()
     db.session.commit()
-    return settings
 
 
 def _create_session_with_order(
     *,
-    recipients: str,
+    region: str = "NA",
+    materials_format: str = "ALL_PHYSICAL",
     delivery_type: str = "Virtual",
+    order_type: str = "KT-Run Standard materials",
 ) -> int:
-    _ensure_settings(recipients)
-    wt = WorkshopType(
-        code="PSB",
-        name="Problem Solving Basics",
-        cert_series="fn",
-        active=True,
-    )
-    client = Client(name="Acme Corp", data_region="NA")
+    wt = WorkshopType.query.filter_by(code="PSB").first()
+    if not wt:
+        wt = WorkshopType(
+            code="PSB",
+            name="Problem Solving Basics",
+            cert_series="fn",
+            active=True,
+        )
+        db.session.add(wt)
+        db.session.flush()
+    client = Client.query.filter_by(name="Acme Corp").first()
+    if not client:
+        client = Client(name="Acme Corp", data_region="NA")
+        db.session.add(client)
+        db.session.flush()
     workshop_location = ClientWorkshopLocation(
         client=client,
         label="Acme HQ",
@@ -68,10 +96,14 @@ def _create_session_with_order(
         country="USA",
         is_active=True,
     )
-    csa_account = ParticipantAccount(
-        email="csa@example.com",
-        full_name="Casey Analyst",
-    )
+    csa_account = ParticipantAccount.query.filter_by(email="csa@example.com").first()
+    if not csa_account:
+        csa_account = ParticipantAccount(
+            email="csa@example.com",
+            full_name="Casey Analyst",
+        )
+        db.session.add(csa_account)
+        db.session.flush()
     session = Session(
         title="Problem Solving Basics",
         client=client,
@@ -83,7 +115,7 @@ def _create_session_with_order(
         daily_start_time=time(9, 0),
         daily_end_time=time(17, 30),
         timezone="UTC",
-        region="NA",
+        region=region,
         shipping_location=shipping_location,
         workshop_location=workshop_location,
         csa_account=csa_account,
@@ -101,8 +133,8 @@ def _create_session_with_order(
         state="PA",
         postal_code="19106",
         country="USA",
-        order_type="KT-Run Standard materials",
-        materials_format="Physical",
+        order_type=order_type,
+        materials_format=materials_format,
         material_sets=10,
         special_instructions="Pack with care\nCall before delivery.",
     )
@@ -121,17 +153,109 @@ def _create_session_with_order(
 
 
 @pytest.mark.no_smoke
-def test_get_materials_processor_recipients_normalizes(app):
+def test_materials_bucket_for_simulation_by_order_type():
+    session = Session()
+    shipment = SessionShipping(order_type="Simulation", materials_format="ALL_DIGITAL")
+    assert materials_bucket_for(shipment, session) == "Simulation"
+
+
+@pytest.mark.no_smoke
+def test_materials_bucket_for_simulation_by_workshop_type():
+    wt = WorkshopType(code="SIM", name="Simulation", cert_series="fn", active=True, simulation_based=True)
+    session = Session(workshop_type=wt)
+    shipment = SessionShipping(order_type="KT-Run Standard materials", materials_format="ALL_PHYSICAL")
+    assert materials_bucket_for(shipment, session) == "Simulation"
+
+
+@pytest.mark.no_smoke
+@pytest.mark.parametrize(
+    "materials_format,expected",
+    [
+        ("ALL_DIGITAL", "Digital"),
+        ("ALL_PHYSICAL", "Physical"),
+        ("MIXED", "Physical"),
+    ],
+)
+def test_materials_bucket_for_format_mapping(materials_format, expected):
+    session = Session()
+    shipment = SessionShipping(order_type="KT-Run Standard materials", materials_format=materials_format)
+    assert materials_bucket_for(shipment, session) == expected
+
+
+@pytest.mark.no_smoke
+def test_materials_bucket_for_other_path():
+    session = Session()
+    shipment = SessionShipping(order_type="KT-Run Standard materials", materials_format=None)
+    assert materials_bucket_for(shipment, session) == "Other"
+
+
+@pytest.mark.no_smoke
+def test_resolve_processor_emails_exact_match(app):
     with app.app_context():
-        settings = _ensure_settings(
-            " First@example.com; second@example.com,Second@example.com , third@Example.com "
-        )
-        recipients = get_materials_processor_recipients()
-    assert recipients == [
-        "first@example.com",
-        "second@example.com",
-        "third@example.com",
-    ]
+        _reset_processors()
+        user1 = _create_admin("eu.one@example.com", "Processor One")
+        user2 = _create_admin("eu.two@example.com", "Processor Two")
+        _assign_processor("EU", "Physical", user1)
+        _assign_processor("EU", "Physical", user2)
+        db.session.commit()
+
+        recipients = resolve_processor_emails("EU", "Physical")
+
+    assert recipients == ["eu.one@example.com", "eu.two@example.com"]
+
+
+@pytest.mark.no_smoke
+def test_resolve_processor_emails_fallback_region_other(app):
+    with app.app_context():
+        _reset_processors()
+        user = _create_admin("region.other@example.com", "Region Other")
+        _assign_processor("SEA", "Other", user)
+        db.session.commit()
+
+        recipients = resolve_processor_emails("SEA", "Simulation")
+
+    assert recipients == ["region.other@example.com"]
+
+
+@pytest.mark.no_smoke
+def test_resolve_processor_emails_fallback_other_bucket(app):
+    with app.app_context():
+        _reset_processors()
+        user = _create_admin("other.bucket@example.com", "Other Bucket")
+        _assign_processor("Other", "Digital", user)
+        db.session.commit()
+
+        recipients = resolve_processor_emails("NA", "Digital")
+
+    assert recipients == ["other.bucket@example.com"]
+
+
+@pytest.mark.no_smoke
+def test_resolve_processor_emails_fallback_other_other(app):
+    with app.app_context():
+        _reset_processors()
+        user = _create_admin("catchall@example.com", "Catch All")
+        _assign_processor("Other", "Other", user)
+        db.session.commit()
+
+        recipients = resolve_processor_emails("NA", "Simulation")
+
+    assert recipients == ["catchall@example.com"]
+
+
+@pytest.mark.no_smoke
+def test_resolve_processor_emails_deduplicates(app):
+    with app.app_context():
+        _reset_processors()
+        user_a = _create_admin("dup@example.com ", "Dup A")
+        user_b = _create_admin("dup@example.com", "Dup B")
+        _assign_processor("EU", "Digital", user_a)
+        _assign_processor("EU", "Digital", user_b)
+        db.session.commit()
+
+        recipients = resolve_processor_emails("EU", "Digital")
+
+    assert recipients == ["dup@example.com"]
 
 
 @pytest.mark.no_smoke
@@ -147,9 +271,14 @@ def test_notify_created_sends_email_and_snapshot(monkeypatch, app):
     )
 
     with app.app_context():
-        session_id = _create_session_with_order(
-            recipients="proc1@example.com; proc2@example.com"
-        )
+        _reset_processors()
+        session_id = _create_session_with_order(region="NA", materials_format="ALL_PHYSICAL")
+        proc1 = _create_admin("proc1@example.com", "Proc One")
+        proc2 = _create_admin("proc2@example.com", "Proc Two")
+        _assign_processor("NA", "Physical", proc1)
+        _assign_processor("NA", "Physical", proc2)
+        db.session.commit()
+
         result = notify_materials_processors(session_id, reason="created")
         session = db.session.get(Session, session_id)
         fingerprint = session.materials_order_fingerprint
@@ -158,14 +287,18 @@ def test_notify_created_sends_email_and_snapshot(monkeypatch, app):
     assert result is True
     assert len(sent_messages) == 1
     to_addr, subject, body, html = sent_messages[0]
-    assert to_addr == "proc1@example.com, proc2@example.com"
+    assert set(addr.strip() for addr in to_addr.split(",")) == {
+        "proc1@example.com",
+        "proc2@example.com",
+    }
     assert subject == (
         f"[CBS] NEW Materials Order – Acme Corp – PSB – Session #{session_id}"
     )
-    assert "Participant Guide" in html
-    assert "Pack with care" in html
-    assert "View order" in html
+    assert "Participant Guide" in (html or "")
+    assert "Pack with care" in (html or "")
+    assert "View order" in (html or "")
     assert "Materials Order – Session" in body
+    assert "Region" in (html or "")
     assert fingerprint
     assert notified_at is not None
 
@@ -183,9 +316,12 @@ def test_notify_skip_when_no_changes(monkeypatch, app):
     )
 
     with app.app_context():
-        session_id = _create_session_with_order(
-            recipients="proc@example.com"
-        )
+        _reset_processors()
+        session_id = _create_session_with_order(region="NA", materials_format="ALL_PHYSICAL")
+        proc = _create_admin("proc@example.com", "Proc")
+        _assign_processor("NA", "Physical", proc)
+        db.session.commit()
+
         first = notify_materials_processors(session_id, reason="created")
         assert first is True
         sent_messages.clear()
@@ -210,9 +346,12 @@ def test_notify_updates_on_change(monkeypatch, app):
     )
 
     with app.app_context():
-        session_id = _create_session_with_order(
-            recipients="proc@example.com"
-        )
+        _reset_processors()
+        session_id = _create_session_with_order(region="NA", materials_format="ALL_PHYSICAL")
+        proc = _create_admin("proc@example.com", "Proc")
+        _assign_processor("NA", "Physical", proc)
+        db.session.commit()
+
         notify_materials_processors(session_id, reason="created")
         original = db.session.get(Session, session_id).materials_order_fingerprint
         shipment = SessionShipping.query.filter_by(session_id=session_id).one()
@@ -228,7 +367,7 @@ def test_notify_updates_on_change(monkeypatch, app):
 
 
 @pytest.mark.no_smoke
-def test_notify_skips_when_no_recipients(monkeypatch, caplog, app):
+def test_materials_order_recipients_follow_region_and_bucket(monkeypatch, app):
     sent_messages: list[tuple[str, str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
@@ -240,7 +379,49 @@ def test_notify_skips_when_no_recipients(monkeypatch, caplog, app):
     )
 
     with app.app_context():
-        session_id = _create_session_with_order(recipients="")
+        _reset_processors()
+        session_id = _create_session_with_order(region="EU", materials_format="ALL_PHYSICAL")
+        physical_proc = _create_admin("eu.physical@example.com", "EU Physical")
+        digital_proc = _create_admin("eu.digital@example.com", "EU Digital")
+        _assign_processor("EU", "Physical", physical_proc)
+        _assign_processor("EU", "Digital", digital_proc)
+        db.session.commit()
+
+        first = notify_materials_processors(session_id, reason="created")
+        assert first is True
+        assert len(sent_messages) == 1
+        first_to, first_subject, *_ = sent_messages[0]
+        assert first_subject.startswith("[CBS] NEW Materials Order")
+        assert first_to.strip() == "eu.physical@example.com"
+        shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        shipment.materials_format = "ALL_DIGITAL"
+        db.session.commit()
+        sent_messages.clear()
+        second = notify_materials_processors(session_id, reason="updated")
+
+    assert second is True
+    assert len(sent_messages) == 1
+    to_addr, subject, body, html = sent_messages[0]
+    assert subject.startswith("[CBS] UPDATED Materials Order")
+    assert to_addr.strip() == "eu.digital@example.com"
+    assert "Processing type" in (html or "")
+
+
+@pytest.mark.no_smoke
+def test_notify_skips_when_no_processors_configured(monkeypatch, caplog, app):
+    sent_messages: list[tuple[str, str, str, str | None]] = []
+
+    def fake_send(to_addr, subject, body, html=None):
+        sent_messages.append((to_addr, subject, body, html))
+        return {"ok": True}
+
+    monkeypatch.setattr(
+        "app.services.materials_notifications.emailer.send", fake_send
+    )
+
+    with app.app_context():
+        _reset_processors()
+        session_id = _create_session_with_order(region="NA", materials_format="ALL_PHYSICAL")
         caplog.set_level("WARNING")
         caplog.clear()
         result = notify_materials_processors(session_id, reason="created")
@@ -248,7 +429,7 @@ def test_notify_skips_when_no_recipients(monkeypatch, caplog, app):
     assert result is False
     assert sent_messages == []
     assert any(
-        "No materials processor recipients configured" in message
+        "[MAIL-NO-RECIPIENTS]" in message and "bucket=Physical" in message
         for message in caplog.messages
     )
 
@@ -266,13 +447,18 @@ def test_notify_skips_for_workshop_only(monkeypatch, app):
     )
 
     with app.app_context():
+        _reset_processors()
         session_id = _create_session_with_order(
-            recipients="proc@example.com",
-            delivery_type="Workshop Only",
+            region="NA", materials_format="ALL_PHYSICAL", delivery_type="Workshop Only"
         )
+        proc = _create_admin("proc@example.com", "Proc")
+        _assign_processor("NA", "Physical", proc)
+        db.session.commit()
+
         result = notify_materials_processors(session_id, reason="created")
         session = db.session.get(Session, session_id)
 
     assert result is False
     assert sent_messages == []
     assert session.materials_notified_at is None
+
