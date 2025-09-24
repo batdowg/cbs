@@ -15,6 +15,34 @@
     toggleExtras(orderType.value);
   }
 </script>{% endblock %}
+{% block extra_head %}
+  {{ super() }}
+  <style>
+    .materials-special-instructions {
+      align-items: flex-start;
+    }
+
+    .materials-special-instructions .form-align__label {
+      align-self: flex-start;
+    }
+
+    .materials-special-instructions .form-align__control {
+      flex: 1 1 0;
+      max-width: 640px;
+    }
+
+    .materials-special-instructions textarea {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    @media (max-width: 576px) {
+      .materials-special-instructions .form-align__control {
+        max-width: 100%;
+      }
+    }
+  </style>
+{% endblock %}
 {% block content %}
 {% set facs = [] %}
 {% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
@@ -50,18 +78,6 @@
         <span class="form-display">{% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
       </div>
     </div>
-    {% set show_sfc_input = (not (sess.client and sess.client.sfc_link)) and not csa_view %}
-    <div class="form-row">
-      <label{% if show_sfc_input %} for="sfc-link"{% endif %}>SFC Project link</label>
-      <div class="form-field">
-        {% if sess.client and sess.client.sfc_link %}
-          <span class="form-display">{{ sess.client.sfc_link }}</span>
-        {% elif not csa_view %}
-          <input type="url" id="sfc-link" name="sfc_link" value="{{ sess.client.sfc_link or '' }}">
-        {% endif %}
-      </div>
-    </div>
-
     {% set show_arrival_input = can_edit_arrival and not readonly %}
     <div class="form-row">
       <label{% if show_arrival_input %} for="arrival-date"{% endif %}>Latest arrival date</label>
@@ -205,12 +221,14 @@
         </div>
       </div>
     </div>
-    <div class="form-align_row">
-      <label class="form-align__label" for="special_instructions">Special instructions:</label>
-        {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}      
-          <div class="form-align_control">
-            <textarea name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
-        {% else %}{{ shipment.special_instructions|default('', true) }}{% endif %}
+    <div class="form-align__row materials-special-instructions">
+      <label class="form-align__label" for="special-instructions">Special instructions</label>
+      <div class="form-align__control">
+        {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
+          <textarea id="special-instructions" name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
+        {% else %}
+          <span class="form-align__static form-align__static--block">{{ shipment.special_instructions|default('', true) }}</span>
+        {% endif %}
       </div>
     </div>
   </div>
