@@ -537,6 +537,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
   - Each row shows assigned users as removable chips and supports adding multiple users at once via a searchable selector. Duplicates are prevented.
   - Only users with the **Administrator** role may be assigned as processors. The “Add” selector lists Administrators only and server-side validation skips non-admin submissions.
   - Access requirements are unchanged and saving assignments triggers no notifications.
+  - The **Materials processors** email list lives alongside SMTP settings (comma or semicolon separated). Saving a materials order sends `[CBS] NEW Materials Order – {client} – {workshop_type_code} – Session #{id}` the first time an order is created and `[CBS] UPDATED Materials Order – …` when the fingerprint (header, locations, schedule, items) changes. Workshop-only sessions and empty recipient lists suppress sends. Successful deliveries stamp `Session.materials_notified_at` plus the stored fingerprint for idempotency.
 - **Magic links are disabled.** Any legacy endpoints must return HTTP 410 Gone or redirect to sign-in.
 - Prework & account-invite emails include: **URL, username (email), temp password** (`KTRocks!` or `KTRocks!CSA`).
 - Users can change passwords in **My Profile**; no forced password change.
