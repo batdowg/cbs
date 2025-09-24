@@ -73,7 +73,7 @@
     {% endif %}
     {% set workshop_text = '\n'.join(workshop_ns.lines) %}
     <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-      {{ field_row('Client', client_name ~ ((' - ' ~ region_label) if region_label else '')) }}
+      {{ field_row('Client', client_name ~ ((' (' ~ region_label')') if region_label else '')) }}
       {{ field_row('Processing type', processing_bucket) }}
       {{ field_row('Workshop type', workshop_code ~ (': ' ~ (session.delivery_type or '—')) if workshop_code else (session.delivery_type or '—')) }}
       {{ field_row('Workshop language', workshop_language) }}
