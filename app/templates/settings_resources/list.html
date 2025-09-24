@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% from 'macros/filters.html' import clear_filters_link %}
 {% block title %}Resources{% endblock %}
 {% block content %}
 <div class="kt-card">
 <h1 class="kt-card-title">Resources</h1>
 <p><a href="{{ url_for('settings_resources.new_resource') }}">New Resource</a></p>
-<form method="get" class="filters">
+<form method="get" class="filters" data-autofilter="true">
   <div class="filter-row">
     <label>Audience
       <select name="audience">
@@ -22,10 +23,9 @@
         {% endfor %}
       </select>
     </label>
-    <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
-    <a href="{{ url_for('settings_resources.list_resources') }}" class="btn btn-link">Clear</a>
   </div>
 </form>
+<p class="filter-clear">{{ clear_filters_link(url_for('settings_resources.list_resources'), classes='btn btn-link') }}</p>
 <div class="kt-table-wrapper">
   <table class="kt-table">
     <thead>

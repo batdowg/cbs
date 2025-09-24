@@ -2,7 +2,7 @@
 {% block title %}{{ label }} Materials{% endblock %}
 {% block content %}
 <h1>{{ label }} Materials</h1>
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <div>Title:
     <input type="text" name="title" value="{{ opt.title if opt else '' }}" maxlength="160">
   </div>

@@ -2,7 +2,7 @@
 {% block title %}Languages{% endblock %}
 {% block content %}
 <h1>{{ 'Edit' if lang else 'New' }} Language</h1>
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <div>Name:
     <input type="text" name="name" value="{{ lang.name if lang else '' }}" maxlength="120">
   </div>

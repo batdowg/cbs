@@ -3,7 +3,7 @@
 {% block content %}
 <h1>{{ 'New Client' if not client else 'Edit Client' }}</h1>
 {% if next_url %}<p><a href="{{ next_url }}">Return</a></p>{% endif %}
-<form method="post">
+<form method="post" data-dirty-guard="true">
   {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
   <div><label>Name <input type="text" name="name" value="{{ client.name if client else '' }}" required></label></div>
   <div><label>SFC Link <input type="url" name="sfc_link" value="{{ client.sfc_link if client else '' }}"></label></div>

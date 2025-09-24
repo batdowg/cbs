@@ -58,5 +58,8 @@
     {% block content %}{% endblock %}
   </main>
 </body>
-{% block extra_js %}{% endblock %}
+{% block extra_js %}
+  <script src="{{ url_for('static', filename='js/auto_filter.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/dirty_guard.js') }}" defer></script>
+{% endblock %}
 </html>

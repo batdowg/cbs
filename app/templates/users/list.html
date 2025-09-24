@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/filters.html' import clear_filters_link %}
 {% block title %}Users{% endblock %}
 {% block content %}
 {% set breadcrumbs = [{'href': url_for('home'), 'label': 'Home'}, {'label': 'Users'}] %}
@@ -6,7 +7,7 @@
 {% include 'shared/_breadcrumbs.html' %}
 <p><a class="btn btn-success" href="{{ url_for('users.new_user') }}">New User</a> | <a href="#" id="role-matrix-link">Role Matrix</a></p>
 
-<form method="get" action="{{ url_for('users.list_users') }}">
+<form method="get" action="{{ url_for('users.list_users') }}" data-autofilter="true">
   <input type="text" name="q" value="{{ q }}" placeholder="Search" autocomplete="off">
   <select name="region" autocomplete="off">
     <option value="" {% if not region %}selected{% endif %}>All Regions</option>
@@ -15,10 +16,11 @@
     <option value="SEA" {% if region=='SEA' %}selected{% endif %}>SEA</option>
     <option value="Other" {% if region=='Other' %}selected{% endif %}>Other</option>
   </select>
-  <button type="submit">Filter</button>
 </form>
 
-<form method="post" action="{{ url_for('users.bulk_update') }}">
+<p class="filter-clear">{{ clear_filters_link(url_for('users.list_users')) }}</p>
+
+<form method="post" action="{{ url_for('users.bulk_update') }}" data-dirty-guard="true">
 <div class="kt-table-wrapper">
   <table class="kt-table">
     <thead>

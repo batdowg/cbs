@@ -2,7 +2,7 @@
 {% block title %}{{ 'New Session' if not session or not session.id else 'Edit Session' }}{% endblock %}
 {% block content %}
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <div class="kt-card form-align session-form__section">
     <h2 class="kt-card-title">Order information</h2>
     {% set _title = title_override if title_override is not none else session.title %}
