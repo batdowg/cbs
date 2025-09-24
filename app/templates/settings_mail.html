@@ -5,7 +5,7 @@
 <h1 class="kt-card-title">Mail & Notification</h1>
 <h2>SMTP Settings</h2>
 <p>Updated: {{ settings.updated_at }}</p>
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <label>SMTP Host
   <input type="text" name="smtp_host" value="{{ settings.smtp_host or '' }}" autocomplete="off"></label>
   <label>SMTP Port
@@ -22,14 +22,14 @@
   <label><input type="checkbox" name="use_ssl" {% if settings.use_ssl %}checked{% endif %}> Use SSL</label>
   <button type="submit">Save</button>
 </form>
-<form method="post" action="{{ url_for('settings_mail.test_send') }}">
-  <button type="submit">Send test email</button>
+<form method="post" action="{{ url_for('settings_mail.test_send') }}" data-dirty-guard-bypass="true">
+  <button type="submit" data-dirty-guard-bypass="true">Send test email</button>
 </form>
 
 <h2>Processors</h2>
 <p>Assign processors per region and processing type.</p>
 <p class="form-help">Emails for materials orders are sent to the processors listed here, by Region and Processing Type.</p>
-<form method="post" action="{{ url_for('settings_mail.save_processors') }}" id="proc-form">
+<form method="post" action="{{ url_for('settings_mail.save_processors') }}" id="proc-form" data-dirty-guard="true">
   <div class="kt-table-wrapper">
     <table class="kt-table">
       <thead>

@@ -47,6 +47,8 @@ Every functional change must update this file **in the same PR**.
 - `/forgot-password` redirects to `/login?forgot=1` (optionally `&email=`) to surface the forgot-password modal on the unified login page.
 - The login page uses the auth-only layout: flashes render centered above the auth card, auto-fade after ~3 seconds with no manual close, and modal spacing matches auth inputs (email field full-width) for visual alignment.
 - The login page's “Forgot password?” link keeps KT primary coloring, adds underline + focus-outline feedback on hover/focus, and maintains AA contrast (visited state included) without shifting layout.
+- Save-required forms include `data-dirty-guard="true"`, enabling `app/static/js/dirty_guard.js` to warn about unsaved changes; elements or auxiliary forms that should bypass the prompt must include `data-dirty-guard-bypass="true"`.
+- GET filter forms tagged `data-autofilter="true"` auto-submit on change/typing via `app/static/js/auto_filter.js`; templates surface a left-aligned “Clear all filters” link (use `macros/filters.clear_filters_link`) that points to the route without query parameters.
 
 ## 0.4 App Conventions & PR Hygiene
 - Keep migrations idempotent and reversible; guard enum/DDL changes carefully.

@@ -1,0 +1,4 @@
+{% macro clear_filters_link(url=None, label='Clear all filters', classes='filter-clear') -%}
+  {% set target = url or request.path %}
+  <a href="{{ target }}" class="{{ classes }}">{{ label }}</a>
+{%- endmacro %}

@@ -8,7 +8,7 @@
 {% else %}
 <h1>New Workshop Type</h1>
 {% endif %}
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% include 'workshop_types/_fields.html' %}
   {% include 'workshop_types/_defaults_table.html' %}

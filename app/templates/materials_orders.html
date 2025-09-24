@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% from 'macros/filters.html' import clear_filters_link %}
 {% block title %}Materials Dashboard{% endblock %}
 {% block content %}
 {% set breadcrumbs = [{'href': url_for('home'), 'label': 'Home'}, {'label': 'Materials Dashboard'}] %}
 <h1>Materials Dashboard</h1>
 {% include 'shared/_breadcrumbs.html' %}
-<form method="get">
+<form method="get" data-autofilter="true">
   <label>Client
     <select name="client_id">
       <option value="">All</option>
@@ -29,13 +30,14 @@
       {% endfor %}
     </select>
   </label>
-  <button type="submit">Filter</button>
   <input type="hidden" name="sort" value="{{ sort }}">
   <input type="hidden" name="dir" value="{{ dir }}">
   {% if workshop_status_param is not none %}
   <input type="hidden" name="workshop_status" value="{{ workshop_status_param }}">
   {% endif %}
 </form>
+
+<p class="filter-clear">{{ clear_filters_link(url_for('materials_orders.list_orders')) }}</p>
 
   {% if workshop_status_filter == 'not_closed' %}
     <a href="{{ url_for('materials_orders.list_orders', client_id=client_id, order_type=order_type, status=status, sort=sort, dir=dir, workshop_status='all') }}">Show closed sessions</a>

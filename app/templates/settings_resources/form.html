@@ -6,7 +6,7 @@
 {% endblock %}
 {% block content %}
 <h1>{% if resource %}Edit{% else %}New{% endif %} Resource</h1>
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" data-dirty-guard="true">
   <label>Name <input type="text" name="name" value="{{ resource.name if resource else '' }}"></label><br>
   <label>Type
     <select name="type">

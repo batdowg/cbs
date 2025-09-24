@@ -2,7 +2,7 @@
 {% block title %}Certificate Series{% endblock %}
 {% block content %}
 <h1>{{ 'Edit' if series else 'New' }} Series</h1>
-<form method="post">
+<form method="post" data-dirty-guard="true">
   <div><label>Code <input type="text" name="code" value="{{ series.code if series else '' }}" {% if series %}readonly{% endif %}></label></div>
   <div><label>Name <input type="text" name="name" value="{{ series.name if series else '' }}"></label></div>
   <div><label><input type="checkbox" name="is_active" {% if not series or series.is_active %}checked{% endif %}> Active</label></div>
