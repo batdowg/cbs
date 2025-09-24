@@ -293,6 +293,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
         db.session.add(location)
         db.session.flush()
         shipment.client_shipping_location_id = location.id
+        sess.shipping_location_id = location.id
         shipment.contact_name = "Ship Name"
         shipment.contact_email = "ship@example.com"
         shipment.contact_phone = "555-0100"
@@ -305,6 +306,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
         shipment.courier = "CourierX"
         shipment.tracking = "TRACK123"
         shipment.ship_date = date(2024, 1, 2)
+        shipment.arrival_date = date(2024, 1, 5)
         expected = {
             "client_shipping_location_id": location.id,
             "contact_name": shipment.contact_name,
@@ -319,6 +321,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
             "courier": shipment.courier,
             "tracking": shipment.tracking,
             "ship_date": shipment.ship_date,
+            "arrival_date": shipment.arrival_date,
         }
         db.session.commit()
     _login(client, admin_id)
@@ -329,5 +332,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
     assert response.status_code == 302
     with app.app_context():
         shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        sess = db.session.get(Session, session_id)
         for field, value in expected.items():
             assert getattr(shipment, field) == value
+        assert sess.shipping_location_id == expected["client_shipping_location_id"]
