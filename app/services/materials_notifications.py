@@ -16,6 +16,7 @@ from ..models import (
     SessionShipping,
     User,
 )
+from ..shared.mail_utils import normalize_recipients
 from ..shared.regions import code_to_label
 from ..shared.time import now_utc
 
@@ -245,7 +246,8 @@ def notify_materials_processors(
 
     bucket = materials_bucket_for(shipment, session)
     recipients = resolve_processor_emails(session.region, bucket)
-    if not recipients:
+    normalized_recipients, recipient_header = normalize_recipients(recipients)
+    if not normalized_recipients:
         current_app.logger.warning(
             "[MAIL-NO-RECIPIENTS] session=%s region=%s bucket=%s",
             session.id,
@@ -296,8 +298,7 @@ def notify_materials_processors(
         processing_bucket=bucket,
         region_label=region_label,
     )
-    recipient_header = ", ".join(recipients)
-    result = emailer.send(recipient_header, subject, text_body, html=html_body)
+    result = emailer.send(normalized_recipients, subject, text_body, html=html_body)
     if not result.get("ok"):
         current_app.logger.warning(
             "[MATERIALS-NOTIFY] Failed to send materials order email session=%s error=%s",

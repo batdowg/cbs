@@ -260,7 +260,7 @@ def test_resolve_processor_emails_deduplicates(app):
 
 @pytest.mark.no_smoke
 def test_notify_created_sends_email_and_snapshot(monkeypatch, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -287,10 +287,7 @@ def test_notify_created_sends_email_and_snapshot(monkeypatch, app):
     assert result is True
     assert len(sent_messages) == 1
     to_addr, subject, body, html = sent_messages[0]
-    assert set(addr.strip() for addr in to_addr.split(",")) == {
-        "proc1@example.com",
-        "proc2@example.com",
-    }
+    assert to_addr == ["proc1@example.com", "proc2@example.com"]
     assert subject == (
         f"[CBS] NEW Materials Order – Acme Corp – PSB – Session #{session_id}"
     )
@@ -305,7 +302,7 @@ def test_notify_created_sends_email_and_snapshot(monkeypatch, app):
 
 @pytest.mark.no_smoke
 def test_notify_skip_when_no_changes(monkeypatch, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -335,7 +332,7 @@ def test_notify_skip_when_no_changes(monkeypatch, app):
 
 @pytest.mark.no_smoke
 def test_notify_updates_on_change(monkeypatch, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -368,7 +365,7 @@ def test_notify_updates_on_change(monkeypatch, app):
 
 @pytest.mark.no_smoke
 def test_materials_order_recipients_follow_region_and_bucket(monkeypatch, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -392,7 +389,7 @@ def test_materials_order_recipients_follow_region_and_bucket(monkeypatch, app):
         assert len(sent_messages) == 1
         first_to, first_subject, *_ = sent_messages[0]
         assert first_subject.startswith("[CBS] NEW Materials Order")
-        assert first_to.strip() == "eu.physical@example.com"
+        assert first_to == ["eu.physical@example.com"]
         shipment = SessionShipping.query.filter_by(session_id=session_id).one()
         shipment.materials_format = "ALL_DIGITAL"
         db.session.commit()
@@ -403,13 +400,13 @@ def test_materials_order_recipients_follow_region_and_bucket(monkeypatch, app):
     assert len(sent_messages) == 1
     to_addr, subject, body, html = sent_messages[0]
     assert subject.startswith("[CBS] UPDATED Materials Order")
-    assert to_addr.strip() == "eu.digital@example.com"
+    assert to_addr == ["eu.digital@example.com"]
     assert "Processing type" in (html or "")
 
 
 @pytest.mark.no_smoke
 def test_notify_skips_when_no_processors_configured(monkeypatch, caplog, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -436,7 +433,7 @@ def test_notify_skips_when_no_processors_configured(monkeypatch, caplog, app):
 
 @pytest.mark.no_smoke
 def test_notify_skips_for_workshop_only(monkeypatch, app):
-    sent_messages: list[tuple[str, str, str, str | None]] = []
+    sent_messages: list[tuple[list[str], str, str, str | None]] = []
 
     def fake_send(to_addr, subject, body, html=None):
         sent_messages.append((to_addr, subject, body, html))
@@ -461,4 +458,57 @@ def test_notify_skips_for_workshop_only(monkeypatch, app):
     assert result is False
     assert sent_messages == []
     assert session.materials_notified_at is None
+
+@pytest.mark.no_smoke
+def test_notify_uses_envelope_list_for_multiple_recipients(monkeypatch, app):
+    from app import emailer
+    from app.models import Settings
+
+    sendmail_calls: list[tuple[str, list[str], str]] = []
+
+    class DummySMTP:
+        def __init__(self, host, port):
+            self.host = host
+            self.port = port
+
+        def starttls(self):
+            return None
+
+        def login(self, user, password):
+            return None
+
+        def sendmail(self, from_addr, to_addrs, message):
+            sendmail_calls.append((from_addr, to_addrs, message))
+
+        def quit(self):
+            return None
+
+    monkeypatch.setattr(Settings, "get", staticmethod(lambda: None))
+    monkeypatch.setenv("SMTP_HOST", "smtp.office365.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_FROM_DEFAULT", "noreply@example.com")
+    monkeypatch.setenv("SMTP_FROM_NAME", "CBS")
+    monkeypatch.setenv("SMTP_USER", "smtp-user")
+    monkeypatch.setenv("SMTP_PASS", "smtp-pass")
+    monkeypatch.setattr(emailer.smtplib, "SMTP", lambda host, port: DummySMTP(host, port))
+    monkeypatch.setattr(emailer.smtplib, "SMTP_SSL", lambda host, port: DummySMTP(host, port))
+
+    with app.app_context():
+        _reset_processors()
+        session_id = _create_session_with_order(region="NA", materials_format="ALL_PHYSICAL")
+        proc1 = _create_admin("Proc1@Example.com", "Proc One")
+        proc2 = _create_admin("proc2@example.com", "Proc Two")
+        _assign_processor("NA", "Physical", proc1)
+        _assign_processor("NA", "Physical", proc2)
+        db.session.commit()
+
+        result = notify_materials_processors(session_id, reason="created")
+
+    assert result is True
+    assert len(sendmail_calls) == 1
+    from_addr, to_addrs, message = sendmail_calls[0]
+    assert from_addr == "noreply@example.com"
+    assert to_addrs == ["proc1@example.com", "proc2@example.com"]
+    assert "To: proc1@example.com, proc2@example.com" in message
+
 
