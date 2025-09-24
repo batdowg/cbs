@@ -2,18 +2,6 @@
 {% block title %}{{ 'New Session' if not session or not session.id else 'Edit Session' }}{% endblock %}
 {% block extra_head %}
   {{ super() }}
-  <style>
-    #session-form .session-form__notes-row textarea {
-      width: 640px;
-      max-width: 100%;
-    }
-
-    @media (max-width: 576px) {
-      #session-form .session-form__notes-row textarea {
-        width: 100%;
-      }
-    }
-  </style>
 {% endblock %}
 {% block content %}
 <h1>{{ 'New Session' if not session or not session.id else 'Edit Session' }}</h1>
@@ -241,7 +229,7 @@
       </div>
       <div class="form-align__row session-form__notes-row">
         <label class="form-align__label" for="title">Notes & Special instructions</label>
-        <div class="form-align__control">
+        <div class="form-align__control form-align__control--wide">
           <textarea name="notes">{{ session.notes or '' }}</textarea>
         </div>
       </div>
