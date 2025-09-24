@@ -179,6 +179,15 @@ label {
   margin-top: 4px;
 }
 
+.form-help--error {
+  color: var(--kt-accent-red);
+}
+
+.field-error {
+  border-color: var(--kt-accent-red);
+  box-shadow: 0 0 0 3px rgba(224, 60, 49, 0.2);
+}
+
 /* Scoped form alignment utility */
 .form-align {
   --form-align-label-width: 220px;
