@@ -1,8 +1,12 @@
+import json
 import logging
 import os
 import smtplib
 import sys
 from email.message import EmailMessage
+from typing import Sequence
+
+from .shared.mail_utils import normalize_recipients
 
 logger = logging.getLogger("cbs.mailer")
 if not logger.handlers:
@@ -11,7 +15,16 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 
 
-def send(to_addr: str, subject: str, body: str, html: str | None = None):
+def _stringify_envelope(recipients: Sequence[str]) -> str:
+    return json.dumps(list(recipients))
+
+
+def send(
+    recipients: Sequence[str] | str | None,
+    subject: str,
+    body: str,
+    html: str | None = None,
+):
     from .models import Settings  # local import to avoid circular import at module load
 
     settings = Settings.get()
@@ -28,13 +41,25 @@ def send(to_addr: str, subject: str, body: str, html: str | None = None):
         settings.get_smtp_pass() if settings and settings.get_smtp_pass() else os.getenv("SMTP_PASS")
     )
 
+    envelope, header = normalize_recipients(recipients)
     mode = "real"
     if not host or not port or not from_addr:
         mode = "stub"
         logger.info(
-            f"[MAIL-OUT] mode={mode} to={to_addr} subject=\"{subject}\" host={host} result=stub"
+            "[MAIL-OUT] mode=%s to_header=%s envelope=%s subject=\"%s\" host=%s result=stub",
+            mode,
+            header,
+            _stringify_envelope(envelope),
+            subject,
+            host,
         )
         return {"ok": False, "detail": "stub: missing config"}
+
+    if not envelope:
+        logger.warning(
+            "[MAIL-NO-RECIPIENTS] subject=\"%s\" host=%s", subject, host
+        )
+        return {"ok": False, "detail": "no valid recipients"}
 
     try:
         port_int = int(port)
@@ -48,19 +73,31 @@ def send(to_addr: str, subject: str, body: str, html: str | None = None):
             server.login(user, password)
         msg = EmailMessage()
         msg["Subject"] = subject
-        msg["To"] = to_addr
+        if header:
+            msg["To"] = header
         msg["From"] = f"{from_name} <{from_addr}>" if from_name else from_addr
         msg.set_content(body)
         if html:
             msg.add_alternative(html, subtype="html")
-        server.sendmail(from_addr, [to_addr], msg.as_string())
+        server.sendmail(from_addr, envelope, msg.as_string())
         server.quit()
         logger.info(
-            f"[MAIL-OUT] mode={mode} to={to_addr} subject=\"{subject}\" host={host} result=sent"
+            "[MAIL-OUT] mode=%s to_header=%s envelope=%s subject=\"%s\" host=%s result=sent",
+            mode,
+            header,
+            _stringify_envelope(envelope),
+            subject,
+            host,
         )
         return {"ok": True, "detail": "sent"}
     except Exception as e:
         logger.info(
-            f"[MAIL-OUT] mode={mode} to={to_addr} subject=\"{subject}\" host={host} result={e}"
+            "[MAIL-OUT] mode=%s to_header=%s envelope=%s subject=\"%s\" host=%s result=%s",
+            mode,
+            header,
+            _stringify_envelope(envelope),
+            subject,
+            host,
+            e,
         )
         return {"ok": False, "detail": str(e)}

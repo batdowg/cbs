@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from email.utils import getaddresses
 from typing import Iterable, Literal
 
 from flask import current_app, render_template, url_for
@@ -10,35 +9,93 @@ from sqlalchemy.orm import joinedload
 
 from .. import emailer
 from ..app import db
-from ..models import MaterialOrderItem, Session, SessionShipping, Settings
+from ..models import (
+    MaterialOrderItem,
+    ProcessorAssignment,
+    Session,
+    SessionShipping,
+    User,
+)
+from ..shared.mail_utils import normalize_recipients
+from ..shared.regions import code_to_label
 from ..shared.time import now_utc
 
 __all__ = [
-    "get_materials_processor_recipients",
+    "materials_bucket_for",
+    "resolve_processor_emails",
     "notify_materials_processors",
 ]
 
 
-def get_materials_processor_recipients() -> list[str]:
-    """Return normalized recipient list for materials processor emails."""
+def materials_bucket_for(order: SessionShipping | None, session: Session | None) -> str:
+    """Return the processing bucket for a materials order."""
 
-    settings = Settings.get()
-    if not settings:
-        return []
-    notifications = settings.mail_notifications or {}
-    raw_value = notifications.get("materials_processors")
-    chunks: list[str] = []
-    if isinstance(raw_value, list):
-        chunks.extend(str(part) for part in raw_value if part)
-    elif isinstance(raw_value, str):
-        chunks.append(raw_value)
-    addresses: list[str] = []
-    combined = [chunk.replace(";", ",") for chunk in chunks]
-    for _, addr in getaddresses(combined):
-        email = addr.strip().lower()
-        if email and email not in addresses:
-            addresses.append(email)
-    return addresses
+    if order is None:
+        return "Other"
+
+    order_type = (order.order_type or "").strip().lower()
+    if order_type == "simulation":
+        return "Simulation"
+
+    if session and session.workshop_type and session.workshop_type.simulation_based:
+        return "Simulation"
+
+    format_value = order.materials_format or ""
+    format_label = str(format_value).strip().upper().replace("-", "_")
+    format_label = format_label.replace(" ", "_")
+
+    if format_label == "SIM_ONLY":
+        return "Simulation"
+    if format_label == "ALL_DIGITAL":
+        return "Digital"
+    if format_label in {"ALL_PHYSICAL", "MIXED"}:
+        return "Physical"
+    return "Other"
+
+
+def _fetch_processor_emails(region: str, bucket: str) -> list[str]:
+    rows = (
+        ProcessorAssignment.query.join(User)
+        .with_entities(User.email)
+        .filter(
+            ProcessorAssignment.region == region,
+            ProcessorAssignment.processing_type == bucket,
+        )
+        .order_by(User.full_name, User.email)
+        .all()
+    )
+    emails: list[str] = []
+    for (email,) in rows:
+        if not email:
+            continue
+        normalized = email.strip().lower()
+        if normalized:
+            emails.append(normalized)
+    return emails
+
+
+def resolve_processor_emails(region: str | None, bucket: str) -> list[str]:
+    """Resolve processor emails using the configured fallback chain."""
+
+    region_key = (region or "").strip() or "Other"
+    bucket_key = bucket or "Other"
+    candidates = [
+        (region_key, bucket_key),
+        (region_key, "Other"),
+        ("Other", bucket_key),
+        ("Other", "Other"),
+    ]
+    seen: set[str] = set()
+    for region_candidate, bucket_candidate in candidates:
+        emails = _fetch_processor_emails(region_candidate, bucket_candidate)
+        resolved: list[str] = []
+        for email in emails:
+            if email not in seen:
+                seen.add(email)
+                resolved.append(email)
+        if resolved:
+            return resolved
+    return []
 
 
 def _serialize_items(items: Iterable[MaterialOrderItem]) -> list[dict]:
@@ -187,11 +244,15 @@ def notify_materials_processors(
     if final_reason == "created" and previous_fp and previous_fp == fingerprint and already_notified:
         return False
 
-    recipients = get_materials_processor_recipients()
-    if not recipients:
+    bucket = materials_bucket_for(shipment, session)
+    recipients = resolve_processor_emails(session.region, bucket)
+    normalized_recipients, recipient_header = normalize_recipients(recipients)
+    if not normalized_recipients:
         current_app.logger.warning(
-            "[MATERIALS-NOTIFY] No materials processor recipients configured; session=%s",
+            "[MAIL-NO-RECIPIENTS] session=%s region=%s bucket=%s",
             session.id,
+            session.region or "Other",
+            bucket,
         )
         return False
 
@@ -214,6 +275,7 @@ def notify_materials_processors(
         ),
     )
     view_url = url_for("materials.materials_view", session_id=session.id, _external=True)
+    region_label = code_to_label(session.region or "Other")
     html_body = render_template(
         "email/materials_processors_notification.html",
         session=session,
@@ -222,6 +284,8 @@ def notify_materials_processors(
         reason=final_reason,
         snapshot=snapshot,
         view_url=view_url,
+        processing_bucket=bucket,
+        region_label=region_label,
     )
     text_body = render_template(
         "email/materials_processors_notification.txt",
@@ -231,9 +295,10 @@ def notify_materials_processors(
         reason=final_reason,
         snapshot=snapshot,
         view_url=view_url,
+        processing_bucket=bucket,
+        region_label=region_label,
     )
-    recipient_header = ", ".join(recipients)
-    result = emailer.send(recipient_header, subject, text_body, html=html_body)
+    result = emailer.send(normalized_recipients, subject, text_body, html=html_body)
     if not result.get("ok"):
         current_app.logger.warning(
             "[MATERIALS-NOTIFY] Failed to send materials order email session=%s error=%s",
@@ -247,10 +312,11 @@ def notify_materials_processors(
     session.materials_order_fingerprint = fingerprint
     db.session.commit()
     current_app.logger.info(
-        "[MATERIALS-NOTIFY] session=%s recipients=%s subject=\"%s\" reason=%s",
+        "[MATERIALS-NOTIFY] session=%s recipients=%s subject=\"%s\" reason=%s bucket=%s",
         session.id,
         recipient_header,
         subject,
         final_reason,
+        bucket,
     )
     return True

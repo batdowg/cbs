@@ -67,6 +67,8 @@ Session
 =======
 Title: {{ session.title or 'Untitled session' }}
 Client: {{ client_name }}
+Region: {{ region_label }}
+Processing type: {{ processing_bucket }}
 Workshop type: {{ workshop_code }}
 Status: {{ session.computed_status }}
 Delivery type: {{ session.delivery_type or '—' }}

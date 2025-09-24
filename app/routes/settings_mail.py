@@ -43,23 +43,11 @@ def settings(current_user):
         settings.use_tls = bool(request.form.get("use_tls"))
         settings.use_ssl = bool(request.form.get("use_ssl"))
         notifications = dict(settings.mail_notifications or {})
-        materials_recipients = request.form.get("materials_processors", "").strip()
-        if materials_recipients:
-            notifications["materials_processors"] = materials_recipients
-        else:
-            notifications.pop("materials_processors", None)
         settings.mail_notifications = notifications
         db.session.merge(settings)
         db.session.commit()
         flash("Saved")
         return redirect(url_for("settings_mail.settings"))
-    materials_processor_value = ""
-    notifications = settings.mail_notifications or {}
-    raw_value = notifications.get("materials_processors")
-    if isinstance(raw_value, list):
-        materials_processor_value = ", ".join(raw_value)
-    elif isinstance(raw_value, str):
-        materials_processor_value = raw_value
     # build mapping of (region, processing_type) -> [User]
     assignments: dict[tuple[str, str], list[User]] = {}
     rows = (
@@ -81,9 +69,8 @@ def settings(current_user):
     return render_template(
         "settings_mail.html",
         settings=settings,
-        materials_processor_value=materials_processor_value,
         regions=get_region_options(),
-        processing_types=["Digital", "Physical", "Simulation"],
+        processing_types=["Digital", "Physical", "Simulation", "Other"],
         assignments=assignments,
         users=users,
     )
@@ -104,7 +91,7 @@ def test_send(current_user):
 @app_admin_required
 def save_processors(current_user):
     regions = [code for code, _ in get_region_options()]
-    types = ["Digital", "Physical", "Simulation"]
+    types = ["Digital", "Physical", "Simulation", "Other"]
     rejected: list[str] = []
     for region in regions:
         for ptype in types:
