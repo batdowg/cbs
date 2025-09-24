@@ -315,7 +315,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `prework_invites` (session_id, participant_id, sender_id, sent_at; records every invite attempt for invite status tracking)
 - Prework editor exposes a language selector limited to the workshop type’s supported languages; switching languages loads or creates that language’s template and questions without affecting others.
 - A **Copy from workshop** control lets staff pick a source workshop type and language, copying that template’s questions (and info text) into the current language after confirming replacements when questions already exist.
-- Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces). Question prompts render sanitized rich text (allowing `<p>`, `<br>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, and `<a href target="_blank" rel="noopener">`) so formatting is preserved without exposing unsafe markup.
+- Workshop View and the staff Prework tab show a read-only summary grouped by question with bullets formatted as "**Name**; answer; answer2" using ';' separators (multi-part answers join with '; ' and multiline responses collapse to spaces). Each question displays only its headline — the explicit question title when provided, otherwise the first line of the sanitized prompt — so long instructional paragraphs stay hidden; empty prompts surface as "(Untitled question)".
 - Learner submissions keep every entered response (including the first item in list questions) in order; whitespace-only rows are dropped during save.
 
 ## 3.3 Resources

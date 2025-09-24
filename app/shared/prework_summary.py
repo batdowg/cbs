@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from math import inf
 from typing import Any, Dict, List
+import re
 
 from markupsafe import Markup
 from sqlalchemy.orm import joinedload, selectinload
@@ -26,6 +27,44 @@ def _sanitize_question_text(value: str | None) -> str:
     if not value:
         return ""
     return sanitize_html(value).strip()
+
+
+def _first_line_from_html(value: str | None) -> str:
+    if not value:
+        return ""
+
+    normalized = str(value)
+    marker = "__CBS_BREAK__"
+    normalized = re.sub(r"(?i)<br\s*/?>", marker, normalized)
+    normalized = re.sub(r"(?i)</(p|li|h3|h4|blockquote)>", marker, normalized)
+
+    text = Markup(normalized).striptags()
+    if not text:
+        return ""
+
+    text = text.replace(marker, "\n")
+    text = text.replace("\xa0", " ")
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    for part in text.split("\n"):
+        cleaned = part.strip()
+        if cleaned:
+            return cleaned
+    return ""
+
+
+def _derive_question_headline(
+    headline_value: str | None, question_html: str | None
+) -> str:
+    headline = _first_line_from_html(headline_value)
+    if headline:
+        return headline
+
+    headline = _first_line_from_html(question_html)
+    if headline:
+        return headline
+
+    return ""
 
 
 def get_session_prework_summary(
@@ -70,6 +109,7 @@ def get_session_prework_summary(
         snapshot = (assignment.snapshot_json or {}).get("questions") or []
         index_to_text: Dict[int, str] = {}
         index_to_order: Dict[int, int] = {}
+        index_to_headline: Dict[int, str] = {}
 
         for order, question in enumerate(snapshot):
             idx = question.get("index")
@@ -78,6 +118,8 @@ def get_session_prework_summary(
             text = _sanitize_question_text(question.get("text"))
             index_to_text[idx] = text
             index_to_order[idx] = order
+            headline_value = question.get("headline") or question.get("title")
+            index_to_headline[idx] = _derive_question_headline(headline_value, text)
 
         template_questions = []
         if assignment.template and assignment.template.questions:
@@ -87,8 +129,15 @@ def get_session_prework_summary(
             if not index_to_text:
                 for order, question in enumerate(template_questions):
                     idx = order + 1
-                    index_to_text[idx] = _sanitize_question_text(question.text)
+                    text = _sanitize_question_text(question.text)
+                    index_to_text[idx] = text
                     index_to_order.setdefault(idx, order)
+                    headline_attr = getattr(question, "headline", None) or getattr(
+                        question, "title", None
+                    )
+                    index_to_headline[idx] = _derive_question_headline(
+                        headline_attr, text
+                    )
 
         answers_by_question: Dict[int, list[tuple[int, str]]] = defaultdict(list)
         for answer in assignment.answers:
@@ -108,24 +157,38 @@ def get_session_prework_summary(
             if not answers:
                 continue
 
-            question_text = index_to_text.get(question_index, "")
-            if not question_text and template_questions and 0 <= question_index - 1 < len(
+            question_html = index_to_text.get(question_index, "")
+            if not question_html and template_questions and 0 <= question_index - 1 < len(
                 template_questions
             ):
-                question_text = _sanitize_question_text(
+                question_html = _sanitize_question_text(
                     template_questions[question_index - 1].text
                 )
-            if not question_text:
-                question_text = f"Question {question_index}"
+
+            question_headline = index_to_headline.get(question_index) or _derive_question_headline(
+                None, question_html
+            )
+            if not question_headline:
+                question_headline = "(Untitled question)"
+
+            question_text = question_html or f"Question {question_index}"
 
             order = index_to_order.get(question_index)
             entry = grouped.setdefault(
-                question_text, {"order": order, "responses": []}
+                question_text,
+                {
+                    "order": order,
+                    "responses": [],
+                    "headline": question_headline,
+                },
             )
             if order is not None:
                 existing_order = entry.get("order")
                 if existing_order is None or order < existing_order:
                     entry["order"] = order
+
+            if not entry.get("headline") and question_headline:
+                entry["headline"] = question_headline
 
             entry["responses"].append(
                 {"name": name, "answer_text": "; ".join(answers)}
@@ -144,7 +207,12 @@ def get_session_prework_summary(
             continue
         responses.sort(key=lambda r: (r.get("name") or "").lower())
         ordered_results.append(
-            {"question": Markup(question_text), "responses": responses}
+            {
+                "question": Markup(question_text),
+                "question_headline": grouped[question_text].get("headline")
+                or "(Untitled question)",
+                "responses": responses,
+            }
         )
 
     return ordered_results
