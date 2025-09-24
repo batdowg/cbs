@@ -8,10 +8,10 @@
 {% if not raw_name %}
   {% set raw_name = '' %}
 {% endif %}
-{% set parts = raw_name|split %}
+{% set parts = (raw_name or '').split() %}
 {% set first_token = parts[0] if parts and parts[0] %}
 {% if not first_token %}
-  {% set email_parts = raw_name|split('@') %}
+  {% set email_parts = (raw_name or '').split('@') %}
   {% set first_token = email_parts[0] if email_parts and email_parts[0] %}
 {% endif %}
 {% set welcome_name = first_token or raw_name %}
