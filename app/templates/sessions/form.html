@@ -206,7 +206,11 @@
         </div>
       </div>
     </div>
-    <div><label>Notes & Special instructions<textarea name="notes">{{ session.notes or '' }}</textarea></label></div>
+   <div class="form-align__row">
+        <label class="form-align__label" for="title">Notes & Special instructions</label>
+        <div class="form-align__control">
+          <textarea name="notes">{{ session.notes or '' }}</textarea>
+        </div>
   </div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
