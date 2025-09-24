@@ -783,7 +783,28 @@ def apply_defaults(
         "courier": shipment.courier,
         "tracking": shipment.tracking,
         "ship_date": shipment.ship_date,
+        "arrival_date": shipment.arrival_date,
     }
+    posted_ship_location = request.form.get("shipping_location_id")
+    if posted_ship_location is not None:
+        new_ship_id = None
+        if posted_ship_location.strip():
+            try:
+                new_ship_id = int(posted_ship_location)
+            except ValueError:
+                new_ship_id = None
+        preserved_shipping["client_shipping_location_id"] = new_ship_id
+        if sess.shipping_location_id != new_ship_id:
+            sess.shipping_location_id = new_ship_id
+    if "ship_date" in request.form:
+        preserved_shipping["ship_date"] = _parse_date(request.form.get("ship_date"))
+    if "arrival_date" in request.form:
+        preserved_shipping["arrival_date"] = _parse_date(
+            request.form.get("arrival_date")
+        )
+    for field in ("courier", "tracking"):
+        if field in request.form:
+            preserved_shipping[field] = request.form.get(field) or None
     context = _materials_shared_context(
         sess, shipment, current_user, csa_view, view_only
     )
