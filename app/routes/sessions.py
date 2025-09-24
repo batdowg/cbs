@@ -509,21 +509,28 @@ def new_session(current_user):
         if req_region:
             fac_query = fac_query.filter(User.region == req_region)
     facilitators = fac_query.order_by(User.full_name).all()
-    clients = Client.query.order_by(Client.name).all()
+    clients = (
+        Client.query.filter(Client.status == "active")
+        .order_by(Client.name)
+        .all()
+    )
     users = User.query.order_by(User.email).all()
     cid_arg = request.args.get("client_id")
     title_arg = request.args.get("title")
     workshop_locations: list[ClientWorkshopLocation] = []
     selected_client_id = None
     if cid_arg and cid_arg.isdigit():
-        selected_client_id = int(cid_arg)
-        workshop_locations = (
-            ClientWorkshopLocation.query.filter_by(
-                client_id=selected_client_id, is_active=True
+        candidate_id = int(cid_arg)
+        candidate = db.session.get(Client, candidate_id)
+        if candidate and candidate.status == "active":
+            selected_client_id = candidate_id
+            workshop_locations = (
+                ClientWorkshopLocation.query.filter_by(
+                    client_id=selected_client_id, is_active=True
+                )
+                .order_by(ClientWorkshopLocation.label)
+                .all()
             )
-            .order_by(ClientWorkshopLocation.label)
-            .all()
-        )
     simulation_outlines = SimulationOutline.query.order_by(
         SimulationOutline.number, SimulationOutline.skill
     ).all()
@@ -548,9 +555,18 @@ def new_session(current_user):
             if missing:
                 flash("Required fields: " + ", ".join(missing), "error")
                 return redirect(url_for("sessions.new_session"))
+            try:
+                client_lookup_id = int(cid)
+            except (TypeError, ValueError):
+                abort(400)
+            client_record = db.session.get(Client, client_lookup_id)
+            if not client_record:
+                abort(400)
+            if client_record.status != "active":
+                return "Client is inactive.", 400
             sess = Session(
                 title=title,
-                client_id=int(cid) if cid else None,
+                client_id=client_record.id,
                 region=region,
                 workshop_language=workshop_language,
                 delivery_type="Material only",
@@ -632,6 +648,17 @@ def new_session(current_user):
             if wt and wt.simulation_based and request.form.get("simulation_outline_id")
             else None
         )
+        client_record = None
+        if cid:
+            try:
+                client_lookup_id = int(cid)
+            except (TypeError, ValueError):
+                abort(400)
+            client_record = db.session.get(Client, client_lookup_id)
+            if not client_record:
+                abort(400)
+            if client_record.status != "active":
+                return "Client is inactive.", 400
         sess = Session(
             title=title,
             start_date=start_date_val,
@@ -653,7 +680,7 @@ def new_session(current_user):
             no_material_order=no_material_order,
             notes=request.form.get("notes") or None,
             simulation_outline_id=so_id,
-            client_id=int(cid) if cid else None,
+            client_id=client_record.id if client_record else None,
             workshop_location=wl,
         )
         sess.workshop_type = wt
@@ -988,7 +1015,16 @@ def edit_session(session_id: int, current_user):
     if not include_all and sess.region:
         fac_query = fac_query.filter(User.region == sess.region)
     facilitators = fac_query.order_by(User.full_name).all()
-    clients = Client.query.order_by(Client.name).all()
+    clients = (
+        Client.query.filter(Client.status == "active")
+        .order_by(Client.name)
+        .all()
+    )
+    if sess.client_id:
+        current_client = db.session.get(Client, sess.client_id)
+        if current_client and current_client.status != "active":
+            if not any(c.id == current_client.id for c in clients):
+                clients.append(current_client)
     title_arg = request.args.get("title")
     simulation_outlines = SimulationOutline.query.order_by(
         SimulationOutline.number, SimulationOutline.skill
@@ -1004,6 +1040,7 @@ def edit_session(session_id: int, current_user):
         else []
     )
     if request.method == "POST":
+        original_client_id = sess.client_id
         old_ready = bool(sess.ready_for_delivery)
         ready_present = "ready_for_delivery" in request.form
         new_ready = _cb(request.form.get("ready_for_delivery"))
@@ -1313,7 +1350,19 @@ def edit_session(session_id: int, current_user):
         else:
             sess.simulation_outline_id = None
         cid = request.form.get("client_id")
-        sess.client_id = int(cid) if cid else None
+        if cid:
+            try:
+                client_lookup_id = int(cid)
+            except (TypeError, ValueError):
+                abort(400)
+            client_record = db.session.get(Client, client_lookup_id)
+            if not client_record:
+                abort(400)
+            if client_record.status != "active" and client_record.id != original_client_id:
+                return "Client is inactive.", 400
+            sess.client_id = client_record.id
+        else:
+            sess.client_id = None
         csa_email = (request.form.get("csa_email") or "").strip().lower()
         csa_password = None
         if csa_email:

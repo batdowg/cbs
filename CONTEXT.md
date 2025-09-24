@@ -57,6 +57,7 @@ Every functional change must update this file **in the same PR**.
 - Formatting: Black-compatible; imports grouped as stdlib, third-party, local with blank lines between groups.
 - Templates render language names via `lang_label`; codes are never shown directly.
 - Workshop Types expose an `active` boolean (checkbox in forms); the legacy free-text `status` field is deprecated and ignored by new code. Session create lists only active types, while session edit keeps an already-selected inactive type available so existing workshops remain stable.
+- Materials order creation flows list only clients with `status = 'active'`. Edit forms keep the bound inactive client selectable but hide other inactive clients. Server-side validation rejects inactive client IDs on create and blocks switching to a different inactive client during edit.
 - Smoke suite is limited to eight tests covering auth/roles, dashboards segregation, materials lifecycle, delivered/finalize guardrails, prework invites & disable modes, attendance certificate gating, resources visibility, and profile contact persistence.
 
 ## 0.5 Test Strategy
