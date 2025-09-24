@@ -3,7 +3,7 @@
   var orderType = document.querySelector('select[name="order_type"]');
   var materialSetsDiv = document.getElementById('material-sets');
   var creditsDiv = document.getElementById('credits-field');
-  var simDiv = document.getElementById('sim-outline');
+  var simDiv = document.getElementById('simulation-outline');
   var simBase = creditsDiv ? creditsDiv.dataset.sim === '1' : false;
   function toggleExtras(ot){
     if(materialSetsDiv){ materialSetsDiv.style.display = (ot === 'Simulation') ? 'none' : ''; }
@@ -156,10 +156,10 @@
           {% else %}{{ shipment.order_type|default('', true) }}{% endif %}
         </div>
       </div>
-      <div id="sim-outline" class="form-align__row" {% if not show_sim_outline %}style="display:none"{% endif %}>
+      <div id="simulation-outline" class="form-align__row" {% if not show_sim_outline %}style="display:none"{% endif %}>
         <label class="form-align__label" for="simulation-outline-id">Simulation Outline</label>
         <div class="form-align__control">
-          <select name="simulation_outline_id" id="simulation-outline-id">
+          <select name="simulation_outline_id" id="simulation-outline-id" {% if outline_error %}class="field-error"{% endif %} data-error="{{ 1 if outline_error else 0 }}">
             <option value="">— select —</option>
             {% for o in simulation_outlines %}
               {% set so_val = form.get('simulation_outline_id') if form else sess.simulation_outline_id %}
@@ -168,6 +168,9 @@
               </option>
             {% endfor %}
           </select>
+          {% if outline_error %}
+          <p class="form-help form-help--error">Simulation Outline is required for simulation-based workshops.</p>
+          {% endif %}
         </div>
       </div>
       {% set show_materials_format_input = can_edit_materials_header('materials_format', current_user, shipment) and not readonly %}
@@ -218,6 +221,9 @@
   {% set tooltip = 'Select # of Material sets first.' if (shipment.material_sets or 0) == 0 else '' %}
   <button type="submit" id="apply-defaults-btn" form="defaults-form" class="btn btn-primary" {% if apply_disabled %}disabled{% endif %} {% if tooltip %}title="{{ tooltip }}"{% endif %}>Apply Defaults</button>
   {% endif %}</h2>
+  {% if can_manage %}
+  <p id="apply-outline-hint" class="form-help form-help--error" {% if not outline_error %}hidden{% endif %}>Choose a <a href="#simulation-outline">Simulation Outline</a> first.</p>
+  {% endif %}
   <table class="kt-table" id="material-items-table" data-delivery="{{ sess.delivery_type }}" data-lang="{{ sess.workshop_language }}" data-capacity="{{ sess.capacity or 0 }}" data-default-formats='{{ default_formats | tojson }}'>
     <thead>
       <tr>
@@ -327,6 +333,9 @@
   </div>
   <button type="submit" name="action" value="update_header" class="btn btn-primary" {% if readonly %}disabled{% endif %}>Save</button>
   <button type="submit" name="action" value="finalize" class="btn btn-primary" {% if readonly %}disabled{% endif %}>Ready for Delivery/Finalized</button>
+  {% if can_manage %}
+  <p id="save-outline-hint" class="form-help form-help--error" {% if not outline_error %}hidden{% endif %}>Choose a <a href="#simulation-outline">Simulation Outline</a> first.</p>
+  {% endif %}
   {% if is_staff_user %}
   <p style="margin-top:12px;color:var(--kt-muted);font-size:0.875rem;">Materials processors will be emailed when this order is created or updated.</p>
   {% endif %}
@@ -363,6 +372,16 @@
     const setsInput = document.querySelector('input[name="material_sets"]');
     const applyBtn = document.getElementById('apply-defaults-btn');
     const hiddenFmt = document.getElementById('defaults-format');
+    const outlineSelect = document.getElementById('simulation-outline-id');
+    const outlineHasError = outlineSelect?.dataset.error === '1';
+    const creditsField = document.getElementById('credits-field');
+    const isSimulationBased = creditsField ? creditsField.dataset.sim === '1' : false;
+    const applyHint = document.getElementById('apply-outline-hint');
+    const saveHint = document.getElementById('save-outline-hint');
+    const saveBtn = document.querySelector('button[name="action"][value="update_header"]');
+    const finalizeBtn = document.querySelector('button[name="action"][value="finalize"]');
+    const saveInitialDisabled = !!(saveBtn && saveBtn.disabled);
+    const finalizeInitialDisabled = !!(finalizeBtn && finalizeBtn.disabled);
     function syncFmt(){ if(hiddenFmt && fmtSel) hiddenFmt.value = fmtSel.value; }
     function applyAutoFormat(){
       if(!fmtSel) return;
@@ -370,19 +389,56 @@
         fmtSel.value = 'SIM_ONLY';
       }
     }
-    function updateApply(){
-      if(!applyBtn) return;
-      const sets = parseInt(setsInput?.value || '0',10);
-      const isStandard = orderSel?.value === 'KT-Run Standard materials';
-      applyBtn.disabled = !isStandard || sets === 0;
-      applyBtn.title = sets === 0 ? 'Select # of Material sets first.' : '';
+    function outlineMissing(){
+      return isSimulationBased && !(outlineSelect && outlineSelect.value);
+    }
+    function syncOutlineHints(outlineEmpty){
+      if(!isSimulationBased){
+        applyHint && applyHint.setAttribute('hidden', 'hidden');
+        saveHint && saveHint.setAttribute('hidden', 'hidden');
+        return;
+      }
+      if(outlineEmpty){
+        applyHint && applyHint.removeAttribute('hidden');
+        saveHint && saveHint.removeAttribute('hidden');
+      } else {
+        applyHint && applyHint.setAttribute('hidden', 'hidden');
+        saveHint && saveHint.setAttribute('hidden', 'hidden');
+      }
+    }
+    function refreshActions(){
+      const outlineEmpty = outlineMissing();
+      if(applyBtn){
+        const sets = parseInt(setsInput?.value || '0', 10);
+        const isStandard = orderSel?.value === 'KT-Run Standard materials';
+        let disabled = !isStandard || sets === 0;
+        let title = sets === 0 ? 'Select # of Material sets first.' : '';
+        if(outlineEmpty){
+          disabled = true;
+          title = 'Choose a Simulation Outline first.';
+        }
+        applyBtn.disabled = disabled;
+        applyBtn.title = title;
+      }
+      if(saveBtn && !saveInitialDisabled){
+        saveBtn.disabled = outlineEmpty;
+      }
+      if(finalizeBtn && !finalizeInitialDisabled){
+        finalizeBtn.disabled = outlineEmpty;
+      }
+      syncOutlineHints(outlineEmpty);
       syncFmt();
     }
-    fmtSel && fmtSel.addEventListener('change', () => {syncFmt(); updateApply();});
-    orderSel && orderSel.addEventListener('change', () => {applyAutoFormat(); updateApply();});
-    setsInput && setsInput.addEventListener('input', updateApply);
+    fmtSel && fmtSel.addEventListener('change', refreshActions);
+    orderSel && orderSel.addEventListener('change', () => {applyAutoFormat(); refreshActions();});
+    setsInput && setsInput.addEventListener('input', refreshActions);
+    outlineSelect && outlineSelect.addEventListener('change', refreshActions);
     applyAutoFormat();
-    updateApply();
+    refreshActions();
+    if(outlineHasError && outlineSelect){
+      outlineSelect.focus();
+      outlineSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   })();
   var shipSel = document.getElementById('shipping-location-select');
   function updateShipDetails(){

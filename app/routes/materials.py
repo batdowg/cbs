@@ -37,6 +37,7 @@ from ..services.materials_notifications import notify_materials_processors
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
 CLIENT_RUN_BULK_ORDER = "Client-run Bulk order"
 MATERIALS_OUTSTANDING_MESSAGE = "There are still material order items outstanding"
+SIM_CREDITS_REF = "simulation_credits"
 
 bp = Blueprint("materials", __name__, url_prefix="/sessions/<int:session_id>/materials")
 
@@ -123,6 +124,199 @@ def materials_access(fn):
     return wrapper
 
 
+def _materials_shared_context(
+    sess: Session,
+    shipment: SessionShipping,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+):
+    shipping_locations = (
+        ClientShippingLocation.query.filter_by(
+            client_id=sess.client_id, is_active=True
+        )
+        .order_by(ClientShippingLocation.id)
+        .all()
+        if sess.client_id
+        else []
+    )
+    session_locked = sess.status in {"Closed", "Cancelled"}
+    readonly = view_only or session_locked
+    can_manage = can_manage_shipment(current_user)
+    can_edit_arrival = can_edit_materials_header(
+        "arrival_date", current_user, shipment
+    )
+    fmt = shipment.materials_format or (
+        "SIM_ONLY" if shipment.order_type == "Simulation" else ""
+    )
+    simulation_outlines = SimulationOutline.query.order_by(
+        SimulationOutline.number, SimulationOutline.skill
+    ).all()
+    sim_base = bool(sess.workshop_type and sess.workshop_type.simulation_based)
+    show_sim_outline = shipment.order_type == "Simulation" or sim_base
+    show_credits = shipment.order_type == "Simulation" or sim_base
+    language_options = get_language_options()
+    default_formats: dict[int, str] = {}
+    if sess.workshop_type_id:
+        defs = WorkshopTypeMaterialDefault.query.filter_by(
+            workshop_type_id=sess.workshop_type_id,
+            delivery_type=sess.delivery_type,
+            region_code=sess.region,
+            language=sess.workshop_language,
+            active=True,
+        ).all()
+        for d in defs:
+            kind, _, ident = d.catalog_ref.partition(":")
+            if kind == "materials_options" and ident.isdigit():
+                default_formats[int(ident)] = d.default_format
+    return {
+        "shipping_locations": shipping_locations,
+        "readonly": readonly,
+        "can_manage": can_manage,
+        "can_edit_arrival": can_edit_arrival,
+        "fmt": fmt,
+        "simulation_outlines": simulation_outlines,
+        "sim_base": sim_base,
+        "show_sim_outline": show_sim_outline,
+        "show_credits": show_credits,
+        "language_options": language_options,
+        "default_formats": default_formats,
+    }
+
+
+def _render_materials_response(
+    sess: Session,
+    shipment: SessionShipping,
+    current_user: User | None,
+    csa_view: bool,
+    view_only: bool,
+    form=None,
+    errors=None,
+    outline_error: bool = False,
+    status_code: int = 200,
+    shared_context: dict[str, object] | None = None,
+):
+    context = shared_context or _materials_shared_context(
+        sess, shipment, current_user, csa_view, view_only
+    )
+    order_items = (
+        MaterialOrderItem.query.filter_by(session_id=sess.id)
+        .order_by(MaterialOrderItem.id)
+        .all()
+    )
+    return (
+        render_template(
+            "sessions/materials.html",
+            sess=sess,
+            shipment=shipment,
+            status=shipment.status,
+            order_types=ORDER_TYPES,
+            csa_view=csa_view,
+            readonly=context["readonly"],
+            current_user=current_user,
+            can_edit_materials_header=can_edit_materials_header,
+            can_manage=context["can_manage"],
+            can_edit_arrival=context["can_edit_arrival"],
+            can_mark_delivered=can_mark_delivered(current_user),
+            shipping_locations=context["shipping_locations"],
+            material_formats=material_format_choices(),
+            language_options=context["language_options"],
+            row_format_choices=ROW_FORMAT_CHOICES,
+            default_formats=context["default_formats"],
+            fmt=context["fmt"],
+            show_sim_outline=context["show_sim_outline"],
+            show_credits=context["show_credits"],
+            sim_base=context["sim_base"],
+            simulation_outlines=context["simulation_outlines"],
+            form=form,
+            errors=errors or {},
+            outline_error=outline_error,
+            order_items=order_items,
+        ),
+        status_code,
+    )
+
+
+def _sync_sim_credits(
+    sess: Session, shipment: SessionShipping
+) -> tuple[int, bool]:
+    sim_base = bool(sess.workshop_type and sess.workshop_type.simulation_based)
+    if not sim_base:
+        return 0, False
+    credits_val = max(shipment.credits or 0, 0)
+    outline = sess.simulation_outline
+    desired_title = f"SIM Credits ({outline.number})" if outline else None
+    items = MaterialOrderItem.query.filter_by(session_id=sess.id).all()
+    created = 0
+    changed = False
+    candidates: list[MaterialOrderItem] = []
+    legacy: list[MaterialOrderItem] = []
+    for item in items:
+        title = (item.title_snapshot or "").strip()
+        if item.catalog_ref == SIM_CREDITS_REF or (
+            desired_title and title == desired_title
+        ):
+            candidates.append(item)
+        elif title in {"Simulation Credits", "SIM Credits"}:
+            legacy.append(item)
+    target = candidates[0] if candidates else None
+    extras = candidates[1:]
+    if not target and legacy:
+        target = legacy[0]
+        extras.extend(legacy[1:])
+    else:
+        extras.extend(legacy)
+    for extra in extras:
+        db.session.delete(extra)
+        changed = True
+    if not desired_title or credits_val == 0:
+        if target:
+            db.session.delete(target)
+            changed = True
+        return 0, changed
+    if not target:
+        target = MaterialOrderItem(
+            session_id=sess.id,
+            catalog_ref=SIM_CREDITS_REF,
+            title_snapshot=desired_title,
+            language="en",
+            format="Digital",
+            quantity=credits_val,
+            processed=False,
+        )
+        db.session.add(target)
+        created = 1
+        changed = True
+    else:
+        if target.catalog_ref != SIM_CREDITS_REF:
+            target.catalog_ref = SIM_CREDITS_REF
+            changed = True
+    if target.title_snapshot != desired_title:
+        target.title_snapshot = desired_title
+        changed = True
+    if target.language != "en":
+        target.language = "en"
+        changed = True
+    if target.format != "Digital":
+        target.format = "Digital"
+        changed = True
+    if target.quantity != credits_val:
+        target.quantity = credits_val
+        changed = True
+    if target.description_snapshot:
+        target.description_snapshot = None
+        changed = True
+    if target.sku_physical_snapshot:
+        target.sku_physical_snapshot = None
+        changed = True
+    if target.processed:
+        target.processed = False
+        target.processed_at = None
+        target.processed_by_id = None
+        changed = True
+    return created, changed
+
+
 CSA_FIELDS = {
     "arrival_date",
 }
@@ -167,13 +361,6 @@ def materials_view(
     csa_view: bool,
     view_only: bool,
 ):
-    shipping_locations = (
-        ClientShippingLocation.query.filter_by(client_id=sess.client_id, is_active=True)
-        .order_by(ClientShippingLocation.id)
-        .all()
-        if sess.client_id
-        else []
-    )
     shipment = SessionShipping.query.filter_by(session_id=session_id).first()
     if not shipment:
         shipment = SessionShipping(
@@ -206,36 +393,17 @@ def materials_view(
     if not shipment.material_sets:
         shipment.material_sets = sess.capacity or 0
         db.session.commit()
-    session_locked = sess.status in {"Closed", "Cancelled"}
-    readonly = view_only or session_locked
-    can_manage = can_manage_shipment(current_user)
-    can_edit_arrival = can_edit_materials_header(
-        "arrival_date", current_user, shipment
+    shared_ctx = _materials_shared_context(
+        sess, shipment, current_user, csa_view, view_only
     )
-    fmt = shipment.materials_format or (
-        "SIM_ONLY" if shipment.order_type == "Simulation" else ""
-    )
-    simulation_outlines = SimulationOutline.query.order_by(
-        SimulationOutline.number, SimulationOutline.skill
-    ).all()
-    sim_base = bool(sess.workshop_type and sess.workshop_type.simulation_based)
-    show_sim_outline = shipment.order_type == "Simulation" or sim_base
-    status = shipment.status
-    show_credits = shipment.order_type == "Simulation" or sim_base
-    language_options = get_language_options()
-    default_formats: dict[int, str] = {}
-    if sess.workshop_type_id:
-        defs = WorkshopTypeMaterialDefault.query.filter_by(
-            workshop_type_id=sess.workshop_type_id,
-            delivery_type=sess.delivery_type,
-            region_code=sess.region,
-            language=sess.workshop_language,
-            active=True,
-        ).all()
-        for d in defs:
-            kind, _, ident = d.catalog_ref.partition(":")
-            if kind == "materials_options" and ident.isdigit():
-                default_formats[int(ident)] = d.default_format
+    readonly = shared_ctx["readonly"]
+    can_manage = shared_ctx["can_manage"]
+    can_edit_arrival = shared_ctx["can_edit_arrival"]
+    fmt = shared_ctx["fmt"]
+    simulation_outlines = shared_ctx["simulation_outlines"]
+    sim_base = shared_ctx["sim_base"]
+    show_sim_outline = shared_ctx["show_sim_outline"]
+    show_credits = shared_ctx["show_credits"]
     if request.method == "POST":
         if readonly:
             abort(403)
@@ -297,6 +465,24 @@ def materials_view(
                 if sess.simulation_outline_id != new_so:
                     sess.simulation_outline_id = new_so
                     header_changed = True
+            if sim_base and not sess.simulation_outline_id:
+                db.session.rollback()
+                flash("Select a Simulation Outline to continue.", "error")
+                context = _materials_shared_context(
+                    sess, shipment, current_user, csa_view, view_only
+                )
+                return _render_materials_response(
+                    sess,
+                    shipment,
+                    current_user,
+                    csa_view,
+                    view_only,
+                    form=request.form,
+                    errors=errors,
+                    outline_error=True,
+                    status_code=400,
+                    shared_context=context,
+                )
             header_changed |= _set_if_changed(
                 shipment, "client_shipping_location_id", sess.shipping_location_id
             )
@@ -353,35 +539,19 @@ def materials_view(
                 header_changed |= _set_if_changed(shipment, "materials_format", "SIM_ONLY")
             if errors:
                 db.session.rollback()
-                form = request.form
-                return (
-                    render_template(
-                        "sessions/materials.html",
-                        sess=sess,
-                        shipment=shipment,
-                        status=shipment.status,
-                        order_types=ORDER_TYPES,
-                        csa_view=csa_view,
-                        readonly=readonly,
-                        current_user=current_user,
-                        can_edit_materials_header=can_edit_materials_header,
-                        can_manage=can_manage,
-                        can_edit_arrival=can_edit_arrival,
-                        can_mark_delivered=can_mark_delivered(current_user),
-                        shipping_locations=shipping_locations,
-                        material_formats=material_format_choices(),
-                        language_options=language_options,
-                        row_format_choices=ROW_FORMAT_CHOICES,
-                        default_formats=default_formats,
-                        fmt=fmt,
-                        show_sim_outline=show_sim_outline,
-                        show_credits=show_credits,
-                        sim_base=sim_base,
-                        simulation_outlines=simulation_outlines,
-                        form=form,
-                        errors=errors,
-                    ),
-                    400,
+                context = _materials_shared_context(
+                    sess, shipment, current_user, csa_view, view_only
+                )
+                return _render_materials_response(
+                    sess,
+                    shipment,
+                    current_user,
+                    csa_view,
+                    view_only,
+                    form=request.form,
+                    errors=errors,
+                    status_code=400,
+                    shared_context=context,
                 )
             if sess.client and not sess.client.sfc_link:
                 sfc_link = request.form.get("sfc_link")
@@ -569,38 +739,13 @@ def materials_view(
                 db.session.delete(shipment)
                 db.session.commit()
             return redirect(url_for("materials.materials_view", session_id=session_id))
-    status = shipment.status
-    order_items = (
-        MaterialOrderItem.query.filter_by(session_id=session_id)
-        .order_by(MaterialOrderItem.id)
-        .all()
-    )
-    return render_template(
-        "sessions/materials.html",
-        sess=sess,
-        shipment=shipment,
-        status=status,
-        order_items=order_items,
-        order_types=ORDER_TYPES,
-        csa_view=csa_view,
-        readonly=readonly,
-        current_user=current_user,
-        can_edit_materials_header=can_edit_materials_header,
-        can_manage=can_manage,
-        can_edit_arrival=can_edit_arrival,
-        can_mark_delivered=can_mark_delivered(current_user),
-        shipping_locations=shipping_locations,
-        material_formats=material_format_choices(),
-        language_options=language_options,
-        row_format_choices=ROW_FORMAT_CHOICES,
-        default_formats=default_formats,
-        fmt=fmt,
-        show_sim_outline=show_sim_outline,
-        show_credits=show_credits,
-        sim_base=sim_base,
-        simulation_outlines=simulation_outlines,
-        form=None,
-        errors={},
+    return _render_materials_response(
+        sess,
+        shipment,
+        current_user,
+        csa_view,
+        view_only,
+        shared_context=shared_ctx,
     )
 
 
@@ -628,6 +773,21 @@ def apply_defaults(
         return redirect(
             url_for("materials.materials_view", session_id=session_id)
             + "#material-items"
+        )
+    context = _materials_shared_context(
+        sess, shipment, current_user, csa_view, view_only
+    )
+    if context["sim_base"] and not sess.simulation_outline_id:
+        flash("Select a Simulation Outline to continue.", "error")
+        return _render_materials_response(
+            sess,
+            shipment,
+            current_user,
+            csa_view,
+            view_only,
+            outline_error=True,
+            status_code=400,
+            shared_context=context,
         )
     fmt_sel = request.form.get("materials_format")
     if fmt_sel is not None:
@@ -704,8 +864,11 @@ def apply_defaults(
         )
         db.session.add(item)
         created += 1
+    new_credit_rows, credit_changed = _sync_sim_credits(sess, shipment)
+    created += new_credit_rows
+    notify_needed = created > 0 or credit_changed
     db.session.commit()
-    if created:
+    if notify_needed:
         notify_materials_processors(
             sess.id, reason="updated" if prior_notified else "created"
         )
