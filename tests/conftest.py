@@ -9,6 +9,8 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords or "quarantine" in item.keywords:
             continue
         item.add_marker("full")
+        if "no_smoke" in item.keywords:
+            continue
         item.add_marker("smoke")
 
 
