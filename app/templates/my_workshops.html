@@ -6,6 +6,7 @@
 {% endblock %}
 {% block content %}
 <h1>My Workshops</h1>
+{% include 'shared/_welcome.html' %}
 {% if cards %}
 <div class="workshop-accordion" id="workshop-accordion">
   {% for card in cards %}
