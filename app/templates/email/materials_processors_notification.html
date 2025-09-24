@@ -73,10 +73,9 @@
     {% endif %}
     {% set workshop_text = '\n'.join(workshop_ns.lines) %}
     <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-      {{ field_row('Client', client_name) }}
-      {{ field_row('Region', region_label) }}
+      {{ field_row('Client', client_name, ' - ', region_label) }}
       {{ field_row('Processing type', processing_bucket) }}
-      {{ field_row('Workshop type', workshop_code) }}
+      {{ field_row('Workshop type', workshop_code, ': ', session.delivery_type or '—') }}
       {{ field_row('Session status', session.computed_status) }}
       {{ field_row('Delivery type', session.delivery_type or '—') }}
       {{ field_row('CSA', csa_display) }}
