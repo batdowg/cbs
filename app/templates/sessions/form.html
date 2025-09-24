@@ -8,7 +8,7 @@
     {% set _title = title_override if title_override is not none else session.title %}
     <div class="form-align">
       <div class="form-align__row">
-        <label class="form-align__label" for="title">Title*</label>
+        <label class="form-align__label" for="title">Workshop Title*</label>
         <div class="form-align__control">
           <input type="text" id="title" name="title" value="{{ _title or '' }}" required>
         </div>
@@ -206,7 +206,7 @@
         </div>
       </div>
     </div>
-    <div><label>Notes & Special instructions<br><textarea name="notes">{{ session.notes or '' }}</textarea></label></div><br>
+    <div><label>Notes & Special instructions<textarea name="notes">{{ session.notes or '' }}</textarea></label></div>
   </div>
   {% if session.id %}
   {% set disabled_all = session.cancelled or session.on_hold %}
