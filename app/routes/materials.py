@@ -783,6 +783,7 @@ def apply_defaults(
         "courier": shipment.courier,
         "tracking": shipment.tracking,
         "ship_date": shipment.ship_date,
+        "arrival_date": shipment.arrival_date,
     }
     context = _materials_shared_context(
         sess, shipment, current_user, csa_view, view_only
