@@ -7,7 +7,7 @@
   {% elif prework_summary %}
     {% for group in prework_summary %}
       {% if group.responses %}
-        <div class="kt-card-title rich-text">{{ group.question }}</div>
+        <div class="kt-card-title rich-text">{{ group.question_headline }}</div>
         <ul>
           {% for response in group.responses %}
             <li><strong>{{ response.name }}</strong>{% if response.answer_text %}; {{ response.answer_text }}{% endif %}</li>
