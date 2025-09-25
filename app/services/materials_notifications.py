@@ -16,6 +16,7 @@ from ..models import (
     Session,
     SessionShipping,
     User,
+    Settings,
 )
 from ..shared.mail_utils import normalize_recipients
 from ..shared.regions import code_to_label
@@ -195,6 +196,13 @@ def notify_materials_processors(
 
     Returns True when an email is sent.
     """
+
+    settings_row = Settings.get()
+    if settings_row and settings_row.notify_materials_processors_active is False:
+        current_app.logger.info(
+            "[MAIL-SKIP] materials processors disabled session=%s", session_id
+        )
+        return False
 
     session = (
         db.session.query(Session)

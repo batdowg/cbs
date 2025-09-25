@@ -20,6 +20,12 @@
   <input type="password" name="smtp_pass" autocomplete="new-password"></label>
   <label><input type="checkbox" name="use_tls" {% if settings.use_tls %}checked{% endif %}> Use TLS</label>
   <label><input type="checkbox" name="use_ssl" {% if settings.use_ssl %}checked{% endif %}> Use SSL</label>
+  <h2>Notifications</h2>
+  <p class="form-help">When off, this email type will not be sent. Useful for phased rollouts and dry runs.</p>
+  <label><input type="checkbox" name="notify_account_invite_active" value="1" {% if settings.notify_account_invite_active %}checked{% endif %}> Account invites</label>
+  <label><input type="checkbox" name="notify_prework_invite_active" value="1" {% if settings.notify_prework_invite_active %}checked{% endif %}> Prework invites</label>
+  <label><input type="checkbox" name="notify_materials_processors_active" value="1" {% if settings.notify_materials_processors_active %}checked{% endif %}> Materials processors notifications</label>
+  <label><input type="checkbox" name="notify_certificate_delivery_active" value="1" {% if settings.notify_certificate_delivery_active %}checked{% endif %}> Certificate delivery</label>
   <button type="submit">Save</button>
 </form>
 <form method="post" action="{{ url_for('settings_mail.test_send') }}" data-dirty-guard-bypass="true">

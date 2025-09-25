@@ -16,6 +16,7 @@ from app.models import (
     SessionShipping,
     User,
     WorkshopType,
+    Settings,
 )
 from app.services.materials_notifications import (
     materials_bucket_for,
@@ -49,6 +50,28 @@ def _reset_processors() -> None:
     ProcessorAssignment.query.delete()
     User.query.delete()
     db.session.commit()
+
+
+def _ensure_settings_row() -> Settings:
+    settings = Settings.get()
+    if not settings:
+        settings = Settings(
+            id=1,
+            smtp_host="",
+            smtp_port=0,
+            smtp_user="",
+            smtp_from_default="",
+            smtp_from_name="",
+            use_tls=True,
+            use_ssl=False,
+            notify_account_invite_active=True,
+            notify_prework_invite_active=True,
+            notify_materials_processors_active=True,
+            notify_certificate_delivery_active=True,
+        )
+        settings.mail_notifications = {}
+        db.session.add(settings)
+    return settings
 
 
 def _create_session_with_order(
@@ -510,5 +533,56 @@ def test_notify_uses_envelope_list_for_multiple_recipients(monkeypatch, app):
     assert from_addr == "noreply@example.com"
     assert to_addrs == ["proc1@example.com", "proc2@example.com"]
     assert "To: proc1@example.com, proc2@example.com" in message
+
+
+def test_notify_materials_processors_respects_toggle(app, monkeypatch, caplog):
+    with app.app_context():
+        settings = _ensure_settings_row()
+        settings.notify_materials_processors_active = True
+        _reset_processors()
+        processor = _create_admin("proc@example.com")
+        _assign_processor("NA", "Physical", processor)
+        session_send = _create_session_with_order()
+        db.session.commit()
+
+    calls: list[tuple] = []
+
+    def _fake_send(*args, **kwargs):
+        calls.append((args, kwargs))
+        return {"ok": True}
+
+    monkeypatch.setattr(
+        "app.services.materials_notifications.emailer.send", _fake_send
+    )
+
+    with app.app_context():
+        with app.test_request_context(base_url="https://cbs.test"):
+            sent = notify_materials_processors(session_send, reason="created")
+    assert sent is True
+    assert len(calls) == 1
+
+    with app.app_context():
+        settings = Settings.get()
+        settings.notify_materials_processors_active = False
+        session_skip = _create_session_with_order()
+        db.session.commit()
+
+    calls.clear()
+    caplog.clear()
+    with app.app_context():
+        with app.test_request_context(base_url="https://cbs.test"):
+            with caplog.at_level("INFO"):
+                sent = notify_materials_processors(session_skip, reason="created")
+    assert sent is False
+    assert len(calls) == 0
+    assert any(
+        "[MAIL-SKIP] materials processors disabled" in record.message
+        for record in caplog.records
+    )
+
+    with app.app_context():
+        settings = Settings.get()
+        settings.notify_materials_processors_active = True
+        db.session.commit()
 
 
