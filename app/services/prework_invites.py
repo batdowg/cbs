@@ -25,6 +25,7 @@ from ..shared.accounts import ensure_participant_account
 from ..shared.constants import MAGIC_LINK_TTL_DAYS
 from ..shared.prework_status import ParticipantPreworkStatus, get_participant_prework_status
 from ..shared.time import now_utc
+from ..shared.names import greeting_name
 
 
 class PreworkSendError(Exception):
@@ -94,6 +95,7 @@ def _send_prework_email(
     assignment: PreworkAssignment,
     account: ParticipantAccount,
     temp_password: str | None,
+    participant: Participant | None = None,
 ) -> bool:
     token = secrets.token_urlsafe(16)
     assignment.magic_token_hash = hashlib.sha256(
@@ -109,6 +111,7 @@ def _send_prework_email(
         _external=True,
         _scheme="https",
     )
+    recipient_name = greeting_name(participant=participant, account=account)
     subject = f"Prework for Workshop: {session.title}"
     body = render_template(
         "email/prework.txt",
@@ -117,6 +120,7 @@ def _send_prework_email(
         link=link,
         account=account,
         temp_password=temp_password,
+        greeting_name=recipient_name,
     )
     html_body = render_template(
         "email/prework.html",
@@ -125,6 +129,7 @@ def _send_prework_email(
         link=link,
         account=account,
         temp_password=temp_password,
+        greeting_name=recipient_name,
     )
     try:
         res = emailer.send(account.email, subject, body, html=html_body)
@@ -249,7 +254,9 @@ def send_prework_invites(
             skipped_count += 1
             continue
 
-        if _send_prework_email(session, assignment, account, temp_password):
+        if _send_prework_email(
+            session, assignment, account, temp_password, participant
+        ):
             sent_count += 1
             db.session.add(
                 PreworkInvite(

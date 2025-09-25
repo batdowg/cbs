@@ -18,6 +18,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255))
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
     full_name = db.Column(db.String(255))
     title = db.Column(db.String(255))
     is_app_admin = db.Column(db.Boolean, default=False)
@@ -58,6 +60,17 @@ class User(db.Model):
     def has_role(self, role: str) -> bool:
         attr = ROLE_ATTRS.get(role)
         return bool(attr and getattr(self, attr, False))
+
+    @property
+    def display_name(self) -> str:
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+        parts = [
+            (self.first_name or "").strip(),
+            (self.last_name or "").strip(),
+        ]
+        display = " ".join(part for part in parts if part)
+        return display.strip() or (self.email or "")
 
 
 class ParticipantAccount(db.Model):
@@ -479,6 +492,8 @@ class Participant(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
     full_name = db.Column(db.String(255))
     organization = db.Column(db.String(255))
     job_title = db.Column(db.String(255))
@@ -499,6 +514,17 @@ class Participant(db.Model):
     attendance_records = db.relationship(
         "ParticipantAttendance", back_populates="participant"
     )
+
+    @property
+    def display_name(self) -> str:
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+        parts = [
+            (self.first_name or "").strip(),
+            (self.last_name or "").strip(),
+        ]
+        display = " ".join(part for part in parts if part)
+        return display.strip() or (self.email or "")
 
 
 class SessionParticipant(db.Model):

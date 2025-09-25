@@ -38,6 +38,7 @@ from ..shared.prework_status import (
     get_participant_prework_status,
     summarize_prework_status,
 )
+from ..shared.names import split_full_name, greeting_name
 from ..shared.sessions_lifecycle import is_material_only_session
 from ..shared.certificates import get_template_mapping
 from ..shared.accounts import ensure_participant_account
@@ -72,8 +73,14 @@ def _ensure_user_for_participant(participant: Participant) -> tuple[User | None,
     existing = User.query.filter(func.lower(User.email) == email).first()
     if existing:
         updated = False
-        if participant.full_name and not existing.full_name:
-            existing.full_name = participant.full_name
+        if participant.display_name and not existing.full_name:
+            existing.full_name = participant.display_name
+            updated = True
+        if participant.first_name and not existing.first_name:
+            existing.first_name = participant.first_name
+            updated = True
+        if participant.last_name and not existing.last_name:
+            existing.last_name = participant.last_name
             updated = True
         if participant.title and not existing.title:
             existing.title = participant.title
@@ -81,9 +88,18 @@ def _ensure_user_for_participant(participant: Participant) -> tuple[User | None,
         if updated:
             db.session.add(existing)
         return existing, False
+    display_name = participant.display_name or email
+    first_name = participant.first_name
+    last_name = participant.last_name
+    if not (first_name or last_name):
+        split_first, split_last = split_full_name(display_name)
+        first_name = first_name or split_first
+        last_name = last_name or split_last
     user = User(
         email=email,
-        full_name=participant.full_name or email,
+        full_name=display_name,
+        first_name=first_name,
+        last_name=last_name,
         title=participant.title,
         preferred_view="LEARNER",
     )
@@ -271,7 +287,12 @@ def disable_prework(session_id: int, current_user):
         db.session.query(Participant)
         .join(SessionParticipant, SessionParticipant.participant_id == Participant.id)
         .filter(SessionParticipant.session_id == session.id)
-        .order_by(Participant.full_name)
+        .order_by(
+            func.lower(Participant.last_name).nullslast(),
+            func.lower(Participant.first_name).nullslast(),
+            func.lower(Participant.full_name).nullslast(),
+            Participant.email,
+        )
         .all()
     )
 
@@ -309,6 +330,7 @@ def disable_prework(session_id: int, current_user):
                 _external=True,
                 _scheme="https",
             )
+            recipient_name = greeting_name(participant=participant, account=account)
             subject = f"Workshop Portal Access: {session.title}"
             body = render_template(
                 "email/account_invite.txt",
@@ -316,6 +338,7 @@ def disable_prework(session_id: int, current_user):
                 link=link,
                 account=account,
                 temp_password=temp_password,
+                greeting_name=recipient_name,
             )
             html_body = render_template(
                 "email/account_invite.html",
@@ -323,6 +346,7 @@ def disable_prework(session_id: int, current_user):
                 link=link,
                 account=account,
                 temp_password=temp_password,
+                greeting_name=recipient_name,
             )
             try:
                 res = emailer.send(account.email, subject, body, html=html_body)

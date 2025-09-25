@@ -76,6 +76,7 @@ from ..shared.acl import (
     session_start_dt_utc,
 )
 from ..shared.languages import get_language_options
+from ..shared.names import combine_first_last, split_full_name, greeting_name
 from ..shared.sessions_lifecycle import (
     enforce_material_only_rules,
     is_material_only,
@@ -508,7 +509,14 @@ def new_session(current_user):
         req_region = request.args.get("region")
         if req_region:
             fac_query = fac_query.filter(User.region == req_region)
-    facilitators = fac_query.order_by(User.full_name).all()
+    facilitators = (
+        fac_query.order_by(
+            func.lower(User.last_name).nullslast(),
+            func.lower(User.first_name).nullslast(),
+            func.lower(User.full_name).nullslast(),
+            User.email,
+        ).all()
+    )
     clients = (
         Client.query.filter(Client.status == "active")
         .order_by(Client.name)
@@ -1020,7 +1028,14 @@ def edit_session(session_id: int, current_user):
     )
     if not include_all and sess.region:
         fac_query = fac_query.filter(User.region == sess.region)
-    facilitators = fac_query.order_by(User.full_name).all()
+    facilitators = (
+        fac_query.order_by(
+            func.lower(User.last_name).nullslast(),
+            func.lower(User.first_name).nullslast(),
+            func.lower(User.full_name).nullslast(),
+            User.email,
+        ).all()
+    )
     clients = (
         Client.query.filter(Client.status == "active")
         .order_by(Client.name)
@@ -1974,12 +1989,30 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         flash("Participants are locked for this session.", "error")
         return _redirect_after_participant_action(session_id)
     email = (request.form.get("email") or "").strip().lower()
-    full_name = (request.form.get("full_name") or "").strip()
+    first_name = (request.form.get("first_name") or "").strip()[:100]
+    last_name = (request.form.get("last_name") or "").strip()[:100]
+    raw_full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
     if not email:
         flash("Email required", "error")
         return _redirect_after_participant_action(session_id)
     user = User.query.filter(func.lower(User.email) == email).first()
+    user_display = user.display_name if user else ""
+    if not (first_name or last_name):
+        if raw_full_name:
+            split_first, split_last = split_full_name(raw_full_name)
+            if split_first:
+                first_name = split_first[:100]
+            if split_last:
+                last_name = split_last[:100]
+        elif user_display:
+            split_first, split_last = split_full_name(user_display)
+            if split_first:
+                first_name = split_first[:100]
+            if split_last:
+                last_name = split_last[:100]
+    display_name = combine_first_last(first_name, last_name)
+    full_name = (raw_full_name or display_name or user_display or email).strip()
     participant = (
         db.session.query(Participant)
         .filter(db.func.lower(Participant.email) == email)
@@ -1988,16 +2021,22 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
     if not participant:
         participant = Participant(
             email=email,
-            full_name=full_name or (user.full_name if user else ""),
+            first_name=first_name or None,
+            last_name=last_name or None,
+            full_name=full_name or (user_display or ""),
             title=title or (user.title if user else None),
         )
         db.session.add(participant)
         db.session.flush()
     else:
+        if first_name:
+            participant.first_name = first_name
+        if last_name:
+            participant.last_name = last_name
         if full_name:
             participant.full_name = full_name
-        elif user and user.full_name and not participant.full_name:
-            participant.full_name = user.full_name
+        elif user_display and not participant.full_name:
+            participant.full_name = user_display
         if title:
             participant.title = title
         elif user and user.title and not participant.title:
@@ -2019,8 +2058,8 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         .filter(db.func.lower(ParticipantAccount.email) == email)
         .one_or_none()
     )
+    base_name = full_name or (display_name or user_display)
     if not account:
-        base_name = full_name or (user.full_name if user else "")
         account = ParticipantAccount(
             email=email,
             full_name=base_name,
@@ -2030,14 +2069,10 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
         db.session.add(account)
         db.session.flush()
     else:
-        if full_name:
-            account.full_name = full_name
+        if base_name:
+            account.full_name = base_name
             if not account.certificate_name:
-                account.certificate_name = full_name
-        elif user and user.full_name and not account.full_name:
-            account.full_name = user.full_name
-            if not account.certificate_name:
-                account.certificate_name = user.full_name
+                account.certificate_name = base_name
     participant.account_id = account.id
     db.session.add(
         AuditLog(
@@ -2093,10 +2128,27 @@ def edit_participant(
         abort(404)
     participant = db.session.get(Participant, participant_id)
     if request.method == "POST":
-        full_name = (request.form.get("full_name") or "").strip()
+        first_name = (request.form.get("first_name") or "").strip()[:100]
+        last_name = (request.form.get("last_name") or "").strip()[:100]
+        if not (first_name or last_name):
+            fallback_full = (request.form.get("full_name") or participant.full_name or "").strip()
+            split_first, split_last = split_full_name(fallback_full)
+            if split_first:
+                first_name = split_first[:100]
+            if split_last:
+                last_name = split_last[:100]
+        combined = combine_first_last(first_name, last_name)
+        full_name = (request.form.get("full_name") or combined).strip()
         title = (request.form.get("title") or "").strip()
-        participant.full_name = full_name or None
+        participant.first_name = first_name or None
+        participant.last_name = last_name or None
+        participant.full_name = full_name or combined or None
         participant.title = title or None
+        if participant.account and (full_name or combined):
+            base_name = full_name or combined
+            participant.account.full_name = base_name
+            if not participant.account.certificate_name:
+                participant.account.certificate_name = base_name
         db.session.commit()
         flash("Participant updated", "success")
         return _redirect_after_participant_action(session_id)
@@ -2150,9 +2202,9 @@ def remove_participant(
 def sample_csv(session_id: int, current_user):
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["FullName", "Email", "Title"])
-    writer.writerow(["Jane Doe", "jane@example.com", "Manager"])
-    writer.writerow(["John Smith", "john@example.com", "Director"])
+    writer.writerow(["First Name", "Last Name", "Email", "Title"])
+    writer.writerow(["Jane", "Doe", "jane@example.com", "Manager"])
+    writer.writerow(["John", "Smith", "john@example.com", "Director"])
     resp = Response(output.getvalue(), mimetype="text/csv")
     resp.headers["Content-Disposition"] = "attachment; filename=sample.csv"
     return resp
@@ -2187,31 +2239,90 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
         return _redirect_after_participant_action(session_id)
     text = file.read().decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(text))
+    header_map = {}
+    for name in reader.fieldnames or []:
+        key = (name or "").replace(" ", "").replace("_", "").lower()
+        if key:
+            header_map[key] = name
+    first_header = header_map.get("firstname")
+    last_header = header_map.get("lastname")
+    full_header = header_map.get("fullname")
+    title_header = header_map.get("title")
+    email_header = header_map.get("email") or "Email"
+    if not ((first_header and last_header) or full_header):
+        flash(
+            "CSV must include First Name and Last Name columns or a legacy Full Name column.",
+            "error",
+        )
+        return _redirect_after_participant_action(session_id)
     imported = 0
     errors: list[str] = []
     for idx, row in enumerate(reader, start=2):
-        full_name = (row.get("FullName") or "").strip()
-        email = (row.get("Email") or "").strip().lower()
-        title = (row.get("Title") or "").strip()
+        raw_first = (
+            (row.get(first_header) or "").strip() if first_header else ""
+        )
+        raw_last = (
+            (row.get(last_header) or "").strip() if last_header else ""
+        )
+        raw_full = (row.get(full_header) or "").strip() if full_header else ""
+        email = (row.get(email_header) or "").strip().lower()
+        title = (
+            (row.get(title_header) or "").strip() if title_header else ""
+        )
         if not email or "@" not in email:
             errors.append(f"Row {idx}: invalid email '{email}'")
+            continue
+        first_name = raw_first[:100]
+        last_name = raw_last[:100]
+        if first_name and not last_name:
+            split_first, split_last = split_full_name(first_name)
+            if split_last and not raw_last:
+                last_name = split_last[:100]
+                first_name = (split_first or first_name)[:100]
+        if last_name and not first_name:
+            split_first, split_last = split_full_name(last_name)
+            if split_first and not raw_first:
+                first_name = split_first[:100]
+                last_name = (split_last or last_name)[:100]
+        if not (first_name or last_name):
+            split_first, split_last = split_full_name(raw_full)
+            if split_first:
+                first_name = split_first[:100]
+            if split_last:
+                last_name = split_last[:100]
+        display_name = combine_first_last(first_name, last_name)
+        full_name = (raw_full or display_name).strip()
+        if not full_name:
+            errors.append(f"Row {idx}: name required")
             continue
         participant = (
             db.session.query(Participant)
             .filter(func.lower(Participant.email) == email)
             .one_or_none()
         )
+        user = User.query.filter(func.lower(User.email) == email).first()
+        user_display = user.display_name if user else ""
         if not participant:
             participant = Participant(
-                email=email, full_name=full_name or None, title=title or None
+                email=email,
+                first_name=first_name or None,
+                last_name=last_name or None,
+                full_name=full_name or (user_display or None),
+                title=title or (user.title if user else None),
             )
             db.session.add(participant)
             db.session.flush()
         else:
+            if first_name:
+                participant.first_name = first_name
+            if last_name:
+                participant.last_name = last_name
             if full_name:
                 participant.full_name = full_name
             if title:
                 participant.title = title
+            elif user and user.title and not participant.title:
+                participant.title = user.title
         link = (
             db.session.query(SessionParticipant)
             .filter_by(session_id=session_id, participant_id=participant.id)
@@ -2225,6 +2336,26 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
             )
             db.session.add(link)
         imported += 1
+        base_name = full_name or display_name or user_display or email
+        account = (
+            db.session.query(ParticipantAccount)
+            .filter(db.func.lower(ParticipantAccount.email) == email)
+            .one_or_none()
+        )
+        if not account:
+            account = ParticipantAccount(
+                email=email,
+                full_name=base_name,
+                certificate_name=base_name,
+                is_active=True,
+            )
+            db.session.add(account)
+            db.session.flush()
+        else:
+            account.full_name = base_name
+            if not account.certificate_name:
+                account.certificate_name = base_name
+        participant.account_id = account.id
     db.session.add(
         AuditLog(
             user_id=current_user.id if current_user else None,
@@ -2388,7 +2519,12 @@ def session_prework(session_id: int):
         .join(SessionParticipant, SessionParticipant.participant_id == Participant.id)
         .outerjoin(ParticipantAccount, Participant.account_id == ParticipantAccount.id)
         .filter(SessionParticipant.session_id == sess.id)
-        .order_by(Participant.full_name)
+        .order_by(
+            func.lower(Participant.last_name).nullslast(),
+            func.lower(Participant.first_name).nullslast(),
+            func.lower(Participant.full_name).nullslast(),
+            Participant.email,
+        )
         .all()
     )
     if request.method == "POST":
@@ -2498,6 +2634,7 @@ def session_prework(session_id: int):
                     _external=True,
                     _scheme="https",
                 )
+                recipient_name = greeting_name(participant=p, account=account)
                 subject = f"Workshop Portal Access: {sess.title}"
                 body = render_template(
                     "email/account_invite.txt",
@@ -2505,6 +2642,7 @@ def session_prework(session_id: int):
                     link=link,
                     account=account,
                     temp_password=temp_password,
+                    greeting_name=recipient_name,
                 )
                 html_body = render_template(
                     "email/account_invite.html",
@@ -2512,6 +2650,7 @@ def session_prework(session_id: int):
                     link=link,
                     account=account,
                     temp_password=temp_password,
+                    greeting_name=recipient_name,
                 )
                 try:
                     res = emailer.send(account.email, subject, body, html=html_body)
