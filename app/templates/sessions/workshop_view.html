@@ -113,7 +113,7 @@
       <select id="workshop-participant-company-select-new"
               name="company_client_id"
               data-client-select
-              aria-label="Company (Client)">
+              aria-label="Company">
         <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
         {% for client in client_options %}
         <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
@@ -123,9 +123,9 @@
               class="btn btn-secondary btn-sm"
               data-add-client-trigger
               data-target-select="workshop-participant-company-select-new">+ Add client</button>
-    </div>
     {% endif %}
     <button type="submit" class="btn btn-secondary">Add Participant</button>
+  </div>
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="next" value="{{ workshop_return }}">
