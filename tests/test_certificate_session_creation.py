@@ -88,3 +88,12 @@ def test_certificate_session_form_creates_session(app, client):
         assert created.daily_start_time == time(9, 0)
         assert created.daily_end_time == time(16, 0)
         assert created.number_of_class_days == 1
+
+
+def test_certificates_new_route_unique(app):
+    with app.app_context():
+        rules = [rule for rule in app.url_map.iter_rules() if rule.rule == "/certificates/new"]
+        assert len(rules) == 1
+        rule = rules[0]
+        assert rule.endpoint == "certificates.new_certificate_session"
+        assert {"GET", "POST"}.issubset(rule.methods)
