@@ -56,7 +56,6 @@
       <label class="form-align__label" for="profile-display-name">Full name</label>
       <div class="form-align__control">
         <input type="text" id="profile-display-name" name="full_name" value="{{ display_name }}" maxlength="200" autocomplete="off" readonly>
-        <p class="form-align__help">Certificates keep using this full name.</p>
       </div>
     </div>
     {% if is_staff %}
@@ -87,7 +86,7 @@
       <label class="form-align__label" for="profile-phone">Phone</label>
       <div class="form-align__control">
         <input type="text" id="profile-phone" name="phone" value="{{ phone }}" maxlength="50" autocomplete="tel">
-        <p class="form-align__help">Include country code if it helps others reach you.</p>
+        Include country code if it helps others reach you.
       </div>
     </div>
     <div class="form-align__row">
