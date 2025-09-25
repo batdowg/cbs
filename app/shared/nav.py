@@ -25,7 +25,7 @@ NEW_ORDER: MenuItem = {
 NEW_CERTIFICATE_SESSION: MenuItem = {
     "id": "new_certificate_session",
     "label": "New Certificate Session",
-    "endpoint": "certificates.new_session",
+    "endpoint": "certificates.new_certificate_session",
 }
 WORKSHOP_DASHBOARD: MenuItem = {
     "id": "sessions",
@@ -172,8 +172,8 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
     "ADMIN": [
         HOME,
         NEW_ORDER,
-        WORKSHOP_DASHBOARD,
         NEW_CERTIFICATE_SESSION,
+        WORKSHOP_DASHBOARD,
         MATERIAL_DASHBOARD,
         SURVEYS,
         PROFILE_GROUP,
@@ -183,8 +183,8 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
     "SESSION_MANAGER": [
         HOME,
         NEW_ORDER,
-        WORKSHOP_DASHBOARD,
         NEW_CERTIFICATE_SESSION,
+        WORKSHOP_DASHBOARD,
         MATERIAL_DASHBOARD,
         SURVEYS,
         PROFILE_GROUP,
@@ -194,8 +194,8 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
     "SESSION_ADMIN": [
         HOME,
         MY_SESSIONS,
-        WORKSHOP_DASHBOARD,
         NEW_CERTIFICATE_SESSION,
+        WORKSHOP_DASHBOARD,
         MATERIAL_DASHBOARD,
         PROFILE_GROUP,
         LOGOUT,
@@ -203,8 +203,8 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
     "MATERIAL_MANAGER": [
         HOME,
         NEW_ORDER,
-        MATERIAL_DASHBOARD,
         NEW_CERTIFICATE_SESSION,
+        MATERIAL_DASHBOARD,
         PROFILE_GROUP,
         {"id": "settings", "label": "Settings", "children": SETTINGS_MATERIAL_MANAGER},
         LOGOUT,
@@ -212,8 +212,8 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
     "DELIVERY": [
         HOME,
         MY_SESSIONS,
-        WORKSHOP_DASHBOARD,
         NEW_CERTIFICATE_SESSION,
+        WORKSHOP_DASHBOARD,
         SURVEYS,
         PROFILE_GROUP,
         {"id": "settings", "label": "Settings", "children": SETTINGS_DELIVERY},

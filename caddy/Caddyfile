@@ -5,8 +5,13 @@ cbs.ktapps.net {
   # Let Flask serve /static/*
   # (do NOT add a /static handler)
 
-  # Serve these directly from /srv without stripping the prefix
-  handle /certificates/* {
+  # Serve certificate assets directly except for dynamic staff routes.
+  @certificates_new path_regexp certNew ^/certificates/new(?:/.*)?$
+  handle @certificates_new {
+    reverse_proxy app:8000
+  }
+  @certificate_assets path_regexp certAssets ^/certificates/(?!new(?:/|$)).*
+  handle @certificate_assets {
     file_server
   }
   handle /resources/* {
