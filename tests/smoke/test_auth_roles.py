@@ -81,6 +81,8 @@ def test_auth_roles_home_selection(app, client):
     cert_form = client.get("/certificates/new")
     assert cert_form.status_code == 200
     assert "New Certificate Session" in cert_form.get_data(as_text=True)
+    cert_form_slash = client.get("/certificates/new/")
+    assert cert_form_slash.status_code == 200
     response = client.get(
         "/settings/view", query_string={"view": "MATERIAL_MANAGER"}, follow_redirects=False
     )

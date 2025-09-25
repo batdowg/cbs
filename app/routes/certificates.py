@@ -57,7 +57,12 @@ def index(current_user):
     return render_template("certificates.html")
 
 
-@bp.route("/new", methods=["GET", "POST"], endpoint="new_certificate_session")
+@bp.route(
+    "/new",
+    methods=["GET", "POST"],
+    endpoint="new_certificate_session",
+    strict_slashes=False,
+)
 @staff_required
 def new_certificate_session(current_user):
     if is_contractor(current_user):
