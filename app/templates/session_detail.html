@@ -8,6 +8,7 @@
 {% set delivery_label = session.delivery_type or '—' %}
 {% set status_label = session.computed_status %}
 {% set workshop_heading = session.id ~ ' ' ~ session.title ~ ': ' ~ workshop_code ~ ' (' ~ delivery_label ~ ') - ' ~ status_label %}
+{% set certificate_only = certificate_only_session|default(False) %}
 {% set import_input_id = 'participant-import-' ~ session.id %}
 <h1>{{ workshop_heading }}</h1>
 <p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
@@ -87,10 +88,12 @@
 </p>
 <nav class="kt-tabs">
   <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" aria-current="page">Details</a>
-  {% if not material_only_session and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
+  {% if not material_only_session and not certificate_only and session.workshop_type and (current_user.is_app_admin or current_user.is_admin or current_user.is_kt_delivery or current_user.is_kt_contractor) %}
   <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}">Prework</a>
   {% endif %}
+  {% if not certificate_only %}
   <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
+  {% endif %}
 </nav>
 {% endif %}
 {% if not material_only_session %}

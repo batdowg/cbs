@@ -30,6 +30,7 @@ from ..shared.materials import material_format_choices
 from ..shared.languages import get_language_options
 from ..shared.sessions_lifecycle import (
     enforce_material_only_rules,
+    is_certificate_only_session,
     is_material_only_session,
 )
 from ..services.materials_notifications import notify_materials_processors
@@ -91,6 +92,8 @@ def materials_access(fn):
     def wrapper(session_id: int, *args, **kwargs):
         sess = db.session.get(Session, session_id)
         if not sess:
+            abort(404)
+        if is_certificate_only_session(sess):
             abort(404)
         user = None
         user_id = flask_session.get("user_id")

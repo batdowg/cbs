@@ -79,6 +79,7 @@ from ..shared.languages import get_language_options
 from ..shared.names import combine_first_last, split_full_name, greeting_name
 from ..shared.sessions_lifecycle import (
     enforce_material_only_rules,
+    is_certificate_only_session,
     is_material_only,
     is_material_only_session,
 )
@@ -610,8 +611,10 @@ def new_session(current_user):
         if not wt_id:
             missing.append("Workshop Type")
         delivery_type = request.form.get("delivery_type")
-        if not delivery_type:
+        delivery_type_normalized = (delivery_type or "").strip()
+        if not delivery_type_normalized:
             missing.append("Delivery type")
+        delivery_type = delivery_type_normalized or None
         workshop_language = request.form.get("workshop_language")
         if not workshop_language:
             missing.append("Workshop language")
@@ -649,6 +652,9 @@ def new_session(current_user):
                 number_of_class_days = int(days_str)
             except ValueError:
                 number_of_class_days = None
+        certificate_only_selected = (
+            (delivery_type or "").lower() == "certificate only"
+        )
         participants_count = 0
         materials_ordered = _cb(request.form.get("materials_ordered"))
         ready_for_delivery = _cb(request.form.get("ready_for_delivery"))
@@ -830,15 +836,18 @@ def new_session(current_user):
                 ),
                 400,
             )
+        if certificate_only_selected:
+            ready_for_delivery = True
+            materials_ordered = False
         if finalized:
             delivered = True
             ready_for_delivery = True
         if delivered:
             info_sent = True
-        if ready_for_delivery and participants_count == 0:
+        if ready_for_delivery and not certificate_only_selected and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
             ready_for_delivery = False
-        if ready_for_delivery:
+        if ready_for_delivery and not certificate_only_selected:
             materials_ordered = True
         if delivered:
             materials_ordered = True
@@ -1105,7 +1114,12 @@ def edit_session(session_id: int, current_user):
             else None
         )
         sess.location = sess.workshop_location.label if sess.workshop_location else None
-        sess.delivery_type = request.form.get("delivery_type") or None
+        raw_delivery_type = request.form.get("delivery_type") or ""
+        delivery_type_normalized = raw_delivery_type.strip()
+        sess.delivery_type = delivery_type_normalized or None
+        certificate_only_selected = (
+            delivery_type_normalized.lower() == "certificate only"
+        )
         sess.region = request.form.get("region") or None
         wl_val = request.form.get("workshop_language")
         if wl_val in [c for c, _ in get_language_options()]:
@@ -1281,15 +1295,18 @@ def edit_session(session_id: int, current_user):
             if "no_material_order" in request.form
             else old_no_material
         )
+        if certificate_only_selected:
+            new_ready = True
+            materials_ordered = False
         if finalized:
             delivered = True
             new_ready = True
         if delivered:
             info_sent = True
-        if new_ready and participants_count == 0:
+        if new_ready and not certificate_only_selected and participants_count == 0:
             flash("Add participants before marking Ready for delivery.", "error")
             new_ready = False
-        if new_ready:
+        if new_ready and not certificate_only_selected:
             materials_ordered = True
         if delivered:
             materials_ordered = True
@@ -1306,7 +1323,7 @@ def edit_session(session_id: int, current_user):
             finalized = False
         has_order = False
         all_processed = True
-        if materials_ordered and not old_materials:
+        if materials_ordered and not old_materials and not certificate_only_selected:
             has_order, all_processed = _material_order_status(sess.id)
             if has_order and not all_processed:
                 flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
@@ -1333,7 +1350,7 @@ def edit_session(session_id: int, current_user):
                     ),
                     400,
                 )
-        if new_ready and not old_ready:
+        if new_ready and not old_ready and not certificate_only_selected:
             if not has_order:
                 has_order, all_processed = _material_order_status(sess.id)
             if has_order and not all_processed and not is_material_only_session(sess):
@@ -1361,7 +1378,7 @@ def edit_session(session_id: int, current_user):
                     ),
                     400,
                 )
-        sess.materials_ordered = materials_ordered
+        sess.materials_ordered = False if certificate_only_selected else materials_ordered
         sess.ready_for_delivery = new_ready or delivered
         sess.info_sent = info_sent
         sess.delivered = delivered
@@ -1573,6 +1590,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     back_params = flask_session.get("sessions_list_args", {})
     badge_filename = None
     material_only = is_material_only_session(sess)
+    certificate_only = is_certificate_only_session(sess)
     require_full_attendance = False
     if not material_only:
         rows = (
@@ -1645,6 +1663,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         can_manage_attendance=can_manage_attendance,
         can_edit_session=_user_can_edit_session(current_user),
         material_only_session=material_only,
+        certificate_only_session=certificate_only,
         require_full_attendance=require_full_attendance,
     )
 
@@ -1670,17 +1689,24 @@ def mark_ready(session_id: int, current_user):
         flash("Session already marked ready for delivery.", "info")
         return redirect(redirect_target)
 
+    certificate_only = is_certificate_only_session(sess)
+
     participants_count = (
         db.session.query(SessionParticipant)
         .filter_by(session_id=session_id)
         .count()
     )
-    if participants_count == 0:
+    if participants_count == 0 and not certificate_only:
         flash("Add participants before marking Ready for delivery.", "error")
         return redirect(redirect_target)
 
     has_order, all_processed = _material_order_status(session_id)
-    if has_order and not all_processed and not is_material_only_session(sess):
+    if (
+        has_order
+        and not all_processed
+        and not is_material_only_session(sess)
+        and not certificate_only
+    ):
         flash(MATERIALS_OUTSTANDING_MESSAGE, "error")
         return redirect(redirect_target)
 
@@ -1688,7 +1714,7 @@ def mark_ready(session_id: int, current_user):
     old_materials = bool(sess.materials_ordered)
     old_ready = bool(sess.ready_for_delivery)
 
-    if not sess.materials_ordered:
+    if not certificate_only and not sess.materials_ordered:
         sess.materials_ordered = True
         if not sess.materials_ordered_at:
             sess.materials_ordered_at = now
@@ -2508,6 +2534,9 @@ def session_prework(session_id: int):
             abort(403)
     elif not is_kt_staff(current_user):
         abort(403)
+    if is_certificate_only_session(sess):
+        flash("Prework is not available for certificate-only sessions.", "info")
+        return redirect(url_for("sessions.session_detail", session_id=session_id))
     session_language = sess.workshop_language or "en"
     template = PreworkTemplate.query.filter_by(
         workshop_type_id=sess.workshop_type_id,
@@ -2784,6 +2813,18 @@ def send_prework(session_id: int, current_user):
             or any(f.id == current_user.id for f in sess.facilitators)
         ):
             abort(403)
+
+    if is_certificate_only_session(sess):
+        message = "Prework is not available for certificate-only sessions."
+        if request.is_json:
+            return {"error": message}, 400
+        flash(message, "error")
+        return redirect(
+            request.form.get("next")
+            or request.args.get("next")
+            or request.referrer
+            or url_for("sessions.session_detail", session_id=session_id)
+        )
 
     payload = request.get_json(silent=True) if request.is_json else None
     if payload and isinstance(payload, dict):

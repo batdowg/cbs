@@ -39,7 +39,10 @@ from ..shared.prework_status import (
     summarize_prework_status,
 )
 from ..shared.names import split_full_name, greeting_name
-from ..shared.sessions_lifecycle import is_material_only_session
+from ..shared.sessions_lifecycle import (
+    is_certificate_only_session,
+    is_material_only_session,
+)
 from ..shared.certificates import get_template_mapping
 from ..shared.accounts import ensure_participant_account
 from ..shared.constants import MAGIC_LINK_TTL_DAYS, DEFAULT_PARTICIPANT_PASSWORD
@@ -130,6 +133,7 @@ def workshop_view(session_id: int, current_user):
         abort(404)
 
     material_only = is_material_only_session(session)
+    certificate_only = is_certificate_only_session(session)
 
     is_assigned = False
     if session.lead_facilitator_id and session.lead_facilitator_id == current_user.id:
@@ -216,9 +220,12 @@ def workshop_view(session_id: int, current_user):
             badge_filename = mapping.badge_filename
 
     can_manage_prework = bool(
-        is_kt_staff(current_user)
-        or is_delivery(current_user)
-        or is_contractor(current_user)
+        not certificate_only
+        and (
+            is_kt_staff(current_user)
+            or is_delivery(current_user)
+            or is_contractor(current_user)
+        )
     )
     can_send_prework = bool(can_manage_prework and not session.prework_disabled)
     show_disable_prework = bool(can_manage_prework and not session.prework_disabled)
@@ -248,6 +255,7 @@ def workshop_view(session_id: int, current_user):
         current_user=current_user,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
+        certificate_only_session=certificate_only,
     )
 
 
@@ -261,6 +269,9 @@ def disable_prework(session_id: int, current_user):
     session = db.session.get(Session, session_id)
     if not session:
         abort(404)
+    if is_certificate_only_session(session):
+        flash("Prework is not available for certificate-only sessions.", "error")
+        return redirect(url_for("workshops.workshop_view", session_id=session.id))
 
     is_assigned = False
     if session.lead_facilitator_id and session.lead_facilitator_id == current_user.id:

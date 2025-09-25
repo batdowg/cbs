@@ -2,10 +2,13 @@
 {% block title %}Prework - {{ session.title }}{% endblock %}
 {% block content %}
 <h1>Prework for {{ session.title }}</h1>
+{% set certificate_only = (session.delivery_type|default('', true)|lower == 'certificate only') %}
 <nav class="kt-tabs">
   <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}">Details</a>
   <a href="{{ url_for('sessions.session_prework', session_id=session.id) }}" aria-current="page">Prework</a>
+  {% if not certificate_only %}
   <a href="{{ url_for('materials.materials_view', session_id=session.id) }}">Materials Order</a>
+  {% endif %}
 </nav>
 {% include "sessions/_prework_summary.html" %}
 <form method="post">

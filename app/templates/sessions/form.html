@@ -107,7 +107,7 @@
         <div class="form-align__control">
           <select name="delivery_type" id="delivery-type" required>
             <option value="">--Select--</option>
-            {% for opt in ['Onsite','Virtual','Self-paced','Hybrid'] %}
+            {% for opt in ['Onsite','Virtual','Self-paced','Hybrid','Certificate only'] %}
             <option value="{{ opt }}" {% if session and session.delivery_type==opt %}selected{% endif %}>{{ opt }}</option>
             {% endfor %}
           </select>

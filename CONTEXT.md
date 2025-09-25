@@ -627,3 +627,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Session create form keeps the Simulation Outline row aligned with adjacent fields when toggled for simulation-based workshops, and the Notes & Special instructions textarea now spans roughly 640px on desktop while remaining full-width on small screens.
 - Materials order Special instructions textarea uses the same wide alignment as the session form so its left edge matches other inputs.
 - Materials order header cards (Order details + Shipping details) share a `.materials-header-grid` two-column layout that stacks below 1100px, and the shipping location dropdown lists each location's title only.
+- Certificate-only sessions (`delivery_type = "Certificate only"`) automatically flip Ready for delivery on create/edit, hide Materials and Prework navigation (including dashboards and lists), and continue to follow the existing attendance + certificate rules.
