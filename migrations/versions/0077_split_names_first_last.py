@@ -11,6 +11,7 @@ import re
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -20,46 +21,77 @@ branch_labels = None
 depends_on = None
 
 
-_NAME_RE = re.compile(r"\s*\([^)]*\)")
+_TRAILING_PAREN_RE = re.compile(r"\s*\([^)]*\)\s*$")
 
 
-def _split_name(value: str) -> tuple[str | None, str | None]:
-    cleaned = _NAME_RE.sub("", (value or "")).strip()
+def _split_name(value: str | None) -> tuple[str | None, str | None]:
+    cleaned = _TRAILING_PAREN_RE.sub("", (value or "")).strip()
     if not cleaned:
         return None, None
     parts = cleaned.split()
     if len(parts) == 1:
-        return parts[0], None
+        return parts[0], ""
     first = " ".join(parts[:-1]).strip() or None
     last = parts[-1].strip() or None
     return first, last
 
 
-def _backfill(table_name: str, id_column: str = "id") -> None:
+def _backfill(table_name: str) -> None:
     connection = op.get_bind()
-    table = sa.table(
-        table_name,
-        sa.column(id_column, sa.Integer),
-        sa.column("full_name", sa.String),
-        sa.column("first_name", sa.String),
-        sa.column("last_name", sa.String),
-    )
+    inspector = inspect(connection)
+    columns = inspector.get_columns(table_name)
+    if not columns:
+        return
+
+    column_map = {column_info["name"]: column_info for column_info in columns}
+
+    id_column_name: str | None = None
+    if "id" in column_map:
+        id_column_name = "id"
+    else:
+        for candidate in column_map:
+            if candidate.endswith("_id"):
+                id_column_name = candidate
+                break
+    if not id_column_name:
+        return
+
+    source_column_name: str | None = None
+    for candidate in ("full_name", "name"):
+        if candidate in column_map:
+            source_column_name = candidate
+            break
+    if not source_column_name:
+        return
+
+    if "first_name" not in column_map or "last_name" not in column_map:
+        return
+
+    metadata = sa.MetaData()
+    table = sa.Table(table_name, metadata, autoload_with=connection)
+
+    id_column = table.c[id_column_name]
+    source_column = table.c[source_column_name]
+    first_column = table.c.first_name
+    last_column = table.c.last_name
+
     rows = connection.execute(
-        sa.select(table.c[id_column], table.c.full_name)
-        .where(table.c.full_name.isnot(None))
-        .where(sa.func.trim(table.c.full_name) != "")
+        sa.select(id_column, source_column)
+        .where(source_column.isnot(None))
+        .where(sa.func.trim(source_column) != "")
     )
     for row in rows:
-        first, last = _split_name(row.full_name)
+        mapping = row._mapping
+        first, last = _split_name(mapping[source_column_name])
         updates: dict[str, str] = {}
-        if first:
-            updates["first_name"] = first[:100]
-        if last:
-            updates["last_name"] = last[:100]
+        if first is not None:
+            updates[first_column.name] = first[:100]
+        if last is not None:
+            updates[last_column.name] = last[:100]
         if updates:
             connection.execute(
                 sa.update(table)
-                .where(table.c[id_column] == row[id_column])
+                .where(id_column == mapping[id_column_name])
                 .values(**updates)
             )
 
