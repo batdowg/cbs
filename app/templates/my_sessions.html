@@ -119,7 +119,7 @@
                 <a href="{{ url_for('learner.my_certs') }}">Certificate</a>
               {% elif s.start_date <= today %}
                 <a href="{{ url_for('learner.my_resources') }}">Resources</a>
-              {% elif assignment and assignment.status != 'WAIVED' and (s.delivery_type|default('', true)|lower != 'certificate only') %}
+              {% elif assignment and assignment.status != 'WAIVED' and not s.is_certificate_only %}
                 <a href="{{ url_for('learner.my_prework') }}">Go to Prework</a>
               {% endif %}
             </td>

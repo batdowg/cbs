@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% block title %}New Certificate Session{% endblock %}
+{% block content %}
+<h1>New Certificate Session</h1>
+<p><a href="{{ url_for('sessions.list_sessions') }}">Back to Sessions</a></p>
+<form method="post" class="kt-card" data-dirty-guard="true" style="padding:var(--space-4);">
+  {% set form_data = form or {} %}
+  {% set selected_lead = form_data.get('lead_facilitator_id') if form_data else '' %}
+  {% set selected_additional = form.getlist('additional_facilitators') if form else [] %}
+  <div class="grid grid-2 gap-md">
+    <div class="grid gap-sm">
+      <label>
+        <span class="form-label">Client*</span>
+        <div class="inline-gap-sm">
+          <select id="certificate-client-select" name="client_id" data-client-select required>
+            <option value="">-- Select --</option>
+            {% for client in clients %}
+            <option value="{{ client.id }}" {% if (selected_client_id or form_data.get('client_id'))|int == client.id %}selected{% endif %}>{{ client.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-secondary btn-sm" data-add-client-trigger data-target-select="certificate-client-select">+ Add client</button>
+        </div>
+      </label>
+      <label>
+        <span class="form-label">Data region*</span>
+        <select name="region" required>
+          <option value="">-- Select --</option>
+          {% for region in regions %}
+          <option value="{{ region }}" {% if form_data.get('region') == region %}selected{% endif %}>{{ region }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span class="form-label">Workshop type*</span>
+        <select name="workshop_type_id" required>
+          <option value="">-- Select --</option>
+          {% for wt in workshop_types %}
+          <option value="{{ wt.id }}" {% if form_data.get('workshop_type_id')|int == wt.id %}selected{% endif %}>{{ wt.code }} — {{ wt.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span class="form-label">Workshop language*</span>
+        <select name="workshop_language" required>
+          {% for code, label in language_options %}
+          <option value="{{ code }}" {% if form_data.get('workshop_language', 'en') == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span class="form-label">Workshop location</span>
+        {% set selected_location = form_data.get('workshop_location_id') if form_data else '' %}
+        <select id="certificate-location-select" name="workshop_location_id" data-selected="{{ selected_location }}">
+          <option value=""></option>
+          {% for loc in locations %}
+          <option value="{{ loc.id }}" {% if selected_location|int == loc.id %}selected{% endif %}>{{ loc.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="grid gap-sm">
+      <label>
+        <span class="form-label">Start date*</span>
+        <input type="date" name="start_date" value="{{ form_data.get('start_date') or '' }}" required>
+      </label>
+      <label>
+        <span class="form-label">End date*</span>
+        <input type="date" name="end_date" value="{{ form_data.get('end_date') or '' }}" required>
+      </label>
+      <label>
+        <span class="form-label">Daily start time*</span>
+        <input type="time" name="daily_start_time" value="{{ form_data.get('daily_start_time') or '08:00' }}" required>
+      </label>
+      <label>
+        <span class="form-label">Daily end time*</span>
+        <input type="time" name="daily_end_time" value="{{ form_data.get('daily_end_time') or '17:00' }}" required>
+      </label>
+      <label>
+        <span class="form-label"># of class days*</span>
+        <input type="number" name="number_of_class_days" min="1" max="10" value="{{ form_data.get('number_of_class_days') or '1' }}" required>
+      </label>
+      <label>
+        <span class="form-label">Lead facilitator</span>
+        <select name="lead_facilitator_id" id="certificate-lead-select">
+          <option value="">-- Select --</option>
+          {% for fac in facilitators %}
+          <option value="{{ fac.id }}" {% if selected_lead|int == fac.id %}selected{% endif %}>{{ fac.display_name or fac.email }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div>
+        <span class="form-label">Additional facilitators</span>
+        <div id="additional-facilitators" class="grid gap-sm">
+          {% if selected_additional %}
+            {% for sel in selected_additional %}
+            <select name="additional_facilitators">
+              <option value="">-- Select --</option>
+              {% for fac in facilitators %}
+              <option value="{{ fac.id }}" {% if sel|int == fac.id %}selected{% endif %}>{{ fac.display_name or fac.email }}</option>
+              {% endfor %}
+            </select>
+            {% endfor %}
+          {% else %}
+          <select name="additional_facilitators">
+            <option value="">-- Select --</option>
+            {% for fac in facilitators %}
+            <option value="{{ fac.id }}">{{ fac.display_name or fac.email }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="add-facilitator">Add another facilitator</button>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:var(--space-4);">
+    <button type="submit" class="btn btn-primary">Create certificate session</button>
+  </div>
+</form>
+
+<dialog class="kt-modal" data-add-client-modal>
+  <form data-add-client-form>
+    <div class="form-field">
+      <label>Name
+        <input type="text" name="name" required>
+      </label>
+      <div class="error" data-error-for="name" hidden></div>
+    </div>
+    <div class="form-field">
+      <label>Data Region
+        <select name="data_region" required>
+          <option value="">-- Select --</option>
+          {% for region in regions %}
+          <option value="{{ region }}">{{ region }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="error" data-error-for="data_region" hidden></div>
+    </div>
+    <div class="form-field">
+      <label><input type="checkbox" name="is_active" value="1" checked> Active</label>
+    </div>
+    <div class="error" data-error-for="__all__" hidden></div>
+    <div class="inline-gap-sm" style="margin-top:var(--space-3);">
+      <button type="button" class="btn btn-secondary" data-add-client-cancel>Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/add_client_modal.js') }}" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const clientSelect = document.getElementById('certificate-client-select');
+    const locationSelect = document.getElementById('certificate-location-select');
+    const leadSelect = document.getElementById('certificate-lead-select');
+
+    function refreshAdditionalOptions(){
+      const leadValue = leadSelect ? leadSelect.value : '';
+      document.querySelectorAll('#additional-facilitators select').forEach(function(sel){
+        sel.querySelectorAll('option').forEach(function(opt){
+          if (!opt.value) {
+            return;
+          }
+          if (opt.value === leadValue){
+            opt.hidden = true;
+            if (sel.value === opt.value){
+              sel.value = '';
+            }
+          } else {
+            opt.hidden = false;
+          }
+        });
+      });
+    }
+
+    function addFacilitatorSelect(value){
+      const container = document.getElementById('additional-facilitators');
+      if (!container){ return; }
+      const template = container.querySelector('select');
+      if (!template){ return; }
+      const clone = template.cloneNode(true);
+      clone.value = value || '';
+      container.appendChild(clone);
+      refreshAdditionalOptions();
+    }
+
+    const addButton = document.getElementById('add-facilitator');
+    if (addButton){
+      addButton.addEventListener('click', function(){
+        addFacilitatorSelect('');
+      });
+    }
+
+    if (leadSelect){
+      leadSelect.addEventListener('change', refreshAdditionalOptions);
+    }
+    refreshAdditionalOptions();
+
+    function populateLocations(locations){
+      if (!locationSelect){ return; }
+      const previous = locationSelect.dataset.selected || locationSelect.value;
+      locationSelect.innerHTML = '<option value=""></option>';
+      let restored = false;
+      (locations || []).forEach(function(loc){
+        const option = document.createElement('option');
+        option.value = String(loc.id);
+        option.textContent = loc.label;
+        locationSelect.appendChild(option);
+        if (previous && String(loc.id) === String(previous)){
+          restored = true;
+        }
+      });
+      if (restored){
+        locationSelect.value = previous;
+      } else {
+        locationSelect.value = '';
+      }
+      locationSelect.dataset.selected = '';
+    }
+
+    function loadLocations(clientId){
+      if (!locationSelect){ return; }
+      if (!clientId){
+        populateLocations([]);
+        return;
+      }
+      fetch('/clients/' + clientId + '/inline-workshop-locations')
+        .then(function(response){
+          if (!response.ok){ return { locations: [] }; }
+          return response.json().catch(function(){ return { locations: [] }; });
+        })
+        .then(function(data){
+          populateLocations((data && data.locations) || []);
+        })
+        .catch(function(){
+          populateLocations([]);
+        });
+    }
+
+    if (clientSelect){
+      clientSelect.addEventListener('change', function(){
+        if (locationSelect){
+          locationSelect.dataset.selected = '';
+        }
+        loadLocations(this.value);
+      });
+      if (clientSelect.value && locationSelect && locationSelect.options.length <= 1){
+        loadLocations(clientSelect.value);
+      }
+    }
+  });
+  </script>
+{% endblock %}

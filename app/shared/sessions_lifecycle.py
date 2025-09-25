@@ -19,6 +19,8 @@ def is_certificate_only(session: Any) -> bool:
 
     if session is None:
         return False
+    if getattr(session, "is_certificate_only", False):
+        return True
     delivery_type = getattr(session, "delivery_type", None)
     return _normalized_delivery_type(delivery_type) == CERTIFICATE_ONLY_TYPE.lower()
 

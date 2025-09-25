@@ -11,6 +11,9 @@
 {% set certificate_only = certificate_only_session|default(False) %}
 {% set import_input_id = 'participant-import-' ~ session.id %}
 <h1>{{ workshop_heading }}</h1>
+{% if certificate_only %}
+<div class="pill" style="margin: var(--space-2) 0; display:inline-block;">Certificate-only session</div>
+{% endif %}
 <p><a href="{{ url_for('sessions.list_sessions', **back_params) }}">Back to Sessions</a></p>
 {% if session.cancelled %}<div class="banner">Session cancelled.</div>{% endif %}
 {% set facs = [] %}

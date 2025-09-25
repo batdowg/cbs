@@ -413,6 +413,9 @@ class Session(db.Model):
     materials_only = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
+    is_certificate_only = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
     no_prework = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.text("false")
     )
