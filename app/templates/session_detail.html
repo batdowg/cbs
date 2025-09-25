@@ -121,6 +121,14 @@
     <input type="text" name="last_name" class="js-name-last" placeholder="Last name" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
+    {% if can_edit_company %}
+    <select name="company_client_id" data-searchable-select aria-label="Company (Client)">
+      <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
+      {% for client in client_options %}
+      <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
     <button type="submit">Add Participant</button>
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
@@ -148,7 +156,14 @@
   <div class="kt-table-wrapper">
     <table class="kt-table">
       <thead>
-        <tr><th scope="col">Full Name</th><th scope="col">Email</th><th scope="col">Title</th><th scope="col">Certificate</th><th scope="col">Actions</th></tr>
+        <tr>
+          <th scope="col">Full Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Title</th>
+          <th scope="col">Company (Client)</th>
+          <th scope="col">Certificate</th>
+          <th scope="col">Actions</th>
+        </tr>
       </thead>
       <tbody>
         {% if participants %}
@@ -157,6 +172,9 @@
           <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
           <td>{{ row.participant.email }}</td>
           <td>{{ row.participant.title }}</td>
+          {% set link_company = row.link.company_client %}
+          {% set company_label = link_company.name if link_company else (session.client.name if session.client else '') %}
+          <td>{{ company_label or '—' }}</td>
           <td>
             {% if row.pdf_path %}
               {% if badge_filename %}
@@ -178,7 +196,7 @@
         </tr>
         {% endfor %}
         {% else %}
-          {% with colspan=5 %}
+          {% with colspan=6 %}
 
             {% include 'shared/_table_empty.html' %}
 
@@ -238,6 +256,7 @@
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Full Name</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Email</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Company (Client)</th>
             {% if attendance_days %}
             <th scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
             {% endif %}
@@ -259,6 +278,28 @@
             <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
             <td>{{ row.participant.email }}</td>
             <td>{{ row.participant.title }}</td>
+            {% set selected_company_id = row.link.company_client_id or session.client_id %}
+            {% if can_edit_company %}
+            <td>
+              {% if client_options %}
+              <select name="company_client_id"
+                      form="participant-form-{{ row.participant.id }}"
+                      data-searchable-select
+                      aria-label="Company for {{ row.participant.display_name or row.participant.email }}">
+                <option value="" {% if not selected_company_id %}selected{% endif %}>—</option>
+                {% for client in client_options %}
+                <option value="{{ client.id }}" {% if client.id == selected_company_id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+              </select>
+              {% else %}
+              {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
+              {{ display_company or '—' }}
+              {% endif %}
+            </td>
+            {% else %}
+            {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
+            <td>{{ display_company or '—' }}</td>
+            {% endif %}
             {% if attendance_days %}
               {% set attendance = row.attendance if row.attendance is defined else {} %}
               {% for day in attendance_days %}
@@ -279,7 +320,7 @@
               {% endfor %}
             {% endif %}
             <td>
-              <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
+              <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post" id="participant-form-{{ row.participant.id }}">
                 <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
                 <button type="submit" name="action" value="save">Save</button>
                 {% if session.delivered %}
@@ -335,6 +376,7 @@
 
 {% block extra_js %}
   {{ super() }}
+  <script src="{{ url_for('static', filename='js/searchable_select.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
   <script>
   (function() {

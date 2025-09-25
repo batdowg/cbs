@@ -401,3 +401,16 @@ input[type="checkbox"] + label {
   padding: 0;
   margin-top: 4px;
 }
+
+.searchable-select {
+  display: grid;
+  gap: var(--space-1);
+  align-items: start;
+}
+
+.searchable-select__input {
+  font: inherit;
+  padding: var(--space-1);
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+}
