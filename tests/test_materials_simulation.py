@@ -293,6 +293,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
         db.session.add(location)
         db.session.flush()
         shipment.client_shipping_location_id = location.id
+        sess.shipping_location_id = location.id
         shipment.contact_name = "Ship Name"
         shipment.contact_email = "ship@example.com"
         shipment.contact_phone = "555-0100"
@@ -305,6 +306,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
         shipment.courier = "CourierX"
         shipment.tracking = "TRACK123"
         shipment.ship_date = date(2024, 1, 2)
+        shipment.arrival_date = date(2024, 1, 5)
         expected = {
             "client_shipping_location_id": location.id,
             "contact_name": shipment.contact_name,
@@ -319,6 +321,7 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
             "courier": shipment.courier,
             "tracking": shipment.tracking,
             "ship_date": shipment.ship_date,
+            "arrival_date": shipment.arrival_date,
         }
         db.session.commit()
     _login(client, admin_id)
@@ -329,5 +332,52 @@ def test_apply_defaults_preserves_shipping_fields(app, client):
     assert response.status_code == 302
     with app.app_context():
         shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        sess = db.session.get(Session, session_id)
         for field, value in expected.items():
             assert getattr(shipment, field) == value
+        assert sess.shipping_location_id == expected["client_shipping_location_id"]
+
+
+def test_apply_defaults_keeps_unsaved_shipping_form_values(app, client):
+    with app.app_context():
+        data = _create_materials_session(simulation_based=False, include_outline=False)
+        session_id = data["session_id"]
+        admin_id = data["admin_id"]
+        sess = db.session.get(Session, session_id)
+        location = ClientShippingLocation(
+            client_id=sess.client_id,
+            title="Warehouse",
+            contact_name="Warehouse Contact",
+            contact_email="warehouse@example.com",
+            contact_phone="555-0200",
+            address_line1="500 Storage Way",
+            city="Store City",
+            state="SC",
+            postal_code="67890",
+            country="USA",
+        )
+        db.session.add(location)
+        db.session.commit()
+        location_id = location.id
+    _login(client, admin_id)
+    response = client.post(
+        f"/sessions/{session_id}/materials/apply-defaults",
+        data={
+            "shipping_location_id": str(location_id),
+            "arrival_date": "2024-02-10",
+            "ship_date": "2024-02-05",
+            "courier": "CourierY",
+            "tracking": "TRACK999",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        sess = db.session.get(Session, session_id)
+        shipment = SessionShipping.query.filter_by(session_id=session_id).one()
+        assert sess.shipping_location_id == location_id
+        assert shipment.client_shipping_location_id == location_id
+        assert shipment.arrival_date == date(2024, 2, 10)
+        assert shipment.ship_date == date(2024, 2, 5)
+        assert shipment.courier == "CourierY"
+        assert shipment.tracking == "TRACK999"
