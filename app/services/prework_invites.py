@@ -20,6 +20,7 @@ from ..models import (
     PreworkTemplate,
     Session,
     SessionParticipant,
+    Settings,
 )
 from ..shared.accounts import ensure_participant_account
 from ..shared.constants import MAGIC_LINK_TTL_DAYS
@@ -38,6 +39,7 @@ class PreworkSendResult:
     skipped_count: int
     failure_count: int
     statuses: dict[int, ParticipantPreworkStatus] = field(default_factory=dict)
+    mail_suppressed: bool = False
 
     @property
     def any_failure(self) -> bool:
@@ -211,6 +213,20 @@ def send_prework_invites(
     eligible_ids, skipped_count = _eligible_participant_ids(
         statuses, participant_ids, allow_completed_resend
     )
+
+    settings_row = Settings.get()
+    if settings_row and settings_row.notify_prework_invite_active is False:
+        current_app.logger.info(
+            "[MAIL-SKIP] prework invite disabled session=%s", session.id
+        )
+        total_skipped = skipped_count + len(eligible_ids)
+        return PreworkSendResult(
+            sent_count=0,
+            skipped_count=total_skipped,
+            failure_count=0,
+            statuses=statuses,
+            mail_suppressed=True,
+        )
 
     if not eligible_ids:
         return PreworkSendResult(

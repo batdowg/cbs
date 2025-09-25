@@ -45,6 +45,7 @@ from ..models import (
     PreworkTemplate,
     PreworkAssignment,
     PreworkEmailLog,
+    Settings,
 )
 from ..shared.time import now_utc, fmt_time, fmt_dt
 from sqlalchemy import or_, func
@@ -2697,6 +2698,15 @@ def session_prework(session_id: int):
             return redirect(url_for("sessions.session_prework", session_id=session_id))
 
         if action == "send_accounts":
+            settings_row = Settings.get()
+            invites_enabled = not (
+                settings_row
+                and settings_row.notify_account_invite_active is False
+            )
+            if not invites_enabled:
+                current_app.logger.info(
+                    "[MAIL-SKIP] account invite disabled session=%s", sess.id
+                )
             any_fail = False
             for p, _ in participants:
                 try:
@@ -2739,20 +2749,23 @@ def session_prework(session_id: int):
                     temp_password=temp_password,
                     greeting_name=recipient_name,
                 )
-                try:
-                    res = emailer.send(account.email, subject, body, html=html_body)
-                except Exception as e:  # pragma: no cover - defensive
-                    res = {"ok": False, "detail": str(e)}
-                if res.get("ok"):
-                    if assignment:
-                        assignment.account_sent_at = now_utc()
-                    current_app.logger.info(
-                        f"[MAIL-OUT] account-invite session={sess.id} pa={account.id} to={account.email}"
-                    )
-                else:
-                    any_fail = True
+                if invites_enabled:
+                    try:
+                        res = emailer.send(account.email, subject, body, html=html_body)
+                    except Exception as e:  # pragma: no cover - defensive
+                        res = {"ok": False, "detail": str(e)}
+                    if res.get("ok"):
+                        if assignment:
+                            assignment.account_sent_at = now_utc()
+                        current_app.logger.info(
+                            f"[MAIL-OUT] account-invite session={sess.id} pa={account.id} to={account.email}"
+                        )
+                    else:
+                        any_fail = True
             db.session.commit()
-            if any_fail:
+            if not invites_enabled:
+                flash("Account invite emails are disabled; no emails were sent.", "info")
+            elif any_fail:
                 flash("Some emails failed; check logs", "error")
             else:
                 flash("Account links sent", "success")
@@ -2770,6 +2783,8 @@ def session_prework(session_id: int):
             except PreworkSendError as exc:
                 flash(str(exc), "error")
                 return _redirect_after_action()
+            if result.mail_suppressed:
+                return _redirect_after_action()
             if result.any_failure:
                 flash("Some emails failed; check logs", "error")
             elif result.sent_count:
@@ -2783,6 +2798,8 @@ def session_prework(session_id: int):
                 result = send_prework_invites(sess, sender_id=current_user.id)
             except PreworkSendError as exc:
                 flash(str(exc), "error")
+                return _redirect_after_action()
+            if result.mail_suppressed:
                 return _redirect_after_action()
             if result.any_failure:
                 flash("Some emails failed; check logs", "error")

@@ -28,6 +28,10 @@ def settings(current_user):
             smtp_from_name=os.getenv("SMTP_FROM_NAME", ""),
             use_tls=True,
             use_ssl=False,
+            notify_account_invite_active=True,
+            notify_prework_invite_active=True,
+            notify_materials_processors_active=True,
+            notify_certificate_delivery_active=True,
         )
         settings.mail_notifications = {}
     elif settings.mail_notifications is None:
@@ -43,11 +47,23 @@ def settings(current_user):
             settings.set_smtp_pass(pwd)
         settings.use_tls = bool(request.form.get("use_tls"))
         settings.use_ssl = bool(request.form.get("use_ssl"))
+        settings.notify_account_invite_active = bool(
+            request.form.get("notify_account_invite_active")
+        )
+        settings.notify_prework_invite_active = bool(
+            request.form.get("notify_prework_invite_active")
+        )
+        settings.notify_materials_processors_active = bool(
+            request.form.get("notify_materials_processors_active")
+        )
+        settings.notify_certificate_delivery_active = bool(
+            request.form.get("notify_certificate_delivery_active")
+        )
         notifications = dict(settings.mail_notifications or {})
         settings.mail_notifications = notifications
         db.session.merge(settings)
         db.session.commit()
-        flash("Saved")
+        flash("Settings saved", "success")
         return redirect(url_for("settings_mail.settings"))
     # build mapping of (region, processing_type) -> [User]
     assignments: dict[tuple[str, str], list[User]] = {}

@@ -128,6 +128,30 @@ class Settings(db.Model):
     use_tls = db.Column(db.Boolean, default=True)
     use_ssl = db.Column(db.Boolean, default=False)
     mail_notifications = db.Column(db.JSON, nullable=False, default=dict)
+    notify_account_invite_active = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True,
+        server_default=db.text("true"),
+    )
+    notify_prework_invite_active = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True,
+        server_default=db.text("true"),
+    )
+    notify_materials_processors_active = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True,
+        server_default=db.text("true"),
+    )
+    notify_certificate_delivery_active = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True,
+        server_default=db.text("true"),
+    )
     updated_at = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
