@@ -124,7 +124,6 @@
     <div class="inline-gap-sm">
       <label for="{{ import_input_id }}" class="btn">Import CSV</label>
       <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
-      <span class="form-align__help">Sample uses First &amp; Last name columns; legacy FullName is still accepted.</span>
     </div>
   </form>
   {% if import_errors %}
@@ -173,7 +172,7 @@
           {% if attendance_days %}
           <tr>
             {% for day in attendance_days %}
-            <th scope="col">Day {{ day }}</th>
+            <th  style="text-align: center; scope="col">Day {{ day }}</th>
             {% endfor %}
           </tr>
           {% endif %}
