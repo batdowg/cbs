@@ -5,7 +5,10 @@ cbs.ktapps.net {
   # Let Flask serve /static/*
   # (do NOT add a /static handler)
 
-  # Serve these directly from /srv without stripping the prefix
+  # Serve certificate assets directly except for dynamic staff routes.
+  handle /certificates/new* {
+    reverse_proxy app:8000
+  }
   handle /certificates/* {
     file_server
   }
