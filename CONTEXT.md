@@ -22,6 +22,7 @@ Every functional change must update this file **in the same PR**.
   3) `docker compose up -d --build`
   4) `docker compose ps`
   5) `docker logs cbs-app-1 --tail 80`
+  - Base images pull from the AWS ECR Public mirror (`public.ecr.aws/docker/library/python`) to avoid Docker Hub auth issues.
 - **DB** (inside app container):
   - Create: `python manage.py db migrate -m "message"`
   - Apply: `python manage.py db upgrade`
