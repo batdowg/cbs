@@ -57,7 +57,7 @@ def index(current_user):
     return render_template("certificates.html")
 
 
-@bp.route("/new", methods=["GET", "POST"], endpoint="new_session")
+@bp.route("/new", methods=["GET", "POST"], endpoint="new_certificate_session")
 @staff_required
 def new_certificate_session(current_user):
     if is_contractor(current_user):
@@ -316,3 +316,11 @@ def new_certificate_session(current_user):
         selected_client_id=selected_client_id,
         form=form,
     )
+
+
+bp.add_url_rule(
+    "/new",
+    view_func=new_certificate_session,
+    methods=["GET", "POST"],
+    endpoint="new_session",
+)
