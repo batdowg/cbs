@@ -195,15 +195,15 @@
           <input type="number" id="credits" name="credits" min="0" value="{{ form.get('credits') if form else (shipment.credits or 2) }}">
         </div>
       </div>
-    </div>
-    <div class="form-align__row session-form__notes-row">
-      <label class="form-align__label" for="special-instructions">Special instructions</label>
-      <div class="form-align__control form-align__control--wide">
-        {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
-          <textarea id="special-instructions" name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
-        {% else %}
-          <span class="form-align__static form-align__static--block">{{ shipment.special_instructions|default('', true) }}</span>
-        {% endif %}
+      <div class="form-align__row session-form__notes-row">
+        <label class="form-align__label" for="special-instructions">Special instructions</label>
+        <div class="form-align__control form-align__control--wide">
+          {% if can_edit_materials_header('special_instructions', current_user, shipment) and not readonly %}
+            <textarea id="special-instructions" name="special_instructions">{{ (form.get('special_instructions') if form else (shipment.special_instructions or '')) | trim }}</textarea>
+          {% else %}
+            <span class="form-align__static form-align__static--block">{{ shipment.special_instructions|default('', true) }}</span>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
