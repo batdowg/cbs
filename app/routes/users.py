@@ -14,6 +14,7 @@ from ..models import AuditLog, UserAuditLog
 from ..shared.constants import ROLE_ATTRS, SYS_ADMIN
 from ..shared.acl import validate_role_combo, can_demote_to_contractor
 from ..shared.rbac import manage_users_required
+from ..shared.names import combine_first_last, split_full_name
 
 
 bp = Blueprint("users", __name__, url_prefix="/users")
@@ -48,9 +49,18 @@ def list_users(current_user):
             or_(
                 db.func.lower(User.email).like(like),
                 db.func.lower(User.full_name).like(like),
+                db.func.lower(User.first_name).like(like),
+                db.func.lower(User.last_name).like(like),
             )
         )
-    users = query.order_by(User.created_at.desc()).all()
+    users = (
+        query.order_by(
+            db.func.lower(User.last_name).nullslast(),
+            db.func.lower(User.first_name).nullslast(),
+            db.func.lower(User.full_name).nullslast(),
+            User.email,
+        ).all()
+    )
     return render_template(
         "users/list.html", users=users, q=q, region=region
     )
@@ -123,9 +133,17 @@ def create_user(current_user):
     if region not in ["NA", "EU", "SEA", "Other"]:
         flash("Region required", "error")
         return redirect(url_for("users.new_user"))
+    first_name = (request.form.get("first_name") or "").strip()
+    last_name = (request.form.get("last_name") or "").strip()
+    if not first_name or not last_name:
+        flash("First and last name required", "error")
+        return redirect(url_for("users.new_user"))
+    full_name_value = combine_first_last(first_name, last_name)
     user = User(
         email=email,
-        full_name=request.form.get("full_name"),
+        first_name=first_name,
+        last_name=last_name,
+        full_name=full_name_value or email,
         title=request.form.get("title"),
         region=region,
     )
@@ -170,18 +188,32 @@ def update_user(user_id: int, current_user):
     user = db.session.get(User, user_id)
     if not user:
         abort(404)
-    full_name = (request.form.get("full_name") or "").strip()
-    title_val = request.form.get("title")
-    title = title_val.strip() if title_val is not None else (user.title or "")
-    if not full_name or len(full_name) > 120:
+    first_name = (request.form.get("first_name") or "").strip()
+    last_name = (request.form.get("last_name") or "").strip()
+    if not first_name or not last_name:
+        flash("First and last name required", "error")
+        return redirect(url_for("users.edit_user", user_id=user.id))
+    full_name = combine_first_last(first_name, last_name)
+    if not full_name:
         flash("Full name required", "error")
         return redirect(url_for("users.edit_user", user_id=user.id))
+    if len(full_name) > 255:
+        flash("Full name too long", "error")
+        return redirect(url_for("users.edit_user", user_id=user.id))
+    title_val = request.form.get("title")
+    title = title_val.strip() if title_val is not None else (user.title or "")
     region = request.form.get("region")
     if region not in ["NA", "EU", "SEA", "Other"]:
         flash("Region required", "error")
         return redirect(url_for("users.edit_user", user_id=user.id))
 
     changes: list[tuple[str, str | None, str | None]] = []
+    if user.first_name != first_name:
+        changes.append(("first_name", user.first_name, first_name))
+        user.first_name = first_name
+    if user.last_name != last_name:
+        changes.append(("last_name", user.last_name, last_name))
+        user.last_name = last_name
     if user.full_name != full_name:
         changes.append(("full_name", user.full_name, full_name))
         user.full_name = full_name

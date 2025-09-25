@@ -39,11 +39,11 @@
   <div class="grid grid-2 gap-md">
     <div class="grid gap-sm">
       <div><strong>Client:</strong> {% if session.client %}{{ session.client.name }}{% else %}—{% endif %}</div>
-      <div><strong>CRM:</strong> {% if session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% else %}—{% endif %}</div>
+      <div><strong>CRM:</strong> {% if session.client and session.client.crm %}{{ session.client.crm.display_name or session.client.crm.email }}{% else %}—{% endif %}</div>
       <div>
         <strong>Facilitator(s):</strong>
         {% if facs %}
-          {% for u in facs %}{{ u.full_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}
+          {% for u in facs %}{{ u.display_name or u.email }} ({{ u.email }}){% if not loop.last %}, {% endif %}{% endfor %}
         {% else %}
           —
         {% endif %}
@@ -101,9 +101,10 @@
   </form>
   {% endif %}
   {% if can_manage_participants %}
-  <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post">
+  <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post" data-name-split="true">
     <input type="hidden" name="next" value="{{ workshop_return }}">
-    <input type="text" name="full_name" placeholder="Full name">
+    <input type="text" name="first_name" class="js-name-first" placeholder="First name" required>
+    <input type="text" name="last_name" class="js-name-last" placeholder="Last name" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
     <button type="submit" class="btn btn-secondary">Add Participant</button>
@@ -114,6 +115,7 @@
     <div class="inline-gap-sm">
       <label for="{{ import_input_id }}" class="btn">Import CSV</label>
       <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
+      <span class="form-align__help">Sample uses First &amp; Last name columns; legacy FullName is still accepted.</span>
     </div>
   </form>
   {% if import_errors %}
@@ -169,7 +171,7 @@
         <tbody>
           {% for row in participants %}
           <tr>
-            <td>{{ row.participant.full_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
+            <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
             <td>{{ row.participant.email }}</td>
             <td>{{ row.participant.title }}</td>
             {% if attendance_days %}
@@ -181,9 +183,9 @@
                        class="attendance-checkbox"
                        data-attendance-checkbox
                        data-participant-id="{{ row.participant.id }}"
-                       data-participant-name="{{ row.participant.full_name or row.participant.email }}"
+                       data-participant-name="{{ row.participant.display_name or row.participant.email }}"
                        data-day-index="{{ day }}"
-                       aria-label="Day {{ day }} attendance for {{ row.participant.full_name or row.participant.email }}"
+                       aria-label="Day {{ day }} attendance for {{ row.participant.display_name or row.participant.email }}"
                        {% if attendance.get(day) %}checked{% endif %}>
                 {% else %}
                   {{ 'Yes' if attendance.get(day) else '—' }}
@@ -333,4 +335,58 @@
   {{ super() }}
   <script src="{{ url_for('static', filename='js/prework_actions.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
+  <script>
+  (function() {
+    const forms = document.querySelectorAll('form[data-name-split="true"]');
+    if (!forms.length) {
+      return;
+    }
+    const namePattern = /\s*\([^)]*\)/g;
+    const splitName = function(value) {
+      const cleaned = (value || '').replace(namePattern, '').trim();
+      if (!cleaned) {
+        return ['', ''];
+      }
+      const parts = cleaned.split(/\s+/);
+      if (parts.length === 1) {
+        return [parts[0], ''];
+      }
+      const last = parts.pop();
+      const first = parts.join(' ').trim();
+      return [first, last];
+    };
+    const maybeSplit = function(event) {
+      const input = event.target;
+      const form = input.closest('form[data-name-split="true"]');
+      if (!form) {
+        return;
+      }
+      const firstInput = form.querySelector('.js-name-first');
+      const lastInput = form.querySelector('.js-name-last');
+      if (!firstInput || !lastInput) {
+        return;
+      }
+      const otherInput = input === firstInput ? lastInput : firstInput;
+      if (otherInput.value.trim()) {
+        return;
+      }
+      const [first, last] = splitName(input.value);
+      if (first && !firstInput.value.trim()) {
+        firstInput.value = first;
+      }
+      if (last && !lastInput.value.trim()) {
+        lastInput.value = last;
+      }
+    };
+    forms.forEach(function(form) {
+      const firstInput = form.querySelector('.js-name-first');
+      const lastInput = form.querySelector('.js-name-last');
+      if (!firstInput || !lastInput) {
+        return;
+      }
+      firstInput.addEventListener('blur', maybeSplit);
+      lastInput.addEventListener('blur', maybeSplit);
+    });
+  })();
+  </script>
 {% endblock %}

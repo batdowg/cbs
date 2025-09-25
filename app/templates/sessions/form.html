@@ -22,11 +22,11 @@
           <select name="client_id" id="client-select" required>
             <option value="">--Select--</option>
             {% for c in clients %}
-            <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.full_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
+            <option value="{{ c.id }}" {% if session and session.client_id==c.id %}selected{% endif %} data-crm="{% if c.crm %}{{ c.crm.display_name or c.crm.email }}{% endif %}">{{ c.name }}</option>
             {% endfor %}
           </select>
           <a href="#" id="add-client" class="button">Add Client</a>
-          <span class="form-align__note">CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.full_name or session.client.crm.email }}{% endif %}</span></span>
+          <span class="form-align__note">CRM: <span id="crm-display">{% if session and session.client and session.client.crm %}{{ session.client.crm.display_name or session.client.crm.email }}{% endif %}</span></span>
         </div>
       </div>
       <div class="form-align__row">
@@ -191,7 +191,7 @@
           <select name="lead_facilitator_id" id="lead-facilitator">
             <option value="">--Select--</option>
             {% for u in facilitators %}
-            <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+            <option value="{{ u.id }}" {% if session and session.lead_facilitator_id==u.id %}selected{% endif %}>{{ u.display_name or u.email }}</option>
             {% endfor %}
           </select>
         </div>
@@ -211,7 +211,7 @@
               <select name="additional_facilitators">
                 <option value="">--Select--</option>
                 {% for u in facilitators %}
-                <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+                <option value="{{ u.id }}" {% if u.id==fac.id %}selected{% endif %}>{{ u.display_name or u.email }}</option>
                 {% endfor %}
               </select>
               {% endfor %}
@@ -219,7 +219,7 @@
               <select name="additional_facilitators">
                 <option value="">--Select--</option>
                 {% for u in facilitators %}
-                <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+                <option value="{{ u.id }}">{{ u.display_name or u.email }}</option>
                 {% endfor %}
               </select>
             {% endif %}
@@ -266,7 +266,7 @@
       <select name="crm_user_id">
         <option value=""></option>
         {% for u in users %}
-        <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+        <option value="{{ u.id }}">{{ u.display_name or u.email }}</option>
         {% endfor %}
       </select>
     </label></div>

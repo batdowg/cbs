@@ -25,6 +25,7 @@ from ..models import (
 )
 from ..shared.auth_bridge import lookup_identity, verify_password, login_identity
 from ..shared.time import now_utc
+from ..shared.names import greeting_name
 from .. import emailer
 import hashlib
 import hmac
@@ -132,12 +133,25 @@ def prework_magic_resend(assignment_id: int):
         _scheme="https",
     )
     sess = assignment.session
+    recipient_name = greeting_name(account=account)
     subject = f"Prework for Workshop: {sess.title}"
     body = render_template(
-        "email/prework.txt", session=sess, assignment=assignment, link=link
+        "email/prework.txt",
+        session=sess,
+        assignment=assignment,
+        link=link,
+        account=account,
+        greeting_name=recipient_name,
+        temp_password=None,
     )
     html_body = render_template(
-        "email/prework.html", session=sess, assignment=assignment, link=link
+        "email/prework.html",
+        session=sess,
+        assignment=assignment,
+        link=link,
+        account=account,
+        greeting_name=recipient_name,
+        temp_password=None,
     )
     try:
         res = emailer.send(account.email, subject, body, html=html_body)

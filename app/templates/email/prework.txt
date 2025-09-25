@@ -1,4 +1,4 @@
-Hello,
+Hi {{ greeting_name }},
 
 Prework for your upcoming workshop "{{ session.title }}" ({% if session.workshop_type %}{{ session.workshop_type.name }}{% endif %}) scheduled for {{ session.start_date }} {{ session.daily_start_time|fmt_time }} {{ session.timezone or '' }} is ready.
 
