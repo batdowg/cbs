@@ -122,7 +122,7 @@
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
     {% if can_edit_company %}
-    <select name="company_client_id" data-searchable-select aria-label="Company (Client)">
+    <select name="company_client_id" data-searchable-select aria-label="Company">
       <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
       {% for client in client_options %}
       <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
@@ -159,7 +159,7 @@
           <th scope="col">Full Name</th>
           <th scope="col">Email</th>
           <th scope="col">Title</th>
-          <th scope="col">Company (Client)</th>
+          <th scope="col">Company</th>
           <th scope="col">Certificate</th>
           <th scope="col">Actions</th>
         </tr>
