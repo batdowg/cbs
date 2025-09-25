@@ -536,6 +536,7 @@ class SessionParticipant(db.Model):
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
     completion_date = db.Column(db.Date)
+    company_name = db.Column(db.Text)
     __table_args__ = (
         db.UniqueConstraint(
             "session_id", "participant_id", name="uix_session_participant"

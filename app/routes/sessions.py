@@ -2019,6 +2019,8 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
     last_name = (request.form.get("last_name") or "").strip()[:100]
     raw_full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
+    company_name = (request.form.get("company_name") or "").strip()
+    company_name = company_name[:255]
     if not email:
         flash("Email required", "error")
         return _redirect_after_participant_action(session_id)
@@ -2077,8 +2079,11 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
             session_id=session_id,
             participant_id=participant.id,
             completion_date=sess.end_date,
+            company_name=company_name or None,
         )
         db.session.add(link)
+    else:
+        link.company_name = company_name or None
     account = (
         db.session.query(ParticipantAccount)
         .filter(db.func.lower(ParticipantAccount.email) == email)
@@ -2166,10 +2171,12 @@ def edit_participant(
         combined = combine_first_last(first_name, last_name)
         full_name = (request.form.get("full_name") or combined).strip()
         title = (request.form.get("title") or "").strip()
+        company_name = (request.form.get("company_name") or "").strip()[:255]
         participant.first_name = first_name or None
         participant.last_name = last_name or None
         participant.full_name = full_name or combined or None
         participant.title = title or None
+        link.company_name = company_name or None
         if participant.account and (full_name or combined):
             base_name = full_name or combined
             participant.account.full_name = base_name
@@ -2182,6 +2189,7 @@ def edit_participant(
         "participant_edit.html",
         session_id=session_id,
         participant=participant,
+        link=link,
         next_url=request.args.get("next"),
     )
 
@@ -2223,14 +2231,59 @@ def remove_participant(
     return _redirect_after_participant_action(session_id)
 
 
+@bp.post("/<int:session_id>/participants/<int:participant_id>/company")
+@csa_allowed_for_session
+def update_participant_company(
+    session_id: int, participant_id: int, sess, current_user, csa_view, csa_account
+):
+    if not (
+        current_user
+        and (
+            is_admin(current_user)
+            or is_kcrm(current_user)
+            or is_delivery(current_user)
+            or is_contractor(current_user)
+        )
+        or csa_can_manage_participants(csa_account, sess)
+    ):
+        abort(403)
+    if sess.participants_locked():
+        flash("Participants are locked for this session.", "error")
+        return _redirect_after_participant_action(session_id)
+    link = (
+        db.session.query(SessionParticipant)
+        .filter_by(session_id=session_id, participant_id=participant_id)
+        .one_or_none()
+    )
+    if not link:
+        abort(404)
+    company_name = (request.form.get("company_name") or "").strip()[:255]
+    link.company_name = company_name or None
+    db.session.commit()
+    flash("Company updated", "success")
+    return _redirect_after_participant_action(session_id)
+
+
 @bp.get("/<int:session_id>/participants/sample-csv")
 @staff_required
 def sample_csv(session_id: int, current_user):
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["First Name", "Last Name", "Email", "Title"])
-    writer.writerow(["Jane", "Doe", "jane@example.com", "Manager"])
-    writer.writerow(["John", "Smith", "john@example.com", "Director"])
+    writer.writerow(["First Name", "Last Name", "Email", "Title", "Company"])
+    writer.writerow([
+        "Jane",
+        "Doe",
+        "jane@example.com",
+        "Manager",
+        "Wayne Enterprises",
+    ])
+    writer.writerow([
+        "John",
+        "Smith",
+        "john@example.com",
+        "Director",
+        "Acme Corp",
+    ])
     resp = Response(output.getvalue(), mimetype="text/csv")
     resp.headers["Content-Disposition"] = "attachment; filename=sample.csv"
     return resp
@@ -2275,6 +2328,7 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
     full_header = header_map.get("fullname")
     title_header = header_map.get("title")
     email_header = header_map.get("email") or "Email"
+    company_header = header_map.get("company")
     if not ((first_header and last_header) or full_header):
         flash(
             "CSV must include First Name and Last Name columns or a legacy Full Name column.",
@@ -2294,6 +2348,9 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
         email = (row.get(email_header) or "").strip().lower()
         title = (
             (row.get(title_header) or "").strip() if title_header else ""
+        )
+        company_name = (
+            (row.get(company_header) or "").strip() if company_header else ""
         )
         if not email or "@" not in email:
             errors.append(f"Row {idx}: invalid email '{email}'")
@@ -2359,8 +2416,11 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
                 session_id=session_id,
                 participant_id=participant.id,
                 completion_date=sess.end_date,
+                company_name=(company_name[:255] if company_header else None),
             )
             db.session.add(link)
+        elif company_header:
+            link.company_name = company_name[:255] or None
         imported += 1
         base_name = full_name or display_name or user_display or email
         account = (

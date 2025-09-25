@@ -303,13 +303,14 @@ Two separate tables by design; emails unique per table. If both tables hold the 
  - `simulation_outlines` (6-digit **number**, **skill** enum: Systematic Troubleshooting/Frontline/Risk/PSDMxp/Refresher/Custom, **descriptor**, **level** enum: Novice/Competent/Advanced)
 - `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **prework_disabled** (boolean), **prework_disable_mode** (`notify`/`silent`), **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
-- `session_participants` (m:n participant_accounts↔sessions + per-person status)
+- `session_participants` (m:n participant_accounts↔sessions + per-person status, `completion_date`, optional `company_name` TEXT per enrollment)
 
 ### Sessions – Staff shortcuts
 
 - Session Detail exposes a **Delivered** button in the header for staff with edit rights on non–material only sessions; it posts to mark the session delivered without opening the edit form.
 - The Participants card shows an **Export all certificates (zip)** button for staff, streaming a zip of existing certificate PDFs from `/srv/certificates/<year>/<session_id>/` without regenerating files.
-- Participant CSV import on Session Detail uses a single file chooser that auto-submits and preserves the existing success/error flash behavior.
+- Participant CSV import on Session Detail uses a single file chooser that auto-submits and preserves the existing success/error flash behavior; the importer accepts an optional `Company` column mapped to `session_participants.company_name` while keeping legacy headers working.
+- Participant tables on Session Detail and Workshop View include a Company column. Add/edit forms capture the field, and authorized viewers can update it inline per participant/session row.
 
 ## 3.2 Prework
 - `prework_templates` (by workshop type & language; rich text info; unique per `(workshop_type_id, language)`)

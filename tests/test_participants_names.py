@@ -58,7 +58,8 @@ def test_importer_accepts_new_and_legacy_formats(client, app, admin_user):
         flask_sess["user_id"] = admin_user.id
 
     new_csv = io.BytesIO(
-        b"First Name,Last Name,Email,Title\nAlice,Wonder,alice@example.com,Engineer\n"
+        b"First Name,Last Name,Email,Title,Company\n"
+        b"Alice,Wonder,alice@example.com,Engineer,Acme Corp\n"
     )
     response = client.post(
         f"/sessions/{session_id}/participants/import-csv",
@@ -76,6 +77,13 @@ def test_importer_accepts_new_and_legacy_formats(client, app, admin_user):
         assert participant.account is not None
         account = participant.account
         assert account.full_name == "Alice Wonder"
+        link = (
+            SessionParticipant.query.filter_by(
+                session_id=session_id, participant_id=participant.id
+            )
+            .one()
+        )
+        assert link.company_name == "Acme Corp"
 
     legacy_csv = io.BytesIO(
         b"FullName,Email,Title\nMary Ann van Dyke (Learner),mary@example.com,Director\n"
@@ -94,6 +102,58 @@ def test_importer_accepts_new_and_legacy_formats(client, app, admin_user):
         assert participant.last_name == "Dyke"
         assert participant.full_name == "Mary Ann van Dyke (Learner)"
         assert participant.account.full_name == "Mary Ann van Dyke (Learner)"
+        link = (
+            SessionParticipant.query.filter_by(
+                session_id=session_id, participant_id=participant.id
+            )
+            .one()
+        )
+        assert link.company_name is None
+
+
+def test_add_and_update_company(client, app, admin_user):
+    session_id = _create_session(app)
+    with client.session_transaction() as flask_sess:
+        flask_sess["user_id"] = admin_user.id
+
+    response = client.post(
+        f"/sessions/{session_id}/participants/add",
+        data={
+            "first_name": "Bruce",
+            "last_name": "Wayne",
+            "email": "bruce@example.com",
+            "title": "CEO",
+            "company_name": "Wayne Enterprises",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        participant = Participant.query.filter_by(email="bruce@example.com").one()
+        link = (
+            SessionParticipant.query.filter_by(
+                session_id=session_id, participant_id=participant.id
+            )
+            .one()
+        )
+        assert link.company_name == "Wayne Enterprises"
+
+    response = client.post(
+        f"/sessions/{session_id}/participants/{participant.id}/company",
+        data={"company_name": "Wayne Tech"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    with app.app_context():
+        link = (
+            SessionParticipant.query.filter_by(
+                session_id=session_id, participant_id=participant.id
+            )
+            .one()
+        )
+        assert link.company_name == "Wayne Tech"
 
 
 def test_prework_email_uses_first_name(monkeypatch, app):

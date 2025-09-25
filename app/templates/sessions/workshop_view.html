@@ -108,6 +108,7 @@
     <input type="text" name="last_name" class="js-name-last" placeholder="Last name" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
+    <input type="text" name="company_name" placeholder="Company">
     <button type="submit" class="btn btn-secondary">Add Participant</button>
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
@@ -116,7 +117,7 @@
     <div class="inline-gap-sm">
       <label for="{{ import_input_id }}" class="btn">Import CSV</label>
       <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
-      <span class="form-align__help">Sample uses First &amp; Last name columns; legacy FullName is still accepted.</span>
+      <span class="form-align__help">Sample uses First &amp; Last name columns, includes an optional Company column, and legacy FullName is still accepted.</span>
     </div>
   </form>
   {% if import_errors %}
@@ -153,6 +154,7 @@
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Full Name</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Email</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Company</th>
             {% if attendance_days %}
             <th style="text-align: center;" scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
             {% endif %}
@@ -175,6 +177,17 @@
             <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
             <td>{{ row.participant.email }}</td>
             <td>{{ row.participant.title }}</td>
+            <td>
+              {% if can_manage_participants %}
+              <form action="{{ url_for('sessions.update_participant_company', session_id=session.id, participant_id=row.participant.id) }}" method="post" class="inline-company-form">
+                <input type="hidden" name="next" value="{{ workshop_return }}">
+                <input type="text" name="company_name" value="{{ row.link.company_name or '' }}" placeholder="Company">
+                <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+              </form>
+              {% else %}
+              {{ row.link.company_name or '—' }}
+              {% endif %}
+            </td>
             {% if attendance_days %}
               {% set attendance = row.attendance if row.attendance is defined else {} %}
               {% for day in attendance_days %}
@@ -246,7 +259,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="{{ 7 + (attendance_days|length if attendance_days else 0) }}">No participants added yet.</td>
+            <td colspan="{{ 8 + (attendance_days|length if attendance_days else 0) }}">No participants added yet.</td>
           </tr>
           {% endfor %}
         </tbody>

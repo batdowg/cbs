@@ -12,6 +12,7 @@
   <div><label>Last name <input type="text" name="last_name" value="{{ participant.last_name }}" required></label></div>
   <div><label>Full name <input type="text" value="{{ participant.display_name }}" readonly></label></div>
   <div><label>Title <input type="text" name="title" value="{{ participant.title }}"></label></div>
+  <div><label>Company <input type="text" name="company_name" value="{{ link.company_name or '' }}"></label></div>
   <button type="submit">Save</button>
 </form>
 <p><a href="{{ back_url }}">Back</a></p>
