@@ -23,7 +23,7 @@
 {% set facs = [] %}
 {% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
 {% for fac in sess.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
-{% set certificate_only = (sess.delivery_type|default('', true)|lower == 'certificate only') %}
+{% set certificate_only = sess.is_certificate_only %}
 <h1>Material Order {{ sess.id }} - {{ sess.title }} ({{ status }})</h1>
 <nav class="kt-tabs">
   <a href="{{ url_for('sessions.session_detail', session_id=sess.id) }}">Details</a>

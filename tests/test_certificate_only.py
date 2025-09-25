@@ -79,6 +79,7 @@ def test_certificate_only_session_autoready_on_create(app, client):
         created = Session.query.filter_by(title="Certificate Session").one()
         assert created.ready_for_delivery is True
         assert created.materials_ordered is False
+        assert created.is_certificate_only is True
 
 
 def test_certificate_only_edit_sets_ready(app, client):
@@ -128,6 +129,7 @@ def test_certificate_only_edit_sets_ready(app, client):
         refreshed = db.session.get(Session, session_id)
         assert refreshed.ready_for_delivery is True
         assert refreshed.materials_ordered is False
+        assert refreshed.is_certificate_only is True
 
 
 def test_certificate_only_blocks_materials_and_prework_routes(app, client):
@@ -147,6 +149,7 @@ def test_certificate_only_blocks_materials_and_prework_routes(app, client):
             capacity=10,
             delivery_type="Certificate only",
             ready_for_delivery=True,
+            is_certificate_only=True,
         )
         session.client = client_record
         session.workshop_type = workshop_type
@@ -186,6 +189,7 @@ def test_materials_dashboard_excludes_certificate_only(app, client):
             capacity=8,
             delivery_type="Certificate only",
             ready_for_delivery=True,
+            is_certificate_only=True,
         )
         cert_session.client = client_record
         cert_session.workshop_type = wt

@@ -22,6 +22,11 @@ NEW_ORDER: MenuItem = {
     "label": "New Order",
     "href": "https://cbs.ktapps.net/sessions/new",
 }
+NEW_CERTIFICATE_SESSION: MenuItem = {
+    "id": "new_certificate_session",
+    "label": "New Certificate Session",
+    "endpoint": "certificates.new_session",
+}
 WORKSHOP_DASHBOARD: MenuItem = {
     "id": "sessions",
     "label": "Workshop Dashboard",
@@ -168,6 +173,7 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         HOME,
         NEW_ORDER,
         WORKSHOP_DASHBOARD,
+        NEW_CERTIFICATE_SESSION,
         MATERIAL_DASHBOARD,
         SURVEYS,
         PROFILE_GROUP,
@@ -178,6 +184,7 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         HOME,
         NEW_ORDER,
         WORKSHOP_DASHBOARD,
+        NEW_CERTIFICATE_SESSION,
         MATERIAL_DASHBOARD,
         SURVEYS,
         PROFILE_GROUP,
@@ -188,6 +195,7 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         HOME,
         MY_SESSIONS,
         WORKSHOP_DASHBOARD,
+        NEW_CERTIFICATE_SESSION,
         MATERIAL_DASHBOARD,
         PROFILE_GROUP,
         LOGOUT,
@@ -196,6 +204,7 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         HOME,
         NEW_ORDER,
         MATERIAL_DASHBOARD,
+        NEW_CERTIFICATE_SESSION,
         PROFILE_GROUP,
         {"id": "settings", "label": "Settings", "children": SETTINGS_MATERIAL_MANAGER},
         LOGOUT,
@@ -204,6 +213,7 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         HOME,
         MY_SESSIONS,
         WORKSHOP_DASHBOARD,
+        NEW_CERTIFICATE_SESSION,
         SURVEYS,
         PROFILE_GROUP,
         {"id": "settings", "label": "Settings", "children": SETTINGS_DELIVERY},

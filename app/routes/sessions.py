@@ -704,6 +704,11 @@ def new_session(current_user):
             client_id=client_record.id if client_record else None,
             workshop_location=wl,
         )
+        sess.is_certificate_only = certificate_only_selected
+        if certificate_only_selected:
+            sess.no_material_order = True
+            sess.no_prework = True
+        sess.prework_disabled = bool(sess.no_prework)
         sess.workshop_type = wt
         if number_of_class_days is None:
             flash('"# of class days" must be a whole number between 1 and 10.', "error")
@@ -1385,7 +1390,11 @@ def edit_session(session_id: int, current_user):
         sess.delivered = delivered
         sess.finalized = finalized
         sess.on_hold = on_hold
-        sess.no_material_order = no_material_order
+        sess.no_material_order = True if certificate_only_selected else no_material_order
+        sess.is_certificate_only = certificate_only_selected
+        if certificate_only_selected:
+            sess.no_prework = True
+        sess.prework_disabled = bool(sess.no_prework)
         sess.notes = request.form.get("notes") or None
         if sess.workshop_type and sess.workshop_type.simulation_based:
             so_id = request.form.get("simulation_outline_id")
