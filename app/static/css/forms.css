@@ -402,15 +402,32 @@ input[type="checkbox"] + label {
   margin-top: 4px;
 }
 
-.searchable-select {
-  display: grid;
-  gap: var(--space-1);
-  align-items: start;
+dialog.kt-modal {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 440px;
+  width: min(100%, 440px);
 }
 
-.searchable-select__input {
-  font: inherit;
-  padding: var(--space-1);
-  border: 1px solid var(--border-color, #ccc);
-  border-radius: 4px;
+dialog.kt-modal::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+dialog.kt-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+dialog.kt-modal .form-field label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+dialog.kt-modal .inline-gap-sm {
+  display: flex;
+  justify-content: flex-end;
 }

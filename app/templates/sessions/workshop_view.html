@@ -109,12 +109,21 @@
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
     {% if can_edit_company %}
-    <select name="company_client_id" data-searchable-select aria-label="Company (Client)">
-      <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
-      {% for client in client_options %}
-      <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
-      {% endfor %}
-    </select>
+    <div class="inline-gap-sm">
+      <select id="workshop-participant-company-select-new"
+              name="company_client_id"
+              data-client-select
+              aria-label="Company (Client)">
+        <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
+        {% for client in client_options %}
+        <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="button"
+              class="btn btn-secondary btn-sm"
+              data-add-client-trigger
+              data-target-select="workshop-participant-company-select-new">+ Add client</button>
+    </div>
     {% endif %}
     <button type="submit" class="btn btn-secondary">Add Participant</button>
   </form>
@@ -186,20 +195,22 @@
             {% set selected_company_id = row.link.company_client_id or session.client_id %}
             {% if can_edit_company %}
             <td>
-              {% if client_options %}
-              <select name="company_client_id"
-                      form="participant-form-{{ row.participant.id }}"
-                      data-searchable-select
-                      aria-label="Company for {{ row.participant.display_name or row.participant.email }}">
-                <option value="" {% if not selected_company_id %}selected{% endif %}>—</option>
-                {% for client in client_options %}
-                <option value="{{ client.id }}" {% if client.id == selected_company_id %}selected{% endif %}>{{ client.name }}</option>
-                {% endfor %}
-              </select>
-              {% else %}
-              {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
-              {{ display_company or '—' }}
-              {% endif %}
+              <div class="inline-gap-sm">
+                <select id="workshop-participant-company-select-{{ row.participant.id }}"
+                        name="company_client_id"
+                        form="participant-form-{{ row.participant.id }}"
+                        data-client-select
+                        aria-label="Company for {{ row.participant.display_name or row.participant.email }}">
+                  <option value="" {% if not selected_company_id %}selected{% endif %}>—</option>
+                  {% for client in client_options %}
+                  <option value="{{ client.id }}" {% if client.id == selected_company_id %}selected{% endif %}>{{ client.name }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button"
+                        class="btn btn-secondary btn-sm"
+                        data-add-client-trigger
+                        data-target-select="workshop-participant-company-select-{{ row.participant.id }}">+ Add client</button>
+              </div>
             </td>
             {% else %}
             {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
@@ -358,13 +369,46 @@
   {% endif %}
 </section>
 
+{% if can_edit_company %}
+<dialog class="kt-modal" data-add-client-modal>
+  <form data-add-client-form>
+    <div class="form-field">
+      <label>Name
+        <input type="text" name="name" required>
+      </label>
+      <div class="error" data-error-for="name" hidden></div>
+    </div>
+    <div class="form-field">
+      <label>Data Region
+        <select name="data_region" required>
+          <option value="">--Select--</option>
+          {% for opt in ['NA','EU','SEA','Other'] %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="error" data-error-for="data_region" hidden></div>
+    </div>
+    <div class="form-field">
+      <label><input type="checkbox" name="is_active" value="1" checked> Active</label>
+    </div>
+    <div class="error" data-error-for="__all__" hidden></div>
+    <div class="inline-gap-sm">
+      <button type="button" class="btn btn-secondary" data-add-client-cancel>Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
 {% include "sessions/_prework_summary.html" %}
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
   {{ super() }}
-  <script src="{{ url_for('static', filename='js/searchable_select.js') }}" defer></script>
+  {% if can_edit_company %}
+  <script src="{{ url_for('static', filename='js/add_client_modal.js') }}" defer></script>
+  {% endif %}
   <script src="{{ url_for('static', filename='js/prework_actions.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
   <script>

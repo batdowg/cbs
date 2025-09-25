@@ -24,6 +24,7 @@ from ..models import (
     ParticipantAccount,
     ensure_virtual_workshop_locations,
 )
+from ..shared.acl import is_kt_staff
 
 bp = Blueprint("clients", __name__, url_prefix="/clients")
 
@@ -65,6 +66,20 @@ def admin_required(fn):
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
         if not user or not (user.is_app_admin or user.is_admin):
+            abort(403)
+        return fn(*args, **kwargs, current_user=user)
+
+    return wrapper
+
+
+def staff_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user_id = flask_session.get("user_id")
+        if not user_id:
+            return redirect(url_for("auth.login"))
+        user = db.session.get(User, user_id)
+        if not user or not is_kt_staff(user):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
@@ -269,7 +284,7 @@ def delete_client(client_id, current_user):
 
 
 @bp.post("/inline-new")
-@admin_required
+@staff_required
 def inline_new_client(current_user):
     name = (request.form.get("name") or "").strip()
     errors: dict[str, str] = {}

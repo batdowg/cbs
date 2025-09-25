@@ -163,3 +163,31 @@ def test_generate_single_updates_company_for_staff(client, app, session_with_cli
         ).one()
         assert raw_value == sess_info["alt_client_id"]
         assert link.company_client_id == sess_info["alt_client_id"]
+
+
+def test_session_detail_participants_show_add_client_without_search(client, app, session_with_clients):
+    sess_info = session_with_clients
+    with app.app_context():
+        participant = Participant(
+            email="table@example.com",
+            first_name="Table",
+            last_name="Row",
+        )
+        db.session.add(participant)
+        db.session.flush()
+        link = SessionParticipant(
+            session_id=sess_info["session_id"],
+            participant_id=participant.id,
+        )
+        db.session.add(link)
+        db.session.commit()
+
+    with client.session_transaction() as flask_session:
+        flask_session["user_id"] = sess_info["admin_id"]
+
+    resp = client.get(f"/sessions/{sess_info['session_id']}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "searchable-select__input" not in html
+    assert "data-searchable-select" not in html
+    assert "+ Add client" in html
