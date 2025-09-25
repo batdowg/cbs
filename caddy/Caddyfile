@@ -6,7 +6,8 @@ cbs.ktapps.net {
   # (do NOT add a /static handler)
 
   # Serve certificate assets directly except for dynamic staff routes.
-  handle /certificates/new* {
+  @certificates_new path /certificates/new /certificates/new/*
+  handle @certificates_new {
     reverse_proxy app:8000
   }
   handle /certificates/* {
