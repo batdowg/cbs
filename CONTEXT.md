@@ -8,7 +8,7 @@ Every functional change must update this file **in the same PR**.
 - **App**: Python (Flask), Gunicorn
 - **DB**: PostgreSQL 16
 - **Proxy**: Caddy → `app:8000`
-- **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; `/certificates/*` and `/badges/*` are served via `handle` from `/srv` while Flask serves `/static/*`
+- **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; `/certificates/new*` proxies to Flask while other `/certificates/*` assets and `/badges/*` are served via `handle` from `/srv`, and Flask serves `/static/*`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
 - **Certificate templates**: host `./data/cert-assets` is bind-mounted to `/app/app/assets`; seed it from `app/assets/` on first deploy and keep it backed up for persistence.
@@ -630,4 +630,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Materials order Special instructions textarea uses the same wide alignment as the session form so its left edge matches other inputs.
 - Materials order header cards (Order details + Shipping details) share a `.materials-header-grid` two-column layout that stacks below 1100px, and the shipping location dropdown lists each location's title only.
 - Certificate-only sessions (`delivery_type = "Certificate only"`) also persist `Session.is_certificate_only = True`, automatically flip Ready for delivery on create/edit, force `no_material_order`, `no_prework`, and `prework_disabled`, hide Materials and Prework navigation (including dashboards and lists), and continue to follow the existing attendance + certificate rules.
-- KT Staff and App Admin can create certificate-only workshops via `GET/POST /certificates/new`. The form captures client, data region, workshop type, language, location, facilitators, schedule, and number of class days, marks the session ready for delivery, and redirects to the session detail page. The left nav surfaces a “New Certificate Session” link under Workshop Dashboard for these users.
+- KT Staff and App Admin can create certificate-only workshops via `GET/POST /certificates/new`. The form captures client, data region, workshop type, language, location, facilitators, schedule, and number of class days, marks the session ready for delivery, and redirects to the session detail page. The left nav surfaces a “New Certificate Session” link directly under “New Order” and before “Workshop Dashboard” for these users, and the page highlights that nav entry when active.
