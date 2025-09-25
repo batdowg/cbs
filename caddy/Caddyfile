@@ -15,8 +15,10 @@ cbs.ktapps.net {
   }
   @certificate_assets {
     path /certificates/*
-    not path /certificates/new
-    not path /certificates/new/*
+    not {
+      path /certificates/new
+      path /certificates/new/*
+    }
   }
   handle @certificate_assets {
     file_server
