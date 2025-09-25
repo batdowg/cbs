@@ -23,10 +23,11 @@
 {% set facs = [] %}
 {% if sess.lead_facilitator %}{% set _ = facs.append(sess.lead_facilitator) %}{% endif %}
 {% for fac in sess.facilitators %}{% set _ = facs.append(fac) %}{% endfor %}
+{% set certificate_only = (sess.delivery_type|default('', true)|lower == 'certificate only') %}
 <h1>Material Order {{ sess.id }} - {{ sess.title }} ({{ status }})</h1>
 <nav class="kt-tabs">
   <a href="{{ url_for('sessions.session_detail', session_id=sess.id) }}">Details</a>
-  {% if not sess.materials_only and sess.workshop_type %}
+  {% if not sess.materials_only and not certificate_only and sess.workshop_type %}
   <a href="{{ url_for('sessions.session_prework', session_id=sess.id) }}">Prework</a>
   {% endif %}
   <a href="{{ url_for('materials.materials_view', session_id=sess.id) }}" aria-current="page">Materials Order</a>

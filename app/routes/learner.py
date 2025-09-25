@@ -262,7 +262,14 @@ def my_prework():
             "my_prework.html", assignments=[], active_nav="my-prework"
         )
     assignments = (
-        PreworkAssignment.query.filter_by(participant_account_id=account_id)
+        PreworkAssignment.query.outerjoin(
+            Session, Session.id == PreworkAssignment.session_id
+        )
+        .filter(PreworkAssignment.participant_account_id == account_id)
+        .filter(
+            func.lower(func.trim(func.coalesce(Session.delivery_type, "")))
+            != "certificate only"
+        )
         .order_by(PreworkAssignment.due_at)
         .all()
     )

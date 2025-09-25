@@ -8,7 +8,7 @@ from flask import (
     session as flask_session,
     url_for,
 )
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 from datetime import date
 
@@ -91,12 +91,18 @@ def list_my_sessions():
             .order_by(Session.start_date)
             .all()
         )
-        assignments = {
-            a.session_id: a
-            for a in PreworkAssignment.query.filter_by(
-                participant_account_id=account_id
-            ).all()
-        }
+        assignment_rows = (
+            PreworkAssignment.query.outerjoin(
+                Session, Session.id == PreworkAssignment.session_id
+            )
+            .filter(PreworkAssignment.participant_account_id == account_id)
+            .filter(
+                func.lower(func.trim(func.coalesce(Session.delivery_type, "")))
+                != "certificate only"
+            )
+            .all()
+        )
+        assignments = {a.session_id: a for a in assignment_rows}
         certs = {
             c.session_id: c
             for c in db.session.query(Certificate)

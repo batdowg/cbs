@@ -5,13 +5,37 @@ from __future__ import annotations
 from typing import Any, Iterable, Sequence
 
 
+CERTIFICATE_ONLY_TYPE = "Certificate only"
+
+
+def _normalized_delivery_type(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip().lower()
+    return ""
+
+
+def is_certificate_only(session: Any) -> bool:
+    """Return True when the session represents a certificate-only engagement."""
+
+    if session is None:
+        return False
+    delivery_type = getattr(session, "delivery_type", None)
+    return _normalized_delivery_type(delivery_type) == CERTIFICATE_ONLY_TYPE.lower()
+
+
+def is_certificate_only_session(session: Any) -> bool:
+    """Backwards-compatible alias for older imports."""
+
+    return is_certificate_only(session)
+
+
 def is_material_only(session: Any) -> bool:
     """Return True when the session represents a material-only engagement."""
 
     if session is None:
         return False
     delivery_type = getattr(session, "delivery_type", None)
-    if isinstance(delivery_type, str) and delivery_type.strip().lower() == "material only":
+    if _normalized_delivery_type(delivery_type) == "material only":
         return True
     return bool(getattr(session, "materials_only", False))
 
@@ -56,6 +80,8 @@ def has_materials(
     """Return True when the session involves any materials activity."""
 
     if session is None:
+        return False
+    if is_certificate_only(session):
         return False
     if is_material_only(session):
         return True

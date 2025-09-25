@@ -137,6 +137,10 @@ def list_orders():
     elif workshop_status_filter == "Closed":
         query = query.filter(Session.status == "Closed")
     query = query.filter(Session.cancelled.is_(False))
+    query = query.filter(
+        func.lower(func.trim(func.coalesce(Session.delivery_type, "")))
+        != "certificate only"
+    )
 
     if client_id:
         query = query.filter(Session.client_id == client_id)

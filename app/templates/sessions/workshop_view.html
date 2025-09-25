@@ -4,6 +4,7 @@
 {% set delivery_label = session.delivery_type or '—' %}
 {% set status_label = session.computed_status %}
 {% set workshop_heading = session.id ~ ' ' ~ session.title ~ ': ' ~ workshop_code ~ ' (' ~ delivery_label ~ ') - ' ~ status_label %}
+{% set certificate_only = certificate_only_session|default(False) %}
 {% block title %}{{ workshop_heading }}{% endblock %}
 {% block content %}
 {% set highlight_lifecycle_fields = (not session.delivered) and (not session.finalized) %}
@@ -79,7 +80,7 @@
 <section class="kt-card" data-prework-container>
   <h2 class="kt-card-title">Participants</h2>
   <div class="prework-feedback" data-prework-feedback aria-live="polite"></div>
-  {% if show_disable_prework %}
+  {% if show_disable_prework and not certificate_only %}
   <div class="prework-toolbar" style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-3);">
     <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" data-prework-send>
       <input type="hidden" name="next" value="{{ workshop_return }}">
@@ -94,7 +95,7 @@
       <button type="submit" class="btn btn-danger">No prework &amp; don&rsquo;t send accounts</button>
     </form>
   </div>
-  {% elif can_send_prework %}
+  {% elif can_send_prework and not certificate_only %}
   <form action="{{ url_for('sessions.send_prework', session_id=session.id) }}" method="post" style="margin-bottom: var(--space-3);" data-prework-send>
     <input type="hidden" name="next" value="{{ workshop_return }}">
     <button type="submit" class="btn btn-secondary">Send prework to all not submitted</button>
