@@ -624,3 +624,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Session create/edit forms filter workshop locations based on delivery type: Onsite shows onsite-only, Virtual shows virtual-only, incompatible selections are cleared, and an inline notice surfaces when no locations match.
 - Shared welcome partial now splits display names via Python `.split()` to avoid the unavailable Jinja `|split` filter while preserving graceful handling for empty or single-word names.
 - Session create form keeps the Simulation Outline row aligned with adjacent fields when toggled for simulation-based workshops, and the Notes & Special instructions textarea now spans roughly 640px on desktop while remaining full-width on small screens.
+- Materials order Special instructions textarea uses the same wide alignment as the session form so its left edge matches other inputs.
