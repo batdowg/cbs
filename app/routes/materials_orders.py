@@ -20,6 +20,7 @@ from ..models import (
 )
 from .materials import ORDER_TYPES, ORDER_STATUSES, can_manage_shipment, is_view_only
 from ..shared.sessions_lifecycle import has_materials
+from ..shared.names import combine_first_last
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
 
@@ -174,16 +175,27 @@ def list_orders():
         participant_rows = (
             db.session.query(
                 SessionParticipant.session_id,
+                Participant.first_name,
+                Participant.last_name,
                 Participant.full_name,
                 Participant.email,
             )
             .join(Participant, Participant.id == SessionParticipant.participant_id)
             .filter(SessionParticipant.session_id.in_(session_ids))
-            .order_by(Participant.full_name.asc(), Participant.email.asc())
+            .order_by(
+                func.lower(Participant.last_name).nullslast(),
+                func.lower(Participant.first_name).nullslast(),
+                func.lower(Participant.full_name).nullslast(),
+                Participant.email.asc(),
+            )
             .all()
         )
-        for sid, full_name, email in participant_rows:
-            display = (full_name or "").strip() or (email or "").strip()
+        for sid, first_name, last_name, full_name, email in participant_rows:
+            display = (
+                full_name
+                or combine_first_last(first_name, last_name)
+                or (email or "").strip()
+            )
             if not display:
                 continue
             participant_map.setdefault(sid, []).append(display)

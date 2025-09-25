@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from ..app import db
 from ..models import Participant, ParticipantAccount, User, AuditLog
+from .names import combine_first_last, split_full_name
 from .strings import normalize_email
 from .constants import DEFAULT_PARTICIPANT_PASSWORD, ROLE_ATTRS, CONTRACTOR
 from .acl import validate_role_combo, can_demote_to_contractor
@@ -43,15 +44,30 @@ def ensure_participant_account(
         return account, temp_password
 
     user = User.query.filter(func.lower(User.email) == email_norm).first()
-    if user and not participant.full_name:
-        participant.full_name = user.full_name
-    if user and not getattr(participant, "title", None):
-        participant.title = user.title
+    if user:
+        if not participant.first_name and user.first_name:
+            participant.first_name = user.first_name
+        if not participant.last_name and user.last_name:
+            participant.last_name = user.last_name
+        if not participant.full_name:
+            participant.full_name = user.display_name
+        if not getattr(participant, "title", None) and user.title:
+            participant.title = user.title
+
+    participant_display = participant.full_name or combine_first_last(
+        participant.first_name, participant.last_name
+    )
+    user_display = user.display_name if user else ""
 
     account = get_participant_account_by_email(email_norm)
     temp_password: Optional[str] = None
+    base_name = participant_display or user_display or (participant.email or email_norm)
     if account:
         participant.account_id = account.id
+        if base_name and not account.full_name:
+            account.full_name = base_name
+            if not account.certificate_name:
+                account.certificate_name = base_name
         db.session.add(participant)
         current_app.logger.info(
             f"[ACCOUNT] found pa={account.id} email={email_norm}"
@@ -64,8 +80,8 @@ def ensure_participant_account(
         return account, temp_password
     account = ParticipantAccount(
         email=email_norm,
-        full_name=participant.full_name or (user.full_name if user else participant.email),
-        certificate_name=participant.full_name or (user.full_name if user else participant.email),
+        full_name=base_name,
+        certificate_name=base_name,
         is_active=True,
     )
     db.session.add(account)
@@ -100,7 +116,17 @@ def promote_participant_to_user(email: str, role_names: list[str], actor) -> Use
     validate_role_combo(role_names)
     if User.query.filter(func.lower(User.email) == account.email.lower()).first():
         raise ValueError("Already a user")
-    user = User(email=account.email, full_name=account.full_name, region="NA")
+    name_source = account.full_name or account.certificate_name or account.email
+    first_name, last_name = split_full_name(name_source)
+    user = User(
+        email=account.email,
+        full_name=name_source,
+        first_name=first_name,
+        last_name=last_name,
+        region="NA",
+    )
+    if not user.full_name:
+        user.full_name = combine_first_last(first_name, last_name) or account.email
     temp_password = secrets.token_urlsafe(8)
     user.set_password(temp_password)
     if hasattr(user, "must_change_password"):

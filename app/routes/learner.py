@@ -44,6 +44,7 @@ from ..shared.profile_images import (
     save_profile_image,
 )
 from ..shared.time import fmt_time_range_with_tz
+from ..shared.names import combine_first_last, split_full_name
 
 import time
 
@@ -471,11 +472,23 @@ def profile():
             flash("Password updated.", "success")
             return redirect(url_for("learner.profile"))
         if form_kind == "sync" and user and account:
-            account.full_name = user.full_name
+            account.full_name = user.display_name
+            if not account.certificate_name:
+                account.certificate_name = user.display_name
             db.session.commit()
             flash("Names synchronized.", "success")
             return redirect(url_for("learner.profile"))
-        full_name = (request.form.get("full_name") or "").strip()[:200]
+        first_name = (request.form.get("first_name") or "").strip()[:100]
+        last_name = (request.form.get("last_name") or "").strip()[:100]
+        fallback_full = (request.form.get("full_name") or "").strip()[:200]
+        if not first_name and not last_name and fallback_full:
+            split_first, split_last = split_full_name(fallback_full)
+            if split_first:
+                first_name = split_first[:100]
+            if split_last:
+                last_name = split_last[:100]
+        display_name = combine_first_last(first_name, last_name)
+        full_name = (display_name or fallback_full)[:200]
         pref_lang = (request.form.get("preferred_language") or "en")[:10]
         cert_name = (request.form.get("certificate_name") or "").strip()[:200]
         phone = (request.form.get("phone") or "").strip()[:50]
@@ -525,7 +538,9 @@ def profile():
             return redirect(url_for("learner.profile"))
 
         if user_id:
-            user.full_name = full_name
+            user.first_name = first_name or None
+            user.last_name = last_name or None
+            user.full_name = full_name or None
             user.title = (request.form.get("title") or "").strip()[:255]
             user.preferred_language = pref_lang
             user.phone = phone or None
@@ -536,6 +551,7 @@ def profile():
                 user.profile_image_path = new_photo_path
             cert_value = cert_name or full_name
             if account:
+                account.full_name = full_name or account.full_name
                 account.certificate_name = cert_value
                 account.preferred_language = pref_lang
                 account.phone = phone or None
@@ -560,7 +576,7 @@ def profile():
                 db.session.add(account)
         else:
             if account:
-                account.full_name = full_name
+                account.full_name = full_name or account.full_name
                 account.certificate_name = cert_name or full_name
                 account.preferred_language = pref_lang
                 account.phone = phone or None
@@ -569,6 +585,20 @@ def profile():
                 account.country = country or None
                 if new_photo_path:
                     account.profile_image_path = new_photo_path
+
+        if email:
+            participant_rows = (
+                db.session.query(Participant)
+                .filter(func.lower(Participant.email) == email)
+                .all()
+            )
+            for participant in participant_rows:
+                if first_name:
+                    participant.first_name = first_name
+                if last_name:
+                    participant.last_name = last_name
+                if full_name:
+                    participant.full_name = full_name
 
         if remove_photo:
             to_clear = None
@@ -583,18 +613,41 @@ def profile():
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("learner.profile"))
+    first_val = ""
+    last_val = ""
+    display_val = ""
+    if user_id and user:
+        first_val = (user.first_name or "").strip()
+        last_val = (user.last_name or "").strip()
+        display_val = (user.display_name or "").strip()
+        if not (first_val or last_val) and user.full_name:
+            split_first, split_last = split_full_name(user.full_name)
+            if split_first and not first_val:
+                first_val = split_first
+            if split_last and not last_val:
+                last_val = split_last
+    elif account:
+        split_first, split_last = split_full_name(account.full_name or "")
+        if split_first:
+            first_val = split_first
+        if split_last:
+            last_val = split_last
+        display_val = (account.full_name or "").strip()
+    if not display_val:
+        display_val = combine_first_last(first_val, last_val) or (
+            (account.full_name or "") if account else ""
+        )
+
     return render_template(
         "profile.html",
         email=email,
-        full_name=(
-            (user.full_name if user_id else account.full_name)
-            if (user or account)
-            else ""
-        ),
+        first_name=first_val,
+        last_name=last_val,
+        display_name=display_val,
         certificate_name=(
             account.certificate_name
             if account
-            else (user.full_name if user_id and user else "")
+            else (display_val if user_id and user else "")
         ),
         preferred_language=(
             (user.preferred_language if user_id else account.preferred_language)

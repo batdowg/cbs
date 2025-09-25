@@ -27,11 +27,12 @@ def provision_for_session(session: Session) -> Dict[str, int]:
         account = ParticipantAccount.query.filter(
             func.lower(ParticipantAccount.email) == email
         ).first()
+        display_name = participant.display_name
         if not account:
             account = ParticipantAccount(
                 email=email,
-                full_name=participant.full_name or "",
-                certificate_name=participant.full_name or "",
+                full_name=display_name,
+                certificate_name=display_name,
                 is_active=True,
             )
             account.set_password(DEFAULT_PARTICIPANT_PASSWORD)
@@ -43,7 +44,11 @@ def provision_for_session(session: Session) -> Dict[str, int]:
                 reactivated += 1
             else:
                 already_active += 1
-            if not account.certificate_name and account.full_name:
+            if display_name:
+                account.full_name = display_name
+                if not account.certificate_name:
+                    account.certificate_name = display_name
+            elif not account.certificate_name and account.full_name:
                 account.certificate_name = account.full_name
             if account.password_hash is None:
                 account.set_password(DEFAULT_PARTICIPANT_PASSWORD)

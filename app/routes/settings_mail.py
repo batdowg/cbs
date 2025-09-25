@@ -1,6 +1,7 @@
 import os
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from sqlalchemy import func
 
 from ..app import db
 from ..emailer import send
@@ -55,7 +56,10 @@ def settings(current_user):
         .order_by(
             ProcessorAssignment.region,
             ProcessorAssignment.processing_type,
-            User.full_name,
+            func.lower(User.last_name).nullslast(),
+            func.lower(User.first_name).nullslast(),
+            func.lower(User.full_name).nullslast(),
+            User.email,
         )
         .all()
     )
@@ -64,7 +68,14 @@ def settings(current_user):
             row.user
         )
     users = (
-        User.query.filter_by(is_admin=True).order_by(User.full_name).all()
+        User.query.filter_by(is_admin=True)
+        .order_by(
+            func.lower(User.last_name).nullslast(),
+            func.lower(User.first_name).nullslast(),
+            func.lower(User.full_name).nullslast(),
+            User.email,
+        )
+        .all()
     )
     return render_template(
         "settings_mail.html",

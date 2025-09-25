@@ -1,4 +1,4 @@
-Hello,
+Hi {{ greeting_name }},
 
 Your workshop portal access for "{{ session.title }}" is ready.
 

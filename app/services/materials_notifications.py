@@ -5,6 +5,7 @@ import json
 from typing import Iterable, Literal
 
 from flask import current_app, render_template, url_for
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from .. import emailer
@@ -61,7 +62,12 @@ def _fetch_processor_emails(region: str, bucket: str) -> list[str]:
             ProcessorAssignment.region == region,
             ProcessorAssignment.processing_type == bucket,
         )
-        .order_by(User.full_name, User.email)
+        .order_by(
+            func.lower(User.last_name).nullslast(),
+            func.lower(User.first_name).nullslast(),
+            func.lower(User.full_name).nullslast(),
+            User.email,
+        )
         .all()
     )
     emails: list[str] = []
