@@ -8,7 +8,7 @@ Every functional change must update this file **in the same PR**.
 - **App**: Python (Flask), Gunicorn
 - **DB**: PostgreSQL 16
 - **Proxy**: Caddy → `app:8000`
-- **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; `/certificates/new*` proxies to Flask while other `/certificates/*` assets and `/badges/*` are served via `handle` from `/srv`, and Flask serves `/static/*`
+- **Caddy config**: repo-managed at `caddy/Caddyfile` and bind-mounted to `/etc/caddy/Caddyfile`; all `/certificates/*` routes proxy to Flask while `/badges/*` continue to serve from `/srv`, and Flask serves `/static/*`
 - **Docker Compose services**: `cbs-app-1`, `cbs-db-1`, `cbs-caddy-1`
 - **In-container paths**: code at `/app/app/...`; site mount at `/srv` (host `./site`)
 - **Certificate templates**: host `./data/cert-assets` is bind-mounted to `/app/app/assets`; seed it from `app/assets/` on first deploy and keep it backed up for persistence.
