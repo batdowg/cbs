@@ -625,3 +625,4 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Shared welcome partial now splits display names via Python `.split()` to avoid the unavailable Jinja `|split` filter while preserving graceful handling for empty or single-word names.
 - Session create form keeps the Simulation Outline row aligned with adjacent fields when toggled for simulation-based workshops, and the Notes & Special instructions textarea now spans roughly 640px on desktop while remaining full-width on small screens.
 - Materials order Special instructions textarea uses the same wide alignment as the session form so its left edge matches other inputs.
+- Materials order header cards (Order details + Shipping details) share a `.materials-header-grid` two-column layout that stacks below 1100px, and the shipping location dropdown lists each location's title only.

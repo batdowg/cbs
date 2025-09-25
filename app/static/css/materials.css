@@ -1,0 +1,11 @@
+.materials-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 1100px) {
+  .materials-header-grid {
+    grid-template-columns: 1fr;
+  }
+}

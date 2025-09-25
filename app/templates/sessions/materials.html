@@ -17,6 +17,7 @@
 </script>{% endblock %}
 {% block extra_head %}
   {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/materials.css') }}">
 {% endblock %}
 {% block content %}
 {% set facs = [] %}
@@ -31,10 +32,11 @@
   <a href="{{ url_for('materials.materials_view', session_id=sess.id) }}" aria-current="page">Materials Order</a>
 </nav>
 <form method="post">
-  <div class="kt-card form-align">
-    <h2 class="kt-card-title">Order details</h2>
-    {% set client_display = sess.client.name|default('', true) if sess.client else '' %}
-    {% if sess.region %}{% set client_display = client_display ~ (', ' if client_display else '') ~ sess.region %}{% endif %}
+  <div class="materials-header-grid">
+    <div class="kt-card form-align">
+      <h2 class="kt-card-title">Order details</h2>
+      {% set client_display = sess.client.name|default('', true) if sess.client else '' %}
+      {% if sess.region %}{% set client_display = client_display ~ (', ' if client_display else '') ~ sess.region %}{% endif %}
     <div class="form-row">
       <label>Client</label>
       <div class="form-field">
@@ -53,7 +55,7 @@
         <span class="form-display">{% for u in facs %}{{ u.full_name or u.email }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
       </div>
     </div>
-    {% set show_arrival_input = can_edit_arrival and not readonly %}
+      {% set show_arrival_input = can_edit_arrival and not readonly %}
     <div class="form-row">
       <label{% if show_arrival_input %} for="arrival-date"{% endif %}>Latest arrival date</label>
       <div class="form-field">
@@ -70,10 +72,10 @@
         <span class="form-display">{{ shipment.created_at.date() if shipment.created_at else '' }}</span>
       </div>
     </div>
-  </div>
-  <div class="kt-card form-align">
-    <h2 class="kt-card-title">Shipping details</h2>
-    {% set can_edit_shipping = can_manage and not readonly %}
+    </div>
+    <div class="kt-card form-align">
+      <h2 class="kt-card-title">Shipping details</h2>
+      {% set can_edit_shipping = can_manage and not readonly %}
     <div class="form-row">
       <label{% if can_manage %} for="shipping-location-select"{% endif %}>Shipping location</label>
       <div class="form-field">
@@ -82,8 +84,7 @@
           <select name="shipping_location_id" id="shipping-location-select"{% if not can_edit_shipping %} disabled{% endif %}>
             <option value=""></option>
             {% for loc in shipping_locations %}
-
-            <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title|default(loc.display_name(), true) }}</option>
+            <option value="{{ loc.id }}" data-contact="{{ loc.contact_name|default('', true) }}" data-email="{{ loc.contact_email|default('', true) }}" data-phone="{{ loc.contact_phone|default('', true) }}" data-address1="{{ loc.address_line1|default('', true) }}" data-address2="{{ loc.address_line2|default('', true) }}" data-city="{{ loc.city|default('', true) }}" data-state="{{ loc.state|default('', true) }}" data-postal="{{ loc.postal_code|default('', true) }}" data-country="{{ loc.country|default('', true) }}" {% if loc_val and loc_val|int==loc.id %}selected{% endif %}>{{ loc.title or loc.display_name() }}</option>
             {% endfor %}
           </select>
           {% if can_edit_shipping and sess.client_id %}
@@ -117,10 +118,11 @@
         <span id="ship-contact-email" class="form-display">{{ shipment.contact_email|default('', true) }}</span>
       </div>
     </div>
-    <div class="form-row">
-      <label>Contact phone</label>
-      <div class="form-field">
-        <span id="ship-contact-phone" class="form-display">{{ shipment.contact_phone|default('', true) }}</span>
+      <div class="form-row">
+        <label>Contact phone</label>
+        <div class="form-field">
+          <span id="ship-contact-phone" class="form-display">{{ shipment.contact_phone|default('', true) }}</span>
+        </div>
       </div>
     </div>
   </div>
