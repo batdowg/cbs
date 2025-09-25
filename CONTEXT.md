@@ -304,6 +304,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - `sessions` (fk workshop_type_id, optional fk simulation_outline_id, start_date, end_date, timezone, location fields, **paper_size** enum A4/LETTER, **workshop_language** enum en/es/fr/ja/de/nl/zh, notes, crm_notes, delivered_at, finalized_at, **no_prework**, **prework_disabled** (boolean), **prework_disable_mode** (`notify`/`silent`), **no_material_order**, optional **csa_participant_account_id**)
 - `session_facilitators` (m:n users↔sessions)
 - `session_participants` (m:n participant_accounts↔sessions + per-person status)
+  - Tracks `company_client_id` (FK → clients.id). Existing rows default to the session client; KT Staff can change the company per participant from session detail or workshop view using the searchable client select. Non-staff viewers see the assigned client as read-only. Certificates continue to render participant names only.
 
 ### Sessions – Staff shortcuts
 

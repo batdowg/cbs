@@ -108,6 +108,14 @@
     <input type="text" name="last_name" class="js-name-last" placeholder="Last name" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="text" name="title" placeholder="Title">
+    {% if can_edit_company %}
+    <select name="company_client_id" data-searchable-select aria-label="Company (Client)">
+      <option value="" {% if not session.client_id %}selected{% endif %}>—</option>
+      {% for client in client_options %}
+      <option value="{{ client.id }}" {% if session.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
     <button type="submit" class="btn btn-secondary">Add Participant</button>
   </form>
   <form action="{{ url_for('sessions.import_csv', session_id=session.id) }}" method="post" enctype="multipart/form-data">
@@ -153,6 +161,7 @@
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Full Name</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Email</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
+            <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Company (Client)</th>
             {% if attendance_days %}
             <th style="text-align: center;" scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
             {% endif %}
@@ -175,6 +184,28 @@
             <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
             <td>{{ row.participant.email }}</td>
             <td>{{ row.participant.title }}</td>
+            {% set selected_company_id = row.link.company_client_id or session.client_id %}
+            {% if can_edit_company %}
+            <td>
+              {% if client_options %}
+              <select name="company_client_id"
+                      form="participant-form-{{ row.participant.id }}"
+                      data-searchable-select
+                      aria-label="Company for {{ row.participant.display_name or row.participant.email }}">
+                <option value="" {% if not selected_company_id %}selected{% endif %}>—</option>
+                {% for client in client_options %}
+                <option value="{{ client.id }}" {% if client.id == selected_company_id %}selected{% endif %}>{{ client.name }}</option>
+                {% endfor %}
+              </select>
+              {% else %}
+              {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
+              {{ display_company or '—' }}
+              {% endif %}
+            </td>
+            {% else %}
+            {% set display_company = row.link.company_client.name if row.link.company_client else (session.client.name if session.client else '') %}
+            <td>{{ display_company or '—' }}</td>
+            {% endif %}
             {% if attendance_days %}
               {% set attendance = row.attendance if row.attendance is defined else {} %}
               {% for day in attendance_days %}
@@ -210,7 +241,7 @@
               {% endif %}
             </td>
             <td>
-              <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post">
+              <form action="{{ url_for('sessions.generate_single', session_id=session.id, participant_id=row.participant.id) }}" method="post" id="participant-form-{{ row.participant.id }}">
                 <input type="hidden" name="next" value="{{ workshop_return }}">
                 <input type="date" name="completion_date" value="{{ row.link.completion_date }}">
                 <button type="submit" class="btn btn-secondary" name="action" value="save">Save</button>
@@ -246,7 +277,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="{{ 7 + (attendance_days|length if attendance_days else 0) }}">No participants added yet.</td>
+            <td colspan="{{ 8 + (attendance_days|length if attendance_days else 0) }}">No participants added yet.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -334,6 +365,7 @@
 
 {% block extra_js %}
   {{ super() }}
+  <script src="{{ url_for('static', filename='js/searchable_select.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/prework_actions.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/attendance_controls.js') }}"></script>
   <script>

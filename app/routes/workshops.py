@@ -168,9 +168,11 @@ def workshop_view(session_id: int, current_user):
     attendance_days: list[int] = []
     attendance_map: dict[int, dict[int, bool]] = {}
     require_full_attendance = False
+    client_options: list[Client] = []
     if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
+            .options(selectinload(SessionParticipant.company_client))
             .join(Participant, SessionParticipant.participant_id == Participant.id)
             .outerjoin(
                 Certificate,
@@ -219,6 +221,11 @@ def workshop_view(session_id: int, current_user):
         if mapping:
             badge_filename = mapping.badge_filename
 
+    if is_staff_viewer and not material_only:
+        client_options = (
+            Client.query.order_by(func.lower(Client.name)).all()
+        )
+
     can_manage_prework = bool(
         not certificate_only
         and (
@@ -256,6 +263,8 @@ def workshop_view(session_id: int, current_user):
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
         certificate_only_session=certificate_only,
+        client_options=client_options,
+        can_edit_company=is_staff_viewer,
     )
 
 

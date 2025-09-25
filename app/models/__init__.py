@@ -536,11 +536,16 @@ class SessionParticipant(db.Model):
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
     completion_date = db.Column(db.Date)
+    company_client_id = db.Column(
+        db.Integer, db.ForeignKey("clients.id", ondelete="SET NULL")
+    )
     __table_args__ = (
         db.UniqueConstraint(
             "session_id", "participant_id", name="uix_session_participant"
         ),
     )
+
+    company_client = db.relationship("Client")
 
 
 class ParticipantAttendance(db.Model):

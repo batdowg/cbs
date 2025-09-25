@@ -1595,6 +1595,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     if not material_only:
         rows = (
             db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
+            .options(selectinload(SessionParticipant.company_client))
             .join(Participant, SessionParticipant.participant_id == Participant.id)
             .outerjoin(
                 Certificate,
@@ -1640,6 +1641,12 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         mapping, _ = get_template_mapping(sess)
         if mapping:
             badge_filename = mapping.badge_filename
+    can_edit_company = bool(current_user and is_kt_staff(current_user))
+    client_options: list[Client] = []
+    if can_edit_company and not material_only:
+        client_options = (
+            Client.query.order_by(func.lower(Client.name)).all()
+        )
     can_manage_attendance = bool(
         attendance_days
         and not view_csa
@@ -1665,6 +1672,8 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         material_only_session=material_only,
         certificate_only_session=certificate_only,
         require_full_attendance=require_full_attendance,
+        client_options=client_options,
+        can_edit_company=can_edit_company,
     )
 
 
@@ -2019,6 +2028,31 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
     last_name = (request.form.get("last_name") or "").strip()[:100]
     raw_full_name = (request.form.get("full_name") or "").strip()
     title = (request.form.get("title") or "").strip()
+    raw_company_value = request.form.get("company_client_id")
+    company_field_present = raw_company_value is not None
+    trimmed_company = (
+        (raw_company_value or "").strip() if company_field_present else ""
+    )
+    selected_company_id: int | None = None
+    if current_user and is_kt_staff(current_user) and company_field_present:
+        if trimmed_company:
+            try:
+                candidate = int(trimmed_company)
+            except ValueError:
+                candidate = None
+            else:
+                client = db.session.get(Client, candidate) if candidate else None
+                if client:
+                    selected_company_id = client.id
+        else:
+            selected_company_id = None
+    if selected_company_id is None:
+        if not company_field_present or not (current_user and is_kt_staff(current_user)):
+            selected_company_id = sess.client_id
+        elif trimmed_company == "":
+            selected_company_id = None
+        elif sess.client_id:
+            selected_company_id = sess.client_id
     if not email:
         flash("Email required", "error")
         return _redirect_after_participant_action(session_id)
@@ -2078,7 +2112,13 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
             participant_id=participant.id,
             completion_date=sess.end_date,
         )
+        link.company_client_id = selected_company_id
         db.session.add(link)
+    else:
+        if current_user and is_kt_staff(current_user):
+            link.company_client_id = selected_company_id
+        elif link.company_client_id is None and selected_company_id is not None:
+            link.company_client_id = selected_company_id
     account = (
         db.session.query(ParticipantAccount)
         .filter(db.func.lower(ParticipantAccount.email) == email)
@@ -2360,7 +2400,10 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
                 participant_id=participant.id,
                 completion_date=sess.end_date,
             )
+            link.company_client_id = sess.client_id
             db.session.add(link)
+        elif link.company_client_id is None and sess.client_id:
+            link.company_client_id = sess.client_id
         imported += 1
         base_name = full_name or display_name or user_display or email
         account = (
@@ -2416,7 +2459,8 @@ def generate_single(session_id: int, participant_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
-    if not sess.delivered or sess.cancelled:
+    action = request.form.get("action")
+    if (not sess.delivered or sess.cancelled) and action == "generate":
         flash("Delivered required before generating certificates", "error")
         return _redirect_after_participant_action(session_id)
     link = (
@@ -2426,9 +2470,23 @@ def generate_single(session_id: int, participant_id: int, current_user):
     )
     if not link:
         abort(404)
-    action = request.form.get("action")
+    updated = False
     if "completion_date" in request.form:
         link.completion_date = request.form.get("completion_date") or None
+        updated = True
+    company_raw = request.form.get("company_client_id")
+    if is_kt_staff(current_user) and company_raw is not None:
+        trimmed = (company_raw or "").strip()
+        new_company_id: int | None = None
+        if trimmed:
+            try:
+                new_company_id = int(trimmed)
+            except ValueError:
+                new_company_id = None
+        if link.company_client_id != new_company_id:
+            link.company_client_id = new_company_id
+            updated = True
+    if updated:
         db.session.commit()
     if action == "generate":
         participant = db.session.get(Participant, participant_id)
