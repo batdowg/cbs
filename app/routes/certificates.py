@@ -321,11 +321,3 @@ def new_certificate_session(current_user):
         selected_client_id=selected_client_id,
         form=form,
     )
-
-
-bp.add_url_rule(
-    "/new",
-    view_func=new_certificate_session,
-    methods=["GET", "POST"],
-    endpoint="new_session",
-)

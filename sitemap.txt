@@ -8,7 +8,7 @@
 /sessions                – Staff/CSA: list with filters; excludes Material only sessions
 /materials               – Materials dashboard; shows only materials-enabled sessions (includes Material only orders)
 /sessions/new            – Create session (staff only)
-/certificates/new        – Create certificate-only session (KT Staff/App Admin)
+/certificates/new        – Create certificate-only session (KT Staff)
 /sessions/<id>           – Session detail (overview + tabs)
 /workshops/<id>         – Workshop runner view (Delivery/Contractor; also used when a user has KT Facilitator among roles; Materials card hidden for materials-only sessions which redirect to /sessions/<id>; Resources card lists session-language facilitator/Both resources; Prework summary card groups responses by question with ';' separators)
 /sessions/<id>/prework  – Staff Prework tab (summary card mirrors workshop view and sits above assignment management/send controls)
