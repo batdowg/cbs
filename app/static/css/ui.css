@@ -170,6 +170,39 @@ a:focus-visible {
   font-weight: 600;
 }
 
+.badge-download-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.badge-download-link:hover,
+.badge-download-link:focus-visible {
+  text-decoration: none;
+}
+
+.badge-download-link--disabled {
+  color: var(--kt-muted);
+}
+
+.badge-chip {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--kt-border);
+  background-color: color-mix(in srgb, var(--kt-border) 15%, var(--kt-bg));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+}
+
+.badge-chip--placeholder {
+  background-image: none !important;
+}
+
 .certificate-badge-number {
   margin-top: var(--space-2);
 }
