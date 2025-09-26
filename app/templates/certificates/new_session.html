@@ -76,14 +76,14 @@
       <label>
         <span class="form-label">Daily start time*</span>
         <input type="time" name="daily_start_time" value="{{ form_data.get('daily_start_time') or '08:00' }}" required>
-      </label>
-      <label>
         <span class="form-label">Daily end time*</span>
         <input type="time" name="daily_end_time" value="{{ form_data.get('daily_end_time') or '17:00' }}" required>
       </label>
       <label>
         <span class="form-label"># of class days*</span>
         <input type="number" name="number_of_class_days" min="1" max="10" value="{{ form_data.get('number_of_class_days') or '1' }}" required>
+      </label>
+      <label>
         <span class="form-label">Lead facilitator</span>
         <select name="lead_facilitator_id" id="certificate-lead-select">
           <option value="">-- Select --</option>
