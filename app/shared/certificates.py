@@ -7,7 +7,7 @@ from io import BytesIO
 from typing import Iterable, NamedTuple, Sequence
 
 from flask import current_app
-from PIL import Image
+from PIL import Image, PngImagePlugin
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -592,7 +592,9 @@ def _resolve_badge_source(series_code: str, explicit: str | None) -> str:
     )
 
 
-def _render_badge_png(source_path: str, dest_path: str) -> None:
+def _render_badge_png(
+    source_path: str, dest_path: str, pnginfo: PngImagePlugin.PngInfo | None = None
+) -> None:
     resampling = getattr(Image, "Resampling", None)
     resample_filter = (
         resampling.LANCZOS if resampling is not None else Image.LANCZOS
@@ -604,7 +606,7 @@ def _render_badge_png(source_path: str, dest_path: str) -> None:
         offset_x = (600 - badge.width) // 2
         offset_y = (600 - badge.height) // 2
         canvas_image.paste(badge, (offset_x, offset_y), badge)
-        canvas_image.save(dest_path, format="PNG")
+        canvas_image.save(dest_path, format="PNG", pnginfo=pnginfo)
 
 
 def write_badge_png_for_certificate(cert: Certificate) -> None:
@@ -627,7 +629,29 @@ def write_badge_png_for_certificate(cert: Certificate) -> None:
         return
 
     ensure_dir(output_dir)
-    _render_badge_png(source_path, abs_path)
+    series_lookup = (
+        CertificateTemplateSeries.query.filter_by(code=series_code).one_or_none()
+        if series_code
+        else None
+    )
+    series_name_source = series_lookup.name if series_lookup else series_code
+    series_name = (series_name_source or "").strip()
+    if not series_name:
+        series_name = str(series_code or "").strip()
+    if not series_name:
+        series_name = str(cert.certification_number)
+
+    meta = PngImagePlugin.PngInfo()
+    meta.add_text("Title", f"{series_name} badge")
+    meta.add_text("CertificationNumber", str(cert.certification_number))
+    meta.add_text(
+        "Issuer", current_app.config.get("CERT_ISSUER", "Kepner-Tregoe CBS")
+    )
+    meta.add_text(
+        "CreationTime", datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    )
+
+    _render_badge_png(source_path, abs_path, pnginfo=meta)
     os.chmod(abs_path, 0o644)
     current_app.logger.info("[BADGE] wrote %s", abs_path)
 
