@@ -3,7 +3,7 @@
 {% block content %}
 <h1>New Certificate Session</h1>
 <p><a href="{{ url_for('sessions.list_sessions') }}">Back to Sessions</a></p>
-<form method="post" class="kt-card" data-dirty-guard="true" style="padding:var(--space-4);">
+<form method="post" class="kt-card" data-dirty-guard="true">
   {% set form_data = form or {} %}
   {% set title_value = title_default or '' %}
   {% if form_data and ('title' in form_data) %}
@@ -11,16 +11,16 @@
   {% endif %}
   {% set selected_lead = form_data.get('lead_facilitator_id') if form_data else '' %}
   {% set selected_additional = form.getlist('additional_facilitators') if form else [] %}
-  <div class="grid grid-2 gap-md">
-    <div class="grid gap-sm">
-      <label>
-        <span class="form-label">Workshop title*</span>
+  <div class="grid grid-2 gap-lg">
+    <div class="grid gap-lg">
+      <div class="grid gap-sm">
+        <label class="form-label" for="title">Workshop title*</label>
         <input type="text" name="title" id="title" placeholder="e.g., Pilot group 1" value="{{ title_value }}">
-      </label>
-      <label>
-        <div class="inline-gap-sm">
-        <span class="form-label">Client*</span>
-          <select id="certificate-client-select" name="client_id" data-client-select required>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="certificate-client-select">Client*</label>
+        <div class="inline-gap-sm" style="display:flex; align-items:center;">
+          <select id="certificate-client-select" name="client_id" data-client-select required style="flex:1;">
             <option value="">-- Select --</option>
             {% for client in clients %}
             <option value="{{ client.id }}" {% if (selected_client_id or form_data.get('client_id'))|int == client.id %}selected{% endif %}>{{ client.name }}</option>
@@ -28,35 +28,35 @@
           </select>
           <button type="button" class="btn btn-secondary btn-sm" data-add-client-trigger data-target-select="certificate-client-select">+ Add client</button>
         </div>
-      </label>
-      <label>
-        <span class="form-label">Data region*</span>
-        <select name="region" required>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="region">Data region*</label>
+        <select name="region" id="region" required>
           <option value="">-- Select --</option>
           {% for region in regions %}
           <option value="{{ region }}" {% if form_data.get('region') == region %}selected{% endif %}>{{ region }}</option>
           {% endfor %}
         </select>
-      </label>
-      <label>
-        <span class="form-label">Workshop type*</span>
-        <select name="workshop_type_id" required>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="workshop-type">Workshop type*</label>
+        <select name="workshop_type_id" id="workshop-type" required>
           <option value="">-- Select --</option>
           {% for wt in workshop_types %}
           <option value="{{ wt.id }}" {% if form_data.get('workshop_type_id')|int == wt.id %}selected{% endif %}>{{ wt.code }} — {{ wt.name }}</option>
           {% endfor %}
         </select>
-      </label>
-      <label>
-        <span class="form-label">Workshop language*</span>
-        <select name="workshop_language" required>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="workshop-language">Workshop language*</label>
+        <select name="workshop_language" id="workshop-language" required>
           {% for code, label in language_options %}
           <option value="{{ code }}" {% if form_data.get('workshop_language', 'en') == code %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-      </label>
-      <label>
-        <span class="form-label">Workshop location</span>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="certificate-location-select">Workshop location</label>
         {% set selected_location = form_data.get('workshop_location_id') if form_data else '' %}
         <select id="certificate-location-select" name="workshop_location_id" data-selected="{{ selected_location }}">
           <option value=""></option>
@@ -64,35 +64,43 @@
           <option value="{{ loc.id }}" {% if selected_location|int == loc.id %}selected{% endif %}>{{ loc.label }}</option>
           {% endfor %}
         </select>
-      </label>
+      </div>
     </div>
-    <div class="grid gap-sm">
-      <label>
-        <span class="form-label">Start date*</span>
-        <input type="date" name="start_date" value="{{ form_data.get('start_date') or '' }}" required>&ensp;
-        <span class="form-label">End date*</span>
-        <input type="date" name="end_date" value="{{ form_data.get('end_date') or '' }}" required>
-      </label>
-      <label>
-        <span class="form-label">Daily start time*</span>
-        <input type="time" name="daily_start_time" value="{{ form_data.get('daily_start_time') or '08:00' }}" required>
-        <span class="form-label">Daily end time*</span>
-        <input type="time" name="daily_end_time" value="{{ form_data.get('daily_end_time') or '17:00' }}" required>
-      </label>
-      <label>
-        <span class="form-label"># of class days*</span>
-        <input type="number" name="number_of_class_days" min="1" max="10" value="{{ form_data.get('number_of_class_days') or '1' }}" required>
-      </label>
-      <label>
-        <span class="form-label">Lead facilitator</span>
+    <div class="grid gap-lg">
+      <div class="grid grid-2 gap-md">
+        <div class="grid gap-sm">
+          <label class="form-label" for="start-date">Start date*</label>
+          <input type="date" name="start_date" id="start-date" value="{{ form_data.get('start_date') or '' }}" required>
+        </div>
+        <div class="grid gap-sm">
+          <label class="form-label" for="end-date">End date*</label>
+          <input type="date" name="end_date" id="end-date" value="{{ form_data.get('end_date') or '' }}" required>
+        </div>
+      </div>
+      <div class="grid grid-2 gap-md">
+        <div class="grid gap-sm">
+          <label class="form-label" for="daily-start-time">Daily start time*</label>
+          <input type="time" name="daily_start_time" id="daily-start-time" value="{{ form_data.get('daily_start_time') or '08:00' }}" required>
+        </div>
+        <div class="grid gap-sm">
+          <label class="form-label" for="daily-end-time">Daily end time*</label>
+          <input type="time" name="daily_end_time" id="daily-end-time" value="{{ form_data.get('daily_end_time') or '17:00' }}" required>
+        </div>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="number-of-class-days"># of class days*</label>
+        <input type="number" name="number_of_class_days" id="number-of-class-days" min="1" max="10" value="{{ form_data.get('number_of_class_days') or '1' }}" required>
+      </div>
+      <div class="grid gap-sm">
+        <label class="form-label" for="certificate-lead-select">Lead facilitator</label>
         <select name="lead_facilitator_id" id="certificate-lead-select">
           <option value="">-- Select --</option>
           {% for fac in facilitators %}
-          <option value="{{ fac.id }}" {% if selected_lead|int == fac.id %}selected{% endif %}>{{ fac.display_name or fac.email }}</option>
+          <option value="{{ fac.id }}" {% if selected_lead|int == fac.id %}selected{% endif %}>{{ fac.display_name or fac.email}}</option>
           {% endfor %}
         </select>
-      </label>
-      <div>
+      </div>
+      <div class="grid gap-sm">
         <span class="form-label">Additional facilitators</span>
         <div id="additional-facilitators" class="grid gap-sm">
           {% if selected_additional %}
@@ -113,11 +121,13 @@
           </select>
           {% endif %}
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" id="add-facilitator">Add another facilitator</button>
+        <div style="margin-top:var(--space-2);">
+          <button type="button" class="btn btn-secondary btn-sm" id="add-facilitator">Add another facilitator</button>
+        </div>
       </div>
     </div>
   </div>
-  <div style="margin-top:var(--space-4);">
+  <div class="inline-gap-sm" style="display:flex; justify-content:flex-end; margin-top:var(--space-4);">
     <button type="submit" class="btn btn-primary">Create certificate session</button>
   </div>
 </form>
