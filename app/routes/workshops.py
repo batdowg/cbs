@@ -178,7 +178,12 @@ def workshop_view(session_id: int, current_user):
     client_options: list[Client] = []
     if not material_only:
         rows = (
-            db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
+            db.session.query(
+                SessionParticipant,
+                Participant,
+                Certificate.pdf_path,
+                Certificate.certification_number,
+            )
             .options(selectinload(SessionParticipant.company_client))
             .join(Participant, SessionParticipant.participant_id == Participant.id)
             .outerjoin(
@@ -191,13 +196,14 @@ def workshop_view(session_id: int, current_user):
         )
         statuses = get_participant_prework_status(session.id)
         participants = []
-        for link, participant, pdf_path in rows:
+        for link, participant, pdf_path, certification_number in rows:
             status = statuses.get(participant.id)
             participants.append(
                 {
                     "participant": participant,
                     "link": link,
                     "pdf_path": pdf_path,
+                    "certification_number": certification_number,
                     "prework_status": status,
                     "prework_summary": summarize_prework_status(status),
                 }

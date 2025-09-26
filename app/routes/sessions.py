@@ -1618,7 +1618,12 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     require_full_attendance = False
     if not material_only:
         rows = (
-            db.session.query(SessionParticipant, Participant, Certificate.pdf_path)
+            db.session.query(
+                SessionParticipant,
+                Participant,
+                Certificate.pdf_path,
+                Certificate.certification_number,
+            )
             .options(selectinload(SessionParticipant.company_client))
             .join(Participant, SessionParticipant.participant_id == Participant.id)
             .outerjoin(
@@ -1630,8 +1635,13 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
             .all()
         )
         participants = [
-            {"participant": participant, "link": link, "pdf_path": pdf_path}
-            for link, participant, pdf_path in rows
+            {
+                "participant": participant,
+                "link": link,
+                "pdf_path": pdf_path,
+                "certification_number": certification_number,
+            }
+            for link, participant, pdf_path, certification_number in rows
         ]
         attendance_days = list(
             range(1, (sess.number_of_class_days or 0) + 1)

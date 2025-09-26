@@ -194,6 +194,10 @@
                 <a href="{{ badge_url }}" download>Badge</a>
               {% endif %}
               <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+              <div>
+                <strong>BadgeNumber:</strong>
+                <span>{{ row.certification_number or '—' }}</span>
+              </div>
             {% endif %}
           </td>
           <td>
@@ -352,6 +356,10 @@
                   <a href="{{ badge_url }}" download>Badge</a>
                 {% endif %}
                 <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
+                <div>
+                  <strong>BadgeNumber:</strong>
+                  <span>{{ row.certification_number or '—' }}</span>
+                </div>
               {% endif %}
             </td>
             <td>
