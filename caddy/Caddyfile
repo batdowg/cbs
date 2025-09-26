@@ -2,7 +2,7 @@ cbs.ktapps.net {
     encode zstd gzip
     root * /srv
 
-    # Only these are truly static:
+    # Static:
     handle_path /resources/* {
         file_server
     }
