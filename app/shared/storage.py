@@ -1,5 +1,7 @@
 import os
 import tempfile
+from datetime import date
+from typing import Optional
 
 
 def ensure_dir(path: str) -> None:
@@ -19,3 +21,28 @@ def write_atomic(path: str, data, mode: str = "wb") -> None:
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+
+def build_badge_public_url(
+    session_id: int,
+    session_end_date: Optional[date],
+    certification_number: Optional[str],
+) -> Optional[str]:
+    if not certification_number or not session_end_date:
+        return None
+    return (
+        f"/certificates/{session_end_date.year}/{session_id}/{certification_number}.png"
+    )
+
+
+def badge_png_exists(
+    session_id: int,
+    session_end_date: Optional[date],
+    certification_number: Optional[str],
+) -> bool:
+    if not certification_number or not session_end_date:
+        return False
+    path = (
+        f"/srv/certificates/{session_end_date.year}/{session_id}/{certification_number}.png"
+    )
+    return os.path.exists(path)

@@ -9,17 +9,18 @@
     <div class="inline-gap-sm" style="flex-wrap:wrap;display:flex;align-items:center;">
       <span>{{ c.workshop_name }} - {{ c.workshop_date }}</span>
       <a href="{{ '/certificates/' ~ c.pdf_path }}">Certificate</a>
-      {% set badge_file = cert_badges.get(c.id) %}
-      {% if badge_file %}
-        {% set badge_url = '/badges/' ~ badge_file %}
-        <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
-        <a href="{{ badge_url }}" download>Badge</a>
+      {% if c.badge_available %}
+        <a href="{{ c.badge_url }}" download>Download badge</a>
+      {% else %}
+        <span>Badge pending</span>
       {% endif %}
     </div>
+    {% if c.certification_number %}
     <div>
       <strong>BadgeNumber:</strong>
-      <span>{{ c.certification_number or '—' }}</span>
+      <span>{{ c.certification_number }}</span>
     </div>
+    {% endif %}
   </li>
 {% endfor %}
 </ul>

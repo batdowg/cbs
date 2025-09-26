@@ -36,7 +36,7 @@ from ..models import (
 )
 from ..models import Resource, resource_workshop_types
 from ..shared.languages import get_language_options, code_to_label
-from ..shared.certificates import get_template_mapping
+from ..shared.storage import badge_png_exists, build_badge_public_url
 from ..shared.profile_images import (
     delete_profile_image,
     ProfileImageError,
@@ -436,12 +436,20 @@ def my_certs():
             .options(joinedload(Certificate.session).joinedload(Session.workshop_type))
             .all()
         )
-    cert_badges = {}
-    for c in certs:
-        mapping, _ = get_template_mapping(c.session)
-        if mapping and mapping.badge_filename:
-            cert_badges[c.id] = mapping.badge_filename
-    return render_template("my_certificates.html", certs=certs, cert_badges=cert_badges)
+    for cert in certs:
+        session = cert.session
+        session_end_date = session.end_date if session else None
+        public_url = build_badge_public_url(
+            cert.session_id, session_end_date, cert.certification_number
+        )
+        has_png = False
+        if public_url:
+            has_png = badge_png_exists(
+                cert.session_id, session_end_date, cert.certification_number
+            )
+        cert.badge_url = public_url if has_png else None
+        cert.badge_available = has_png
+    return render_template("my_certificates.html", certs=certs)
 
 
 @bp.route("/profile", methods=["GET", "POST"])
