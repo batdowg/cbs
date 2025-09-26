@@ -24,7 +24,11 @@ from ..models import (
     ParticipantAccount,
     ensure_virtual_workshop_locations,
 )
-from ..shared.acl import is_kt_staff
+from ..shared.acl import (
+    is_kt_staff,
+    can_manage_clients_locations,
+)
+from ..shared.rbac import admin_required
 
 bp = Blueprint("clients", __name__, url_prefix="/clients")
 
@@ -45,7 +49,7 @@ def client_edit_required(fn):
         account_id = flask_session.get("participant_account_id")
         if user_id:
             user = db.session.get(User, user_id)
-            if not user or not (user.is_app_admin or user.is_admin or user.is_kcrm):
+            if not user or not can_manage_clients_locations(user):
                 abort(403)
             return fn(*args, **kwargs, current_user=user, csa_account=None)
         if account_id:
@@ -58,14 +62,14 @@ def client_edit_required(fn):
     return wrapper
 
 
-def admin_required(fn):
+def clients_access_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         user_id = flask_session.get("user_id")
         if not user_id:
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
-        if not user or not (user.is_app_admin or user.is_admin):
+        if not user or not can_manage_clients_locations(user):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
@@ -79,7 +83,7 @@ def staff_required(fn):
         if not user_id:
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
-        if not user or not is_kt_staff(user):
+        if not user or not can_manage_clients_locations(user):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
@@ -87,14 +91,14 @@ def staff_required(fn):
 
 
 @bp.get("/")
-@admin_required
+@clients_access_required
 def list_clients(current_user):
     clients = Client.query.order_by(Client.name).all()
     return render_template("clients/list.html", clients=clients)
 
 
 @bp.route("/new", methods=["GET", "POST"])
-@admin_required
+@clients_access_required
 def new_client(current_user):
     users = User.query.order_by(User.email).all()
     next_url = _safe_next(request.values.get("next"))
@@ -135,7 +139,15 @@ def edit_client(client_id, current_user, csa_account):
     loc_id = request.values.get("loc_id")
     next_url = _safe_next(request.values.get("next"))
     users = User.query.order_by(User.email).all()
-    can_toggle = bool(current_user and (current_user.is_app_admin or current_user.is_admin or current_user.is_kcrm))
+    can_toggle = bool(
+        current_user
+        and (
+            current_user.is_app_admin
+            or current_user.is_admin
+            or current_user.is_kcrm
+            or getattr(current_user, "is_certificate_manager", False)
+        )
+    )
     if request.method == "POST":
         form = request.form.get("form")
         if form == "client":

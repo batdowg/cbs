@@ -20,6 +20,7 @@ from ..models import (
 )
 from .materials import ORDER_TYPES, ORDER_STATUSES, can_manage_shipment, is_view_only
 from ..shared.sessions_lifecycle import has_materials
+from ..shared.acl import is_certificate_manager_only
 from ..shared.names import combine_first_last
 
 bp = Blueprint("materials_orders", __name__, url_prefix="/materials")
@@ -31,6 +32,8 @@ def list_orders():
     if not user_id:
         return redirect(url_for("auth.login"))
     user = db.session.get(User, user_id)
+    if user and is_certificate_manager_only(user):
+        abort(403)
     if not (can_manage_shipment(user) or is_view_only(user)):
         abort(403)
     client_id = request.args.get("client_id", type=int)

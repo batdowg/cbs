@@ -28,6 +28,8 @@ def _roles_str(user: User) -> str:
         roles.append("admin")
     if user.is_kcrm:
         roles.append("kcrm")
+    if getattr(user, "is_certificate_manager", False):
+        roles.append("certificate_manager")
     if user.is_kt_delivery:
         roles.append("kt_delivery")
     if user.is_kt_contractor:

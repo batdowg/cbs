@@ -22,7 +22,13 @@ from ..models import (
     PreworkAssignment,
     Certificate,
 )
-from ..shared.acl import is_admin, is_contractor, is_delivery, is_kcrm
+from ..shared.acl import (
+    is_admin,
+    is_contractor,
+    is_delivery,
+    is_kcrm,
+    is_certificate_manager_only,
+)
 from .learner import login_required
 
 bp = Blueprint("my_sessions", __name__, url_prefix="/my-sessions")
@@ -47,7 +53,10 @@ def list_my_sessions():
         is_crm_only = is_kcrm(user) and not (
             is_delivery_role or is_contractor_role or is_admin(user)
         )
-        if is_crm_only:
+        certificate_manager_only = is_certificate_manager_only(user)
+        if certificate_manager_only:
+            query = query.filter(Session.is_certificate_only.is_(True))
+        elif is_crm_only:
             query = query.filter(Session.client.has(Client.crm_user_id == user.id))
         else:
             query = query.filter(
@@ -58,18 +67,23 @@ def list_my_sessions():
                 )
             )
         sessions = query.order_by(Session.start_date).all()
-        assigned_session_ids = {
-            s.id
-            for s in sessions
-            if (s.lead_facilitator_id == user.id)
-            or any(f.id == user.id for f in getattr(s, "facilitators", []))
-        }
-        use_workshop_view = is_delivery_role or is_contractor_role
-        show_edit_button = bool(
-            is_admin(user)
-            or is_kcrm(user)
-            or (is_delivery_role and not is_contractor_role)
-        )
+        if certificate_manager_only:
+            assigned_session_ids: set[int] = set()
+            use_workshop_view = False
+            show_edit_button = True
+        else:
+            assigned_session_ids = {
+                s.id
+                for s in sessions
+                if (s.lead_facilitator_id == user.id)
+                or any(f.id == user.id for f in getattr(s, "facilitators", []))
+            }
+            use_workshop_view = is_delivery_role or is_contractor_role
+            show_edit_button = bool(
+                is_admin(user)
+                or is_kcrm(user)
+                or (is_delivery_role and not is_contractor_role)
+            )
         return render_template(
             "my_sessions.html",
             sessions=sessions,

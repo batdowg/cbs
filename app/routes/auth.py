@@ -32,6 +32,7 @@ import hmac
 import secrets
 from datetime import timedelta, timezone
 from ..shared.constants import MAGIC_LINK_TTL_DAYS
+from ..shared.views import get_default_view
 
 bp = Blueprint("auth", __name__)
 
@@ -262,7 +263,9 @@ def login():
             flash("Signed in as staff account; learner account also exists.", "warning")
             resp = redirect(url_for("home"))
             if not request.cookies.get("active_view"):
-                resp.set_cookie("active_view", user.preferred_view or "ADMIN", samesite="Lax")
+                preferred_view = (user.preferred_view or "").upper()
+                target_view = preferred_view or get_default_view(user)
+                resp.set_cookie("active_view", target_view, samesite="Lax")
             return resp
         obj = identity["obj"]
         if not verify_password(password, obj.password_hash):
@@ -272,7 +275,9 @@ def login():
         if identity["kind"] == "user":
             resp = redirect(url_for("home"))
             if not request.cookies.get("active_view"):
-                resp.set_cookie("active_view", obj.preferred_view or "ADMIN", samesite="Lax")
+                preferred_view = (obj.preferred_view or "").upper()
+                target_view = preferred_view or get_default_view(obj)
+                resp.set_cookie("active_view", target_view, samesite="Lax")
             return resp
         account = identity["obj"]
         if account.must_change_password:

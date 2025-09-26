@@ -25,6 +25,7 @@ class User(db.Model):
     is_app_admin = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_kcrm = db.Column(db.Boolean, default=False)
+    is_certificate_manager = db.Column(db.Boolean, default=False)
     is_kt_delivery = db.Column(db.Boolean, default=False)
     is_kt_contractor = db.Column(db.Boolean, default=False)
     is_kt_staff = db.Column(db.Boolean, default=False)

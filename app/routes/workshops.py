@@ -32,7 +32,12 @@ from ..models import (
     PreworkAssignment,
     resource_workshop_types,
 )
-from ..shared.acl import is_delivery, is_contractor, is_kt_staff
+from ..shared.acl import (
+    is_delivery,
+    is_contractor,
+    is_kt_staff,
+    is_certificate_manager_only,
+)
 from ..shared.prework_summary import get_session_prework_summary
 from ..shared.prework_status import (
     get_participant_prework_status,
@@ -59,6 +64,8 @@ def facilitator_required(fn):
         if not user_id:
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
+        if user and is_certificate_manager_only(user):
+            abort(403)
         if not user or not (
             is_kt_staff(user) or is_delivery(user) or is_contractor(user)
         ):
