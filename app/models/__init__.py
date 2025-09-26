@@ -5,7 +5,7 @@ from flask import current_app
 from sqlalchemy.orm import validates
 
 from ..app import db
-from ..shared.passwords import hash_password, check_password
+from ..shared.passwords import hash_password, verify_password
 from ..shared.constants import ROLE_ATTRS
 from ..shared.certificates_layout import DEFAULT_LANGUAGE_FONT_CODES
 
@@ -56,7 +56,7 @@ class User(db.Model):
     def check_password(self, plain: str) -> bool:
         if not self.password_hash:
             return False
-        return check_password(plain, self.password_hash)
+        return verify_password(plain, self.password_hash)
 
     def has_role(self, role: str) -> bool:
         attr = ROLE_ATTRS.get(role)
@@ -114,7 +114,7 @@ class ParticipantAccount(db.Model):
     def check_password(self, plain: str) -> bool:
         if not self.password_hash:
             return False
-        return check_password(plain, self.password_hash)
+        return verify_password(plain, self.password_hash)
 
 
 class Settings(db.Model):
