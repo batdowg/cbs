@@ -2,7 +2,14 @@ cbs.ktapps.net {
     encode zstd gzip
     root * /srv
 
-    # Static:
+    # Serve certificate PDFs directly from disk:
+    # /certificates/<year>/<session-id>/<filename>.pdf
+    @certpdfs path_regexp certpdf ^/certificates/\d{4}/\d+/.+\.pdf$
+    handle @certpdfs {
+        file_server
+    }
+
+    # Other true-static assets
     handle_path /resources/* {
         file_server
     }
@@ -10,7 +17,7 @@ cbs.ktapps.net {
         file_server
     }
 
-    # Everything else goes to Flask (this includes /certificates/new)
+    # Everything else (incl. /certificates/new) -> Flask app
     handle {
         reverse_proxy app:8000
     }
