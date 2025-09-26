@@ -18,8 +18,8 @@
         <input type="text" name="title" id="title" placeholder="e.g., Pilot group 1" value="{{ title_value }}">
       </label>
       <label>
-        <span class="form-label">Client*</span>
         <div class="inline-gap-sm">
+        <span class="form-label">Client*</span>
           <select id="certificate-client-select" name="client_id" data-client-select required>
             <option value="">-- Select --</option>
             {% for client in clients %}
