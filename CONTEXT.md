@@ -536,12 +536,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - One-off CLI `backfill_cert_paths` (run: `python manage.py backfill_cert_paths`) updates legacy `YYYY/<workshop_code>/…` rows when a `YYYY/session_id/…` file exists. Safe to skip if not needed.
 - Learner nav shows **My Certificates** only if they own ≥1 certificate; staff see **My Profile → My Certificates** only when they have certificates as participants.
 
-## Certificates → Exports
-
-- Staff roles (KT Admin, KT Staff, Certificate Manager) can download issued certificates via `GET /certificates/export.csv`. The CSV includes `CertificateId`, `SessionId`, `SessionEndDate`, `WorkshopTypeCode`, `CertSeriesCode`, `LearnerName`, `LearnerEmail`, `BadgeNumber`, `PdfUrl`, and `BadgeUrl` columns ordered as listed. Rows cover certificates with a stored `pdf_path`, sorted by SessionEndDate descending, then SessionId, then CertificateId.
-- `PdfUrl` reuses the stored relative `/certificates/...` path when present and otherwise prefixes the saved `pdf_path` with `/certificates/` so the link resolves to the static artifact under `/srv/certificates`.
-- `BadgeUrl` points to `/certificates/<year>/<session_id>/<BadgeNumber>.png` only when the PNG exists on disk; legacy certificates without badge images emit an empty value.
-
 ---
 
 # 9. Materials Dashboard (current behavior)
