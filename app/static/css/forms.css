@@ -202,6 +202,22 @@ label {
 }
 
 /* Scoped form alignment utility */
+.form-align-grid {
+  display: grid;
+  row-gap: var(--space-5);
+}
+
+@media (min-width: 992px) {
+  .form-align-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-6);
+  }
+}
+
+.form-align-grid > .form-align {
+  margin: 0;
+}
+
 .form-align {
   --form-align-label-width: 220px;
   --form-align-gap: 12px;
