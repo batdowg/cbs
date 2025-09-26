@@ -14,6 +14,10 @@
   <div class="grid grid-2 gap-md">
     <div class="grid gap-sm">
       <label>
+        <span class="form-label">Workshop title*</span>
+        <input type="text" name="title" id="title" placeholder="e.g., Pilot group 1" value="{{ title_value }}">
+      </label>
+      <label>
         <span class="form-label">Client*</span>
         <div class="inline-gap-sm">
           <select id="certificate-client-select" name="client_id" data-client-select required>
@@ -44,10 +48,6 @@
         </select>
       </label>
       <label>
-        <span class="form-label">Workshop title</span>
-        <input type="text" name="title" id="title" placeholder="e.g., Analytic Troubleshooting" value="{{ title_value }}">
-      </label>
-      <label>
         <span class="form-label">Workshop language*</span>
         <select name="workshop_language" required>
           {% for code, label in language_options %}
@@ -69,9 +69,7 @@
     <div class="grid gap-sm">
       <label>
         <span class="form-label">Start date*</span>
-        <input type="date" name="start_date" value="{{ form_data.get('start_date') or '' }}" required>
-      </label>
-      <label>
+        <input type="date" name="start_date" value="{{ form_data.get('start_date') or '' }}" required>&ensp;
         <span class="form-label">End date*</span>
         <input type="date" name="end_date" value="{{ form_data.get('end_date') or '' }}" required>
       </label>
