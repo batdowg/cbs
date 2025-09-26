@@ -228,6 +228,8 @@ label {
   align-items: center;
   width: 100%;
   margin-bottom: var(--gap-y, 8px);
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
 }
 
 .form-align .form-align__row--top {
@@ -243,6 +245,7 @@ label {
 
 .form-align .form-align__control {
   display: block;
+  min-width: 0;
 }
 
 .form-align .form-align__static {
