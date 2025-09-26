@@ -37,6 +37,7 @@ DETAIL_VARIABLES: list[str] = [
     "dates",
     "class_days",
     "contact_hours",
+    "certification_number",
 ]
 
 DETAIL_LABELS: dict[str, str] = {
@@ -45,6 +46,7 @@ DETAIL_LABELS: dict[str, str] = {
     "dates": "Dates",
     "location_title": "Location",
     "class_days": "Class days",
+    "certification_number": "Certification #",
 }
 
 DETAIL_SIDES = ("LEFT", "RIGHT")

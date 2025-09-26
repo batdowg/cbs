@@ -50,6 +50,7 @@ DETAIL_RENDER_SEQUENCE: tuple[str, ...] = (
     "dates",
     "class_days",
     "contact_hours",
+    "certification_number",
 )
 
 _BADGE_EXTENSIONS: tuple[str, ...] = (".webp", ".png")
@@ -698,6 +699,23 @@ def render_certificate(
         or participant_account.email
     )
 
+    participant_id = participant.id
+    cert = (
+        db.session.query(Certificate)
+        .filter_by(session_id=session.id, participant_id=participant_id)
+        .one_or_none()
+    )
+    if not cert:
+        cert = Certificate(session_id=session.id, participant_id=participant_id)
+        db.session.add(cert)
+
+    needs_badge_number = not bool(cert.certification_number)
+    assigned_badge_number = False
+    if needs_badge_number:
+        cert.certification_number = generate_badge_number(session, series_code)
+        assigned_badge_number = True
+    certification_number = cert.certification_number
+
     base_reader = PdfReader(template_path)
     base_page = base_reader.pages[0]
     w = float(base_page.mediabox.width)
@@ -772,7 +790,11 @@ def render_certificate(
 
     details_cfg = size_layout.get("details", {})
     if details_cfg.get("enabled"):
-        detail_lines = _build_details_lines(session, details_cfg.get("variables", []))
+        detail_lines = _build_details_lines(
+            session,
+            details_cfg.get("variables", []),
+            certification_number=certification_number,
+        )
         if detail_lines:
             detail_font = _resolve_font(
                 date_font,
@@ -830,17 +852,6 @@ def render_certificate(
     write_atomic(full_path, out_buf.getvalue())
     os.chmod(full_path, 0o644)  # world-readable for Caddy
 
-    participant_id = participant.id
-
-    cert = (
-        db.session.query(Certificate)
-        .filter_by(session_id=session.id, participant_id=participant_id)
-        .one_or_none()
-    )
-    if not cert:
-        cert = Certificate(session_id=session.id, participant_id=participant_id)
-        db.session.add(cert)
-
     def _apply_certificate_updates(target: Certificate) -> None:
         target.certificate_name = display_name
         target.workshop_name = workshop
@@ -848,12 +859,6 @@ def render_certificate(
         target.pdf_path = rel_path
 
     _apply_certificate_updates(cert)
-
-    needs_badge_number = not bool(cert.certification_number)
-    assigned_badge_number = False
-    if needs_badge_number:
-        cert.certification_number = generate_badge_number(session, series_code)
-        assigned_badge_number = True
 
     attempts = 0
     while True:
@@ -880,16 +885,18 @@ def render_certificate(
                 cert.certification_number = generate_badge_number(session, series_code)
                 assigned_badge_number = True
             needs_badge_number = not bool(cert.certification_number)
+            certification_number = cert.certification_number
+    certification_number = cert.certification_number
     should_write_badge = assigned_badge_number
-    if cert.certification_number:
+    if certification_number:
         badge_abs_path, _, _ = _badge_output_paths(
-            session, cert.certification_number
+            session, certification_number
         )
         if os.path.exists(badge_abs_path):
             should_write_badge = False
         else:
             should_write_badge = True
-    if should_write_badge and cert.certification_number:
+    if should_write_badge and certification_number:
         write_badge_png_for_certificate(cert)
 
     current_app.logger.info(
@@ -1032,6 +1039,7 @@ def compose_detail_panel_lines(
     dates: str | None,
     class_days: str | None,
     contact_hours: str | None,
+    certification_number: str | None,
 ) -> list[str]:
     ordered = [var for var in DETAIL_RENDER_SEQUENCE if var in variables]
     if not ordered:
@@ -1055,10 +1063,19 @@ def compose_detail_panel_lines(
             lines.append(f"{DETAIL_LABELS['class_days']}: {class_value}")
         if contact_value:
             lines.append(f"{DETAIL_LABELS['contact_hours']}: {contact_value}")
+    if "certification_number" in selected and certification_number:
+        lines.append(
+            f"{DETAIL_LABELS['certification_number']}: {certification_number}"
+        )
     return lines
 
 
-def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str]:
+def _build_details_lines(
+    session: Session,
+    variables: Sequence[str],
+    *,
+    certification_number: str | None,
+) -> list[str]:
     ordered = [var for var in DETAIL_RENDER_SEQUENCE if var in variables]
     if not ordered:
         return []
@@ -1076,6 +1093,9 @@ def _build_details_lines(session: Session, variables: Sequence[str]) -> list[str
         dates=dates,
         class_days=class_days,
         contact_hours=contact_hours,
+        certification_number=(
+            certification_number if "certification_number" in ordered else None
+        ),
     )
 
 
