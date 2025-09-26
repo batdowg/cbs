@@ -634,19 +634,16 @@ def write_badge_png_for_certificate(cert: Certificate) -> None:
         if series_code
         else None
     )
-    series_name_source = series_lookup.name if series_lookup else series_code
-    series_name = (series_name_source or "").strip()
+    series_name = (
+        (series_lookup.name or series_code).strip() if series_lookup else ""
+    )
     if not series_name:
-        series_name = str(series_code or "").strip()
-    if not series_name:
-        series_name = str(cert.certification_number)
+        series_name = str(series_code or cert.certification_number or "").strip()
 
     meta = PngImagePlugin.PngInfo()
     meta.add_text("Title", f"{series_name} badge")
-    meta.add_text("CertificationNumber", str(cert.certification_number))
-    meta.add_text(
-        "Issuer", current_app.config.get("CERT_ISSUER", "Kepner-Tregoe CBS")
-    )
+    meta.add_text("Certification#", str(cert.certification_number))
+    meta.add_text("Issuer", current_app.config.get("CERT_ISSUER", "Kepner-Tregoe"))
     meta.add_text(
         "CreationTime", datetime.utcnow().isoformat(timespec="seconds") + "Z"
     )
