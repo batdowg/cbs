@@ -9,6 +9,7 @@
     <label><input type="checkbox" name="is_app_admin" {% if 'app_admin' in role_names %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}> Application Admin</label><br>
     <label><input type="checkbox" name="is_admin" {% if 'admin' in role_names %}checked{% endif %}> Admin</label><br>
     <label><input type="checkbox" name="is_kcrm" {% if 'kcrm' in role_names %}checked{% endif %}> KCRM</label><br>
+    <label><input type="checkbox" name="is_certificate_manager" {% if 'certificate_manager' in role_names %}checked{% endif %}> Certificate Manager</label><br>
     <label><input type="checkbox" name="is_kt_delivery" {% if 'kt_delivery' in role_names %}checked{% endif %}> KT Delivery</label><br>
     <label><input type="checkbox" name="is_kt_contractor" {% if 'kt_contractor' in role_names %}checked{% endif %}> KT Contractor</label><br>
   </div>

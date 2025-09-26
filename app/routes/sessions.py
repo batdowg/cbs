@@ -63,7 +63,7 @@ from ..shared.provisioning import (
 )
 from ..shared.constants import MAGIC_LINK_TTL_DAYS, DEFAULT_CSA_PASSWORD
 from .. import emailer
-from ..shared.rbac import csa_allowed_for_session
+from ..shared.rbac import csa_allowed_for_session, certificate_session_manager_required
 from ..shared.accounts import ensure_participant_account
 from ..shared.acl import (
     is_admin,
@@ -75,6 +75,7 @@ from ..shared.acl import (
     is_csa_for_session,
     csa_can_manage_participants,
     session_start_dt_utc,
+    is_certificate_manager_only,
 )
 from ..shared.languages import get_language_options
 from ..shared.names import combine_first_last, split_full_name, greeting_name
@@ -199,6 +200,11 @@ def _cb(v) -> bool:
     return str(v).strip().lower() in {"1", "y", "yes", "on", "true"}
 
 
+def _enforce_certificate_manager_scope(user: User | None, sess: Session) -> None:
+    if user and is_certificate_manager_only(user) and not is_certificate_only_session(sess):
+        abort(403)
+
+
 def _require_boolean(value) -> bool:
     if isinstance(value, bool):
         return value
@@ -260,6 +266,7 @@ def staff_required(fn):
         user = db.session.get(User, user_id)
         if not user or not (
             is_admin(user) or is_kcrm(user) or is_delivery(user) or is_contractor(user)
+            or is_certificate_manager_only(user)
         ):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
@@ -284,6 +291,7 @@ def attendance_edit_required(fn):
             or is_kcrm(current_user)
             or is_delivery(current_user)
             or is_contractor(current_user)
+            or is_certificate_manager_only(current_user)
         ):
             abort(403)
         if is_delivery(current_user) or is_contractor(current_user):
@@ -306,6 +314,8 @@ def attendance_edit_required(fn):
 @bp.get("")
 @staff_required
 def list_sessions(current_user):
+    if is_certificate_manager_only(current_user):
+        abort(403)
     show_global = request.args.get("global") == "1"
     params = request.args.to_dict(flat=True)
     base_params = dict(params)
@@ -496,6 +506,8 @@ def list_sessions(current_user):
 @bp.route("/new", methods=["GET", "POST"])
 @staff_required
 def new_session(current_user):
+    if is_certificate_manager_only(current_user):
+        abort(403)
     if is_contractor(current_user):
         abort(403)
     workshop_types = (
@@ -1025,6 +1037,7 @@ def edit_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     if is_contractor(current_user):
         abort(403)
     workshop_types = (
@@ -1591,6 +1604,7 @@ def edit_session(session_id: int, current_user):
 @bp.get("/<int:session_id>")
 @csa_allowed_for_session(allow_delivered_view=True)
 def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
+    _enforce_certificate_manager_scope(current_user, sess)
     view_csa = csa_view or request.args.get("view") == "csa"
     participants: list[dict[str, object]] = []
     import_errors = None
@@ -1652,6 +1666,9 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         if mapping:
             badge_filename = mapping.badge_filename
     can_edit_company = bool(current_user and is_kt_staff(current_user))
+    can_edit_session_flag = _user_can_edit_session(current_user)
+    if current_user and is_certificate_manager_only(current_user):
+        can_edit_session_flag = certificate_only
     client_options: list[Client] = []
     if can_edit_company and not material_only:
         client_options = (
@@ -1678,7 +1695,7 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         badge_filename=badge_filename,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
-        can_edit_session=_user_can_edit_session(current_user),
+        can_edit_session=can_edit_session_flag,
         material_only_session=material_only,
         certificate_only_session=certificate_only,
         require_full_attendance=require_full_attendance,
@@ -1693,6 +1710,7 @@ def mark_ready(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
 
     redirect_target = (
         request.form.get("next")
@@ -1796,6 +1814,7 @@ def mark_delivered(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
 
     redirect_target = (
         request.form.get("next")
@@ -1863,6 +1882,7 @@ def assign_csa(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     email = (request.form.get("email") or "").strip().lower()
     if not email:
         flash("Email required", "error")
@@ -1902,6 +1922,7 @@ def remove_csa(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     sess.csa_account_id = None
     sess.csa_notified_account_id = None
     sess.csa_notified_at = None
@@ -1916,6 +1937,7 @@ def cancel_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     if not sess.cancelled:
         sess.cancelled = True
         if not sess.cancelled_at:
@@ -1941,6 +1963,7 @@ def finalize_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     redirect_target = (
         request.form.get("next")
         or request.args.get("next")
@@ -1998,6 +2021,7 @@ def delete_session(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     if not sess.cancelled:
         flash("Only cancelled sessions can be deleted.", "error")
         return redirect(url_for("sessions.session_detail", session_id=session_id))
@@ -2011,12 +2035,14 @@ def delete_session(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/add")
 @csa_allowed_for_session
 def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
+    _enforce_certificate_manager_scope(current_user, sess)
     allowed = False
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
         or is_delivery(current_user)
         or is_contractor(current_user)
+        or is_certificate_manager_only(current_user)
     ):
         allowed = True
     elif csa_can_manage_participants(csa_account, sess):
@@ -2181,6 +2207,7 @@ def add_participant(session_id: int, sess, current_user, csa_view, csa_account):
 def edit_participant(
     session_id: int, participant_id: int, sess, current_user, csa_view, csa_account
 ):
+    _enforce_certificate_manager_scope(current_user, sess)
     if not (
         current_user
         and (
@@ -2188,6 +2215,7 @@ def edit_participant(
             or is_kcrm(current_user)
             or is_delivery(current_user)
             or is_contractor(current_user)
+            or is_certificate_manager_only(current_user)
         )
         or csa_can_manage_participants(csa_account, sess)
     ):
@@ -2241,11 +2269,13 @@ def edit_participant(
 def remove_participant(
     session_id: int, participant_id: int, sess, current_user, csa_view, csa_account
 ):
+    _enforce_certificate_manager_scope(current_user, sess)
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
         or is_delivery(current_user)
         or is_contractor(current_user)
+        or is_certificate_manager_only(current_user)
     ):
         pass
     elif csa_can_manage_participants(csa_account, sess):
@@ -2276,6 +2306,10 @@ def remove_participant(
 @bp.get("/<int:session_id>/participants/sample-csv")
 @staff_required
 def sample_csv(session_id: int, current_user):
+    sess = db.session.get(Session, session_id)
+    if not sess:
+        abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["First Name", "Last Name", "Email", "Title"])
@@ -2289,11 +2323,13 @@ def sample_csv(session_id: int, current_user):
 @bp.post("/<int:session_id>/participants/import-csv")
 @csa_allowed_for_session
 def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
+    _enforce_certificate_manager_scope(current_user, sess)
     if current_user and (
         is_admin(current_user)
         or is_kcrm(current_user)
         or is_delivery(current_user)
         or is_contractor(current_user)
+        or is_certificate_manager_only(current_user)
     ):
         pass
     elif csa_can_manage_participants(csa_account, sess):
@@ -2464,11 +2500,12 @@ def import_csv(session_id: int, sess, current_user, csa_view, csa_account):
 
 
 @bp.post("/<int:session_id>/participants/<int:participant_id>/generate")
-@staff_required
+@certificate_session_manager_required
 def generate_single(session_id: int, participant_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     action = request.form.get("action")
     if (not sess.delivered or sess.cancelled) and action == "generate":
         flash("Delivered required before generating certificates", "error")
@@ -2514,11 +2551,12 @@ def generate_single(session_id: int, participant_id: int, current_user):
 
 
 @bp.post("/<int:session_id>/generate")
-@staff_required
+@certificate_session_manager_required
 def generate_bulk(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
     if not sess.delivered or sess.cancelled:
         flash("Delivered required before generating certificates", "error")
         return _redirect_after_participant_action(session_id)
@@ -2535,11 +2573,12 @@ def generate_bulk(session_id: int, current_user):
 
 
 @bp.get("/<int:session_id>/certificates/export")
-@staff_required
+@certificate_session_manager_required
 def export_certificates_zip(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
 
     site_root = current_app.config.get("SITE_ROOT", "/srv")
     cert_root = os.path.join(site_root, "certificates")
@@ -2890,6 +2929,7 @@ def send_prework(session_id: int, current_user):
     sess = db.session.get(Session, session_id)
     if not sess:
         abort(404)
+    _enforce_certificate_manager_scope(current_user, sess)
 
     if is_contractor(current_user) or is_delivery(current_user):
         if not (
@@ -2987,6 +3027,7 @@ def send_prework(session_id: int, current_user):
 @bp.post("/<int:session_id>/attendance/toggle")
 @attendance_edit_required
 def toggle_attendance(session_id: int, sess: Session, current_user):
+    _enforce_certificate_manager_scope(current_user, sess)
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         payload = request.form
@@ -3041,6 +3082,7 @@ def toggle_attendance(session_id: int, sess: Session, current_user):
 @bp.post("/<int:session_id>/attendance/mark_all_attended")
 @attendance_edit_required
 def mark_all_attendance(session_id: int, sess: Session, current_user):
+    _enforce_certificate_manager_scope(current_user, sess)
     try:
         updated_count = mark_all_attended(sess)
         db.session.commit()

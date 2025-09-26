@@ -81,6 +81,12 @@ WORKSHOP_TYPES: MenuItem = {
     "label": "Workshop Types",
     "endpoint": "workshop_types.list_types",
 }
+WORKSHOP_LOCATIONS_LINK: MenuItem = {
+    "id": "workshop_locations",
+    "label": "Workshop Locations",
+    "endpoint": "clients.list_clients",
+    "args": {"section": "workshop"},
+}
 MATERIAL_SETTINGS: MenuItem = {
     "id": "material_settings",
     "label": "Material Settings",
@@ -164,6 +170,7 @@ SETTINGS_MATERIAL_MANAGER = [
     RESOURCES_SETTING,
 ]
 SETTINGS_DELIVERY = [RESOURCES_SETTING]
+SETTINGS_CERTIFICATE_MANAGER = [CLIENTS, WORKSHOP_LOCATIONS_LINK]
 
 
 # --- View → menu mapping --------------------------------------------------
@@ -217,6 +224,13 @@ VIEW_MENUS: Dict[str, List[MenuItem]] = {
         SURVEYS,
         PROFILE_GROUP,
         {"id": "settings", "label": "Settings", "children": SETTINGS_DELIVERY},
+        LOGOUT,
+    ],
+    "CERTIFICATE_MANAGER": [
+        MY_SESSIONS,
+        NEW_CERTIFICATE_SESSION,
+        {"id": "settings", "label": "Settings", "children": SETTINGS_CERTIFICATE_MANAGER},
+        PROFILE_GROUP,
         LOGOUT,
     ],
     "LEARNER": [

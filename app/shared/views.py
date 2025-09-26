@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Iterable, List
 
-from .acl import is_admin, is_contractor, is_delivery, is_kcrm
+from .acl import (
+    is_admin,
+    is_contractor,
+    is_delivery,
+    is_kcrm,
+    is_certificate_manager_only,
+)
 
 
 STAFF_VIEWS = [
@@ -30,6 +36,8 @@ def get_view_options(current_user) -> list[str]:
 
     if not current_user:
         return []
+    if is_certificate_manager_only(current_user):
+        return ["CERTIFICATE_MANAGER"]
     if is_contractor(current_user):
         return []
 
@@ -58,6 +66,8 @@ def get_default_view(current_user) -> str:
 
     if not current_user:
         return "LEARNER"
+    if is_certificate_manager_only(current_user):
+        return "CERTIFICATE_MANAGER"
     if is_contractor(current_user):
         return "DELIVERY"
     if is_delivery(current_user) and not (

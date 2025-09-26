@@ -32,6 +32,7 @@
         <th scope="col">SysAdmin</th>
         <th scope="col">Administrator</th>
         <th scope="col">CRM</th>
+        <th scope="col">Certificate Manager</th>
         <th scope="col">KT Facilitator</th>
         <th scope="col">Contractor</th>
         <th scope="col">Edit</th>
@@ -48,13 +49,14 @@
           <td><input type="checkbox" name="is_app_admin_{{ u.id }}" {% if u.is_app_admin %}checked{% endif %} {% if not current_user.is_app_admin %}disabled{% endif %}></td>
           <td><input type="checkbox" name="is_admin_{{ u.id }}" {% if u.is_admin %}checked{% endif %}></td>
           <td><input type="checkbox" name="is_kcrm_{{ u.id }}" {% if u.is_kcrm %}checked{% endif %}></td>
+          <td><input type="checkbox" name="is_certificate_manager_{{ u.id }}" {% if u.is_certificate_manager %}checked{% endif %}></td>
           <td><input type="checkbox" name="is_kt_delivery_{{ u.id }}" {% if u.is_kt_delivery %}checked{% endif %}></td>
           <td><input type="checkbox" name="is_kt_contractor_{{ u.id }}" {% if u.is_kt_contractor %}checked{% endif %}></td>
           <td><a href="{{ url_for('users.edit_user', user_id=u.id) }}">Edit</a></td>
         </tr>
         {% endfor %}
       {% else %}
-        {% with colspan=10 %}
+        {% with colspan=11 %}
 
           {% include 'shared/_table_empty.html' %}
 

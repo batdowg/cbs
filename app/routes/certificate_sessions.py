@@ -21,8 +21,7 @@ from ..models import (
 )
 from ..shared.acl import is_contractor
 from ..shared.languages import get_language_options
-
-from .sessions import staff_required
+from ..shared.rbac import certificate_session_manager_required
 
 bp = Blueprint(
     "certificate_sessions",
@@ -58,7 +57,7 @@ def _load_locations(client_id: int | None) -> list[ClientWorkshopLocation]:
 
 
 @bp.route("/new", methods=["GET", "POST"], endpoint="new", strict_slashes=False)
-@staff_required
+@certificate_session_manager_required
 def new_certificate_session(current_user):
     if is_contractor(current_user):
         abort(403)

@@ -33,6 +33,7 @@ from ..shared.sessions_lifecycle import (
     is_certificate_only_session,
     is_material_only_session,
 )
+from ..shared.acl import is_certificate_manager_only
 from ..services.materials_notifications import notify_materials_processors
 
 ROW_FORMAT_CHOICES = ["Digital", "Physical", "Self-paced"]
@@ -99,6 +100,8 @@ def materials_access(fn):
         user_id = flask_session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
+            if user and is_certificate_manager_only(user):
+                abort(403)
             manageable = can_manage_shipment(user)
             vo = not manageable and is_view_only(user)
             if manageable or vo:

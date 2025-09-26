@@ -29,6 +29,7 @@ DEFAULT_CSA_PASSWORD = "KTRocks!CSA"
 
 SYS_ADMIN = "app_admin"
 ADMIN = "admin"
+CERTIFICATE_MANAGER = "certificate_manager"
 STAFF = "kt_staff"
 CONTRACTOR = "kt_contractor"
 
@@ -36,6 +37,7 @@ ROLE_ATTRS = {
     SYS_ADMIN: "is_app_admin",
     ADMIN: "is_admin",
     "kcrm": "is_kcrm",
+    CERTIFICATE_MANAGER: "is_certificate_manager",
     "kt_delivery": "is_kt_delivery",
     CONTRACTOR: "is_kt_contractor",
 }
@@ -43,13 +45,14 @@ ROLE_ATTRS = {
 MANAGE_USERS_ROLES = {SYS_ADMIN, ADMIN}
 EXCLUSIVE_ROLES = {CONTRACTOR}
 
-ROLES_MATRIX_VERSION = "2024-06-13"
+ROLES_MATRIX_VERSION = "2024-10-16"
 
 PERMISSIONS_MATRIX = {
     "columns": [
         "App_Admin",
         "is_kt_admin",
         "is_kcrm",
+        "is_certificate_manager",
         "is_kt_delivery",
         "is_kt_contractor",
         "is_kt_staff",
@@ -60,6 +63,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V C E D",
             "is_kt_admin": "V C E D",
             "is_kcrm": "V C E",
+            "is_certificate_manager": "V (certificate-only)",
             "is_kt_delivery": "V (own & assigned)",
             "is_kt_contractor": "V (own & assigned)",
             "is_kt_staff": "V",
@@ -69,6 +73,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "E",
             "is_kt_admin": "E",
             "is_kcrm": "E",
+            "is_certificate_manager": "E (certificate-only)",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -78,6 +83,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "A (certificate-only)",
             "is_kt_delivery": "A (own & assigned)",
             "is_kt_contractor": "A (own & assigned)",
             "is_kt_staff": "—",
@@ -87,6 +93,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "A (certificate-only)",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -96,6 +103,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V C E D",
             "is_kt_admin": "V C E D",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -105,6 +113,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "A (own & assigned)",
             "is_kt_contractor": "A (own & assigned)",
             "is_kt_staff": "—",
@@ -114,6 +123,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -123,6 +133,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -132,6 +143,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V C E D",
             "is_kt_admin": "V C E D",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -141,6 +153,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "—",
             "is_kt_admin": "—",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "V",
             "is_kt_contractor": "V",
             "is_kt_staff": "—",
@@ -150,6 +163,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "—",
+            "is_certificate_manager": "A",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -159,6 +173,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V",
             "is_kt_admin": "V",
             "is_kcrm": "V",
+            "is_certificate_manager": "V",
             "is_kt_delivery": "V",
             "is_kt_contractor": "V",
             "is_kt_staff": "V",
@@ -168,6 +183,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V C E D",
             "is_kt_admin": "V C E D",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -177,6 +193,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V C E D",
             "is_kt_admin": "V C E D",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -186,6 +203,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V A",
             "is_kt_admin": "V A",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -195,6 +213,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V A",
             "is_kt_admin": "V A",
             "is_kcrm": "—",
+            "is_certificate_manager": "V A",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -204,6 +223,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V E",
             "is_kt_admin": "V",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -213,6 +233,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V E",
             "is_kt_admin": "—",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "—",
             "is_kt_contractor": "—",
             "is_kt_staff": "—",
@@ -222,6 +243,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "V E",
             "is_kt_admin": "V E",
             "is_kcrm": "V E",
+            "is_certificate_manager": "V E",
             "is_kt_delivery": "V E",
             "is_kt_contractor": "V E",
             "is_kt_staff": "V E",
@@ -231,6 +253,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "—",
             "is_kt_admin": "—",
             "is_kcrm": "—",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "V (own)",
             "is_kt_contractor": "V (own)",
             "is_kt_staff": "—",
@@ -240,6 +263,7 @@ PERMISSIONS_MATRIX = {
             "App_Admin": "A",
             "is_kt_admin": "A",
             "is_kcrm": "A",
+            "is_certificate_manager": "—",
             "is_kt_delivery": "A (for own sessions)",
             "is_kt_contractor": "A (for own sessions)",
             "is_kt_staff": "—",

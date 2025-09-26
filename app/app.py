@@ -48,7 +48,14 @@ from .shared.views import (
 )
 from .shared.nav import build_menu
 from .shared.storage_resources import resource_fs_dir, resource_fs_path, resources_root
-from .shared.acl import is_admin, is_kcrm, is_delivery, is_contractor, is_kt_staff
+from .shared.acl import (
+    is_admin,
+    is_kcrm,
+    is_delivery,
+    is_contractor,
+    is_kt_staff,
+    is_certificate_manager_only,
+)
 from .shared.languages import code_to_label
 from .shared.html import sanitize_prework_html
 
@@ -250,6 +257,8 @@ def create_app():
             user = db.session.get(User, user_id)
             if not user:
                 return redirect(url_for("auth.login"))
+            if is_certificate_manager_only(user):
+                return redirect(url_for("my_sessions.list_my_sessions"))
             has_delivery = is_delivery(user)
             is_contractor_role = is_contractor(user)
             if has_delivery or is_contractor_role:

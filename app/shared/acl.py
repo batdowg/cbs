@@ -33,6 +33,23 @@ def is_delivery(user: Any) -> bool:
     return bool(user and getattr(user, "is_kt_delivery", False))
 
 
+def is_certificate_manager(user: Any) -> bool:
+    return bool(user and getattr(user, "is_certificate_manager", False))
+
+
+def is_certificate_manager_only(user: Any) -> bool:
+    if not is_certificate_manager(user):
+        return False
+    return not (
+        is_admin(user)
+        or is_kcrm(user)
+        or is_delivery(user)
+        or is_contractor(user)
+        or getattr(user, "is_app_admin", False)
+        or getattr(user, "is_kt_staff", False)
+    )
+
+
 def is_contractor(user: Any) -> bool:
     return bool(user and user.has_role(CONTRACTOR))
 
@@ -77,6 +94,21 @@ def can_demote_to_contractor(actor: User, target: User) -> bool:
     if getattr(actor, "id", None) == getattr(target, "id", None):
         return False
     return True
+
+
+def can_manage_certificate_sessions(user: Any) -> bool:
+    return bool(user and (is_admin(user) or is_certificate_manager(user)))
+
+
+def can_manage_clients_locations(user: Any) -> bool:
+    return bool(
+        user
+        and (
+            is_admin(user)
+            or is_kcrm(user)
+            or is_certificate_manager(user)
+        )
+    )
 
 
 def is_participant(user: Any) -> bool:

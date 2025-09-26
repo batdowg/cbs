@@ -158,6 +158,7 @@ Roles control permissions; Views control menu visibility.
 - **Sys Admin** — platform-wide admin incl. settings and user management.
 - **Admin** — staff-level admin incl. user management.
 - **CRM (Client Relationship Manager)** — owns session setup, client comms; can create/edit sessions, assign facilitators, manage participants, send prework/invites, finalize.
+- **Certificate Manager** — creates and manages certificate-only sessions, attendance, and certificates; can manage Clients and Workshop Locations; no access to Materials, Delivery tooling, or broader admin settings.
 - **Delivery (Facilitator)** — sees and works own assigned sessions; delivery-centric UX.
 - **Contractor** — limited internal user; access restricted to assigned sessions; no settings; see §1.5 for exact capabilities.
 
@@ -168,6 +169,7 @@ Roles control permissions; Views control menu visibility.
 ### 1.2.1 Home & view defaults
 
 - Users with **Delivery** or **Contractor** land on `/my-sessions`. Delivery-only staff (no Admin/CRM roles) see the selector with **Delivery** (default), Session Admin, Learner; Contractors do not see a selector.
+- Users with only **Certificate Manager** land on `/my-sessions` with the dedicated **Certificate Manager** view. Their table lists only certificate-only sessions, the view selector is hidden, and the session actions remain scoped to certificate workflows.
 - Users with **CRM** but no Delivery/Contractor land on `/my-sessions` with default view **Session Manager** and selector options Session Manager, Material Manager, Learner. Their My Sessions table is scoped to sessions whose client CRM matches the user.
 - Staff who have Delivery plus other roles still land on `/my-sessions` and retain the full selector; facilitator-linked sessions continue opening `/workshops/<id>`.
 - Admin-only staff (no CRM/Delivery) keep the existing `/home` landing and selector behavior.
@@ -213,6 +215,12 @@ Roles control permissions; Views control menu visibility.
   - My Profile ▾: My Profile, My Resources, My Certificates
   - Settings ▾: Resources
   - Logout
+- **Certificate Manager**
+  - My Sessions
+  - New Certificate Session
+  - Settings ▾: Clients, Workshop Locations
+  - My Profile ▾: My Profile, My Resources, My Certificates
+  - Logout
 - **Learner**
   - Home
   - My Workshops
@@ -222,10 +230,10 @@ Roles control permissions; Views control menu visibility.
   - Logout
 
 Delivery (KT Facilitator) and Contractor accounts open the workshop runner view when selecting sessions from **My Sessions**. Other staff and CSA roles continue to the staff session detail page.
-- **My Sessions**: Admin, CRM, and Delivery roles see an **Edit** action per row; Contractors, CSA, and Learner accounts do not.
+- **My Sessions**: Admin, CRM, Delivery, and Certificate Manager roles see an **Edit** action per row; Contractors, CSA, and Learner accounts do not.
 
 ## 1.3 View Selector
-Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, and Contractor do not. For KT Staff, a muted "Switch views here." hint appears directly beneath the selector inside the left navigation; there is no banner elsewhere.
+Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selector. CSA, Participant, Contractor, and Certificate Manager–only accounts do not; Certificate Managers paired with Admin/Delivery roles keep the broader selector from those roles. For KT Staff, a muted "Switch views here." hint appears directly beneath the selector inside the left navigation; there is no banner elsewhere.
 
 ## 1.4 “KT Staff” definition (derived, not stored)
 - KT Staff = any **User** account that is **not** Contractor and **not** a participant/CSA.  
@@ -233,31 +241,32 @@ Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selecto
 
 ## 1.5 High-level permissions (delta highlights)
 - **CRM**: full session lifecycle; Materials access; default owner/CRM filters.
+- **Certificate Manager**: can create/manage certificate-only sessions, attendance, and certificates; manage Clients and Workshop Locations; blocked from Materials, Delivery dashboards, and other Settings areas.
 - **Delivery**: operates own sessions; no Materials/Surveys menu.
 - **Contractor**: no Settings/Materials/Surveys; can add/remove participants and send prework like CSA even after start; cannot change prework settings; other session fields read-only; access limited to assigned sessions.
 - **CSA**: add/remove participants **until Ready for Delivery**; read-only after; no email sending; no Materials/Settings.
 
 ## 1.5 Detailed Permissions Matrix
 
-| Action / Capability                                   | SysAdmin | Admin | CRM | Delivery | Contractor | CSA*                              | Learner                    |
-|-------------------------------------------------------|:-------:|:-----:|:---:|:--------:|:----------:|:---------------------------------:|:--------------------------:|
-| Settings – System settings                            |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
-| Settings – Certificate Templates                      |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
-| Settings – Languages / Workshop Types / Matrix        |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
-| Users – Create/Edit/Disable                           |   ✓     |   ✓   |  –  |    –     |     –      |                –                  |            –               |
-| Users – Toggle SysAdmin                               |   ✓     |   –   |  –  |    –     |     –      |                –                  |            –               |
-| Clients – CRUD                                        |   ✓     |   ✓   |  ✓  |   view   |    view    |                –                  |            –               |
-| Sessions – View (list/detail)                         |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      |             assigned              |            own             |
-| Sessions – Create                                     |   ✓     |   ✓   |  ✓  |    ✓     |     –      |                –                  |            –               |
-| Sessions – Edit (non-participant fields)              |   ✓     |   ✓   |  ✓  |    ✓     |  read-only |                –                  |            –               |
-| Sessions – Delete                                     | **✓**   |   –   |  –  |    –     |     –      |                –                  |            –               |
-| Sessions – Mark Delivered / Confirm complete          |   ✓     |   ✓   |  ✓  |    ✓     |    **✓**   |                –                  |            –               |
-| Participants – Add/Remove                             |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      | **assigned until Ready for Delivery** |            –           |
-| Session Prework – access                              |   ✓     |   ✓   |  ✓  |    ✓     |    view    |            assigned view           |            –               |
-| Prework – Complete (participant action)               |   –     |   –   |  –  |    –     |     –      |                –                  | **until Delivered**        |
-| Materials Order – configure/place                     |   ✓     |   ✓   |  ✓  |   view   |     –      |                –                  |            –               |
-| Certificates – Generate (when Delivered)              |   ✓     |   ✓   |  ✓  |    ✓     |    **✓**   |                –                  |            –               |
-| Certificates – See (when Delivered)                   |   ✓     |   ✓   |  ✓  |    ✓     |     ✓      |        **assigned sessions**       |   own (via My Certificates) |
+| Action / Capability | SysAdmin | Admin | CRM | Cert Manager | Delivery | Contractor | CSA* | Learner |
+|---------------------|:-------:|:-----:|:---:|:-------------:|:--------:|:----------:|:----:|:-------:|
+| Settings – System settings | ✓ | – | – | – | – | – | – | – |
+| Settings – Certificate Templates | ✓ | ✓ | – | – | – | – | – | – |
+| Settings – Languages / Workshop Types / Matrix | ✓ | ✓ | – | – | – | – | – | – |
+| Users – Create/Edit/Disable | ✓ | ✓ | – | – | – | – | – | – |
+| Users – Toggle SysAdmin | ✓ | – | – | – | – | – | – | – |
+| Clients – CRUD | ✓ | ✓ | ✓ | ✓ | view | – | – | – |
+| Sessions – View (list/detail) | ✓ | ✓ | ✓ | cert-only | ✓ | assigned | own | – |
+| Sessions – Create | ✓ | ✓ | ✓ | cert-only | – | – | – | – |
+| Sessions – Edit (non-participant fields) | ✓ | ✓ | ✓ | cert-only | read-only | – | – | – |
+| Sessions – Delete | **✓** | – | – | – | – | – | – | – |
+| Sessions – Mark Delivered / Confirm complete | ✓ | ✓ | ✓ | cert-only | **✓** | – | – | – |
+| Participants – Add/Remove | ✓ | ✓ | ✓ | cert-only | ✓ | **assigned until Ready for Delivery** | – | – |
+| Session Prework – access | ✓ | ✓ | ✓ | – | view | assigned view | – | – |
+| Prework – Complete (participant action) | – | – | – | – | – | – | – | **until Delivered** |
+| Materials Order – configure/place | ✓ | ✓ | ✓ | – | – | – | – | – |
+| Certificates – Generate (when Delivered) | ✓ | ✓ | ✓ | ✓ | **✓** | – | – | – |
+| Certificates – See (when Delivered) | ✓ | ✓ | ✓ | ✓ | ✓ | **assigned sessions** | own | own |
 
 *CSA applies only to sessions they are assigned to.
 
@@ -268,7 +277,7 @@ Only SysAdmin, Administrator, CRM, and KT Facilitator roles see the View selecto
 | `/workshops/<id>` | GET | Delivery, Contractor (assigned) | Any (assigned; materials-only sessions show empty state) | Workshop runner view with overview + participant management |
 | `/sessions/<id>/prework` | GET/POST | SysAdmin, Admin, CRM, Delivery, Contractor (assigned) | Any | Staff access only |
 | `/sessions/<id>/participants/add` | POST | CSA (assigned) | Until Ready for Delivery | Uses `csa_can_manage_participants` |
-| `/sessions/<id>/generate` | POST | SysAdmin, Admin, CRM, Delivery, Contractor | Delivered | Generates certificates |
+| `/sessions/<id>/generate` | POST | SysAdmin, Admin, CRM, Certificate Manager, Delivery, Contractor | Delivered | Generates certificates |
 | `/sessions/<id>/delete` | POST | SysAdmin | Cancelled | SysAdmin-only deletion |
 | `/learner/prework/<assignment_id>` | POST | Learner | Until Delivered | Locked after delivery |
 
@@ -281,7 +290,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 ## 2.1 Users (internal)
 - Table: `users`
 - Unique: `lower(email)`
-- Roles: booleans/role map (Sys Admin, Admin, CRM, Delivery, Contractor).
+- Roles: booleans/role map (Sys Admin, Admin, CRM, Certificate Manager, Delivery, Contractor).
 - Auth: standard password hash.
 - Profile: full_name, **title**, preferred_language, region, optional `phone`, optional location fields (`city`, `state`, `country`), and `profile_image_path` (relative path under `/uploads/profile_pics/<user_id>/<filename>`).
 
@@ -630,5 +639,5 @@ Route inventory lives at `sitemap.txt` (admin-only, linked from Settings) and li
 - Materials order Special instructions textarea uses the same wide alignment as the session form so its left edge matches other inputs.
 - Materials order header cards (Order details + Shipping details) share a `.materials-header-grid` two-column layout that stacks below 1100px, and the shipping location dropdown lists each location's title only.
 - Certificate-only sessions (`delivery_type = "Certificate only"`) also persist `Session.is_certificate_only = True`, automatically flip Ready for delivery on create/edit, force `no_material_order`, `no_prework`, and `prework_disabled`, hide Materials and Prework navigation (including dashboards and lists), and continue to follow the existing attendance + certificate rules.
-- KT Staff and App Admin can create certificate-only workshops via `GET/POST /certificate-sessions/new` (endpoint `certificate_sessions.new`). The form captures client, data region, workshop type, language, location, facilitators, schedule, and number of class days, marks the session ready for delivery, and redirects to the session detail page. The left nav surfaces a “New Certificate Session” link directly under “New Order” and before “Workshop Dashboard” for these users, and the page highlights that nav entry when active.
+- SysAdmin, Admin, and Certificate Manager users can create certificate-only workshops via `GET/POST /certificate-sessions/new` (endpoint `certificate_sessions.new`). The form captures client, data region, workshop type, language, location, facilitators, schedule, and number of class days, marks the session ready for delivery, and redirects to the session detail page. Admin-focused menus continue to show a “New Certificate Session” link beneath “New Order”; the Certificate Manager view lists it immediately beneath “My Sessions,” and the page highlights that nav entry when active.
 - `/certificates/*` paths are reserved for static certificate PDFs served by Caddy; the certificate creation UI now lives under `/certificate-sessions/*`.

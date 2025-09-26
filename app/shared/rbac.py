@@ -4,7 +4,11 @@ from flask import abort, redirect, session, url_for, flash
 
 from ..app import db, User
 from ..models import Session, ParticipantAccount
-from .acl import is_csa_for_session, can_manage_users
+from .acl import (
+    is_csa_for_session,
+    can_manage_users,
+    can_manage_certificate_sessions,
+)
 
 
 def app_admin_required(fn):
@@ -45,6 +49,20 @@ def manage_users_required(fn):
             return redirect(url_for("auth.login"))
         user = db.session.get(User, user_id)
         if not user or not can_manage_users(user):
+            abort(403)
+        return fn(*args, **kwargs, current_user=user)
+
+    return wrapper
+
+
+def certificate_session_manager_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("auth.login"))
+        user = db.session.get(User, user_id)
+        if not user or not can_manage_certificate_sessions(user):
             abort(403)
         return fn(*args, **kwargs, current_user=user)
 
