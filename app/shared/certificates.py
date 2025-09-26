@@ -11,6 +11,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from sqlalchemy.exc import IntegrityError
 
 from ..app import db
 from ..models import (
@@ -380,6 +381,72 @@ def get_template_mapping(session: Session) -> tuple[CertificateTemplate | None, 
     return mapping, effective_size
 
 
+def _resolve_badge_series_code(
+    session: Session, series: CertificateTemplateSeries | None
+) -> str:
+    candidates = [
+        getattr(series, "code", None) if series else None,
+        getattr(session.workshop_type, "cert_series", None)
+        if session.workshop_type
+        else None,
+    ]
+    for value in candidates:
+        cleaned = (value or "").strip()
+        if cleaned:
+            return cleaned.upper()
+    raise ValueError("Missing certificate series code for badge number generation")
+
+
+def _extract_badge_counter(value: str | None, prefix: str) -> int | None:
+    if not value:
+        return None
+    expected_prefix = f"{prefix}-"
+    if not value.startswith(expected_prefix):
+        return None
+    suffix = value[len(expected_prefix) :]
+    if not suffix.isdigit():
+        return None
+    try:
+        return int(suffix)
+    except ValueError:
+        return None
+
+
+def generate_badge_number(session: Session, series_code: str) -> str:
+    cleaned_code = (series_code or "").strip().upper()
+    if not cleaned_code:
+        raise ValueError("Certificate series code required for badge number")
+    reference_date = session.end_date or session.start_date or date.today()
+    session_part = f"{int(session.id):05d}"
+    prefix = f"KT-{cleaned_code}-{reference_date.year}-{session_part}"
+    existing = (
+        db.session.query(Certificate.certification_number)
+        .filter(Certificate.session_id == session.id)
+        .filter(Certificate.certification_number.like(f"{prefix}-%"))
+        .order_by(Certificate.certification_number.desc())
+        .with_for_update()
+        .first()
+    )
+    next_counter = 1
+    if existing:
+        latest = _extract_badge_counter(existing[0], prefix)
+        if latest is not None and latest >= next_counter:
+            next_counter = latest + 1
+    return f"{prefix}-{next_counter:03d}"
+
+
+def _is_cert_number_conflict(error: IntegrityError) -> bool:
+    if not isinstance(error, IntegrityError):
+        return False
+    details: str = ""
+    if getattr(error, "orig", None) is not None:
+        details = str(error.orig)
+    if not details:
+        details = str(error)
+    lowered = details.lower()
+    return "certification_number" in lowered
+
+
 def render_certificate(
     session: Session,
     participant_account: ParticipantAccount,
@@ -399,6 +466,7 @@ def render_certificate(
         )
     if not series:
         raise ValueError("Missing certificate template mapping for session")
+    series_code = _resolve_badge_series_code(session, series)
     language = (
         session.workshop_language
         or getattr(mapping, "language", None)
@@ -581,19 +649,52 @@ def render_certificate(
     write_atomic(full_path, out_buf.getvalue())
     os.chmod(full_path, 0o644)  # world-readable for Caddy
 
+    participant_id = participant.id
+
     cert = (
         db.session.query(Certificate)
-        .filter_by(session_id=session.id, participant_id=participant.id)
+        .filter_by(session_id=session.id, participant_id=participant_id)
         .one_or_none()
     )
     if not cert:
-        cert = Certificate(session_id=session.id, participant_id=participant.id)
+        cert = Certificate(session_id=session.id, participant_id=participant_id)
         db.session.add(cert)
-    cert.certificate_name = display_name
-    cert.workshop_name = workshop
-    cert.workshop_date = completion
-    cert.pdf_path = rel_path
-    db.session.commit()
+
+    def _apply_certificate_updates(target: Certificate) -> None:
+        target.certificate_name = display_name
+        target.workshop_name = workshop
+        target.workshop_date = completion
+        target.pdf_path = rel_path
+
+    _apply_certificate_updates(cert)
+
+    needs_badge_number = not bool(cert.certification_number)
+    if needs_badge_number:
+        cert.certification_number = generate_badge_number(session, series_code)
+
+    attempts = 0
+    while True:
+        try:
+            db.session.commit()
+            break
+        except IntegrityError as exc:
+            if attempts >= 1 or not (needs_badge_number and _is_cert_number_conflict(exc)):
+                db.session.rollback()
+                raise
+            attempts += 1
+            db.session.rollback()
+            cert = (
+                db.session.query(Certificate)
+                .filter_by(session_id=session.id, participant_id=participant_id)
+                .one_or_none()
+            )
+            if not cert:
+                cert = Certificate(session_id=session.id, participant_id=participant_id)
+                db.session.add(cert)
+            _apply_certificate_updates(cert)
+            if not cert.certification_number:
+                cert.certification_number = generate_badge_number(session, series_code)
+            needs_badge_number = not bool(cert.certification_number)
     current_app.logger.info(
         "[CERT] email=%s session=%s path=%s",
         participant_account.email,
