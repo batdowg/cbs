@@ -232,7 +232,6 @@
       <div class="inline-gap-sm">
         <label for="{{ import_input_id }}" class="btn">Import CSV</label>
         <a href="{{ url_for('sessions.sample_csv', session_id=session.id) }}">Download sample CSV</a>
-        <span class="form-align__help">Sample uses First &amp; Last name columns; legacy FullName is still accepted.</span>
       </div>
     </form>
   {% if import_errors %}
