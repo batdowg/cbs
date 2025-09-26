@@ -4,20 +4,16 @@ cbs.ktapps.net {
 
     # Serve certificate PDFs directly from disk:
     # /certificates/<year>/<session-id>/<filename>.pdf
-    @certpdfs path_regexp certpdf ^/certificates/\d{4}/\d+/.+\.pdf$
+    @certpdfs path /certificates/*/*/*.pdf
     handle @certpdfs {
         file_server
     }
 
     # Other true-static assets
-    handle_path /resources/* {
-        file_server
-    }
-    handle_path /badges/* {
-        file_server
-    }
+    handle_path /resources/* { file_server }
+    handle_path /badges/*    { file_server }
 
-    # Everything else (incl. /certificates/new) -> Flask app
+    # Everything else (incl. /certificates/new) -> Flask
     handle {
         reverse_proxy app:8000
     }
