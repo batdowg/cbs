@@ -12,6 +12,16 @@
   margin: 0 0 var(--space-3) 0;
   color: var(--kt-text);
 }
+.kt-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3) 0;
+}
+.kt-card-title-row .kt-card-title {
+  margin: 0;
+}
 .kt-card + .kt-card { margin-top: var(--space-4); }
 /* make tables fit nicely inside cards */
 .kt-card table { margin: 0; }

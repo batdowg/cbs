@@ -78,7 +78,10 @@
 </section>
 
 <section class="kt-card" data-prework-container>
-  <h2 class="kt-card-title">Participants</h2>
+  <div class="kt-card-title-row">
+    <h2 class="kt-card-title">Participants</h2>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('certificates.export_csv') ~ '?session_id=' ~ (session.id|string) }}">Export certificates (CSV)</a>
+  </div>
   <div class="prework-feedback" data-prework-feedback aria-live="polite"></div>
   {% if show_disable_prework and not certificate_only %}
   <div class="prework-toolbar" style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-3);">
