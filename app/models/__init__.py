@@ -655,6 +655,7 @@ class Certificate(db.Model):
         db.Integer, db.ForeignKey("participants.id", ondelete="CASCADE")
     )
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
+    certification_number = db.Column(db.String(64), unique=True)
     certificate_name = db.Column(db.String(255))
     workshop_name = db.Column(db.String(255))
     workshop_date = db.Column(db.Date)
