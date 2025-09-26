@@ -522,6 +522,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Filenames: `<workshop_type.code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf`.
 - `pdf_path` stores the relative path `YYYY/session_id/filename.pdf`. Generation overwrites existing files atomically.
 - PDFs are saved with mode `0644` so the Caddy process can read them.
+- When a certificate receives a `certification_number`, the issuance flow writes a 600×600 PNG badge named `<BadgeNumber>.png` into the same session folder. Badge assets resolve from the template’s explicit `badge_filename` (when set) or the series code across `app/assets/badges/` and `data/cert-assets/badges/`, accepting `.webp` and `.png` inputs. Source art is centered on a transparent 600×600 canvas without scaling distortion, the output is saved `0644`, and existing files are left untouched.
 - Download endpoint reads the stored path and serves the file; if the row or file is missing it returns `404` and logs `[CERT-MISSING]`.
 - Staff session detail pages left-join `certificates` on `(session_id, participant_id)` and link directly to `/certificates/<pdf_path>` for each participant with a stored path (no id-based proxy).
 - Learner and staff profile certificate listings resolve the current account's `participants` and join `certificates` on `participant_id`, linking to `/certificates/<pdf_path>` without recomputing filenames.

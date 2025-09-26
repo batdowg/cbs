@@ -7,6 +7,7 @@ from io import BytesIO
 from typing import Iterable, NamedTuple, Sequence
 
 from flask import current_app
+from PIL import Image
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -50,6 +51,8 @@ DETAIL_RENDER_SEQUENCE: tuple[str, ...] = (
     "class_days",
     "contact_hours",
 )
+
+_BADGE_EXTENSIONS: tuple[str, ...] = (".webp", ".png")
 
 US_COUNTRY_CODES = {
     "US",
@@ -447,6 +450,186 @@ def _is_cert_number_conflict(error: IntegrityError) -> bool:
     return "certification_number" in lowered
 
 
+def _certificate_storage_paths(session: Session) -> tuple[str, str, str]:
+    year = (session.start_date or date.today()).year
+    site_root = current_app.config.get("SITE_ROOT", "/srv")
+    cert_root = os.path.join(site_root, "certificates")
+    rel_dir = os.path.join(str(year), str(session.id))
+    abs_dir = os.path.join(cert_root, rel_dir)
+    return cert_root, rel_dir, abs_dir
+
+
+def _badge_output_paths(
+    session: Session, badge_number: str
+) -> tuple[str, str, str]:
+    cert_root, rel_dir, abs_dir = _certificate_storage_paths(session)
+    filename = f"{badge_number}.png"
+    rel_path = os.path.join(rel_dir, filename)
+    abs_path = os.path.join(cert_root, rel_path)
+    return abs_path, rel_path, abs_dir
+
+
+def _badge_asset_roots() -> tuple[str, ...]:
+    raw_roots = [
+        os.path.join(current_app.root_path, "assets", "badges"),
+        os.path.join(
+            current_app.root_path, "..", "data", "cert-assets", "badges"
+        ),
+    ]
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for candidate in raw_roots:
+        resolved = os.path.realpath(candidate)
+        if not os.path.isdir(resolved):
+            continue
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        normalized.append(resolved)
+    return tuple(normalized)
+
+
+def _safe_badge_path(root: str, candidate: str | None) -> str | None:
+    raw = (candidate or "").strip()
+    if not raw:
+        return None
+    root_real = os.path.realpath(root)
+    if os.path.isabs(raw):
+        resolved = os.path.realpath(raw)
+        if resolved == root_real or resolved.startswith(f"{root_real}{os.sep}"):
+            return resolved
+        return None
+    resolved = os.path.realpath(os.path.join(root_real, raw))
+    if resolved == root_real or resolved.startswith(f"{root_real}{os.sep}"):
+        return resolved
+    return None
+
+
+def _badge_filename_candidates(
+    series_code: str, explicit: str | None
+) -> list[str]:
+    candidates: list[str] = []
+
+    def _append(name: str) -> None:
+        raw = (name or "").strip()
+        if not raw:
+            return
+        base, ext = os.path.splitext(raw)
+        if ext:
+            option = f"{base}{ext}"
+            if option not in candidates:
+                candidates.append(option)
+            return
+        for extension in _BADGE_EXTENSIONS:
+            option = f"{raw}{extension}"
+            if option not in candidates:
+                candidates.append(option)
+
+    if explicit:
+        _append(explicit)
+
+    normalized = (series_code or "").strip()
+    lowered = normalized.lower()
+    hyphenated = re.sub(r"[^a-z0-9]+", "-", lowered).strip("-")
+    compact = re.sub(r"[^a-z0-9]+", "", lowered)
+
+    base_stems: list[str] = []
+    for value in (lowered, hyphenated, compact):
+        if value and value not in base_stems:
+            base_stems.append(value)
+
+    expanded: list[str] = []
+    for stem in base_stems:
+        variations = {
+            stem,
+            stem.replace("-", ""),
+            stem.replace("-", "_"),
+            stem.replace("_", ""),
+        }
+        for variant in variations:
+            cleaned = variant.strip("-_")
+            if cleaned and cleaned not in expanded:
+                expanded.append(cleaned)
+
+    suffixes = ("", "_badge", "-badge", "badge")
+    with_suffix: list[str] = []
+    for stem in expanded:
+        for suffix in suffixes:
+            candidate = f"{stem}{suffix}" if suffix else stem
+            if candidate and candidate not in with_suffix:
+                with_suffix.append(candidate)
+
+    prefixed: list[str] = []
+    for stem in with_suffix:
+        if stem not in prefixed:
+            prefixed.append(stem)
+        if not stem.startswith("kt_"):
+            prefixed_name = f"kt_{stem}"
+            if prefixed_name not in prefixed:
+                prefixed.append(prefixed_name)
+
+    for stem in prefixed:
+        _append(stem)
+
+    return candidates
+
+
+def _resolve_badge_source(series_code: str, explicit: str | None) -> str:
+    candidates = _badge_filename_candidates(series_code, explicit)
+    roots = _badge_asset_roots()
+    for root in roots:
+        for candidate in candidates:
+            resolved = _safe_badge_path(root, candidate)
+            if resolved and os.path.isfile(resolved):
+                return resolved
+    attempted = [
+        os.path.join(root, name) for root in roots for name in candidates
+    ]
+    raise FileNotFoundError(
+        f"Badge asset not found for series {series_code!r}; attempted {attempted}"
+    )
+
+
+def _render_badge_png(source_path: str, dest_path: str) -> None:
+    resampling = getattr(Image, "Resampling", None)
+    resample_filter = (
+        resampling.LANCZOS if resampling is not None else Image.LANCZOS
+    )
+    with Image.open(source_path) as img:
+        badge = img.convert("RGBA")
+        badge.thumbnail((600, 600), resample_filter)
+        canvas_image = Image.new("RGBA", (600, 600), (0, 0, 0, 0))
+        offset_x = (600 - badge.width) // 2
+        offset_y = (600 - badge.height) // 2
+        canvas_image.paste(badge, (offset_x, offset_y), badge)
+        canvas_image.save(dest_path, format="PNG")
+
+
+def write_badge_png_for_certificate(cert: Certificate) -> None:
+    if not cert.certification_number:
+        return
+    session = cert.session or db.session.get(Session, cert.session_id)
+    if not session:
+        return
+
+    mapping, _ = get_template_mapping(session)
+    series = getattr(mapping, "series", None) if mapping else None
+    series_code = _resolve_badge_series_code(session, series)
+    badge_filename = getattr(mapping, "badge_filename", None) if mapping else None
+
+    source_path = _resolve_badge_source(series_code, badge_filename)
+    abs_path, _, output_dir = _badge_output_paths(
+        session, cert.certification_number
+    )
+    if os.path.exists(abs_path):
+        return
+
+    ensure_dir(output_dir)
+    _render_badge_png(source_path, abs_path)
+    os.chmod(abs_path, 0o644)
+    current_app.logger.info("[BADGE] wrote %s", abs_path)
+
+
 def render_certificate(
     session: Session,
     participant_account: ParticipantAccount,
@@ -631,11 +814,8 @@ def render_certificate(
     writer = PdfWriter()
     writer.add_page(base_page)
 
-    year = (session.start_date or date.today()).year
-    site_root = current_app.config.get("SITE_ROOT", "/srv")
-    cert_root = os.path.join(site_root, "certificates")
-    rel_dir = os.path.join(str(year), str(session.id))
-    ensure_dir(os.path.join(cert_root, rel_dir))
+    cert_root, rel_dir, abs_dir = _certificate_storage_paths(session)
+    ensure_dir(abs_dir)
     code = (
         session.workshop_type.code
         if session.workshop_type and session.workshop_type.code
@@ -669,8 +849,10 @@ def render_certificate(
     _apply_certificate_updates(cert)
 
     needs_badge_number = not bool(cert.certification_number)
+    assigned_badge_number = False
     if needs_badge_number:
         cert.certification_number = generate_badge_number(session, series_code)
+        assigned_badge_number = True
 
     attempts = 0
     while True:
@@ -683,6 +865,7 @@ def render_certificate(
                 raise
             attempts += 1
             db.session.rollback()
+            assigned_badge_number = False
             cert = (
                 db.session.query(Certificate)
                 .filter_by(session_id=session.id, participant_id=participant_id)
@@ -694,7 +877,20 @@ def render_certificate(
             _apply_certificate_updates(cert)
             if not cert.certification_number:
                 cert.certification_number = generate_badge_number(session, series_code)
+                assigned_badge_number = True
             needs_badge_number = not bool(cert.certification_number)
+    should_write_badge = assigned_badge_number
+    if cert.certification_number:
+        badge_abs_path, _, _ = _badge_output_paths(
+            session, cert.certification_number
+        )
+        if os.path.exists(badge_abs_path):
+            should_write_badge = False
+        else:
+            should_write_badge = True
+    if should_write_badge and cert.certification_number:
+        write_badge_png_for_certificate(cert)
+
     current_app.logger.info(
         "[CERT] email=%s session=%s path=%s",
         participant_account.email,
