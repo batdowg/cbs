@@ -541,7 +541,6 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - Staff roles (KT Admin, KT Staff, Certificate Manager) can download issued certificates via `GET /certificates/export.csv`. The CSV includes `CertificateId`, `SessionId`, `SessionEndDate`, `WorkshopTypeCode`, `CertSeriesCode`, `LearnerName`, `LearnerEmail`, `BadgeNumber`, `PdfUrl`, and `BadgeUrl` columns ordered as listed. Rows cover certificates with a stored `pdf_path`, sorted by SessionEndDate descending, then SessionId, then CertificateId.
 - `PdfUrl` reuses the stored relative `/certificates/...` path when present and otherwise prefixes the saved `pdf_path` with `/certificates/` so the link resolves to the static artifact under `/srv/certificates`.
 - `BadgeUrl` points to `/certificates/<year>/<session_id>/<BadgeNumber>.png` only when the PNG exists on disk; legacy certificates without badge images emit an empty value.
-- Passing `session_id=<id>` to `/certificates/export.csv` filters the export to a single session. Staff Workshop View and Session Detail pages surface an **Export certificates (CSV)** action wired to this filter.
 
 ---
 
