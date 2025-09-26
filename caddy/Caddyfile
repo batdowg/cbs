@@ -1,20 +1,24 @@
 cbs.ktapps.net {
-    encode zstd gzip
-    root * /srv
+  encode zstd gzip
+  root * /srv
 
-    # Serve certificate PDFs directly from disk:
-    # /certificates/<year>/<session-id>/<filename>.pdf
-    @certpdfs path_regexp certpdfs ^/certificates/[0-9]{4}/[0-9]+/[^/]+\.pdf$
-    handle @certpdfs {
-        file_server
-    }
+  # Let Flask serve /static/*
+  # (do NOT add a /static handler)
 
-    # Other true-static assets
-    handle_path /resources/* { file_server }
-    handle_path /badges/*    { file_server }
+  # Serve these directly from /srv without stripping the prefix
+  handle /certificates/* {
+    file_server
+  }
+  handle /resources/* {
+    file_server
+  }
+  handle /badges/* {
+    file_server
+  }
 
-    # Everything else (incl. /certificates/new) -> Flask
-    handle {
-        reverse_proxy app:8000
-    }
+  @health path /healthz
+  reverse_proxy @health app:8000
+  handle {
+    reverse_proxy app:8000
+  }
 }
