@@ -357,8 +357,8 @@
                 {% endif %}
                 <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
                 <div>
-                  <strong>Badge#:</strong>
-                  <span>{{ row.certification_number or '—' }}</span>
+                  <small><strong>Badge#:</strong>
+                  <span>{{ row.certification_number or '—' }}</span></small>
                 </div>
               {% endif %}
             </td>
