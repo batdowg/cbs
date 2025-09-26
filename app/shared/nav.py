@@ -25,7 +25,7 @@ NEW_ORDER: MenuItem = {
 NEW_CERTIFICATE_SESSION: MenuItem = {
     "id": "new_certificate_session",
     "label": "New Certificate Session",
-    "endpoint": "certificates.new_certificate_session",
+    "endpoint": "certificate_sessions.new",
 }
 WORKSHOP_DASHBOARD: MenuItem = {
     "id": "sessions",
