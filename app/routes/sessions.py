@@ -55,7 +55,6 @@ from ..shared.certificates import (
     render_certificate,
     render_for_session,
     remove_session_certificates,
-    get_template_mapping,
 )
 from ..shared.provisioning import (
     deactivate_orphan_accounts_for_session,
@@ -85,6 +84,7 @@ from ..shared.sessions_lifecycle import (
     is_material_only,
     is_material_only_session,
 )
+from ..shared.storage import build_badge_public_url, badge_png_exists
 
 MATERIALS_OUTSTANDING_MESSAGE = "There are still material order items outstanding"
 
@@ -1612,7 +1612,6 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
     attendance_days: list[int] = []
     start_dt_utc = session_start_dt_utc(sess)
     back_params = flask_session.get("sessions_list_args", {})
-    badge_filename = None
     material_only = is_material_only_session(sess)
     certificate_only = is_certificate_only_session(sess)
     require_full_attendance = False
@@ -1634,15 +1633,27 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
             .filter(SessionParticipant.session_id == session_id)
             .all()
         )
-        participants = [
-            {
-                "participant": participant,
-                "link": link,
-                "pdf_path": pdf_path,
-                "certification_number": certification_number,
-            }
-            for link, participant, pdf_path, certification_number in rows
-        ]
+        participants = []
+        for link, participant, pdf_path, certification_number in rows:
+            badge_url = None
+            badge_available = False
+            if certification_number:
+                badge_url = build_badge_public_url(
+                    sess.id, sess.end_date, certification_number
+                )
+                badge_available = badge_png_exists(
+                    sess.id, sess.end_date, certification_number
+                )
+            participants.append(
+                {
+                    "participant": participant,
+                    "link": link,
+                    "pdf_path": pdf_path,
+                    "certification_number": certification_number,
+                    "badge_url": badge_url,
+                    "badge_available": badge_available,
+                }
+            )
         attendance_days = list(
             range(1, (sess.number_of_class_days or 0) + 1)
         )
@@ -1672,9 +1683,6 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         import_errors = flask_session.pop("import_errors", None)
         if csa_account:
             can_manage = csa_can_manage_participants(csa_account, sess)
-        mapping, _ = get_template_mapping(sess)
-        if mapping:
-            badge_filename = mapping.badge_filename
     can_edit_company = bool(current_user and is_kt_staff(current_user))
     can_edit_session_flag = _user_can_edit_session(current_user)
     if current_user and is_certificate_manager_only(current_user):
@@ -1702,7 +1710,6 @@ def session_detail(session_id: int, sess, current_user, csa_view, csa_account):
         csa_can_manage=can_manage,
         session_start_dt=start_dt_utc,
         back_params=back_params,
-        badge_filename=badge_filename,
         attendance_days=attendance_days,
         can_manage_attendance=can_manage_attendance,
         can_edit_session=can_edit_session_flag,

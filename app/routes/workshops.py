@@ -48,11 +48,11 @@ from ..shared.sessions_lifecycle import (
     is_certificate_only_session,
     is_material_only_session,
 )
-from ..shared.certificates import get_template_mapping
 from ..shared.accounts import ensure_participant_account
 from ..shared.constants import MAGIC_LINK_TTL_DAYS, DEFAULT_PARTICIPANT_PASSWORD
 from ..shared.time import now_utc
 from .. import emailer
+from ..shared.storage import build_badge_public_url, badge_png_exists
 
 bp = Blueprint("workshops", __name__, url_prefix="/workshops")
 
@@ -170,7 +170,6 @@ def workshop_view(session_id: int, current_user):
         )
 
     participants: list[dict[str, object]] = []
-    badge_filename = None
     import_errors = None
     attendance_days: list[int] = []
     attendance_map: dict[int, dict[int, bool]] = {}
@@ -198,6 +197,15 @@ def workshop_view(session_id: int, current_user):
         participants = []
         for link, participant, pdf_path, certification_number in rows:
             status = statuses.get(participant.id)
+            badge_url = None
+            badge_available = False
+            if certification_number:
+                badge_url = build_badge_public_url(
+                    session.id, session.end_date, certification_number
+                )
+                badge_available = badge_png_exists(
+                    session.id, session.end_date, certification_number
+                )
             participants.append(
                 {
                     "participant": participant,
@@ -206,6 +214,8 @@ def workshop_view(session_id: int, current_user):
                     "certification_number": certification_number,
                     "prework_status": status,
                     "prework_summary": summarize_prework_status(status),
+                    "badge_url": badge_url,
+                    "badge_available": badge_available,
                 }
             )
         attendance_days = list(
@@ -230,9 +240,6 @@ def workshop_view(session_id: int, current_user):
                 else True
             )
         import_errors = flask_session.pop("import_errors", None)
-        mapping, _ = get_template_mapping(session)
-        if mapping:
-            badge_filename = mapping.badge_filename
 
     if is_staff_viewer and not material_only:
         client_options = (
@@ -263,7 +270,6 @@ def workshop_view(session_id: int, current_user):
         "sessions/workshop_view.html",
         session=session,
         participants=participants,
-        badge_filename=badge_filename,
         import_errors=import_errors,
         facilitator_resources=facilitator_resources,
         prework_summary=get_session_prework_summary(
