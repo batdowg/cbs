@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import io
 
-from flask import Blueprint, Response, render_template
+from flask import Blueprint, Response, render_template, request
 from sqlalchemy import func
 
 from .sessions import staff_required
@@ -23,14 +23,22 @@ def index(current_user):
 @bp.get("/export.csv")
 @staff_required
 def export_csv(current_user):
-    rows = (
+    session_id = request.args.get("session_id", type=int)
+
+    query = (
         db.session.query(Certificate, Session, Participant, WorkshopType)
         .join(Session, Session.id == Certificate.session_id)
         .join(Participant, Participant.id == Certificate.participant_id)
         .outerjoin(WorkshopType, WorkshopType.id == Session.workshop_type_id)
         .filter(Certificate.pdf_path.isnot(None))
         .filter(func.length(func.trim(Certificate.pdf_path)) > 0)
-        .order_by(
+    )
+
+    if session_id is not None:
+        query = query.filter(Certificate.session_id == session_id)
+
+    rows = (
+        query.order_by(
             Session.end_date.desc().nullslast(),
             Session.id,
             Certificate.id,
