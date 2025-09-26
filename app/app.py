@@ -460,6 +460,7 @@ def create_app():
     from .routes.csa import bp as csa_bp
     from .routes.workshop_types import bp as workshop_types_bp
     from .routes.learner import bp as learner_bp
+    from .routes.certificate_sessions import bp as certificate_sessions_bp
     from .routes.certificates import bp as certificates_bp
     from .routes.users import bp as users_bp
     from .routes.clients import bp as clients_bp
@@ -481,6 +482,7 @@ def create_app():
     app.register_blueprint(csa_bp)
     app.register_blueprint(workshop_types_bp)
     app.register_blueprint(learner_bp)
+    app.register_blueprint(certificate_sessions_bp)
     app.register_blueprint(certificates_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)

@@ -63,7 +63,9 @@ def test_certificate_session_form_creates_session(app, client):
         "lead_facilitator_id": str(facilitator_id),
     }
 
-    response = client.post("/certificates/new", data=payload, follow_redirects=False)
+    response = client.post(
+        "/certificate-sessions/new", data=payload, follow_redirects=False
+    )
     assert response.status_code == 302
 
     with app.app_context():
@@ -90,10 +92,12 @@ def test_certificate_session_form_creates_session(app, client):
         assert created.number_of_class_days == 1
 
 
-def test_certificates_new_route_unique(app):
+def test_certificate_sessions_new_route_unique(app):
     with app.app_context():
-        rules = [rule for rule in app.url_map.iter_rules() if rule.rule == "/certificates/new"]
+        rules = [
+            rule for rule in app.url_map.iter_rules() if rule.rule == "/certificate-sessions/new"
+        ]
         assert len(rules) == 1
         rule = rules[0]
-        assert rule.endpoint == "certificates.new_certificate_session"
+        assert rule.endpoint == "certificate_sessions.new"
         assert {"GET", "POST"}.issubset(rule.methods)

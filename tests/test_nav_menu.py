@@ -27,7 +27,7 @@ def test_sidebar_positions_new_certificate_session(app, client):
         admin_id = admin.id
 
     with app.test_request_context():
-        cert_href = url_for("certificates.new_certificate_session")
+        cert_href = url_for("certificate_sessions.new")
 
     _login(client, admin_id)
 
