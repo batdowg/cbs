@@ -31,19 +31,6 @@ bp = Blueprint(
 
 REGION_OPTIONS = ["NA", "EU", "SEA", "Other"]
 
-
-def _build_certificate_title(
-    client: Client | None, workshop_type: WorkshopType | None
-) -> str:
-    parts: list[str] = []
-    if client and client.name:
-        parts.append(client.name)
-    if workshop_type and workshop_type.code:
-        parts.append(workshop_type.code)
-    parts.append("Certificate Session")
-    return " – ".join(parts)
-
-
 def _load_locations(client_id: int | None) -> list[ClientWorkshopLocation]:
     if not client_id:
         return []
@@ -85,6 +72,14 @@ def new_certificate_session(current_user):
     facilitator_ids = {fac.id for fac in facilitators}
 
     form = request.form if request.method == "POST" else None
+    title_default = ""
+    if request.method == "GET":
+        wt_arg = request.args.get("workshop_type_id")
+        if wt_arg and wt_arg.isdigit():
+            wt_id = int(wt_arg)
+            match = next((wt for wt in workshop_types if wt.id == wt_id), None)
+            if match and match.name:
+                title_default = match.name
     client_id_arg = (
         request.form.get("client_id")
         if request.method == "POST"
@@ -116,6 +111,7 @@ def new_certificate_session(current_user):
                     selected_client_id = client_id
                     locations = _load_locations(client_id)
 
+        title_value = request.form.get("title", "").strip()
         region = request.form.get("region") or ""
         if region not in REGION_OPTIONS:
             errors.append("Region is required.")
@@ -254,12 +250,13 @@ def new_certificate_session(current_user):
                     locations=locations,
                     selected_client_id=selected_client_id,
                     form=request.form,
+                    title_default=title_default,
                 ),
                 400,
             )
 
         sess = Session(
-            title=_build_certificate_title(client_record, workshop_type),
+            title=title_value or None,
             client_id=client_record.id if client_record else None,
             region=region,
             workshop_type=workshop_type,
@@ -314,4 +311,5 @@ def new_certificate_session(current_user):
         locations=locations,
         selected_client_id=selected_client_id,
         form=form,
+        title_default=title_default,
     )
