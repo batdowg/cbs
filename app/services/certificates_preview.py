@@ -111,6 +111,9 @@ def _sample_details_lines(size: str, variables: Iterable[str]) -> list[str]:
         dates="1–2 March 2026",
         class_days="2",
         contact_hours="14",
+        certification_number=(
+            "KTFN-250000501" if "certification_number" in variables else None
+        ),
     )
 
 
