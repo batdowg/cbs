@@ -63,6 +63,7 @@ from .shared.html import sanitize_prework_html
 def create_app():
     app = Flask(__name__, template_folder="templates")
     app.secret_key = os.getenv("SECRET_KEY", "dev")
+    app.config.setdefault("CERT_ISSUER", "Kepner-Tregoe CBS")
     app.config["PREFERRED_URL_SCHEME"] = "https"
     app.jinja_env.filters["fmt_dt"] = fmt_dt
     app.jinja_env.filters["fmt_time"] = fmt_time
