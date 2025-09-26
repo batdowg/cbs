@@ -535,6 +535,9 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 - In production, set `ALLOW_CERT_PURGE=1` to enable deletions.
 - One-off CLI `backfill_cert_paths` (run: `python manage.py backfill_cert_paths`) updates legacy `YYYY/<workshop_code>/…` rows when a `YYYY/session_id/…` file exists. Safe to skip if not needed.
 - Learner nav shows **My Certificates** only if they own ≥1 certificate; staff see **My Profile → My Certificates** only when they have certificates as participants.
+- **Exports**:
+  - `/exports/certificates.csv` – Staff only (**KT Admin**, **KT Staff**, **Certificate Manager**) CSV covering all issued certificates.
+  - `/exports/certificates.csv?session_id=<id>` – Same export scoped to a session; surfaced from staff Workshop View and Session Detail participant headers.
 
 ---
 
