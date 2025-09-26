@@ -4,7 +4,7 @@ cbs.ktapps.net {
 
     # Serve certificate PDFs directly from disk:
     # /certificates/<year>/<session-id>/<filename>.pdf
-    @certpdfs path /certificates/*/*/*.pdf
+    @certpdfs path_regexp certpdfs ^/certificates/[0-9]{4}/[0-9]+/[^/]+\.pdf$
     handle @certpdfs {
         file_server
     }
