@@ -289,7 +289,7 @@
         <tbody>
           {% for row in participants %}
           <tr>
-            <td>{{ row.participant.display_name }}{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
+            <td>{{ row.participant.display_name }}<br>{% if row.participant.account and row.participant.account.certificate_name %} ({{ row.participant.account.certificate_name }}){% endif %}</td>
             <td>{{ row.participant.email }}</td>
             <td>{{ row.participant.title }}</td>
             {% set selected_company_id = row.link.company_client_id or session.client_id %}
