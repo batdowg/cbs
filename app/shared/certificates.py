@@ -403,10 +403,9 @@ def _resolve_badge_series_code(
 def _extract_badge_counter(value: str | None, prefix: str) -> int | None:
     if not value:
         return None
-    expected_prefix = f"{prefix}-"
-    if not value.startswith(expected_prefix):
+    if not value.startswith(prefix):
         return None
-    suffix = value[len(expected_prefix) :]
+    suffix = value[len(prefix) :]
     if not suffix.isdigit():
         return None
     try:
@@ -421,11 +420,12 @@ def generate_badge_number(session: Session, series_code: str) -> str:
         raise ValueError("Certificate series code required for badge number")
     reference_date = session.end_date or session.start_date or date.today()
     session_part = f"{int(session.id):05d}"
-    prefix = f"KT-{cleaned_code}-{reference_date.year}-{session_part}"
+    year_part = f"{reference_date.year % 100:02d}"
+    prefix = f"KT{cleaned_code}-{year_part}{session_part}"
     existing = (
         db.session.query(Certificate.certification_number)
         .filter(Certificate.session_id == session.id)
-        .filter(Certificate.certification_number.like(f"{prefix}-%"))
+        .filter(Certificate.certification_number.like(f"{prefix}%"))
         .order_by(Certificate.certification_number.desc())
         .with_for_update()
         .first()
@@ -435,7 +435,7 @@ def generate_badge_number(session: Session, series_code: str) -> str:
         latest = _extract_badge_counter(existing[0], prefix)
         if latest is not None and latest >= next_counter:
             next_counter = latest + 1
-    return f"{prefix}-{next_counter:03d}"
+    return f"{prefix}{next_counter:02d}"
 
 
 def _is_cert_number_conflict(error: IntegrityError) -> bool:
@@ -451,7 +451,8 @@ def _is_cert_number_conflict(error: IntegrityError) -> bool:
 
 
 def _certificate_storage_paths(session: Session) -> tuple[str, str, str]:
-    year = (session.start_date or date.today()).year
+    reference_date = session.end_date or session.start_date or date.today()
+    year = reference_date.year
     site_root = current_app.config.get("SITE_ROOT", "/srv")
     cert_root = os.path.join(site_root, "certificates")
     rel_dir = os.path.join(str(year), str(session.id))

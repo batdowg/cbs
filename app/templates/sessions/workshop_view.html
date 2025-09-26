@@ -269,13 +269,14 @@
               {% if row.pdf_path %}
                 <div class="certificate-downloads">
                   {% if row.badge_available and row.badge_url %}
-                    <a href="{{ row.badge_url }}" download class="certificate-download-tile">
-                      <span class="certificate-download-label">Badge</span>
+                    <a href="{{ row.badge_url }}" download class="certificate-download-link badge-download-link">
+                      <span class="badge-chip" style="background-image: url('{{ row.badge_url|e }}');"></span>
+                      Badge
                     </a>
                   {% else %}
-                    <span class="certificate-download-tile certificate-download-tile--disabled" aria-disabled="true">
-                      <span class="certificate-download-label">Badge</span>
-                      <span class="certificate-download-hint">Pending</span>
+                    <span class="badge-download-link badge-download-link--disabled" aria-disabled="true">
+                      <span class="badge-chip badge-chip--placeholder" aria-hidden="true"></span>
+                      Badge
                     </span>
                   {% endif %}
                   <a href="/certificates/{{ row.pdf_path }}" class="certificate-download-link">Certificate</a>

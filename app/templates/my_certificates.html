@@ -8,11 +8,17 @@
   <li>
     <div class="inline-gap-sm" style="flex-wrap:wrap;display:flex;align-items:center;">
       <span>{{ c.workshop_name }} - {{ c.workshop_date }}</span>
-      <a href="{{ '/certificates/' ~ c.pdf_path }}">Certificate</a>
-      {% if c.badge_available %}
-        <a href="{{ c.badge_url }}" download>Download badge</a>
+      <a href="{{ '/certificates/' ~ c.pdf_path }}" class="certificate-download-link">Certificate</a>
+      {% if c.badge_available and c.badge_url %}
+        <a href="{{ c.badge_url }}" download class="certificate-download-link badge-download-link">
+          <span class="badge-chip" style="background-image: url('{{ c.badge_url|e }}');"></span>
+          Badge
+        </a>
       {% else %}
-        <span>Badge pending</span>
+        <span class="badge-download-link badge-download-link--disabled" aria-disabled="true">
+          <span class="badge-chip badge-chip--placeholder" aria-hidden="true"></span>
+          Badge pending
+        </span>
       {% endif %}
     </div>
     {% if c.certification_number %}
