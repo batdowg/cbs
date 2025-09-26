@@ -5,6 +5,10 @@
 <p><a href="{{ url_for('sessions.list_sessions') }}">Back to Sessions</a></p>
 <form method="post" class="kt-card" data-dirty-guard="true" style="padding:var(--space-4);">
   {% set form_data = form or {} %}
+  {% set title_value = title_default or '' %}
+  {% if form_data and ('title' in form_data) %}
+    {% set title_value = form_data.get('title') %}
+  {% endif %}
   {% set selected_lead = form_data.get('lead_facilitator_id') if form_data else '' %}
   {% set selected_additional = form.getlist('additional_facilitators') if form else [] %}
   <div class="grid grid-2 gap-md">
@@ -38,6 +42,10 @@
           <option value="{{ wt.id }}" {% if form_data.get('workshop_type_id')|int == wt.id %}selected{% endif %}>{{ wt.code }} — {{ wt.name }}</option>
           {% endfor %}
         </select>
+      </label>
+      <label>
+        <span class="form-label">Workshop title</span>
+        <input type="text" name="title" id="title" placeholder="e.g., Analytic Troubleshooting" value="{{ title_value }}">
       </label>
       <label>
         <span class="form-label">Workshop language*</span>
