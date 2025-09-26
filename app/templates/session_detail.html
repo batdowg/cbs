@@ -116,9 +116,6 @@
 </div>
 <div class="kt-card">
 <h2 class="kt-card-title">Participants</h2>
-<div class="inline-gap-sm" style="margin-bottom: var(--space-3);">
-  <a href="{{ url_for('certificates.export_csv', session_id=session.id) }}" class="btn btn-secondary btn-sm">Export certificates (CSV)</a>
-</div>
 {% if csa_view %}
   {% if csa_can_manage and not session.delivered and not session.participants_locked() %}
   <form action="{{ url_for('sessions.add_participant', session_id=session.id) }}" method="post" data-name-split="true">
