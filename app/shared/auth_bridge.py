@@ -7,7 +7,7 @@ from flask import session
 
 from ..app import db
 from ..models import User, ParticipantAccount
-from .passwords import check_password
+from .passwords import verify_password as verify_password_hash
 
 def lookup_identity(email: str) -> Union[dict, None]:
     """Return account match info for email."""
@@ -29,7 +29,7 @@ def lookup_identity(email: str) -> Union[dict, None]:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return check_password(plain, hashed)
+    return verify_password_hash(plain, hashed)
 
 
 def login_identity(identity: dict) -> None:
