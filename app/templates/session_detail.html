@@ -269,7 +269,7 @@
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Title</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Company (Client)</th>
             {% if attendance_days %}
-            <th scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
+            <th  style="text-align: center;" scope="colgroup" colspan="{{ attendance_days|length }}">Attendance</th>
             {% endif %}
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Completion Date</th>
             <th scope="col"{% if attendance_days %} rowspan="2"{% endif %}>Certificate</th>
@@ -278,7 +278,7 @@
           {% if attendance_days %}
           <tr>
             {% for day in attendance_days %}
-            <th scope="col">Day {{ day }}</th>
+            <th style="text-align: center;" scope="col">Day {{ day }}</th>
             {% endfor %}
           </tr>
           {% endif %}
