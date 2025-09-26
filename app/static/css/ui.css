@@ -113,6 +113,67 @@ a:focus-visible {
   margin-top: var(--space-3);
 }
 
+.certificate-downloads {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.certificate-download-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 96px;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--kt-border);
+  border-radius: var(--radius-md);
+  background: var(--kt-bg);
+  color: var(--kt-text);
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.2;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.certificate-download-tile:hover,
+.certificate-download-tile:focus-visible {
+  border-color: var(--kt-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.certificate-download-tile:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.certificate-download-tile--disabled {
+  background: color-mix(in srgb, var(--kt-border) 18%, var(--kt-bg));
+  border-style: dashed;
+  color: var(--kt-muted);
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.certificate-download-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--kt-muted);
+}
+
+.certificate-download-link {
+  font-weight: 600;
+}
+
+.certificate-badge-number {
+  margin-top: var(--space-2);
+}
+
 .rich-text p,
 .rich-text ul,
 .rich-text ol,

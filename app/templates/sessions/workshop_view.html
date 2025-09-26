@@ -267,13 +267,20 @@
             </td>
             <td>
               {% if row.pdf_path %}
-                {% if badge_filename %}
-                  {% set badge_url = '/badges/' ~ badge_filename %}
-                  <a href="{{ badge_url }}" download><img src="{{ badge_url }}" alt="badge" style="height:20px;width:auto;vertical-align:middle;"></a>
-                  <a href="{{ badge_url }}" download>Badge</a>
-                {% endif %}
-                <a href="/certificates/{{ row.pdf_path }}">Certificate</a>
-                <div>
+                <div class="certificate-downloads">
+                  {% if row.badge_available and row.badge_url %}
+                    <a href="{{ row.badge_url }}" download class="certificate-download-tile">
+                      <span class="certificate-download-label">Badge</span>
+                    </a>
+                  {% else %}
+                    <span class="certificate-download-tile certificate-download-tile--disabled" aria-disabled="true">
+                      <span class="certificate-download-label">Badge</span>
+                      <span class="certificate-download-hint">Pending</span>
+                    </span>
+                  {% endif %}
+                  <a href="/certificates/{{ row.pdf_path }}" class="certificate-download-link">Certificate</a>
+                </div>
+                <div class="certificate-badge-number">
                   <strong>BadgeNumber:</strong>
                   <span>{{ row.certification_number or '—' }}</span>
                 </div>
