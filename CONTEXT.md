@@ -339,6 +339,7 @@ Two separate tables by design; emails unique per table. If both tables hold the 
 ## 3.4 Certificates
 - `certificates` (session_id, participant_account_id, file_path, issued_at, layout_version; unique pair)
   Files under `/srv/certificates/<year>/<session_id>/<workshop_code>_<certificate_name_slug>_<YYYY-MM-DD>.pdf` (using `workshop_types.code`).
+  `certification_number` stores the BadgeNumber (nullable VARCHAR(64), globally unique) for each issued certificate.
 
 ## 3.5 Materials
 - `materials_orders` (session_id, **format** enum: All Physical/All Digital/Mixed/SIM Only; four **physical_components** booleans; **po_number**; **latest_arrival_date**; ship_date; courier; tracking; special_instructions)
