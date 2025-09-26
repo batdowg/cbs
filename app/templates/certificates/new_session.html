@@ -48,7 +48,7 @@
           <select name="workshop_type_id" id="workshop-type" required>
             <option value="">-- Select --</option>
             {% for wt in workshop_types %}
-            <option value="{{ wt.id }}" {% if form_data.get('workshop_type_id')|int == wt.id %}selected{% endif %}>{{ wt.code }} — {{ wt.name }}</option>
+            <option value="{{ wt.id }}" {% if form_data.get('workshop_type_id')|int == wt.id %}selected{% endif %}>{{ wt.code }}</option>
             {% endfor %}
           </select>
         </div>
