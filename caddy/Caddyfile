@@ -4,7 +4,7 @@ cbs.ktapps.net {
 
     # Serve certificate PDFs directly from disk:
     # /certificates/<year>/<session-id>/<filename>.pdf
-    @certpdfs path /certificates/*/*/*.pdf
+    @certpdfs path /certificates/2*/*/*
     handle @certpdfs {
         file_server
     }
