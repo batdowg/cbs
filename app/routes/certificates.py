@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import csv
 import io
+from datetime import datetime
 
 from flask import Blueprint, Response, render_template
-from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from .sessions import staff_required
 from ..app import db
-from ..models import Certificate, Participant, Session, WorkshopType
-from ..shared.storage import build_badge_public_url, badge_png_exists
+from ..models import Certificate, Participant, SessionParticipant
 
 bp = Blueprint("certificates", __name__, url_prefix="/certificates")
 
@@ -24,17 +24,19 @@ def index(current_user):
 @staff_required
 def export_csv(current_user):
     rows = (
-        db.session.query(Certificate, Session, Participant, WorkshopType)
-        .join(Session, Session.id == Certificate.session_id)
-        .join(Participant, Participant.id == Certificate.participant_id)
-        .outerjoin(WorkshopType, WorkshopType.id == Session.workshop_type_id)
-        .filter(Certificate.pdf_path.isnot(None))
-        .filter(func.length(func.trim(Certificate.pdf_path)) > 0)
-        .order_by(
-            Session.end_date.desc().nullslast(),
-            Session.id,
-            Certificate.id,
+        db.session.query(
+            Certificate,
+            Participant,
+            SessionParticipant.completion_date,
         )
+        .join(Participant, Certificate.participant_id == Participant.id)
+        .outerjoin(
+            SessionParticipant,
+            (SessionParticipant.session_id == Certificate.session_id)
+            & (SessionParticipant.participant_id == Certificate.participant_id),
+        )
+        .options(selectinload(Certificate.session))
+        .order_by(Certificate.issued_at.desc(), Certificate.id.desc())
         .all()
     )
 
@@ -42,76 +44,48 @@ def export_csv(current_user):
     writer = csv.writer(output)
     writer.writerow(
         [
-            "CertificateId",
-            "SessionId",
-            "SessionEndDate",
-            "WorkshopTypeCode",
-            "CertSeriesCode",
-            "LearnerName",
-            "LearnerEmail",
+            "CertificateID",
             "BadgeNumber",
-            "PdfUrl",
-            "BadgeUrl",
+            "ParticipantEmail",
+            "ParticipantName",
+            "CertificateName",
+            "WorkshopName",
+            "WorkshopDate",
+            "SessionID",
+            "CompletionDate",
+            "IssuedAt",
+            "PdfPath",
         ]
     )
 
-    series_cache: dict[int, str] = {}
-
-    def _resolve_series_code(session: Session, workshop_type: WorkshopType | None) -> str:
-        cached = series_cache.get(session.id)
-        if cached is not None:
-            return cached
-
-        code: str | None = None
-        override_series = getattr(session, "certificate_template_series", None)
-        if override_series and getattr(override_series, "code", None):
-            code = override_series.code
-        elif workshop_type and workshop_type.cert_series:
-            code = workshop_type.cert_series
-        elif getattr(session, "cert_series", None):
-            code = getattr(session, "cert_series")
-
-        normalized = code.strip().upper() if code else ""
-        series_cache[session.id] = normalized
-        return normalized
-
-    def _build_pdf_url(raw_path: str | None) -> str:
-        trimmed = (raw_path or "").strip()
-        if not trimmed:
+    def _format_date(value: datetime | None) -> str:
+        if not value:
             return ""
-        lowered = trimmed.lower()
-        marker = lowered.find("certificates/")
-        if marker != -1:
-            relative = trimmed[marker:]
-            return "/" + relative.lstrip("/")
-        cleaned = trimmed.lstrip("/")
-        return f"/certificates/{cleaned}"
+        if isinstance(value, datetime):
+            return value.replace(microsecond=0).isoformat(sep=" ")
+        return value.isoformat() if hasattr(value, "isoformat") else str(value)
 
-    for certificate, session, participant, workshop_type in rows:
-        pdf_url = _build_pdf_url(certificate.pdf_path)
-        badge_number = certificate.certification_number or ""
-        badge_url = ""
-        if badge_number:
-            public_badge_url = build_badge_public_url(
-                session.id, session.end_date, badge_number
-            )
-            if public_badge_url and badge_png_exists(
-                session.id, session.end_date, badge_number
-            ):
-                badge_url = public_badge_url
-
+    for cert, participant, completion_date in rows:
+        session = cert.session
+        workshop_date = (
+            cert.workshop_date.isoformat() if cert.workshop_date else ""
+        )
+        completion_val = (
+            completion_date.isoformat() if completion_date else ""
+        )
         writer.writerow(
             [
-                certificate.id,
-                session.id,
-                session.end_date.isoformat() if session.end_date else "",
-                (workshop_type.code or "").upper() if workshop_type else "",
-                _resolve_series_code(session, workshop_type),
+                cert.id,
+                cert.certification_number or "",
+                participant.email,
                 participant.display_name,
-                participant.email or "",
-                badge_number,
-                pdf_url,
-                badge_url,
+                cert.certificate_name,
+                cert.workshop_name,
+                workshop_date,
+                session.id if session else cert.session_id,
+                completion_val,
+                _format_date(cert.issued_at),
+                cert.pdf_path,
             ]
         )
 
