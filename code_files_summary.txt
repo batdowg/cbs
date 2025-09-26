@@ -1,0 +1,285 @@
+Dockerfile - Docker build instructions for the application container.
+alembic.ini - Alembic migration configuration.
+app/app.py - Flask application factory and WSGI entrypoint.
+app/emailer.py - Email delivery helper utilities.
+app/forms/__init__.py - Package initializer for app/forms.
+app/forms/resource_forms.py - Form definitions for resource forms.
+app/migrations/versions/20250820_add_workshop_cert_name_to_sessions.py - Alembic migration 20250820 add workshop cert name to sessions.
+app/models/__init__.py - Package initializer for app/models.
+app/models/prework.py - Database models for prework.
+app/models/resource.py - Database models for resource.
+app/models/simulation.py - Database models for simulation.
+app/routes/accounts.py - Flask route handlers for accounts.
+app/routes/auth.py - Flask route handlers for auth.
+app/routes/certificate_sessions.py - Flask route handlers for certificate sessions.
+app/routes/certificates.py - Flask route handlers for certificates.
+app/routes/clients.py - Flask route handlers for clients.
+app/routes/csa.py - Flask route handlers for csa.
+app/routes/learner.py - Flask route handlers for learner.
+app/routes/materials.py - Flask route handlers for materials.
+app/routes/materials_orders.py - Flask route handlers for materials orders.
+app/routes/my_sessions.py - Flask route handlers for my sessions.
+app/routes/sessions.py - Flask route handlers for sessions.
+app/routes/settings_cert_templates.py - Flask route handlers for settings cert templates.
+app/routes/settings_languages.py - Flask route handlers for settings languages.
+app/routes/settings_mail.py - Flask route handlers for settings mail.
+app/routes/settings_materials.py - Flask route handlers for settings materials.
+app/routes/settings_resources.py - Flask route handlers for settings resources.
+app/routes/settings_roles.py - Flask route handlers for settings roles.
+app/routes/settings_simulations.py - Flask route handlers for settings simulations.
+app/routes/users.py - Flask route handlers for users.
+app/routes/workshop_types.py - Flask route handlers for workshop types.
+app/routes/workshops.py - Flask route handlers for workshops.
+app/scripts/gen_sample_cert.py - Utility script to generate sample certificates.
+app/services/attendance.py - Business logic services for attendance.
+app/services/certificates_preview.py - Business logic services for certificates preview.
+app/services/materials_notifications.py - Business logic services for materials notifications.
+app/services/prework_invites.py - Business logic services for prework invites.
+app/shared/__init__.py - Package initializer for app/shared.
+app/shared/accounts.py - Shared utilities for accounts.
+app/shared/acl.py - Shared utilities for acl.
+app/shared/auth_bridge.py - Shared utilities for auth bridge.
+app/shared/certificates.py - Shared utilities for certificates.
+app/shared/certificates_layout.py - Shared utilities for certificates layout.
+app/shared/constants.py - Shared utilities for constants.
+app/shared/html.py - Shared utilities for html.
+app/shared/languages.py - Shared utilities for languages.
+app/shared/mail_utils.py - Shared utilities for mail utils.
+app/shared/materials.py - Shared utilities for materials.
+app/shared/names.py - Shared utilities for names.
+app/shared/nav.py - Shared utilities for nav.
+app/shared/passwords.py - Shared utilities for passwords.
+app/shared/prework_status.py - Shared utilities for prework status.
+app/shared/prework_summary.py - Shared utilities for prework summary.
+app/shared/profile_images.py - Shared utilities for profile images.
+app/shared/provisioning.py - Shared utilities for provisioning.
+app/shared/rbac.py - Shared utilities for rbac.
+app/shared/regions.py - Shared utilities for regions.
+app/shared/sessions_lifecycle.py - Shared utilities for sessions lifecycle.
+app/shared/storage.py - Shared utilities for storage.
+app/shared/storage_resources.py - Shared utilities for storage resources.
+app/shared/strings.py - Shared utilities for strings.
+app/shared/time.py - Shared utilities for time.
+app/shared/views.py - Shared utilities for views.
+app/static/css/alerts.css - Stylesheet alerts.
+app/static/css/brand.css - Stylesheet brand.
+app/static/css/buttons.css - Stylesheet buttons.
+app/static/css/cards.css - Stylesheet cards.
+app/static/css/chips.css - Stylesheet chips.
+app/static/css/empty.css - Stylesheet empty.
+app/static/css/forms.css - Stylesheet forms.
+app/static/css/materials.css - Stylesheet materials.
+app/static/css/my_workshops.css - Stylesheet my workshops.
+app/static/css/nav.css - Stylesheet nav.
+app/static/css/pagination.css - Stylesheet pagination.
+app/static/css/pills.css - Stylesheet pills.
+app/static/css/print.css - Stylesheet print.
+app/static/css/profile.css - Stylesheet profile.
+app/static/css/sidebar.css - Stylesheet sidebar.
+app/static/css/skeleton.css - Stylesheet skeleton.
+app/static/css/table.css - Stylesheet table.
+app/static/css/tabs.css - Stylesheet tabs.
+app/static/css/tooltips.css - Stylesheet tooltips.
+app/static/css/ui.css - Stylesheet ui.
+app/static/css/utilities.css - Stylesheet utilities.
+app/static/js/add_client_modal.js - Client-side script add client modal.
+app/static/js/attendance_controls.js - Client-side script attendance controls.
+app/static/js/auto_filter.js - Client-side script auto filter.
+app/static/js/column_chooser.js - Client-side script column chooser.
+app/static/js/dirty_guard.js - Client-side script dirty guard.
+app/static/js/form_state.js - Client-side script form state.
+app/static/js/material_items_inline.js - Client-side script material items inline.
+app/static/js/material_picker.js - Client-side script material picker.
+app/static/js/prework_actions.js - Client-side script prework actions.
+app/templates/account_password.html - Jinja template for account password.
+app/templates/auth/base.html - Jinja template for auth base.
+app/templates/auth/login_unified.html - Jinja template for auth login unified.
+app/templates/base.html - Jinja template for base.
+app/templates/certificates/new_session.html - Jinja template for certificates new session.
+app/templates/certificates.html - Jinja template for certificates.
+app/templates/clients/edit.html - Jinja template for clients edit.
+app/templates/clients/form.html - Jinja template for clients form.
+app/templates/clients/list.html - Jinja template for clients list.
+app/templates/csa/my_sessions.html - Jinja template for csa my sessions.
+app/templates/dashboard.html - Jinja template for dashboard.
+app/templates/email/account_invite.html - Jinja template for email account invite.
+app/templates/email/csa_assigned.html - Jinja template for email csa assigned.
+app/templates/email/materials_processors_notification.html - Jinja template for email materials processors notification.
+app/templates/email/prework.html - Jinja template for email prework.
+app/templates/forgot_password.html - Jinja template for forgot password.
+app/templates/home/_admin.html - Jinja template for home admin.
+app/templates/home/_delivery.html - Jinja template for home delivery.
+app/templates/home/_learner.html - Jinja template for home learner.
+app/templates/home/_materials.html - Jinja template for home materials.
+app/templates/home/_sessions.html - Jinja template for home sessions.
+app/templates/home.html - Jinja template for home.
+app/templates/login.html - Jinja template for login.
+app/templates/macros/filters.html - Jinja template for macros filters.
+app/templates/macros/lifecycle.html - Jinja template for macros lifecycle.
+app/templates/materials_orders.html - Jinja template for materials orders.
+app/templates/my_certificates.html - Jinja template for my certificates.
+app/templates/my_prework.html - Jinja template for my prework.
+app/templates/my_resources.html - Jinja template for my resources.
+app/templates/my_sessions.html - Jinja template for my sessions.
+app/templates/my_workshops.html - Jinja template for my workshops.
+app/templates/nav.html - Jinja template for nav.
+app/templates/participant_edit.html - Jinja template for participant edit.
+app/templates/password.html - Jinja template for password.
+app/templates/prework_download.html - Jinja template for prework download.
+app/templates/prework_form.html - Jinja template for prework form.
+app/templates/prework_magic_error.html - Jinja template for prework magic error.
+app/templates/profile.html - Jinja template for profile.
+app/templates/reset_password.html - Jinja template for reset password.
+app/templates/session_detail.html - Jinja template for session detail.
+app/templates/sessions/_prework_summary.html - Jinja template for sessions prework summary.
+app/templates/sessions/form.html - Jinja template for sessions form.
+app/templates/sessions/materials.html - Jinja template for sessions materials.
+app/templates/sessions/prework.html - Jinja template for sessions prework.
+app/templates/sessions/workshop_view.html - Jinja template for sessions workshop view.
+app/templates/sessions.html - Jinja template for sessions.
+app/templates/settings_cert_templates/form.html - Jinja template for settings cert templates form.
+app/templates/settings_cert_templates/list.html - Jinja template for settings cert templates list.
+app/templates/settings_cert_templates/templates.html - Jinja template for settings cert templates templates.
+app/templates/settings_languages/form.html - Jinja template for settings languages form.
+app/templates/settings_languages/list.html - Jinja template for settings languages list.
+app/templates/settings_mail.html - Jinja template for settings mail.
+app/templates/settings_materials/form.html - Jinja template for settings materials form.
+app/templates/settings_materials/list.html - Jinja template for settings materials list.
+app/templates/settings_resources/form.html - Jinja template for settings resources form.
+app/templates/settings_resources/list.html - Jinja template for settings resources list.
+app/templates/settings_roles.html - Jinja template for settings roles.
+app/templates/settings_simulations/form.html - Jinja template for settings simulations form.
+app/templates/settings_simulations/list.html - Jinja template for settings simulations list.
+app/templates/shared/_breadcrumbs.html - Jinja template for shared breadcrumbs.
+app/templates/shared/_empty.html - Jinja template for shared empty.
+app/templates/shared/_table_empty.html - Jinja template for shared table empty.
+app/templates/shared/_welcome.html - Jinja template for shared welcome.
+app/templates/surveys.html - Jinja template for surveys.
+app/templates/users/edit.html - Jinja template for users edit.
+app/templates/users/form.html - Jinja template for users form.
+app/templates/users/list.html - Jinja template for users list.
+app/templates/users/promote.html - Jinja template for users promote.
+app/templates/users/role_matrix.html - Jinja template for users role matrix.
+app/templates/verify.html - Jinja template for verify.
+app/templates/workshop_types/_defaults_table.html - Jinja template for workshop types defaults table.
+app/templates/workshop_types/_fields.html - Jinja template for workshop types fields.
+app/templates/workshop_types/form.html - Jinja template for workshop types form.
+app/templates/workshop_types/list.html - Jinja template for workshop types list.
+app/templates/workshop_types/prework.html - Jinja template for workshop types prework.
+caddy/Caddyfile - Caddy reverse proxy configuration.
+docker-compose.yml - Docker Compose definition for application services.
+manage.py - Flask application management script.
+migrations/alembic.ini - Alembic migration helper.
+migrations/env.py - Alembic migration helper.
+migrations/versions/0001_create_users_table.py - Alembic migration 0001 create users table.
+migrations/versions/0002_add_password_hash.py - Alembic migration 0002 add password hash.
+migrations/versions/0003_create_app_settings_table.py - Alembic migration 0003 create app settings table.
+migrations/versions/0005_seed_smtp_defaults.py - Alembic migration 0005 seed smtp defaults.
+migrations/versions/0006_create_settings_table.py - Alembic migration 0006 create settings table.
+migrations/versions/0007_add_smtp_pass_enc.py - Alembic migration 0007 add smtp pass enc.
+migrations/versions/0008_add_cert_tables.py - Alembic migration 0008 add cert tables.
+migrations/versions/0009_core_schema.py - Alembic migration 0009 core schema.
+migrations/versions/0010_full_db_from_excel.py - Alembic migration 0010 full db from excel.
+migrations/versions/0011_user_roles_and_unique_email.py - Alembic migration 0011 user roles and unique email.
+migrations/versions/0012_session_code_timezone_completion_date.py - Alembic migration 0012 session code timezone completion date.
+migrations/versions/0013_workshop_types_and_session_fields.py - Alembic migration 0013 workshop types and session fields.
+migrations/versions/0014_sessions_fields_fix.py - Alembic migration 0014 sessions fields fix.
+migrations/versions/0015_sessions_facilitators_language_participant_title.py - Alembic migration 0015 sessions facilitators language participant title.
+migrations/versions/0016_participant_accounts_and_session_status.py - Alembic migration 0016 participant accounts and session status.
+migrations/versions/0017_session_delivered_flag.py - Alembic migration 0017 session delivered flag.
+migrations/versions/0018_clients_and_session_links.py - Alembic migration 0018 clients and session links.
+migrations/versions/0019_user_region.py - Alembic migration 0019 user region.
+migrations/versions/0020_user_edit_audit.py - Alembic migration 0020 user edit audit.
+migrations/versions/0021_participant_account_certificate_name.py - Alembic migration 0021 participant account certificate name.
+migrations/versions/0022_session_state_machine.py - Alembic migration 0022 session state machine.
+migrations/versions/0023_add_full_name_to_participant_accounts.py - Alembic migration 0023 add full name to participant accounts.
+migrations/versions/0024_add_on_hold_at.py - Alembic migration 0024 add on hold at.
+migrations/versions/0025_workshoptype_badge.py - Alembic migration 0025 workshoptype badge.
+migrations/versions/0026_session_shipping_fields.py - Alembic migration 0026 session shipping fields.
+migrations/versions/0027_materials_options.py - Alembic migration 0027 materials options.
+migrations/versions/0028_languages_bridge.py - Alembic migration 0028 languages bridge.
+migrations/versions/0029_client_locations.py - Alembic migration 0029 client locations.
+migrations/versions/0030_location_notes.py - Alembic migration 0030 location notes.
+migrations/versions/0031_prework.py - Alembic migration 0031 prework.
+migrations/versions/0032_prework_list_questions.py - Alembic migration 0032 prework list questions.
+migrations/versions/0033_no_material_order.py - Alembic migration 0033 no material order.
+migrations/versions/0034_prework_account_invite.py - Alembic migration 0034 prework account invite.
+migrations/versions/0035_must_change_password.py - Alembic migration 0035 must change password.
+migrations/versions/0036_csa_notify_fields.py - Alembic migration 0036 csa notify fields.
+migrations/versions/0037_preferred_view.py - Alembic migration 0037 preferred view.
+migrations/versions/0038_simulation_outlines.py - Alembic migration 0038 simulation outlines.
+migrations/versions/0039_materials_enhancements.py - Alembic migration 0039 materials enhancements.
+migrations/versions/0040_add_simulation_based_to_workshop_types.py - Alembic migration 0040 add simulation based to workshop types.
+migrations/versions/0041_rename_materials_format_values.py - Alembic migration 0041 rename materials format values.
+migrations/versions/0042_certificate_fields.py - Alembic migration 0042 certificate fields.
+migrations/versions/0043_cleanup_workshop_type_code.py - Alembic migration 0043 cleanup workshop type code.
+migrations/versions/0044_add_user_title.py - Alembic migration 0044 add user title.
+migrations/versions/0045_add_workshop_type_lang_series.py - Alembic migration 0045 add workshop type lang series.
+migrations/versions/0046_certificate_templates.py - Alembic migration 0046 certificate templates.
+migrations/versions/0047_remove_workshop_type_cert_series_default.py - Alembic migration 0047 remove workshop type cert series default.
+migrations/versions/0048_default_materials_option.py - Alembic migration 0048 default materials option.
+migrations/versions/0049_session_shipping_materials_options.py - Alembic migration 0049 session shipping materials options.
+migrations/versions/0051_materials_only_and_status.py - Alembic migration 0051 materials only and status.
+migrations/versions/0052_add_order_date.py - Alembic migration 0052 add order date.
+migrations/versions/0053_badge_images.py - Alembic migration 0053 badge images.
+migrations/versions/0053_cert_template_badge_image.py - Alembic migration 0053 cert template badge image.
+migrations/versions/0054_cert_template_badge_filename.py - Alembic migration 0054 cert template badge filename.
+migrations/versions/0055_remove_workshop_type_badge.py - Alembic migration 0055 remove workshop type badge.
+migrations/versions/0056_cleanup_badge_image_table.py - Alembic migration 0056 cleanup badge image table.
+migrations/versions/0057_material_defaults_order_items.py - Alembic migration 0057 material defaults order items.
+migrations/versions/0058_rename_material_defaults.py - Alembic migration 0058 rename material defaults.
+migrations/versions/0059_material_default_qty_basis.py - Alembic migration 0059 material default qty basis.
+migrations/versions/0060_materials_option_qty_basis.py - Alembic migration 0060 materials option qty basis.
+migrations/versions/0061_remove_materials_po_number.py - Alembic migration 0061 remove materials po number.
+migrations/versions/0062_add_processor_assignments.py - Alembic migration 0062 add processor assignments.
+migrations/versions/0063_remove_default_materials_option.py - Alembic migration 0063 remove default materials option.
+migrations/versions/0064_resource_description_html.py - Alembic migration 0064 resource description html.
+migrations/versions/0065_shipping_location_title.py - Alembic migration 0065 shipping location title.
+migrations/versions/0066_resource_audience_language.py - Alembic migration 0066 resource audience language.
+migrations/versions/0067_session_number_of_class_days.py - Alembic migration 0067 session number of class days.
+migrations/versions/0068_participant_attendance.py - Alembic migration 0068 participant attendance.
+migrations/versions/0069_certificate_layout_fonts.py - Alembic migration 0069 certificate layout fonts.
+migrations/versions/0070_prework_template_language.py - Alembic migration 0070 prework template language.
+migrations/versions/0071_prework_invites.py - Alembic migration 0071 prework invites.
+migrations/versions/0072_prework_disable_fields.py - Alembic migration 0072 prework disable fields.
+migrations/versions/0073_user_profile_contact_fields.py - Alembic migration 0073 user profile contact fields.
+migrations/versions/0074_workshop_type_active.py - Alembic migration 0074 workshop type active.
+migrations/versions/0075_workshop_type_active_idempotent.py - Alembic migration 0075 workshop type active idempotent.
+migrations/versions/0076_materials_processor_notifications.py - Alembic migration 0076 materials processor notifications.
+migrations/versions/0077_split_names_first_last.py - Alembic migration 0077 split names first last.
+migrations/versions/0078_participant_company_client.py - Alembic migration 0078 participant company client.
+migrations/versions/0079_mail_notification_flags.py - Alembic migration 0079 mail notification flags.
+migrations/versions/0080_certificate_session_flag.py - Alembic migration 0080 certificate session flag.
+migrations/versions/8583f5619ee6_add_resources_tables.py - Alembic migration 8583f5619ee6 add resources tables.
+migrations/versions/9e9d34b28f26_add_session_prework_disable_fields.py - Alembic migration 9e9d34b28f26 add session prework disable fields.
+migrations/versions/merge_heads_20240904_0001.py - Alembic migration merge heads 20240904 0001.
+pytest.ini - Pytest configuration for test discovery and markers.
+tests/conftest.py - Pytest module covering conftest.
+tests/js/add_client_modal.test.js - Test asset add client modal test.
+tests/js/auto_filter.test.js - Test asset auto filter test.
+tests/js/dirty_guard.test.js - Test asset dirty guard test.
+tests/smoke/test_attendance_cert_gate.py - Pytest module covering attendance cert gate.
+tests/smoke/test_auth_roles.py - Pytest module covering auth roles.
+tests/smoke/test_dashboards_filters.py - Pytest module covering dashboards filters.
+tests/smoke/test_delivered_finalize_flow.py - Pytest module covering delivered finalize flow.
+tests/smoke/test_materials_lifecycle.py - Pytest module covering materials lifecycle.
+tests/smoke/test_prework_invites_and_disable.py - Pytest module covering prework invites and disable.
+tests/smoke/test_profile_contacts.py - Pytest module covering profile contacts.
+tests/smoke/test_resources_visibility.py - Pytest module covering resources visibility.
+tests/test_certificate_only.py - Pytest module covering certificate only.
+tests/test_certificate_session_creation.py - Pytest module covering certificate session creation.
+tests/test_certificate_session_template.py - Pytest module covering certificate session template.
+tests/test_frontend_behaviors.py - Pytest module covering frontend behaviors.
+tests/test_mail_notification_toggles.py - Pytest module covering mail notification toggles.
+tests/test_mail_utils.py - Pytest module covering mail utils.
+tests/test_materials_notifications.py - Pytest module covering materials notifications.
+tests/test_materials_order_clients.py - Pytest module covering materials order clients.
+tests/test_materials_simulation.py - Pytest module covering materials simulation.
+tests/test_migrations_certificate_session_flag.py - Pytest module covering migrations certificate session flag.
+tests/test_migrations_split_names.py - Pytest module covering migrations split names.
+tests/test_migrations_workshop_type_active.py - Pytest module covering migrations workshop type active.
+tests/test_nav_menu.py - Pytest module covering nav menu.
+tests/test_participant_company.py - Pytest module covering participant company.
+tests/test_participants_names.py - Pytest module covering participants names.
+tests/test_prework_summary.py - Pytest module covering prework summary.
+tests/test_workshop_type_active.py - Pytest module covering workshop type active.
